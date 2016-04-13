@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_COMMON_H
-#define VOXBLOX_COMMON_H
+#ifndef VOXBLOX_CORE_COMMON_H
+#define VOXBLOX_CORE_COMMON_H
 
 #include <glog/logging.h>
 #include <Eigen/Core>
@@ -23,4 +23,4 @@ typedef Eigen::Vector3i BlockIndex;
 
 }  // namespace voxblox
 
-#endif
+#endif  // VOXBLOX_CORE_COMMON_H
