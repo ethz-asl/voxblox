@@ -9,6 +9,9 @@ namespace voxblox {
 
 class BaseBlock {
  public:
+  typedef std::shared_ptr<BaseBlock> Ptr;
+  typedef std::shared_ptr<const BaseBlock> ConstPtr;
+
   BaseBlock(size_t num_layers, const Coordinates& origin,
             FloatingPoint block_size)
       : num_layers_(num_layers),
@@ -17,13 +20,13 @@ class BaseBlock {
         has_data_(false) {}
   virtual ~BaseBlock() {}
 
-  size_t computeLinearIndexFrom3dIndex(const VoxelIndex& index,
-                                       size_t vps) const {
+  inline size_t computeLinearIndexFrom3dIndex(const VoxelIndex& index,
+                                              size_t vps) const {
     return index.x() + vps * (index.y() + index.z() * vps);
   }
 
-  VoxelIndex compute3dIndexFromCoordinates(const Coordinates& coords,
-                                           FloatingPoint voxel_size_inv) const {
+  inline VoxelIndex compute3dIndexFromCoordinates(
+      const Coordinates& coords, FloatingPoint voxel_size_inv) const {
     return VoxelIndex(static_cast<int>(std::floor((coords.x() - origin_.x()) *
                                                   voxel_size_inv)),
                       static_cast<int>(std::floor((coords.y() - origin_.y()) *
@@ -32,9 +35,9 @@ class BaseBlock {
                                                   voxel_size_inv)));
   }
 
-  size_t computeLinearIndexFromCoordinates(const Coordinates& coords,
-                                           FloatingPoint voxel_size_inv,
-                                           size_t vps) const {
+  inline size_t computeLinearIndexFromCoordinates(const Coordinates& coords,
+                                                  FloatingPoint voxel_size_inv,
+                                                  size_t vps) const {
     return computeLinearIndexFrom3dIndex(
         compute3dIndexFromCoordinates(coords, voxel_size_inv), vps);
   }
@@ -50,6 +53,9 @@ class BaseBlock {
 
 class TsdfBlock : BaseBlock {
  public:
+  typedef std::shared_ptr<TsdfBlock> Ptr;
+  typedef std::shared_ptr<const BaseBlock> ConstPtr;
+
   TsdfBlock(const Coordinates& origin, size_t voxels_per_side,
             FloatingPoint voxel_size)
       : BaseBlock(1, origin, voxels_per_side * voxel_size),
