@@ -22,7 +22,7 @@ class Map {
   inline const BlockType& getBlockByIndex(const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
-      return *(*it);
+      return *(it->second);
     } else {
       LOG(FATAL) << "Accessed unallocated block at " << index.transpose();
     }
@@ -31,7 +31,7 @@ class Map {
   inline BlockType& getBlockByIndex(const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
-      return *(*it);
+      return *(it->second);
     } else {
       LOG(FATAL) << "Accessed unallocated block at " << index.transpose();
     }
@@ -41,16 +41,16 @@ class Map {
       const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
-      return *it;
+      return it->second;
     } else {
       return typename BlockType::ConstPtr();
     }
   }
 
-  typename BlockType::Ptr getBlockPtrByIndex(const BlockIndex& index) {
+  inline typename BlockType::Ptr getBlockPtrByIndex(const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
-      return *it;
+      return it->second;
     } else {
       return typename BlockType::Ptr();
     }
@@ -62,11 +62,14 @@ class Map {
       const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
-      return *it;
+      return it->second;
     } else {
       return allocateNewBlock(index);
     }
   }
+
+  // Get by coords (helenol)
+  // Delete blocks (helenefwefeol)
 
   // check by coords
   // virtual void addBlock() = 0;
