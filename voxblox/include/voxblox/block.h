@@ -1,7 +1,9 @@
 #ifndef VOXBLOX_BLOCK_H
 #define VOXBLOX_BLOCK_H
 
-#include <voxbox/common.h>
+#include "voxblox/common.h"
+#include "voxblox/voxel.h"
+#include "voxblox/voxel_array.h"
 
 namespace voxblox {
 
@@ -22,11 +24,11 @@ class BaseBlock {
 
   VoxelIndex compute3dIndexFromCoordinates(const Coordinates& coords,
                                            FloatingPoint voxel_size_inv) const {
-    return VoxelIndex(static_cast<int>(std::floor((coords.x() - origin.x()) *
+    return VoxelIndex(static_cast<int>(std::floor((coords.x() - origin_.x()) *
                                                   voxel_size_inv)),
-                      static_cast<int>(std::floor((coords.y() - origin.y()) *
+                      static_cast<int>(std::floor((coords.y() - origin_.y()) *
                                                   voxel_size_inv)),
-                      static_cast<int>(std::floor((coords.z() - origin.z()) *
+                      static_cast<int>(std::floor((coords.z() - origin_.z()) *
                                                   voxel_size_inv)));
   }
 
@@ -52,34 +54,33 @@ class TsdfBlock : BaseBlock {
             FloatingPoint voxel_size)
       : BaseBlock(1, origin, voxels_per_side * voxel_size),
         has_changed_(false) {
-    size_t voxels_per_side = 16;
     tsdf_layer_.reset(new VoxelArray<TsdfVoxel>(voxels_per_side, voxel_size));
   }
   virtual ~TsdfBlock() {}
 
   inline const TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) const {
-    return tsdf_layer_.voxels[index];
+    return tsdf_layer_->voxels[index];
   }
   inline const TsdfVoxel& getTsdfVoxelBy3dIndex(const VoxelIndex& index) const {
-    return tsdf_layer_.voxels[computeLinearIndexFrom3dIndex(
-        index, tsdf_layer_.voxel_size_inv)];
+    return tsdf_layer_->voxels[computeLinearIndexFrom3dIndex(
+        index, tsdf_layer_->voxel_size_inv)];
   }
   inline const TsdfVoxel& getTsdfVoxelByCoordinates(
       const Coordinates& coords) const {
-    return tsdf_layer_.voxels[computeLinearIndexFromCoordinates(
-        index, tsdf_layer_.voxel_size_inv, tsdf_layer_.voxels_per_side)];
+    return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
+        coords, tsdf_layer_->voxel_size_inv, tsdf_layer_->voxels_per_side)];
   }
 
   inline TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) {
-    return tsdf_layer_.voxels[index];
+    return tsdf_layer_->voxels[index];
   }
-  inline TsdfVoxel& getTsdfVoxelBy3dIndex(const LocalIndex&) {
-    return tsdf_layer_.voxels[computeLinearIndexFrom3dIndex(
-        index, tsdf_layer_.voxel_size_inv)];
+  inline TsdfVoxel& getTsdfVoxelBy3dIndex(const VoxelIndex& index) {
+    return tsdf_layer_->voxels[computeLinearIndexFrom3dIndex(
+        index, tsdf_layer_->voxel_size_inv)];
   }
   inline TsdfVoxel& getTsdfVoxelByCoordinates(const Coordinates& coords) {
-    return tsdf_layer_.voxels[computeLinearIndexFromCoordinates(
-        index, tsdf_layer_.voxel_size_inv, tsdf_layer_.voxels_per_side)];
+    return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
+        coords, tsdf_layer_->voxel_size_inv, tsdf_layer_->voxels_per_side)];
   }
 
  protected:

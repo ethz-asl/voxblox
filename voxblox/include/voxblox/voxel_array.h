@@ -22,7 +22,7 @@ struct VoxelArray {
   size_t num_voxels;
   FloatingPoint voxel_size_inv;
 
-  std::unique_ptr<VoxelType> voxels;
+  std::unique_ptr<VoxelType[]> voxels;
 };
 
 }  // namespace voxblox

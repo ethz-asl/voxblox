@@ -6,7 +6,7 @@
 namespace voxblox {
 
 typedef double FloatingPoint;
-typedef Eigen::Vector<3, FloatingPoint> Coordinates;
+typedef Eigen::Vector3d Coordinates;
 typedef Eigen::Vector3i VoxelIndex;
 }  // namespace voxblox
 
