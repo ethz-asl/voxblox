@@ -9,9 +9,9 @@ add_definitions(-std=c++11)
 #############
 # LIBRARIES #
 #############
-#cs_add_library(${PROJECT_NAME}
-#  src/world_base.cc
-#)
+cs_add_library(${PROJECT_NAME}
+  src/voxblox.cc
+)
 
 ##########
 # EXPORT #
