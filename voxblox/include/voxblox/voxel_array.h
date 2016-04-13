@@ -4,22 +4,24 @@
 namespace voxblox {
 
 template <typename VoxelType>
-class VoxelArray {
+struct VoxelArray {
  public:
   VoxelArray(size_t voxels_per_side_) {
     // Create.
+    voxels_per_side = voxels_per_side_;
+    num_voxels = voxels_per_side * voxels_per_side * voxels_per_side;
+    inv_voxels_per_side = 1.0 / voxels_per_side;
 
-    voxels_ = new voxels_[voxels_per_side_ * voxels_per_side_ * voxels_per_side_]
+    voxels.reset(new VoxelType[num_voxels]);
   }
 
+  size_t voxels_per_side;
+  size_t num_voxels;
+  float inv_voxels_per_side;
 
-  size_t voxels_per_side_;
-  size_t num_voxels_;
-
-  std::unique_ptr<VoxelType> voxels_;
+  std::unique_ptr<VoxelType> voxels;
 };
 
 }  // namespace voxblox
 
 #endif  // VOXBLOX_VOXEL_ARRAY_H
-
