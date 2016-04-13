@@ -26,3 +26,13 @@
 *.exe
 *.out
 *.app
+
+# Eclipse
+.cproject
+.project
+
+# Temporary files
+*~
+
+# Mac 
+.DS_Store
