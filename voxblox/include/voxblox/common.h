@@ -2,6 +2,7 @@
 #define VOXBLOX_COMMON_H
 
 #include <Eigen/Core>
+#include <memory>
 
 namespace voxblox {
 
