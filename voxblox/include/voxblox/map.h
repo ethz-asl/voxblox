@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_MAP_H
 #define VOXBLOX_MAP_H
 
+#include <utility>
+
 #include "voxblox/common.h"
 #include "voxblox/block.h"
 #include "voxblox/block_hash.h"
@@ -12,7 +14,7 @@ struct MapConfig {};
 template <typename BlockType>
 class Map {
  public:
-  typedef BlockHashMapType<typename BlockType::Ptr> BlockHashMap;
+  typedef typename BlockHashMapType<typename BlockType::Ptr>::type BlockHashMap;
 
   virtual ~Map() {}
 
@@ -35,7 +37,8 @@ class Map {
     }
   }
 
-  inline typename BlockType::ConstPtr getBlockPtrByIndex(const BlockIndex& index) const {
+  inline typename BlockType::ConstPtr getBlockPtrByIndex(
+      const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
       return *it;
@@ -44,7 +47,7 @@ class Map {
     }
   }
 
-  inline typename BlockType::Ptr getBlockPtrByIndex(const BlockIndex& index) {
+  typename BlockType::Ptr getBlockPtrByIndex(const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
       return *it;
@@ -55,7 +58,8 @@ class Map {
 
   // Gets a block by the block index it if already exists, otherwise allocates a
   // new one.
-  inline typename BlockType::Ptr allocateBlockPtrByIndex(const BlockIndex& index) {
+  inline typename BlockType::Ptr allocateBlockPtrByIndex(
+      const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
       return *it;
@@ -94,12 +98,25 @@ class Map {
 
 class TsdfMap : public Map<TsdfBlock> {
  public:
-  TsdfMap(FloatingPoint voxel_size, size_t voxels_per_side)
-      : Map(voxel_size * voxels_per_side) {}
+  TsdfMap(size_t voxels_per_side, FloatingPoint voxel_size)
+      : Map(voxel_size * voxels_per_side),
+        voxel_size_(voxel_size),
+        voxels_per_side_(voxels_per_side) {}
 
   virtual TsdfBlock::Ptr allocateNewBlock(const BlockIndex& index) {
-    return TsdfBlock::Ptr();
+    auto my_iter = block_map_.find(index);
+    auto insert_status = block_map_.emplace(index,
+        std::make_shared<TsdfBlock>(index.cast<FloatingPoint>() * block_size_,
+                      voxels_per_side_, voxel_size_));
+    CHECK(insert_status.second) << "Block already exists when allocating at "
+                                << index.transpose();
+    // I don't wanna talk about it.
+    return insert_status.first->second;
   }
+
+ protected:
+  size_t voxels_per_side_;
+  FloatingPoint voxel_size_;
 };
 
 }  // namespace voxblox
