@@ -3,8 +3,12 @@
 
 #include "voxblox/core/common.h"
 
+#include <fstream>
+#include <glog/logging.h>
+
 namespace voxblox {
 
+namespace io {
 // For reference on the format, see:
 //  http://paulbourke.net/dataformats/ply/
 class PlyWriter {
@@ -27,15 +31,15 @@ class PlyWriter {
   bool writeHeader() {
     if (!file_) {
       // Output a warning -- couldn't open file?
-      LOG(WARN) << "Could not open file for PLY output.";
+      LOG(WARNING) << "Could not open file for PLY output.";
       return false;
     }
     if (!parameters_set_) {
-      LOG(WARN) << "Could not write header out -- parameters not set.";
+      LOG(WARNING) << "Could not write header out -- parameters not set.";
       return false;
     }
     if (header_written_) {
-      LOG(WARN) << "Header already written.";
+      LOG(WARNING) << "Header already written.";
       return false;
     }
 
@@ -54,7 +58,7 @@ class PlyWriter {
     return true;
   }
 
-  bool writeVertex(const Coordinate& coord) {
+  bool writeVertex(const Coordinates& coord) {
     if (!header_written_) {
       if (!writeHeader()) {
         return false;
@@ -64,9 +68,10 @@ class PlyWriter {
       return false;
     }
     file_ << coord.x() << " " << coord.y() << " " << coord.z() << std::endl;
+    return true;
   }
 
-  bool writeVertex(const Coordinate& coord, const uint8_t[3] & rgb) {
+  bool writeVertex(const Coordinates& coord, const uint8_t rgb[3]) {
     if (!header_written_) {
       if (!writeHeader()) {
         return false;
@@ -92,6 +97,8 @@ class PlyWriter {
 
   std::ofstream file_;
 };
+
+}  // namespace io
 
 }  // namespace voxblox
 

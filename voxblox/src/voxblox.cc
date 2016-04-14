@@ -1,5 +1,6 @@
 #include "voxblox/core/block.h"
 #include "voxblox/core/map.h"
+#include "voxblox/io/sdf_ply.h"
 
 #include <iostream>
 
@@ -17,5 +18,9 @@ int main(int argc, char* argv[]) {
     }
   }
   std::cout << "Finished putting lots of boxes in.\n";
+
+  // Now output the ply file.
+  voxblox::io::outputMapAsPly(my_cool_map, "test_tsdf.ply",
+                              voxblox::io::kSdfDistanceColor);
   return 0;
 }
