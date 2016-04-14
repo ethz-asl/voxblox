@@ -107,6 +107,18 @@ class Map {
     block_map_.erase(computeBlockIndexFromCoordinates(coords));
   }
 
+  // Accessor functions for all allocated blocks.
+  void getAllAllocatedBlocks(BlockIndexList* blocks) {
+    blocks->clear();
+    blocks->reserve(block_map_.size());
+    for (const std::pair<BlockIndex, typename BlockType::Ptr>& kv :
+         block_map_) {
+      blocks->emplace_back(kv.first);
+    }
+  }
+
+  size_t getNumberOfAllocatedBlocks() { return block_map_.size(); }
+
  protected:
   Map(FloatingPoint block_size) : block_size_(block_size) {
     block_size_inv_ = 1.0 / block_size_;

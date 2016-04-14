@@ -2,6 +2,7 @@
 #define VOXBLOX_BLOCK_HASH_H
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 #include <unordered_map>
 
 namespace voxblox {
@@ -22,6 +23,9 @@ struct BlockHashMapType {
       BlockIndex, BlockType, BlockIndexHash, std::equal_to<BlockIndex>,
       Eigen::aligned_allocator<std::pair<const BlockIndex, BlockType> > > type;
 };
+
+typedef std::vector<BlockIndex, Eigen::aligned_allocator<BlockIndex> >
+    BlockIndexList;
 
 }  // namespace voxblox
 
