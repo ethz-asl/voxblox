@@ -111,7 +111,7 @@ class Map {
   void getAllAllocatedBlocks(BlockIndexList* blocks) {
     blocks->clear();
     blocks->reserve(block_map_.size());
-    for (const std::pair<BlockIndex, typename BlockType::Ptr>& kv :
+    for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
          block_map_) {
       blocks->emplace_back(kv.first);
     }
