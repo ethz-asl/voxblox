@@ -55,6 +55,10 @@ class PlyWriter {
       file_ << "property uchar green" << std::endl;
       file_ << "property uchar blue" << std::endl;
     }
+
+    file_ << "end_header" << std::endl;
+
+    header_written_ = true;
     return true;
   }
 
@@ -81,7 +85,8 @@ class PlyWriter {
       return false;
     }
     file_ << coord.x() << " " << coord.y() << " " << coord.z() << " ";
-    file_ << rgb[0] << " " << rgb[1] << " " << rgb[2] << std::endl;
+    file_ << static_cast<int>(rgb[0]) << " " << static_cast<int>(rgb[1]) << " "
+          << static_cast<int>(rgb[2]) << std::endl;
     return true;
   }
 
