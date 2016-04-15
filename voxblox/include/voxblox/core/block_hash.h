@@ -20,8 +20,7 @@ struct BlockIndexHash {
 template <typename KeyType>
 struct BlockHashMapType {
   typedef std::unordered_map<
-      BlockIndex, KeyType, BlockIndexHash, std::equal_to<BlockIndex>,
-      Eigen::aligned_allocator<std::pair<const BlockIndex, KeyType> > > type;
+      BlockIndex, KeyType, BlockIndexHash, std::equal_to<BlockIndex> > type;
 };
 
 typedef std::vector<BlockIndex, Eigen::aligned_allocator<BlockIndex> >
