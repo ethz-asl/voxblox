@@ -14,6 +14,8 @@ struct MapConfig {};
 template <typename BlockType>
 class Map {
  public:
+  typedef std::shared_ptr<Map> Ptr;
+
   typedef typename BlockHashMapType<typename BlockType::Ptr>::type BlockHashMap;
 
   virtual ~Map() {}
@@ -119,6 +121,8 @@ class Map {
 
   size_t getNumberOfAllocatedBlocks() const { return block_map_.size(); }
 
+  FloatingPoint getBlockSize() const { return block_size_; }
+
  protected:
   Map(FloatingPoint block_size) : block_size_(block_size) {
     block_size_inv_ = 1.0 / block_size_;
@@ -134,6 +138,8 @@ class Map {
 
 class TsdfMap : public Map<TsdfBlock> {
  public:
+	typedef std::shared_ptr<TsdfMap> Ptr;
+
   TsdfMap(size_t voxels_per_side, FloatingPoint voxel_size)
       : Map(voxel_size * voxels_per_side),
         voxel_size_(voxel_size),
@@ -154,6 +160,10 @@ class TsdfMap : public Map<TsdfBlock> {
   size_t getVoxelsPerBlock() const {
     return voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
   }
+
+  FloatingPoint getVoxelSize() const { return voxel_size_; }
+
+  size_t getVoxelsPerSide() const { return voxels_per_side_; }
 
  protected:
   size_t voxels_per_side_;

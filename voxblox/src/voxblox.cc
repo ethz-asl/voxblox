@@ -1,5 +1,6 @@
 #include "voxblox/core/block.h"
 #include "voxblox/core/map.h"
+#include "voxblox/integrator/ray_integrator.h"
 #include "voxblox/io/sdf_ply.h"
 
 #include <iostream>
