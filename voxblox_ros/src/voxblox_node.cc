@@ -23,7 +23,7 @@ class VoxbloxNode {
     sdf_marker_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
         "sdf_markers", 1, true);
     sdf_pointcloud_pub_ =
-        nh_private_.advertise<visualization_msgs::MarkerArray>("sdf_pointcloud",
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("sdf_pointcloud",
                                                                1, true);
 
     pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
@@ -32,6 +32,11 @@ class VoxbloxNode {
     // 16 vps at 0.2 resolution. TODO(helenol): load these from params for
     // faster prototyping...
     tsdf_map_.reset(new TsdfMap(16, 0.2));
+
+    // TODO(helenol): TEST CODE!!! REMOVE.
+    tsdf_map_->allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));
+    ros::spinOnce();
+    publishMarkers();
   }
 
   void insertPointcloudWithTf(
