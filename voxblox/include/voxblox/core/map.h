@@ -1,11 +1,11 @@
-#ifndef VOXBLOX_MAP_H
-#define VOXBLOX_MAP_H
+#ifndef VOXBLOX_CORE_MAP_H
+#define VOXBLOX_CORE_MAP_H
 
 #include <utility>
 
-#include "voxblox/common.h"
-#include "voxblox/block.h"
-#include "voxblox/block_hash.h"
+#include "voxblox/core/common.h"
+#include "voxblox/core/block.h"
+#include "voxblox/core/block_hash.h"
 
 namespace voxblox {
 
@@ -68,12 +68,22 @@ class Map {
     }
   }
 
-  // Get by coords (helenol)
-  // Delete blocks (helenefwefeol)
+  inline typename BlockType::ConstPtr getBlockPtrByCoordinates(
+      const Coordinates& coords) const {
+    return getBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
+  }
 
-  // check by coords
-  // virtual void addBlock() = 0;
-  // delete blocks
+  inline typename BlockType::Ptr getBlockPtrByCoordinates(
+      const Coordinates& coords) {
+    return getBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
+  }
+
+  // Gets a block by the coordinates it if already exists, otherwise allocates a
+  // new one.
+  inline typename BlockType::Ptr allocateBlockPtrByCoords(
+      const Coordinates& coords) {
+    return allocateBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
+  }
 
   // Coord to block index.
   inline BlockIndex computeBlockIndexFromCoordinates(
@@ -84,7 +94,30 @@ class Map {
         static_cast<int>(std::floor(coords.z() * block_size_inv_)));
   }
 
+  // Pure virtual function -- inheriting class MUST overwrite.
   virtual typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) = 0;
+
+  typename BlockType::Ptr allocateNewBlockByCoordinates(
+      const Coordinates& coords) {
+    allocateNewBlock(computeBlockIndexFromCoordinates(coords));
+  }
+
+  void removeBlock(const BlockIndex& index) { block_map_.erase(index); }
+  void removeBlockByCoordinates(const Coordinates& coords) {
+    block_map_.erase(computeBlockIndexFromCoordinates(coords));
+  }
+
+  // Accessor functions for all allocated blocks.
+  void getAllAllocatedBlocks(BlockIndexList* blocks) {
+    blocks->clear();
+    blocks->reserve(block_map_.size());
+    for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
+         block_map_) {
+      blocks->emplace_back(kv.first);
+    }
+  }
+
+  size_t getNumberOfAllocatedBlocks() { return block_map_.size(); }
 
  protected:
   Map(FloatingPoint block_size) : block_size_(block_size) {
@@ -108,12 +141,12 @@ class TsdfMap : public Map<TsdfBlock> {
 
   virtual TsdfBlock::Ptr allocateNewBlock(const BlockIndex& index) {
     auto my_iter = block_map_.find(index);
-    auto insert_status = block_map_.emplace(index,
+    auto insert_status = block_map_.emplace(
+        index,
         std::make_shared<TsdfBlock>(index.cast<FloatingPoint>() * block_size_,
-                      voxels_per_side_, voxel_size_));
+                                    voxels_per_side_, voxel_size_));
     CHECK(insert_status.second) << "Block already exists when allocating at "
                                 << index.transpose();
-    // I don't wanna talk about it.
     return insert_status.first->second;
   }
 
@@ -124,4 +157,4 @@ class TsdfMap : public Map<TsdfBlock> {
 
 }  // namespace voxblox
 
-#endif
+#endif  // VOXBLOX_CORE_MAP_H

@@ -1,5 +1,5 @@
-#include <voxblox/block.h>
-#include "voxblox/map.h"
+#include "voxblox/core/block.h"
+#include "voxblox/core/map.h"
 
 #include <iostream>
 

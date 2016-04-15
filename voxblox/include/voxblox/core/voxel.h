@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_VOXEL_H
-#define VOXBLOX_VOXEL_H
+#ifndef VOXBLOX_CORE_VOXEL_H
+#define VOXBLOX_CORE_VOXEL_H
 
 #include <cstdint>
 
@@ -26,4 +26,4 @@ struct OccupancyVoxel {
 
 }  // namespace voxblox
 
-#endif
+#endif  // VOXBLOX_CORE_VOXEL_H

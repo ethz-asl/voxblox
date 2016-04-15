@@ -1,9 +1,9 @@
-#ifndef VOXBLOX_BLOCK_H
-#define VOXBLOX_BLOCK_H
+#ifndef VOXBLOX_CORE_BLOCK_H
+#define VOXBLOX_CORE_BLOCK_H
 
-#include "voxblox/common.h"
-#include "voxblox/voxel.h"
-#include "voxblox/voxel_array.h"
+#include "voxblox/core/common.h"
+#include "voxblox/core/voxel.h"
+#include "voxblox/core/voxel_array.h"
 
 namespace voxblox {
 

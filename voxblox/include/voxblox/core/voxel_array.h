@@ -1,7 +1,7 @@
-#ifndef VOXBLOX_VOXEL_ARRAY_H
-#define VOXBLOX_VOXEL_ARRAY_H
+#ifndef VOXBLOX_CORE_VOXEL_ARRAY_H
+#define VOXBLOX_CORE_VOXEL_ARRAY_H
 
-#include <voxblox/common.h>
+#include "voxblox/core/common.h"
 
 namespace voxblox {
 
@@ -27,4 +27,4 @@ struct VoxelArray {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_VOXEL_ARRAY_H
+#endif  // VOXBLOX_CORE_VOXEL_ARRAY_H
