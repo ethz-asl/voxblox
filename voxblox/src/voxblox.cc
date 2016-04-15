@@ -1,5 +1,6 @@
 #include "voxblox/core/block.h"
 #include "voxblox/core/map.h"
+#include "voxblox/io/sdf_ply.h"
 
 #include <iostream>
 
@@ -9,13 +10,21 @@ int main(int argc, char* argv[]) {
   my_cool_map.allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));
 
   std::cout << "Started putting lots of boxes in.\n";
-  for (int i = -10; i < 10; ++i) {
-    for (int j = -10; j < 10; ++j) {
-      for (int k = -10; k < 10; ++k) {
+  int box_size = 1;
+  for (int i = -box_size; i < box_size; ++i) {
+    for (int j = -box_size; j < box_size; ++j) {
+      for (int k = -box_size; k < box_size; ++k) {
         my_cool_map.allocateBlockPtrByIndex(voxblox::BlockIndex(i, j, k));
       }
     }
   }
   std::cout << "Finished putting lots of boxes in.\n";
+
+  // Now output the ply file.
+  voxblox::io::outputMapAsPly(my_cool_map, "test_tsdf.ply",
+                              voxblox::io::kSdfDistanceColor);
+
+  std::cout << "Output ply to test_tsdf.ply\n";
+
   return 0;
 }

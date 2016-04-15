@@ -20,12 +20,12 @@ class BaseBlock {
         has_data_(false) {}
   virtual ~BaseBlock() {}
 
-  inline size_t computeLinearIndexFrom3dIndex(const VoxelIndex& index,
-                                              size_t vps) const {
+  inline size_t computeLinearIndexFromVoxelIndex(const VoxelIndex& index,
+                                                 size_t vps) const {
     return index.x() + vps * (index.y() + index.z() * vps);
   }
 
-  inline VoxelIndex compute3dIndexFromCoordinates(
+  inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Coordinates& coords, FloatingPoint voxel_size_inv) const {
     return VoxelIndex(static_cast<int>(std::floor((coords.x() - origin_.x()) *
                                                   voxel_size_inv)),
@@ -38,11 +38,34 @@ class BaseBlock {
   inline size_t computeLinearIndexFromCoordinates(const Coordinates& coords,
                                                   FloatingPoint voxel_size_inv,
                                                   size_t vps) const {
-    return computeLinearIndexFrom3dIndex(
-        compute3dIndexFromCoordinates(coords, voxel_size_inv), vps);
+    return computeLinearIndexFromVoxelIndex(
+        computeVoxelIndexFromCoordinates(coords, voxel_size_inv), vps);
   }
 
-  // TODO: reverse operations.
+  inline Coordinates computeCoordinatesFromLinearIndex(size_t linear_index,
+                                                       FloatingPoint voxel_size,
+                                                       size_t vps) const {
+    return computeCoordinatesFromVoxelIndex(
+        computeVoxelIndexFromLinearIndex(linear_index, vps), voxel_size);
+  }
+
+  inline Coordinates computeCoordinatesFromVoxelIndex(
+      const VoxelIndex& index, FloatingPoint voxel_size) const {
+    return index.cast<FloatingPoint>() * voxel_size + origin_;
+  }
+
+  inline VoxelIndex computeVoxelIndexFromLinearIndex(size_t linear_index,
+                                                     size_t vps) const {
+    int rem = linear_index;
+    VoxelIndex result;
+    std::div_t div_temp = std::div(rem, vps * vps);
+    rem = div_temp.rem;
+    result.z() = div_temp.quot;
+    div_temp = std::div(rem, vps);
+    result.y() = div_temp.quot;
+    result.x() = div_temp.rem;
+    return result;
+  }
 
  protected:
   size_t num_layers_;
@@ -67,8 +90,9 @@ class TsdfBlock : BaseBlock {
   inline const TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) const {
     return tsdf_layer_->voxels[index];
   }
-  inline const TsdfVoxel& getTsdfVoxelBy3dIndex(const VoxelIndex& index) const {
-    return tsdf_layer_->voxels[computeLinearIndexFrom3dIndex(
+  inline const TsdfVoxel& getTsdfVoxelByVoxelIndex(
+      const VoxelIndex& index) const {
+    return tsdf_layer_->voxels[computeLinearIndexFromVoxelIndex(
         index, tsdf_layer_->voxel_size_inv)];
   }
   inline const TsdfVoxel& getTsdfVoxelByCoordinates(
@@ -80,13 +104,24 @@ class TsdfBlock : BaseBlock {
   inline TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) {
     return tsdf_layer_->voxels[index];
   }
-  inline TsdfVoxel& getTsdfVoxelBy3dIndex(const VoxelIndex& index) {
-    return tsdf_layer_->voxels[computeLinearIndexFrom3dIndex(
+  inline TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index) {
+    return tsdf_layer_->voxels[computeLinearIndexFromVoxelIndex(
         index, tsdf_layer_->voxel_size_inv)];
   }
   inline TsdfVoxel& getTsdfVoxelByCoordinates(const Coordinates& coords) {
     return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
         coords, tsdf_layer_->voxel_size_inv, tsdf_layer_->voxels_per_side)];
+  }
+  inline size_t getNumTsdfVoxels() const { return tsdf_layer_->num_voxels; }
+
+  inline Coordinates getCoordinatesOfTsdfVoxelByLinearIndex(
+      size_t index) const {
+    return computeCoordinatesFromLinearIndex(index, tsdf_layer_->voxel_size,
+                                             tsdf_layer_->voxels_per_side);
+  }
+  inline Coordinates getCoordinatesOfTsdfVoxelByVoxelIndex(
+      const VoxelIndex& index) const {
+    return computeCoordinatesFromVoxelIndex(index, tsdf_layer_->voxel_size);
   }
 
  protected:

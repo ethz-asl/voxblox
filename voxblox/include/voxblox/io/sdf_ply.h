@@ -1,97 +1,84 @@
 #ifndef VOXBLOX_CORE_IO_SDF_PLY_H
 #define VOXBLOX_CORE_IO_SDF_PLY_H
 
-#include "voxblox/core/common.h"
+#include "voxblox/io/ply_writer.h"
+#include "voxblox/core/map.h"
 
 namespace voxblox {
 
-// For reference on the format, see:
-//  http://paulbourke.net/dataformats/ply/
-class PlyWriter {
- public:
-  PlyWriter(const std::string& filename)
-      : header_written_(false),
-        parameters_set_(false),
-        vertices_total_(0),
-        vertices_written_(0),
-        has_color_(false),
-        file_(filename) {}
-  virtual ~PlyWriter() {}
+namespace io {
 
-  void addVerticesWithProperties(size_t num_vertices, bool has_color) {
-    vertices_total_ = num_vertices;
-    has_color_ = has_color;
-    parameters_set_ = true;
-  }
-
-  bool writeHeader() {
-    if (!file_) {
-      // Output a warning -- couldn't open file?
-      LOG(WARN) << "Could not open file for PLY output.";
-      return false;
-    }
-    if (!parameters_set_) {
-      LOG(WARN) << "Could not write header out -- parameters not set.";
-      return false;
-    }
-    if (header_written_) {
-      LOG(WARN) << "Header already written.";
-      return false;
-    }
-
-    file_ << "ply" << std::endl;
-    file_ << "format ascii 1.0" << std::endl;
-    file_ << "element vertex " << vertices_total_ << std::endl;
-    file_ << "property float x" << std::endl;
-    file_ << "property float y" << std::endl;
-    file_ << "property float z" << std::endl;
-
-    if (has_color_) {
-      file_ << "property uchar red" << std::endl;
-      file_ << "property uchar green" << std::endl;
-      file_ << "property uchar blue" << std::endl;
-    }
-    return true;
-  }
-
-  bool writeVertex(const Coordinate& coord) {
-    if (!header_written_) {
-      if (!writeHeader()) {
-        return false;
-      }
-    }
-    if (vertices_written_ >= vertices_total_ || has_color_) {
-      return false;
-    }
-    file_ << coord.x() << " " << coord.y() << " " << coord.z() << std::endl;
-  }
-
-  bool writeVertex(const Coordinate& coord, const uint8_t[3] & rgb) {
-    if (!header_written_) {
-      if (!writeHeader()) {
-        return false;
-      }
-    }
-    if (vertices_written_ >= vertices_total_ || !has_color_) {
-      return false;
-    }
-    file_ << coord.x() << " " << coord.y() << " " << coord.z() << " ";
-    file_ << rgb[0] << " " << rgb[1] << " " << rgb[2] << std::endl;
-    return true;
-  }
-
-  void closeFile() { file_.close(); }
-
- private:
-  bool header_written_;
-  bool parameters_set_;
-
-  size_t vertices_total_;
-  size_t vertices_written_;
-  bool has_color_;
-
-  std::ofstream file_;
+enum PlyOutputTypes {
+  // The full SDF colorized by the distance in each voxel.
+  kSdfDistanceColor = 0,
+  // Isosurface colorized by ???
+  kSdfIsosurface
 };
+
+template <typename MapType>
+bool outputMapAsPly(const MapType& map, const std::string& filename,
+                    PlyOutputTypes type) {
+  return false;
+}
+
+template <>
+bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
+                             PlyOutputTypes type) {
+  // Create a PlyWriter.
+  PlyWriter writer(filename);
+
+  if (type == kSdfDistanceColor) {
+    // In this case, we get all the allocated voxels and color them based on
+    // distance value.
+    size_t num_blocks = map.getNumberOfAllocatedBlocks();
+    // This function is block-specific:
+    size_t num_voxels_per_block = map.getVoxelsPerBlock();
+
+    // Maybe this isn't strictly true, since actually we may have stuff with 0
+    // weight...
+    size_t total_voxels = num_blocks * num_voxels_per_block;
+    const bool has_color = true;
+    writer.addVerticesWithProperties(total_voxels, has_color);
+    if (!writer.writeHeader()) {
+      return false;
+    }
+
+    BlockIndexList blocks;
+    map.getAllAllocatedBlocks(&blocks);
+
+    // Iterate over all blocks.
+    const float max_distance = 0.5;
+    for (const BlockIndex& index : blocks) {
+      // Iterate over all voxels in said blocks.
+      const TsdfBlock& block = map.getBlockByIndex(index);
+      for (size_t i = 0; i < num_voxels_per_block; ++i) {
+        float distance = block.getTsdfVoxelByLinearIndex(i).distance;
+
+        // Get back the original coordinate of this voxel.
+        Coordinates coord = block.getCoordinatesOfTsdfVoxelByLinearIndex(i);
+
+        // Decide how to color this.
+        // Distance > 0 = blue, distance < 0 = red.
+        uint8_t color[3];
+        color[0] = 0;
+        color[1] = 0;
+        color[2] = 0;
+        if (distance < 0) {
+          color[0] = static_cast<uint8_t>(-distance / max_distance * 255);
+        } else {
+          color[2] = static_cast<uint8_t>(distance / max_distance * 255);
+        }
+
+        writer.writeVertex(coord, color);
+      }
+    }
+    writer.closeFile();
+    return true;
+  }
+  return false;
+}
+
+}  // namespace io
 
 }  // namespace voxblox
 

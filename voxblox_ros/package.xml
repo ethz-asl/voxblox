@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>voxblox</name>
+  <name>voxblox_ros</name>
   <version>0.0.0</version>
-  <description>Voxblox</description>
+  <description>Voxblox ROS interface</description>
 
   <author email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</author>
   <author email="marius.fehr@mavt.ethz.ch">Marius Fehr</author>
@@ -15,14 +15,16 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
 
-  <depend>eigen_catkin</depend>
-  <depend>glog_catkin</depend>
-  <depend>minkindr</depend>
-  <!-- <depend>cv_bridge</depend>
   <depend>gflags_catkin</depend>
-  <depend>image_geometry</depend>
+  <depend>voxblox</depend>
+  <depend>minkindr_conversions</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
   <depend>sensor_msgs</depend>
-  <depend>stereo_msgs</depend> -->
+  <depend>tf</depend>
+  <!-- <depend>cv_bridge</depend>
+  <depend>gflags_catkin</depend>
+  <depend>image_geometry</depend> -->
+
+  <!-- <depend>stereo_msgs</depend> -->
 </package>

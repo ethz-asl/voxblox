@@ -108,7 +108,7 @@ class Map {
   }
 
   // Accessor functions for all allocated blocks.
-  void getAllAllocatedBlocks(BlockIndexList* blocks) {
+  void getAllAllocatedBlocks(BlockIndexList* blocks) const {
     blocks->clear();
     blocks->reserve(block_map_.size());
     for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
@@ -117,7 +117,7 @@ class Map {
     }
   }
 
-  size_t getNumberOfAllocatedBlocks() { return block_map_.size(); }
+  size_t getNumberOfAllocatedBlocks() const { return block_map_.size(); }
 
  protected:
   Map(FloatingPoint block_size) : block_size_(block_size) {
@@ -148,6 +148,11 @@ class TsdfMap : public Map<TsdfBlock> {
     CHECK(insert_status.second) << "Block already exists when allocating at "
                                 << index.transpose();
     return insert_status.first->second;
+  }
+
+  // This refers to the main layer (TSDF layer in this case):
+  size_t getVoxelsPerBlock() const {
+    return voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
   }
 
  protected:
