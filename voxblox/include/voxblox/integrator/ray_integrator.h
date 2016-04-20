@@ -39,11 +39,11 @@ class Integrator {
 		const Points points_G = T_G_C * points_C;
 
 
-		const Point& observer = T_G_C.getPosition();
+		const Point& origin = T_G_C.getPosition();
 
 		for(size_t pt_idx = 0; pt_idx < points_C.cols(); ++pt_idx){
 			const Point& point_G = points_G.col(pt_idx);
-
+			const Ray& ray = point_G - origin;
 
 
 
