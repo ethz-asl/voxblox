@@ -64,7 +64,7 @@ class Integrator {
                                                    delta_coord.x(),
         (delta_coord.y() < kTolerance) ? 2.0 : distance_to_boundaries.y() /
                                                    delta_coord.y(),
-        (delta_coord.x() < kTolerance) ? 2.0 : distance_to_boundaries.z() /
+        (delta_coord.z() < kTolerance) ? 2.0 : distance_to_boundaries.z() /
                                                    delta_coord.z());
 
     // Distance to cross one grid cell along the ray in t.
@@ -130,26 +130,25 @@ class Integrator {
 
       for (const HierarchicalIndex::value_type& hi_index : hi_index_map) {
         TsdfBlock::Ptr block = map_->allocateBlockPtrByIndex(hi_index.first);
-
-
+        // TODO remove
+        CHECK(block);
         for (const VoxelIndex& local_voxel_index : hi_index.second) {
           const Coordinates voxel_center = block
               ->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
           TsdfVoxel& tsdf_voxel = block->getTsdfVoxelByVoxelIndex(
               local_voxel_index);
 
-          const FloatingPoint sdf = (point_G - voxel_center).norm();
-          const FloatingPoint weight = 1.0;
+          const float sdf = static_cast<float>((point_G - voxel_center).norm());
+          const float weight = 1.0f;
 
-          const FloatingPoint new_weight = tsdf_voxel.weight + weight;
+          const float new_weight = tsdf_voxel.weight + weight;
 
           tsdf_voxel.color = Color::blendTwoColors(tsdf_voxel.color,
                                                    tsdf_voxel.weight, color,
                                                    weight);
 
-          //tsdf_voxel.distance = (sdf * weight
-           //   + tsdf_voxel.distance * tsdf_voxel.weight) / new_weight;
-          tsdf_voxel.distance = static_cast<float>(3.0);
+          tsdf_voxel.distance = (sdf * weight
+              + tsdf_voxel.distance * tsdf_voxel.weight) / new_weight;
           tsdf_voxel.weight = new_weight;
         }
       }
