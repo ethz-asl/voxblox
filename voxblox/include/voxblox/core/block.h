@@ -111,7 +111,7 @@ class TsdfBlock : public BaseBlock {
   }
 
   inline TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) {
-    CHECK(index >= 0 && index < tsdf_layer_->num_voxels);
+    CHECK_LT(index, tsdf_layer_->num_voxels);
     return tsdf_layer_->voxels[index];
   }
   inline TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index) {
