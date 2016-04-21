@@ -78,14 +78,14 @@ class Integrator {
     AnyIndex curr_index = start_index;
     indices->push_back(curr_index);
 
-    LOG(INFO) << "Start coord: " << start_coord.transpose();
+    /* LOG(INFO) << "Start coord: " << start_coord.transpose();
     LOG(INFO) << "End coord: " << end_coord.transpose();
 
     LOG(INFO) << "Start index: " << start_index.transpose();
-    LOG(INFO) << "End index: " << end_index.transpose();
+    LOG(INFO) << "End index: " << end_index.transpose(); */
 
     while (curr_index != end_index) {
-      LOG(INFO) << "Current index: " << curr_index.transpose();
+      //LOG(INFO) << "Current index: " << curr_index.transpose();
 
       int t_min_idx;
       FloatingPoint t_min = t_to_next_boundary.minCoeff(&t_min_idx);
@@ -115,9 +115,9 @@ class Integrator {
       IndexVector global_voxel_index;
       castRay(origin_scaled, point_G_scaled, &global_voxel_index);
 
-      LOG(INFO) << "castRay computed " << global_voxel_index.size()
+      /* LOG(INFO) << "castRay computed " << global_voxel_index.size()
                 << " block indices between " << origin.transpose() << " and "
-                << point_G.transpose();
+                << point_G.transpose(); */
 
       HierarchicalIndex hi_index_map;
       for (const AnyIndex& index : global_voxel_index) {
@@ -147,7 +147,7 @@ class Integrator {
         // TODO remove
         CHECK(block);
         for (const VoxelIndex& local_voxel_index : hi_index.second) {
-          LOG(INFO) << "Local voxel index: " << local_voxel_index.transpose();
+          //LOG(INFO) << "Local voxel index: " << local_voxel_index.transpose();
           const Coordinates voxel_center =
               block->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
           TsdfVoxel& tsdf_voxel =
@@ -170,7 +170,7 @@ class Integrator {
         }
       }
 
-      LOG(INFO) << "Number of voxels: " << blx_ctrx;
+      //LOG(INFO) << "Number of voxels: " << blx_ctrx;
     }
   }
 

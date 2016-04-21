@@ -1,0 +1,10 @@
+<launch>
+  <arg name="mav_name" default="auk"/>
+  <arg name="namespace" default="$(arg mav_name)" />
+
+  <group ns="$(arg namespace)" >
+    <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="--alsologtostderr" >
+      <remap from="pointcloud" to="stereo_dense_reconstruction/pcl"/>
+    </node>
+  </group>
+</launch>

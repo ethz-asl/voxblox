@@ -1,9 +1,10 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <pcl/conversions.h>
+#include <pcl/filters/filter.h>
 #include <pcl/point_types.h>
-#include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_listener.h>
@@ -90,6 +91,10 @@ void VoxbloxNode::insertPointcloudWithTf(
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
 
+    // Filter out NaNs. :|
+    std::vector<int> indices;
+    pcl::removeNaNFromPointCloud(pointcloud_pcl, pointcloud_pcl, indices);
+
     Pointcloud points_C;
     Colors colors;
     points_C.reserve(pointcloud_pcl.size());
@@ -102,7 +107,12 @@ void VoxbloxNode::insertPointcloudWithTf(
           Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
                 pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
     }
+
+    ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
     ray_integrator_->integratePointCloud(T_G_C, points_C, colors);
+    ROS_INFO("Finished integrating, have %d blocks.",
+             tsdf_map_->getNumberOfAllocatedBlocks());
+    publishMarkers();
   }
   // ??? Should we transform the pointcloud???? Or not. I think probably best
   // not to.
@@ -122,6 +132,7 @@ void VoxbloxNode::publishMarkers() {
   size_t num_blocks = tsdf_map_->getNumberOfAllocatedBlocks();
   // This function is block-specific:
   size_t num_voxels_per_block = tsdf_map_->getVoxelsPerBlock();
+  size_t vps = tsdf_map_->getVoxelsPerSide();
 
   pointcloud.reserve(num_blocks * num_voxels_per_block);
 
@@ -133,18 +144,29 @@ void VoxbloxNode::publishMarkers() {
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     const TsdfBlock& block = tsdf_map_->getBlockByIndex(index);
-    for (size_t i = 0; i < num_voxels_per_block; ++i) {
-      float distance = block.getTsdfVoxelByLinearIndex(i).distance;
 
-      // Get back the original coordinate of this voxel.
-      Coordinates coord = block.getCoordinatesOfTsdfVoxelByLinearIndex(i);
+    VoxelIndex voxel_index = VoxelIndex::Zero();
+    for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
+      for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
+        for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
+          const TsdfVoxel& voxel = block.getTsdfVoxelByVoxelIndex(voxel_index);
 
-      pcl::PointXYZI point;
-      point.x = coord.x();
-      point.y = coord.y();
-      point.z = coord.z();
-      point.intensity = distance;
-      pointcloud.push_back(point);
+          float distance = voxel.distance;
+          float weight = voxel.weight;
+
+          // Get back the original coordinate of this voxel.
+          Coordinates coord =
+              block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
+          if (weight > 0.0) {
+            pcl::PointXYZI point;
+            point.x = coord.x();
+            point.y = coord.y();
+            point.z = coord.z();
+            point.intensity = distance;
+            pointcloud.push_back(point);
+          }
+        }
+      }
     }
   }
 
