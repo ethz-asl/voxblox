@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_CORE_VOXEL_H
 #define VOXBLOX_CORE_VOXEL_H
 
+#include "voxblox/core/common.h"
 #include <cstdint>
 
 namespace voxblox {
@@ -8,10 +9,7 @@ namespace voxblox {
 struct TsdfVoxel {
  float distance = 0.0;
  float weight = 0.0;
- uint8_t r = 0;
- uint8_t g = 0;
- uint8_t b = 0;
- uint8_t a = 0;
+ Color color;
 };
 
 struct EsdfVoxel {

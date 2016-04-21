@@ -1,6 +1,6 @@
 #include "voxblox/core/block.h"
 #include "voxblox/core/map.h"
-#include "voxblox/integrator/ray_integrator.h"
+//#include "voxblox/integrator/ray_integrator.h"
 #include "voxblox/io/sdf_ply.h"
 
 #include <iostream>
@@ -24,6 +24,9 @@ int main(int argc, char* argv[]) {
   // Now output the ply file.
   voxblox::io::outputMapAsPly(my_cool_map, "test_tsdf.ply",
                               voxblox::io::kSdfDistanceColor);
+
+  voxblox::Coordinates my_coordinate(1, 2, 3);
+  std::cout << "Hello: " << my_coordinate.x();
 
   std::cout << "Output ply to test_tsdf.ply\n";
 
