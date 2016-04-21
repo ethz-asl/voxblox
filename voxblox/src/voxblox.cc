@@ -1,11 +1,18 @@
 #include "voxblox/core/block.h"
 #include "voxblox/core/map.h"
-//#include "voxblox/integrator/ray_integrator.h"
+#include "voxblox/integrator/ray_integrator.h"
 #include "voxblox/io/sdf_ply.h"
 
 #include <iostream>
 
+#include <gflags/gflags.h>
+#include <glog/logging.h>
+
 int main(int argc, char* argv[]) {
+  google::InitGoogleLogging(argv[0]);
+  google::ParseCommandLineFlags(&argc, &argv, false);
+  google::InstallFailureSignalHandler();
+
   voxblox::TsdfBlock my_cool_block(Eigen::Vector3d::Zero(), 8, 0.1);
   voxblox::TsdfMap my_cool_map(8, 0.2);
   my_cool_map.allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));

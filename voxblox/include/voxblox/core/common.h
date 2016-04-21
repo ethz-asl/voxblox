@@ -16,6 +16,8 @@ typedef Eigen::Vector3i VoxelIndex;
 typedef Eigen::Vector3i BlockIndex;
 typedef Eigen::Vector3i AnyIndex;
 
+typedef std::vector<AnyIndex> IndexVector;
+
 // Transformation type for defining sensor orientation.
 typedef kindr::minimal::QuatTransformation Transformation;
 
