@@ -51,7 +51,9 @@ class BaseBlock {
 
   inline Coordinates computeCoordinatesFromVoxelIndex(
       const VoxelIndex& index, FloatingPoint voxel_size) const {
-    return index.cast<FloatingPoint>() * voxel_size + origin_;
+    return (index.cast<FloatingPoint>() + 0.5 * Coordinates::Ones()) *
+               voxel_size +
+           origin_;
   }
 
   inline VoxelIndex computeVoxelIndexFromLinearIndex(size_t linear_index,
