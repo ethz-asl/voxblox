@@ -140,7 +140,7 @@ class Integrator {
 
         hi_index_map[block_idx].push_back(voxel_idx);
 
-        TsdfBlock::Ptr temp_block_ptr =
+        /*TsdfBlock::Ptr temp_block_ptr =
             map_->allocateBlockPtrByIndex(block_idx);
         LOG(INFO) << "Global voxel index: " << index.transpose()
                   << " maps to block index: " << block_idx.transpose()
@@ -149,9 +149,10 @@ class Integrator {
                   << " at position "
                   << temp_block_ptr->getCoordinatesOfTsdfVoxelByVoxelIndex(
                                        voxel_idx)
-                         .transpose();
+                         .transpose(); */
       }
 
+      int blx_ctrx = 0;
       for (const HierarchicalIndex::value_type& hi_index : hi_index_map) {
         TsdfBlock::Ptr block = map_->allocateBlockPtrByIndex(hi_index.first);
         // TODO remove
@@ -173,9 +174,13 @@ class Integrator {
           tsdf_voxel.distance =
               (sdf * weight + tsdf_voxel.distance * tsdf_voxel.weight) /
               new_weight;
-          tsdf_voxel.weight = new_weight;
+          tsdf_voxel.weight = 1.0f;//new_weight;
+
+          blx_ctrx++;
         }
       }
+
+      LOG(INFO) << "Number of voxels: " << blx_ctrx;
     }
   }
 

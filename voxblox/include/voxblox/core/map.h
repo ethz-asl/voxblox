@@ -64,8 +64,10 @@ class Map {
       const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
+      LOG(INFO) << "Access block index " << index.transpose();
       return it->second;
     } else {
+      LOG(INFO) << "Allocate block index " << index.transpose();
       return allocateNewBlock(index);
     }
   }

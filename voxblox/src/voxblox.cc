@@ -30,10 +30,7 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "Finished putting lots of boxes in.\n"; */
 
-
-
   voxblox::Coordinates my_coordinate(1, 2, 3);
-  std::cout << "Output ply to test_tsdf.ply\n";
 
   voxblox::Integrator my_cool_integrator(my_cool_map,
                                          Integrator::IntegratorConfig());
@@ -49,6 +46,7 @@ int main(int argc, char* argv[]) {
   my_cool_integrator.integratePointCloud(transform, measurements, colors);
 
   // Now output the ply file.
+  std::cout << "Output ply to test_tsdf.ply\n";
   voxblox::io::outputMapAsPly(*my_cool_map, "test_tsdf.ply",
                               voxblox::io::kSdfDistanceColor);
 
