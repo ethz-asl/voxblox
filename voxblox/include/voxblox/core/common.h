@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <kindr/minimal/quat-transformation.h>
+#include <unordered_map>
 #include <memory>
 
 namespace voxblox {
