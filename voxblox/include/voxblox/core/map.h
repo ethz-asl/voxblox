@@ -45,6 +45,7 @@ class Map {
     if (it != block_map_.end()) {
       return it->second;
     } else {
+      LOG(WARNING) << "Returning null ptr to block!";
       return typename BlockType::ConstPtr();
     }
   }
@@ -54,6 +55,7 @@ class Map {
     if (it != block_map_.end()) {
       return it->second;
     } else {
+      LOG(WARNING) << "Returning null ptr to block!";
       return typename BlockType::Ptr();
     }
   }
@@ -92,10 +94,7 @@ class Map {
   // Coord to block index.
   inline BlockIndex computeBlockIndexFromCoordinates(
       const Coordinates& coords) const {
-    return VoxelIndex(
-        static_cast<int>(std::floor(coords.x() * block_size_inv_)),
-        static_cast<int>(std::floor(coords.y() * block_size_inv_)),
-        static_cast<int>(std::floor(coords.z() * block_size_inv_)));
+    return floorVectorAndDowncast(coords * block_size_inv_);
   }
 
   // Pure virtual function -- inheriting class MUST overwrite.
@@ -140,7 +139,7 @@ class Map {
 
 class TsdfMap : public Map<TsdfBlock> {
  public:
-	typedef std::shared_ptr<TsdfMap> Ptr;
+  typedef std::shared_ptr<TsdfMap> Ptr;
 
   TsdfMap(size_t voxels_per_side, FloatingPoint voxel_size)
       : Map(voxel_size * voxels_per_side),
@@ -148,13 +147,14 @@ class TsdfMap : public Map<TsdfBlock> {
         voxels_per_side_(voxels_per_side) {}
 
   virtual TsdfBlock::Ptr allocateNewBlock(const BlockIndex& index) {
-    auto my_iter = block_map_.find(index);
-    auto insert_status = block_map_.emplace(
-        index,
-        std::make_shared<TsdfBlock>(index.cast<FloatingPoint>() * block_size_,
-                                    voxels_per_side_, voxel_size_));
+    auto insert_status = block_map_.insert(
+        std::make_pair(index, std::shared_ptr<TsdfBlock>(new TsdfBlock(
+                                  index.cast<FloatingPoint>() * block_size_,
+                                  voxels_per_side_, voxel_size_))));
     CHECK(insert_status.second) << "Block already exists when allocating at "
                                 << index.transpose();
+    CHECK(insert_status.first->second != nullptr) << "Second is null!";
+    CHECK(insert_status.first->first == index) << "Added to wrong index!";
     return insert_status.first->second;
   }
 

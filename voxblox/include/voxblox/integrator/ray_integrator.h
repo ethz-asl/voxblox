@@ -158,6 +158,7 @@ class Integrator {
         // TODO remove
         CHECK(block);
         for (const VoxelIndex& local_voxel_index : hi_index.second) {
+          LOG(INFO) << "Local voxel index: " << local_voxel_index.transpose();
           const Coordinates voxel_center =
               block->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
           TsdfVoxel& tsdf_voxel =

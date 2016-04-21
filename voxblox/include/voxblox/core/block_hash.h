@@ -15,7 +15,7 @@ struct BlockIndexHash {
   static constexpr size_t prime3 = 83492791;
 
   std::size_t operator()(const BlockIndex& index) const {
-    return (index.x() * prime1 ^ index.y() * prime2 ^ index.z() * prime3);
+    return (static_cast<unsigned int>(index.x()) * prime1 ^ index.y() * prime2 ^ index.z() * prime3);
   }
 };
 

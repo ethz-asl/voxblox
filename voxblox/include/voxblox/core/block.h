@@ -24,18 +24,18 @@ class BaseBlock {
                                                  size_t vps) const {
     size_t linear_index = index.x() + vps * (index.y() + index.z() * vps);
     // TODO remove this check
+    CHECK(index.x() >= 0 && index.x() < vps);
+    CHECK(index.y() >= 0 && index.y() < vps);
+    CHECK(index.z() >= 0 && index.z() < vps);
+
     CHECK_LT(linear_index, vps * vps * vps);
+    CHECK_GE(linear_index, 0);
     return linear_index;
   }
 
   inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Coordinates& coords, FloatingPoint voxel_size_inv) const {
-    return VoxelIndex(static_cast<int>(std::floor((coords.x() - origin_.x()) *
-                                                  voxel_size_inv)),
-                      static_cast<int>(std::floor((coords.y() - origin_.y()) *
-                                                  voxel_size_inv)),
-                      static_cast<int>(std::floor((coords.z() - origin_.z()) *
-                                                  voxel_size_inv)));
+    return floorVectorAndDowncast((coords - origin_) * voxel_size_inv);
   }
 
   inline size_t computeLinearIndexFromCoordinates(const Coordinates& coords,
@@ -111,14 +111,18 @@ class TsdfBlock : public BaseBlock {
   }
 
   inline TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) {
+    CHECK(index >= 0 && index < tsdf_layer_->num_voxels);
     return tsdf_layer_->voxels[index];
   }
   inline TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index) {
     // TODO(mfehrenol) remove this check for performance reasons
 
     CHECK(tsdf_layer_);
-    return tsdf_layer_->voxels[computeLinearIndexFromVoxelIndex(
-        index, tsdf_layer_->voxel_size_inv)];
+    size_t linear_index =
+        computeLinearIndexFromVoxelIndex(index, tsdf_layer_->voxels_per_side);
+    CHECK_GE(linear_index, 0);
+    CHECK_LT(linear_index, tsdf_layer_->num_voxels);
+    return tsdf_layer_->voxels[linear_index];
   }
   inline TsdfVoxel& getTsdfVoxelByCoordinates(const Coordinates& coords) {
     return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
