@@ -37,6 +37,7 @@ struct Color {
                               const Color& second_color,
                               FloatingPoint second_weight) {
     FloatingPoint total_weight = first_weight + second_weight;
+
     first_weight /= total_weight;
     second_weight /= total_weight;
 

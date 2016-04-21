@@ -130,8 +130,10 @@ class Integrator {
 
       for (const HierarchicalIndex::value_type& hi_index : hi_index_map) {
         TsdfBlock::Ptr block = map_->allocateBlockPtrByIndex(hi_index.first);
+
+
         for (const VoxelIndex& local_voxel_index : hi_index.second) {
-          const Coordinates& voxel_center = block
+          const Coordinates voxel_center = block
               ->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
           TsdfVoxel& tsdf_voxel = block->getTsdfVoxelByVoxelIndex(
               local_voxel_index);
@@ -144,8 +146,10 @@ class Integrator {
           tsdf_voxel.color = Color::blendTwoColors(tsdf_voxel.color,
                                                    tsdf_voxel.weight, color,
                                                    weight);
-          tsdf_voxel.distance = (sdf * weight
-              + tsdf_voxel.distance * tsdf_voxel.weight) / new_weight;
+
+          //tsdf_voxel.distance = (sdf * weight
+           //   + tsdf_voxel.distance * tsdf_voxel.weight) / new_weight;
+          tsdf_voxel.distance = static_cast<float>(3.0);
           tsdf_voxel.weight = new_weight;
         }
       }

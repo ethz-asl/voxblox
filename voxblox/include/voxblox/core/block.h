@@ -22,7 +22,10 @@ class BaseBlock {
 
   inline size_t computeLinearIndexFromVoxelIndex(const VoxelIndex& index,
                                                  size_t vps) const {
-    return index.x() + vps * (index.y() + index.z() * vps);
+    size_t linear_index = index.x() + vps * (index.y() + index.z() * vps);
+    // TODO remove this check
+    CHECK_LT(linear_index, vps * vps * vps);
+    return linear_index;
   }
 
   inline VoxelIndex computeVoxelIndexFromCoordinates(
@@ -107,6 +110,9 @@ class TsdfBlock : BaseBlock {
     return tsdf_layer_->voxels[index];
   }
   inline TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index) {
+    // TODO(mfehrenol) remove this check for performance reasons
+
+    CHECK(tsdf_layer_);
     return tsdf_layer_->voxels[computeLinearIndexFromVoxelIndex(
         index, tsdf_layer_->voxel_size_inv)];
   }

@@ -30,9 +30,13 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "Finished putting lots of boxes in.\n";
 
+  /*
+
   // Now output the ply file.
   voxblox::io::outputMapAsPly(*my_cool_map, "test_tsdf.ply",
                               voxblox::io::kSdfDistanceColor);
+
+*/
 
   voxblox::Coordinates my_coordinate(1, 2, 3);
   std::cout << "Output ply to test_tsdf.ply\n";
