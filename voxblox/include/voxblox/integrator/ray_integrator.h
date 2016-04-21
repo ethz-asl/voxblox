@@ -30,7 +30,7 @@ class Integrator {
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
   }
 
-  int signum(FloatingPoint x) const { return x == 0 ? 0 : x < 0 ? -1 : 1; }
+  int signum(FloatingPoint x) const { return std::abs(x) < kTolerance ? 0 : x < 0 ? -1 : 1; }
 
   // Assume side length is 1 -- pre-scale your values accordingly!!!!
   void castRay(const Point& start_coord, const Point& end_coord,
