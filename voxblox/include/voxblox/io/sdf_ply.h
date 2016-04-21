@@ -50,7 +50,7 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
     map.getAllAllocatedBlocks(&blocks);
 
     // Iterate over all blocks.
-    const float max_distance = 5;
+    const float max_distance = 20;
     for (const BlockIndex& index : blocks) {
       // Iterate over all voxels in said blocks.
       const TsdfBlock& block = map.getBlockByIndex(index);
@@ -76,9 +76,9 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
                 std::max<float>(1 + distance / max_distance, 0.0));
             uint8_t color[3];
             if (weight > 0) {
-              color[0] = 255;
-              color[1] = 0;
-              color[2] = 0;
+              color[0] = distance_color.r;
+              color[1] = distance_color.g;
+              color[2] = distance_color.b;
             } else {
               color[0] = 0;
               color[1] = 0;

@@ -61,6 +61,8 @@ class BaseBlock {
 
   inline VoxelIndex computeVoxelIndexFromLinearIndex(size_t linear_index,
                                                      size_t vps) const {
+    // DEFINITELY WRONG NEEDS FIXIN'
+    CHECK(false);
     int rem = linear_index;
     VoxelIndex result;
     std::div_t div_temp = std::div(rem, vps * vps);
@@ -72,6 +74,8 @@ class BaseBlock {
     return result;
   }
 
+  const Coordinates& getOrigin() const { return origin_; }
+
  protected:
   size_t num_layers_;
   Coordinates origin_;
@@ -79,7 +83,7 @@ class BaseBlock {
   bool has_data_;
 };
 
-class TsdfBlock : BaseBlock {
+class TsdfBlock : public BaseBlock {
  public:
   typedef std::shared_ptr<TsdfBlock> Ptr;
   typedef std::shared_ptr<const BaseBlock> ConstPtr;

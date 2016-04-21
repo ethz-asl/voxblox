@@ -139,6 +139,17 @@ class Integrator {
         }
 
         hi_index_map[block_idx].push_back(voxel_idx);
+
+        TsdfBlock::Ptr temp_block_ptr =
+            map_->allocateBlockPtrByIndex(block_idx);
+        LOG(INFO) << "Global voxel index: " << index.transpose()
+                  << " maps to block index: " << block_idx.transpose()
+                  << " and voxel index " << voxel_idx.transpose()
+                  << " with origin " << temp_block_ptr->getOrigin().transpose()
+                  << " at position "
+                  << temp_block_ptr->getCoordinatesOfTsdfVoxelByVoxelIndex(
+                                       voxel_idx)
+                         .transpose();
       }
 
       for (const HierarchicalIndex::value_type& hi_index : hi_index_map) {
