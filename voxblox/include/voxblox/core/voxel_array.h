@@ -14,6 +14,8 @@ struct VoxelArray {
     voxel_size_inv = 1.0 / voxel_size;
     voxels.reset(new VoxelType[num_voxels]);
   }
+  ~VoxelArray() {}
+
   // Base parameters.
   size_t voxels_per_side;
   FloatingPoint voxel_size;
