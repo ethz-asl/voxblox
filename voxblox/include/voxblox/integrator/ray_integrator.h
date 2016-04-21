@@ -30,7 +30,7 @@ class Integrator {
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
   }
 
-  int signum(FloatingPoint x) const { return std::abs(x) < kTolerance ? 0 : x < 0 ? -1 : 1; }
+  int signum(FloatingPoint x) const { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
 
   // Assume side length is 1 -- pre-scale your values accordingly!!!!
   void castRay(const Point& start_coord, const Point& end_coord,
@@ -124,9 +124,21 @@ class Integrator {
         BlockIndex block_idx = floorVectorAndDowncast(
             index.cast<FloatingPoint>() * voxels_per_side_inv_);
 
-        hi_index_map[block_idx].emplace_back(index.x() % voxels_per_side_,
-                                             index.y() % voxels_per_side_,
-                                             index.z() % voxels_per_side_);
+        VoxelIndex voxel_idx(index.x() % voxels_per_side_,
+                             index.y() % voxels_per_side_,
+                             index.z() % voxels_per_side_);
+
+        if (voxel_idx.x() < 0) {
+          voxel_idx.x() += voxels_per_side_;
+        }
+        if (voxel_idx.y() < 0) {
+          voxel_idx.y() += voxels_per_side_;
+        }
+        if (voxel_idx.z() < 0) {
+          voxel_idx.z() += voxels_per_side_;
+        }
+
+        hi_index_map[block_idx].push_back(voxel_idx);
       }
 
       for (const HierarchicalIndex::value_type& hi_index : hi_index_map) {

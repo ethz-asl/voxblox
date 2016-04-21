@@ -50,6 +50,8 @@ struct Color {
                                        second_color.b * second_weight);
     new_color.a = static_cast<uint8_t>(first_color.a * first_weight +
                                        second_color.a * second_weight);
+
+    return new_color;
   }
 };
 
