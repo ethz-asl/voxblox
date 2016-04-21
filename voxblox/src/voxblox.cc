@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
 
   voxblox::TsdfBlock my_cool_block(Eigen::Vector3d::Zero(), 8, 0.1);
   voxblox::TsdfMap::Ptr my_cool_map(new voxblox::TsdfMap(8, 0.1));
-  my_cool_map->allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));
+  /*my_cool_map->allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));
 
   std::cout << "Started putting lots of boxes in.\n";
   int box_size = 1;
@@ -28,15 +28,9 @@ int main(int argc, char* argv[]) {
       }
     }
   }
-  std::cout << "Finished putting lots of boxes in.\n";
+  std::cout << "Finished putting lots of boxes in.\n"; */
 
-  /*
 
-  // Now output the ply file.
-  voxblox::io::outputMapAsPly(*my_cool_map, "test_tsdf.ply",
-                              voxblox::io::kSdfDistanceColor);
-
-*/
 
   voxblox::Coordinates my_coordinate(1, 2, 3);
   std::cout << "Output ply to test_tsdf.ply\n";
@@ -53,6 +47,10 @@ int main(int argc, char* argv[]) {
   colors.push_back(Color());
 
   my_cool_integrator.integratePointCloud(transform, measurements, colors);
+
+  // Now output the ply file.
+  voxblox::io::outputMapAsPly(*my_cool_map, "test_tsdf.ply",
+                              voxblox::io::kSdfDistanceColor);
 
   return 0;
 }

@@ -60,12 +60,15 @@ class Integrator {
                                local_start_coord);
 
     Coordinates t_to_next_boundary(
-        (delta_coord.x() < kTolerance) ? 2.0 : distance_to_boundaries.x() /
-                                                   delta_coord.x(),
-        (delta_coord.y() < kTolerance) ? 2.0 : distance_to_boundaries.y() /
-                                                   delta_coord.y(),
-        (delta_coord.z() < kTolerance) ? 2.0 : distance_to_boundaries.z() /
-                                                   delta_coord.z());
+        (std::abs(delta_coord.x()) < kTolerance)
+            ? 2.0
+            : distance_to_boundaries.x() / delta_coord.x(),
+        (std::abs(delta_coord.y()) < kTolerance)
+            ? 2.0
+            : distance_to_boundaries.y() / delta_coord.y(),
+        (std::abs(delta_coord.z()) < kTolerance)
+            ? 2.0
+            : distance_to_boundaries.z() / delta_coord.z());
 
     // Distance to cross one grid cell along the ray in t.
     // Same as absolute inverse value of delta_coord.
@@ -75,10 +78,8 @@ class Integrator {
     AnyIndex curr_index = start_index;
     indices->push_back(curr_index);
 
-
     LOG(INFO) << "Start coord: " << start_coord.transpose();
     LOG(INFO) << "End coord: " << end_coord.transpose();
-
 
     LOG(INFO) << "Start index: " << start_index.transpose();
     LOG(INFO) << "End index: " << end_index.transpose();
@@ -115,8 +116,8 @@ class Integrator {
       castRay(origin_scaled, point_G_scaled, &global_voxel_index);
 
       LOG(INFO) << "castRay computed " << global_voxel_index.size()
-          << " block indices between " << origin.transpose() << " and "
-          << point_G.transpose();
+                << " block indices between " << origin.transpose() << " and "
+                << point_G.transpose();
 
       HierarchicalIndex hi_index_map;
       for (const AnyIndex& index : global_voxel_index) {
@@ -133,22 +134,22 @@ class Integrator {
         // TODO remove
         CHECK(block);
         for (const VoxelIndex& local_voxel_index : hi_index.second) {
-          const Coordinates voxel_center = block
-              ->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
-          TsdfVoxel& tsdf_voxel = block->getTsdfVoxelByVoxelIndex(
-              local_voxel_index);
+          const Coordinates voxel_center =
+              block->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
+          TsdfVoxel& tsdf_voxel =
+              block->getTsdfVoxelByVoxelIndex(local_voxel_index);
 
           const float sdf = static_cast<float>((point_G - voxel_center).norm());
           const float weight = 1.0f;
 
           const float new_weight = tsdf_voxel.weight + weight;
 
-          tsdf_voxel.color = Color::blendTwoColors(tsdf_voxel.color,
-                                                   tsdf_voxel.weight, color,
-                                                   weight);
+          tsdf_voxel.color = Color::blendTwoColors(
+              tsdf_voxel.color, tsdf_voxel.weight, color, weight);
 
-          tsdf_voxel.distance = (sdf * weight
-              + tsdf_voxel.distance * tsdf_voxel.weight) / new_weight;
+          tsdf_voxel.distance =
+              (sdf * weight + tsdf_voxel.distance * tsdf_voxel.weight) /
+              new_weight;
           tsdf_voxel.weight = new_weight;
         }
       }

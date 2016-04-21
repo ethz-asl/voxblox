@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_CORE_IO_SDF_PLY_H
 #define VOXBLOX_CORE_IO_SDF_PLY_H
 
+#include <iostream>
+
 #include "voxblox/io/ply_writer.h"
 #include "voxblox/core/map.h"
 
@@ -33,6 +35,7 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
     size_t num_blocks = map.getNumberOfAllocatedBlocks();
     // This function is block-specific:
     size_t num_voxels_per_block = map.getVoxelsPerBlock();
+    size_t vps = map.getVoxelsPerSide();
 
     // Maybe this isn't strictly true, since actually we may have stuff with 0
     // weight...
@@ -47,30 +50,74 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
     map.getAllAllocatedBlocks(&blocks);
 
     // Iterate over all blocks.
-    const float max_distance = 0.5;
+    const float max_distance = 5;
     for (const BlockIndex& index : blocks) {
       // Iterate over all voxels in said blocks.
       const TsdfBlock& block = map.getBlockByIndex(index);
+
+      VoxelIndex voxel_index = VoxelIndex::Zero();
+      for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
+        for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
+          for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
+            float distance =
+                block.getTsdfVoxelByVoxelIndex(voxel_index).distance;
+            float weight = block.getTsdfVoxelByVoxelIndex(voxel_index).weight;
+
+            // Get back the original coordinate of this voxel.
+            Coordinates coord =
+                block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
+
+            // Decide how to color this.
+            // Distance > 0 = blue, distance < 0 = red.
+            Color distance_color = Color::blendTwoColors(
+                Color(255, 0, 0, 0),
+                std::max<float>(1 - distance / max_distance, 0.0),
+                Color(0, 0, 255, 0),
+                std::max<float>(1 + distance / max_distance, 0.0));
+            uint8_t color[3];
+            if (weight > 0) {
+              color[0] = 255;
+              color[1] = 0;
+              color[2] = 0;
+            } else {
+              color[0] = 0;
+              color[1] = 0;
+              color[2] = 0;
+            }
+            writer.writeVertex(coord, color);
+          }
+        }
+      }
+
+      /*
+
+
       for (size_t i = 0; i < num_voxels_per_block; ++i) {
         float distance = block.getTsdfVoxelByLinearIndex(i).distance;
+        float weight = block.getTsdfVoxelByLinearIndex(i).weight;
 
         // Get back the original coordinate of this voxel.
         Coordinates coord = block.getCoordinatesOfTsdfVoxelByLinearIndex(i);
 
         // Decide how to color this.
         // Distance > 0 = blue, distance < 0 = red.
+        Color distance_color = Color::blendTwoColors(
+            Color(255, 0, 0, 0),
+            std::max<float>(1 - distance / max_distance, 0.0),
+            Color(0, 0, 255, 0),
+            std::max<float>(1 + distance / max_distance, 0.0));
         uint8_t color[3];
-        color[0] = 0;
-        color[1] = 0;
-        color[2] = 0;
-        if (distance < 0) {
-          color[0] = static_cast<uint8_t>(-distance / max_distance * 255);
+        if (weight > 0) {
+          color[0] = 255;
+          color[1] = 0;
+          color[2] = 0;
         } else {
-          color[2] = static_cast<uint8_t>(distance / max_distance * 255);
+          color[0] = 0;
+          color[1] = 0;
+          color[2] = 0;
         }
-
         writer.writeVertex(coord, color);
-      }
+      } */
     }
     writer.closeFile();
     return true;
