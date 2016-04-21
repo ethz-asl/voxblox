@@ -102,7 +102,7 @@ class TsdfBlock : public BaseBlock {
   inline const TsdfVoxel& getTsdfVoxelByVoxelIndex(
       const VoxelIndex& index) const {
     return tsdf_layer_->voxels[computeLinearIndexFromVoxelIndex(
-        index, tsdf_layer_->voxel_size_inv)];
+        index, tsdf_layer_->voxels_per_side)];
   }
   inline const TsdfVoxel& getTsdfVoxelByCoordinates(
       const Coordinates& coords) const {
