@@ -5,6 +5,8 @@
 #include <Eigen/StdVector>
 #include <unordered_map>
 
+#include "voxblox/core/common.h"
+
 namespace voxblox {
 
 struct BlockIndexHash {
@@ -17,11 +19,13 @@ struct BlockIndexHash {
   }
 };
 
-template <typename KeyType>
+template <typename ValueType>
 struct BlockHashMapType {
   typedef std::unordered_map<
-      BlockIndex, KeyType, BlockIndexHash, std::equal_to<BlockIndex> > type;
+      BlockIndex, ValueType, BlockIndexHash, std::equal_to<BlockIndex> > type;
 };
+
+typedef typename BlockHashMapType<IndexVector>::type HierarchicalIndex;
 
 typedef std::vector<BlockIndex, Eigen::aligned_allocator<BlockIndex> >
     BlockIndexList;

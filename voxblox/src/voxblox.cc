@@ -40,11 +40,11 @@ int main(int argc, char* argv[]) {
   voxblox::Integrator my_cool_integrator(my_cool_map,
                                          Integrator::IntegratorConfig());
 
-  Point sensor_origin(1, 0.4, 0);
+  Point sensor_origin(1, 0.4, 2.3);
   Transformation transform(sensor_origin, Eigen::Quaterniond::Identity());
 
   Pointcloud measurements;
-  measurements.push_back(transform.inverse() * Point(4.4, 6.8, 0));
+  measurements.push_back(transform.inverse() * Point(4.4, 6.8, 1.11));
   Colors colors;
   colors.push_back(Color());
 

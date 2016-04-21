@@ -100,21 +100,54 @@ class Integrator {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
+    CHECK_EQ(points_C.size(), colors.size());
+
     const Point& origin = T_G_C.getPosition();
     const Point& origin_scaled = origin * voxel_size_inv_;
 
     for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
       const Point& point_G = T_G_C * points_C[pt_idx];
+      const Color& color = colors[pt_idx];
+
       const Point& point_G_scaled = point_G * voxel_size_inv_;
 
-      IndexVector block_indices;
-      castRay(origin_scaled, point_G_scaled, &block_indices);
+      IndexVector global_voxel_index;
+      castRay(origin_scaled, point_G_scaled, &global_voxel_index);
 
-      LOG(INFO) << "castRay computed " << block_indices.size()
-                << " block indices between " << origin.transpose() << " and "
-                << point_G.transpose();
-      for (const AnyIndex& index : block_indices) {
-        LOG(INFO) << "Index: " << index.transpose();
+      LOG(INFO) << "castRay computed " << global_voxel_index.size()
+          << " block indices between " << origin.transpose() << " and "
+          << point_G.transpose();
+
+      HierarchicalIndex hi_index_map;
+      for (const AnyIndex& index : global_voxel_index) {
+        BlockIndex block_idx = floorVectorAndDowncast(
+            index.cast<FloatingPoint>() * voxels_per_side_inv_);
+
+        hi_index_map[block_idx].emplace_back(index.x() % voxels_per_side_,
+                                             index.y() % voxels_per_side_,
+                                             index.z() % voxels_per_side_);
+      }
+
+      for (const HierarchicalIndex::value_type& hi_index : hi_index_map) {
+        TsdfBlock::Ptr block = map_->allocateBlockPtrByIndex(hi_index.first);
+        for (const VoxelIndex& local_voxel_index : hi_index.second) {
+          const Coordinates& voxel_center = block
+              ->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
+          TsdfVoxel& tsdf_voxel = block->getTsdfVoxelByVoxelIndex(
+              local_voxel_index);
+
+          const FloatingPoint sdf = (point_G - voxel_center).norm();
+          const FloatingPoint weight = 1.0;
+
+          const FloatingPoint new_weight = tsdf_voxel.weight + weight;
+
+          tsdf_voxel.color = Color::blendTwoColors(tsdf_voxel.color,
+                                                   tsdf_voxel.weight, color,
+                                                   weight);
+          tsdf_voxel.distance = (sdf * weight
+              + tsdf_voxel.distance * tsdf_voxel.weight) / new_weight;
+          tsdf_voxel.weight = new_weight;
+        }
       }
     }
   }
@@ -126,7 +159,7 @@ class Integrator {
 
   // Cached map config.
   FloatingPoint voxel_size_;
-  FloatingPoint voxels_per_side_;
+  size_t voxels_per_side_;
   FloatingPoint block_size_;
 
   // Derived types.
