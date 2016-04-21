@@ -56,26 +56,36 @@ class Integrator {
 
     Point local_start_coord = start_coord - start_index.cast<FloatingPoint>();
 
-    Ray distance_to_boundaries(
-        step_correction.cast<FloatingPoint>() - local_start_coord);
+    Ray distance_to_boundaries(step_correction.cast<FloatingPoint>() -
+                               local_start_coord);
 
     Coordinates t_to_next_boundary(
-        (delta_coord.x() < kTolerance) ?
-            2.0 : distance_to_boundaries.x() / delta_coord.x(),
-        (delta_coord.y() < kTolerance) ?
-            2.0 : distance_to_boundaries.y() / delta_coord.y(),
-        (delta_coord.x() < kTolerance) ?
-            2.0 : distance_to_boundaries.z() / delta_coord.z());
+        (delta_coord.x() < kTolerance) ? 2.0 : distance_to_boundaries.x() /
+                                                   delta_coord.x(),
+        (delta_coord.y() < kTolerance) ? 2.0 : distance_to_boundaries.y() /
+                                                   delta_coord.y(),
+        (delta_coord.x() < kTolerance) ? 2.0 : distance_to_boundaries.z() /
+                                                   delta_coord.z());
 
     // Distance to cross one grid cell along the ray in t.
     // Same as absolute inverse value of delta_coord.
-    Ray t_step_size = step_direction_signs.cast<FloatingPoint>().cwiseQuotient(
-        delta_coord);
+    Ray t_step_size =
+        step_direction_signs.cast<FloatingPoint>().cwiseQuotient(delta_coord);
 
     AnyIndex curr_index = start_index;
     indices->push_back(curr_index);
 
+
+    LOG(INFO) << "Start coord: " << start_coord.transpose();
+    LOG(INFO) << "End coord: " << end_coord.transpose();
+
+
+    LOG(INFO) << "Start index: " << start_index.transpose();
+    LOG(INFO) << "End index: " << end_index.transpose();
+
     while (curr_index != end_index) {
+      LOG(INFO) << "Current index: " << curr_index.transpose();
+
       int t_min_idx;
       FloatingPoint t_min = t_to_next_boundary.minCoeff(&t_min_idx);
       CHECK_LT(t_min_idx, 3);
@@ -91,16 +101,21 @@ class Integrator {
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
     const Point& origin = T_G_C.getPosition();
-    const Point& origin_scaled = origin / block_size_;
+    const Point& origin_scaled = origin * voxel_size_inv_;
 
     for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
       const Point& point_G = T_G_C * points_C[pt_idx];
-      const Point& point_G_scaled = point_G / block_size_;
+      const Point& point_G_scaled = point_G * voxel_size_inv_;
 
       IndexVector block_indices;
       castRay(origin_scaled, point_G_scaled, &block_indices);
 
-      LOG(INFO) << "castRay computed " << block_indices.size() << "block indices between " << origin.transpose() << " and " << point_G.transpose();
+      LOG(INFO) << "castRay computed " << block_indices.size()
+                << " block indices between " << origin.transpose() << " and "
+                << point_G.transpose();
+      for (const AnyIndex& index : block_indices) {
+        LOG(INFO) << "Index: " << index.transpose();
+      }
     }
   }
 
