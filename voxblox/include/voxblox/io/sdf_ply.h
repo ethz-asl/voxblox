@@ -1,7 +1,8 @@
-#ifndef VOXBLOX_CORE_IO_SDF_PLY_H
-#define VOXBLOX_CORE_IO_SDF_PLY_H
+#ifndef VOXBLOX_CORE_IO_SDF_PLY_H_
+#define VOXBLOX_CORE_IO_SDF_PLY_H_
 
-#include <iostream>
+#include <algorithm>
+#include <string>
 
 #include "voxblox/io/ply_writer.h"
 #include "voxblox/core/map.h"
@@ -34,8 +35,8 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
     // distance value.
     size_t num_blocks = map.getNumberOfAllocatedBlocks();
     // This function is block-specific:
-    size_t num_voxels_per_block = map.getVoxelsPerBlock();
-    size_t vps = map.getVoxelsPerSide();
+    size_t num_voxels_per_block = map.getTsdfVoxelsPerBlock();
+    size_t vps = map.getTsdfVoxelsPerSide();
 
     // Maybe this isn't strictly true, since actually we may have stuff with 0
     // weight...
@@ -68,7 +69,7 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
             float weight = voxel.weight;
 
             // Get back the original coordinate of this voxel.
-            Coordinates coord =
+            Point coord =
                 block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
 
             // Decide how to color this.
@@ -105,4 +106,4 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_IO_SDF_PLY_H
+#endif  // VOXBLOX_CORE_IO_SDF_PLY_H_

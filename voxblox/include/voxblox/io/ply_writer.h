@@ -1,10 +1,12 @@
-#ifndef VOXBLOX_CORE_IO_PLY_WRITER_H
-#define VOXBLOX_CORE_IO_PLY_WRITER_H
+#ifndef VOXBLOX_CORE_IO_PLY_WRITER_H_
+#define VOXBLOX_CORE_IO_PLY_WRITER_H_
+
+#include <fstream>  // NOLINT
+#include <string>
+
+#include <glog/logging.h>
 
 #include "voxblox/core/common.h"
-
-#include <fstream>
-#include <glog/logging.h>
 
 namespace voxblox {
 
@@ -13,13 +15,14 @@ namespace io {
 //  http://paulbourke.net/dataformats/ply/
 class PlyWriter {
  public:
-  PlyWriter(const std::string& filename)
+  explicit PlyWriter(const std::string& filename)
       : header_written_(false),
         parameters_set_(false),
         vertices_total_(0),
         vertices_written_(0),
         has_color_(false),
         file_(filename) {}
+
   virtual ~PlyWriter() {}
 
   void addVerticesWithProperties(size_t num_vertices, bool has_color) {
@@ -62,7 +65,7 @@ class PlyWriter {
     return true;
   }
 
-  bool writeVertex(const Coordinates& coord) {
+  bool writeVertex(const Point& coord) {
     if (!header_written_) {
       if (!writeHeader()) {
         return false;
@@ -75,7 +78,7 @@ class PlyWriter {
     return true;
   }
 
-  bool writeVertex(const Coordinates& coord, const uint8_t rgb[3]) {
+  bool writeVertex(const Point& coord, const uint8_t rgb[3]) {
     if (!header_written_) {
       if (!writeHeader()) {
         return false;
@@ -107,4 +110,4 @@ class PlyWriter {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_IO_PLY_WRITER_H
+#endif  // VOXBLOX_CORE_IO_PLY_WRITER_H_

@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+import fnmatch
+import imp
+import os
+import sys
+
+def generate_html(package_name, lint_output):
+    html = ' <html><body>'
+    html += '<h1>Lint errors for %s</h1>'%package_name
+    for filename, lint_errors in lint_output.iteritems():
+        package_html = '%s<ul>'%filename
+        for (line, lint_error) in lint_errors:
+            package_html += '<li>%d: %s</li>'%(line, lint_error)
+        package_html += '</ul>'
+        html += package_html
+    html += '</body></html>'
+    return html
+
+def main():
+    # Workspace as argument.
+    workspace = sys.argv[1]
+    root_path = '/'.join([workspace, 'voxblox'])
+    os.chdir(root_path)
+
+    autolint_path = '/'.join([root_path, 'tools', 'lint', 'autolint'])
+    autolint = imp.load_source('autolint', autolint_path)
+
+    # Find all packages in the repo.
+    packages = {}
+    for root, dirnames, filenames in os.walk(root_path):
+        for filename in fnmatch.filter(filenames, 'package.xml'):
+            packages[root.split('/')[-1]] = root
+
+    # Create output folder.
+    try:
+        os.mkdir('/'.join([workspace, "html"]))
+    except:
+        print "html folder output was not clean"
+        exit(1)
+
+    # Run autolint on all packages.
+    package_summary = []
+    total_errors = 0
+    for package in packages:
+        # Write an html file for each package.
+        num_errors, lint_output = autolint.packagelint(True, package)
+        total_errors += num_errors
+        if num_errors == 0:
+            html = '<html><body><h2>No lint errors for %s</h2>'%package
+            html += '</body></html>'
+        else:
+            html = generate_html(package, lint_output)
+                                                   
+        with open('/'.join([workspace, 'html', '%s.html'%package]), 'w') as f:
+            f.write(html)
+
+        # Aggregate package output for main page.
+        package_html = '<li><a href="%s.html">%d errors in '%(package, num_errors)
+        package_html += 'package %s</a></li>'%package
+        package_summary.append((num_errors, package_html))
+
+    # Write main page.
+    package_summary = sorted(package_summary, key=lambda e: e[0], reverse=True)
+    with open('/'.join([workspace, 'html', 'index.html']), 'w') as f:
+        f.write('<html><body>')
+        f.write('<h1>Voxblox Repository has %d lint errors</h1><ul>'%total_errors)
+        for (num, e) in package_summary:
+            f.write(e)
+        f.write('</ul></body></html>')
+
+if __name__ == "__main__":
+   main()
+
+

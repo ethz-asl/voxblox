@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+
+import commands
+import datetime
+import imp
+import os
+
+def get_autolint_path():
+    pwd = os.path.realpath(os.path.curdir)
+    root = -1
+    if 'voxblox' in pwd:
+        root = pwd.split("/").index("voxblox")
+        autolint = "tools/lint/autolint"
+    if root == -1:
+        print "Can't find voxblox repository"
+        exit(1)
+    root_path = "/".join(pwd.split("/")[:root+1])
+    return '/'.join([root_path, autolint])
+
+def gandalf():
+    print "                           ,---.\n" \
+        "                          /    |\n" \
+        "                         /     |\n" \
+        "                        /      |\n" \
+        "                       /       |\n" \
+        "                  ___,'        |\n" \
+        "                <  -'          :\n" \
+        "                 `-.__..--'``-,_\_\n" \
+        "                    |o/ <o>` :,.)_`>\n" \
+        "                    :/ `     ||/)\n" \
+        "                    (_.).__,-` |\\\n" \
+        "                    /( `.``   `| :\n" \
+        "                    \'`-.)  `  ; ;\n" \
+        "                    | `       /-<\n" \
+        "                    |     `  /   `.\n" \
+        "    ,-_-..____     /|  `    :__..-'\\\n" \
+        "   /,'-.__\\\\  ``-./ :`      ;       \\\n" \
+        "   `\ `\  `\\\\  \ :  (   `  /  ,   `. \\\n" \
+        "     \` \   \\\\   |  | `   :  :     .\ \\\n" \
+        "      \ `\_  ))  :  ;     |  |      ): :\n" \
+        "     (`-.-'\ ||  |\ \   ` ;  ;       | |\n" \
+        "      \-_   `;;._   ( `  /  /_       | |\n" \
+        "       `-.-.// ,'`-._\__/_,'         ; |\n" \
+        "          \:: :     /     `     ,   /  |\n" \
+        "           || |    (        ,' /   /   |\n" \
+        "           ||                ,'   /    |"
+    return
+
+def darth():
+    print "           _.-'~~~~~~`-._\n" \
+          "          /      ||      \\\n" \
+          "         /       ||       \\\n" \
+          "        |        ||        |\n" \
+          "        | _______||_______ |\n" \
+          "        |/ ----- \\/ ----- \\|\n" \
+          "       /  (     )  (     )  \\\n" \
+          "      / \\  ----- () -----  / \\\n" \
+          "     /   \\      /||\\      /   \\\n" \
+          "    /     \\    /||||\\    /     \\\n" \
+          "   /       \\  /||||||\\  /       \\\n" \
+          "  /_        \\o========o/        _\\\n" \
+          "    `--...__|`-._  _.-'|__...--'\n" \
+          "            |    `'    |"
+    return
+
+# Method that looks at the diff of current staged files and formats them.
+def apply_clang_format():
+    status, clang_exec = commands.getstatusoutput("which clang-format")
+    if len(clang_exec) == 0:
+        status, clang_exec = commands.getstatusoutput("which clang-format-diff-3.4")
+    if len(clang_exec) != 0:
+        patch_name = "/tmp/clang-format-" + datetime.datetime.now().isoformat() + ".patch"
+        # First get the diff of the staged files, format it and make a patch.
+        status2, res2 = commands.getstatusoutput(
+            "git diff -U0 --cached | " \
+            "clang-format-diff-3.4 -style=Google -p1 > " + patch_name)
+        # Check if the patch file has non-zero size (i.e., if there were fixes made).
+        if os.stat(patch_name)[6] != 0:
+            print "Clang-format found style errors and is " \
+                "auto-fixing them as part of this commit.\nSee patch file: " \
+                + patch_name + "\nIf this causes an issue, reverse apply the " \
+                "patch:\n$ git apply --reverse -p0 " + patch_name + "\n"
+            # Apply the clang-format patch.
+            status3, res3 = commands.getstatusoutput("git apply -p0 " + patch_name)
+            # Get list of files that are staged, since these need to be updated
+            # with the formatting changes.
+            status4, changed_files = commands.getstatusoutput(
+                "git diff --name-only --cached | tr \"\n\" \" \"")
+            # Now re-stage these files, so that they go in with this commit.
+            status5, res5 = commands.getstatusoutput("git add " + changed_files);
+        else:
+            status6, res6 = commands.getstatusoutput("rm -f " + patch_name)
+    else:
+        gandalf()
+        print "\nBILBO BAGGINS! Do not take me for some conjuror of cheap " \
+            "tricks!\nI cannot auto-format your code unless you install " \
+            "clang-format.\n" \
+            "See: https://github.com/ethz-asl/programming_guidelines/wiki/Clang-format\n"
+    return
+
+# Method that looks at the diff of current staged files and applies a lint check.
+def apply_lint_check():
+    autolint_path = get_autolint_path()
+    autolint = imp.load_source('autolint', autolint_path)
+
+    num_errors = autolint.autolint('origin/master', auto_continue=True, staged_files=True)
+
+    print ""
+    print "="*50
+    if num_errors > 1:
+        print "== You still have %d lint errors, commit failed"%num_errors
+    elif num_errors == 1:
+        print "== You still have 1 lint error, commit failed"
+    elif num_errors == 0:
+        print "== Your code adheres to the style guides, committing...."
+    print "="*50
+    
+    return num_errors
+
+def prevent_commits_to_master():
+    status, res = commands.getstatusoutput(
+        "git branch | grep \"*\" | sed \"s/* //\"")
+    if res == 'master':
+        gandalf()
+        print "\nYou shall not commit to master!\n\n" \
+            "Please switch to a branch to commit your " \
+            "changes.\nSee: https://github.com/ethz-asl/programming_guidelines/wiki/Code-review-process"
+        exit(1)
+    return
+
+def main():
+    prevent_commits_to_master()
+
+    # First check if this is a merge commit. If it is, skip the lint check and clang format
+    # since these both result in a lot of spew / unwanted file changes.
+    merge_file = os.environ['GIT_DIR'] + "/MERGE_MSG"
+    if os.path.exists(merge_file):
+        darth()
+        print "\nThis is a merge commit. I am merciful, and will spare you the clang and a grueling " \
+            "lint check so as not to tempt you to change files outside the scope of your PR...\n"
+    else:
+        apply_clang_format()
+        num_lint_errors = apply_lint_check()
+        exit(num_lint_errors)
+    exit(0)
+
+if __name__ == "__main__":
+    main()
+
