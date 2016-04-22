@@ -134,7 +134,7 @@ void VoxbloxNode::insertPointcloudWithTf(
 }
 
 void VoxbloxNode::publishMarkers() {
-  CHECK(tsdf_map_) << "TSDF map not allocated.";
+  DCHECK(tsdf_map_) << "TSDF map not allocated.";
 
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
@@ -189,7 +189,7 @@ void VoxbloxNode::publishMarkers() {
 }
 
 void VoxbloxNode::publishTsdfSurfacePoints() {
-  CHECK(tsdf_map_) << "TSDF map not allocated.";
+  DCHECK(tsdf_map_) << "TSDF map not allocated.";
 
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
