@@ -1,0 +1,351 @@
+#!/usr/bin/env python
+
+import argparse
+import fnmatch
+import imp
+import os
+import subprocess
+import sys
+import termios
+
+try:
+    import git
+except:
+    print "You need to install git python: apt-get install python-git"
+    exit(-1)
+
+try:
+    from pylint import lint
+    from pylint.reporters.text import TextReporter
+except:
+    print "You need to install pylint: apt-get install pylint"
+    exit(-1)
+
+try:
+    output = str(subprocess.check_output(['which', 'checkstyle']))
+except:
+    print "You need to install checkstyle: apt-get install checkstyle"
+    exit(-1)
+
+ignore_files = []
+ignore_files.append('tools/lint')
+valid_copyright_extensions = ['cpp', 'cc', 'h', 'hpp', 'py', 'java']
+
+def get_repo_paths():
+    pwd = os.path.realpath(os.path.curdir)
+    root = -1
+    if 'voxblox' in pwd:
+        root = pwd.split("/").index("voxblox")
+        tools_folder = "tools/lint"
+    if root == -1:
+        print "Can't find voxblox repository"
+        exit(1)
+    root_path = "/".join(pwd.split("/")[:root+1])
+    return (root_path, '/'.join([root_path, tools_folder]))
+
+
+def get_changed_files_gitpy_0_3(root_path, branch_name):
+    repo = git.Repo(root_path)
+    branch = None
+    for b in repo.branches:
+        if b.name == branch_name:
+            branch = b.commit.tree
+    if not branch:
+        print "Could not find branch %s in the git repository %s"%(branch_name, root_path)
+        exit(1)
+    current = repo.active_branch.commit.tree
+
+    changed_files = []
+    diff_commits = current.diff(branch)
+    for d in diff_commits:
+        if d.a_blob and d.a_blob.path:
+            if not d.a_blob.path in changed_files:
+                changed_files.append(d.a_blob.path)
+
+    return changed_files
+
+def get_changed_files_bash(root_path, tools_path, branch_name):
+    changes = '/'.join([tools_path, "changed_files.sh"])
+    output = str(subprocess.check_output([changes, root_path, branch_name]))
+    output = output.replace('\n', '')
+    changed_files = output.split(' ')
+    return changed_files
+
+def get_staged_files_bash(root_path, tools_path):
+    changes = '/'.join([tools_path, "staged_files.sh"])
+    output = str(subprocess.check_output([changes, root_path]))
+    output = output.replace('\n', '')
+    changed_files = output.split(' ')
+    return changed_files
+
+def get_key():
+    term = open("/dev/tty", "r")
+    fd = term.fileno()
+    old = termios.tcgetattr(fd)
+    new = termios.tcgetattr(fd)
+    new[3] &= ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(fd, termios.TCSANOW, new)
+    c = None
+    try:
+        c = os.read(fd, 1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSAFLUSH, old)
+        term.close()
+    return c
+
+def ask_user_if_finished():
+    msg = "  --->> (r)un again, (c)continue to the next file, or (q)uit."
+    print msg
+    valid_key = False
+    finished = None
+    while not valid_key:
+        keypress = get_key()
+        valid_key = True
+        if keypress in ['c', 'C']:
+            finished = True
+        elif keypress in ['r', 'R']:
+            finished = False
+        elif keypress in ['q', 'Q']:
+            exit(0)
+        else:
+            valid_key = False
+    sys.stdout.write("\033[F")
+    print ' '*len(msg)
+    sys.stdout.write("\033[F")
+    return finished
+
+def check_copyright(filename):
+    _, file_extension = os.path.splitext(filename)
+
+    if file_extension[1:] in valid_copyright_extensions:
+        with open(filename) as f:
+            found_copyright = False
+            count = 0
+            line = f.readline()
+            while line and count < 10:
+                if 'Copyright' in line or 'copyright' in line:
+                    found_copyright = True
+                line = f.readline()
+                count += 1
+        return found_copyright
+    else:
+        return True
+
+def run_cpplint(filename, tools_path):
+    # Import cpplint from our own repo.
+    cpplint = imp.load_source('cpplint', '/'.join([tools_path, 'cpplint.py']))
+
+    cpplint._cpplint_state.ResetErrorCounts()
+    cpplint.print_stdout = False
+    cpplint.output = []
+    cpplint.ProcessFile(filename, cpplint._cpplint_state.verbose_level)
+    return cpplint.output
+
+def run_pylint(filename, tools_path):
+    class WritableObject(object):
+        def __init__(self):
+            self.content = []
+        def write(self, st):
+            self.content.append(st)
+        def read(self):
+            return self.content
+
+    ARGS = ["-iy", "-rn", "--rcfile=%s/pylint_config.rc" % tools_path]
+    pylint_output = WritableObject()
+    lint.Run([filename] + ARGS, reporter=TextReporter(pylint_output), exit=False)
+    output = []
+    for l in pylint_output.read():
+        if "E:" in l:
+            l = l[2:]
+            line = l[:l.find(',')]
+            output.append((int(line), l[l.find(':') + 1:]))
+    return output
+
+def run_javalint(filename, tools_path):
+    command = "checkstyle -f plain -c %s/checkstyle.xml %s"%(tools_path, filename)
+    process = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    output = []
+    for l in out.split('\n'):
+        if filename in l:
+            l = l[l.find(filename) + len(filename) + 1:]
+            line = l[:l.find(':')]
+            output.append((int(line), l[l.find(': ') + 2:]))
+    return output
+
+def run_package_xml_lint(filename):
+    with file(filename) as f:
+        xml = f.read()
+    output = []
+
+    # Check for package owner.
+    line_nr = 1
+    for line in xml.split('\n'):
+        if 'author' in line and '@todo.com' in line:
+            output.append((line_nr, "You need to specify the author of the package."))
+        elif 'maintainer' in line and '@todo.com' in line:
+            output.append((line_nr, "You need to specify the maintainer of the package."))
+        line_nr += 1
+    return output
+
+def autolint(branch_name, auto_continue, staged_files):
+    # Find the root of the repository.
+    (root_path, tools_path) = get_repo_paths()
+    os.chdir(root_path)
+
+    # Iterate over changed files.
+    if staged_files:
+        changed_files = get_staged_files_bash(root_path, tools_path)
+        print "Autolint staged files"
+    else:
+        changed_files = get_changed_files_bash(root_path, tools_path, branch_name)
+        print "Autolint active branch against %s"%branch_name
+    num_errors, output = run_lint(auto_continue, changed_files, root_path)
+    return num_errors
+
+def packagelint(auto_continue, package_name):
+    # Find the root of the repository.
+    (root_path, tools_path) = get_repo_paths()
+
+    # Find all packages in the repo.
+    packages = {}
+    for root, dirnames, filenames in os.walk(root_path):
+        for filename in fnmatch.filter(filenames, 'package.xml'):
+            packages[root.split('/')[-1]] = root
+
+    # Find all files in the package.
+    candidate_files = []
+    if package_name in packages:
+        for root, dirnames, filenames in os.walk(packages[package_name]):
+            for filename in fnmatch.filter(filenames, '*'):
+                candidate_file = os.path.join(root, filename)
+                candidate_files.append(candidate_file.split(root_path + '/')[-1])
+
+    return run_lint(auto_continue, candidate_files, root_path)
+
+def run_lint(auto_continue, candidate_files, root_path):
+    full_output = {}
+
+    # Find the root of the repository.
+    (root_path, tools_path) = get_repo_paths()
+    os.chdir(root_path)
+
+    files_to_lint = []
+    for candidate_file in candidate_files:
+        ignore_this_file = False
+        for ignore_file in ignore_files:
+            if ignore_file in candidate_file:
+                ignore_this_file = True
+        if not os.path.isfile('/'.join([root_path, candidate_file])):
+            ignore_this_file = True
+        if not ignore_this_file and not candidate_file in files_to_lint:
+            files_to_lint.append(candidate_file)
+
+    # Find all packages in the repo, and add package.xml of each
+    # package that got touched to the files to lint list.
+    packages = {}
+    for root, dirnames, filenames in os.walk(root_path):
+        for filename in fnmatch.filter(filenames, 'package.xml'):
+            packages[root[len(root_path)+1:]] = root
+
+    packages_to_lint = []
+    for file_to_lint in files_to_lint:
+        for package in packages:
+            if package in file_to_lint and not package in packages_to_lint:
+                packages_to_lint.append(package)
+    for package in packages_to_lint:
+        package_file = os.path.join(package, 'package.xml')
+        if not package_file in files_to_lint:
+            files_to_lint.append(package_file)
+
+    num_errors = 0
+    for file_to_lint in files_to_lint:
+        extension = file_to_lint.split('.')[-1]
+
+        finished = False
+        while not finished:
+            output = None
+
+            # Run cpplint on file.
+            if extension in ['h', 'hpp', 'cc', 'cpp']:
+                output = run_cpplint(file_to_lint, tools_path)
+                # Don't allow cpp files.
+                if extension == 'cpp':
+                    res = (0, "Invalid file extension .cpp, use .cc instead.")
+                    if not output:
+                        output = [res]
+                    else:
+                        output.insert(0, res)
+
+            # Run pylint on file.
+            if extension in ['py']:
+                output = run_pylint(file_to_lint, tools_path)
+
+            # Run javalint on file.
+            if extension in ['java']:
+                output = run_javalint(file_to_lint, tools_path)
+
+            # Lint package.xml file.
+            if extension in ['xml']:
+                output = run_package_xml_lint(file_to_lint)
+
+            # Check for copyright in file.
+            #if not check_copyright(file_to_lint):
+            #    res = (0, "No Copyright found in file")
+            #    if not output:
+            #        output = [res]
+            #    else:
+            #        output.insert(0, res)
+
+            # Show results to user.
+            if output != None:
+                if len(output) > 0:
+                    for error in output:
+                        print "%s/%s:%s: %s" % (root_path, file_to_lint, str(error[0]), error[1])
+                    if auto_continue:
+                        finished = True
+                    else:
+                        finished = ask_user_if_finished()
+                    if finished:
+                        # Aggregate ouput.
+                        full_output[file_to_lint] = output
+                        num_errors += len(output)
+                else:
+                    finished = True
+            else:
+                finished = True
+    return (num_errors, full_output)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-b', '--branch', default="origin/master", action="store",
+                        help="The branch to compare your active branch to. E.g. origin/master.")
+    parser.add_argument('-c', '--auto-continue', action="store_true",
+                        help="Automatically continue to the next file, even when there are lint errors.")
+    parser.add_argument('-s', '--staged', action="store_true",
+                        help="Compare against the files that are staged for commit.")
+    parser.add_argument('-p', '--package', default="none", action="store",
+                        help="The packages to run lint on.")
+    args = parser.parse_args()
+
+    if args.package != "none":
+        num_errors, output = packagelint(args.auto_continue, args.package)
+    else:
+        num_errors = autolint(args.branch, args.auto_continue, args.staged)
+
+    print ""
+    print "="*80
+    if num_errors > 100:
+        print "== Autolint almost exploded, you have %d errors =="%num_errors
+    elif num_errors > 1:
+        print "== Autolint found %d errors =="%num_errors
+    elif num_errors == 1:
+        print "== Autolint found one last error. You're almost there! =="
+    elif num_errors == 0:
+        print "== Your code adheres to the style guides! =="
+    elif num_errors < 0:
+        print "== Autolint failed to run =="
+    print "="*80
+
+    sys.exit(num_errors)

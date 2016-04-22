@@ -1,5 +1,7 @@
-#ifndef VOXBLOX_CORE_VOXEL_ARRAY_H
-#define VOXBLOX_CORE_VOXEL_ARRAY_H
+#ifndef VOXBLOX_CORE_VOXEL_ARRAY_H_
+#define VOXBLOX_CORE_VOXEL_ARRAY_H_
+
+#include <memory>
 
 #include "voxblox/core/common.h"
 
@@ -14,6 +16,7 @@ struct VoxelArray {
     voxel_size_inv = 1.0 / voxel_size;
     voxels.reset(new VoxelType[num_voxels]);
   }
+
   ~VoxelArray() {}
 
   // Base parameters.
@@ -29,4 +32,4 @@ struct VoxelArray {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_VOXEL_ARRAY_H
+#endif  // VOXBLOX_CORE_VOXEL_ARRAY_H_
