@@ -19,11 +19,4 @@
   <depend>glog_catkin</depend>
   <depend>gflags_catkin</depend>
   <depend>minkindr</depend>
-  <!-- <depend>cv_bridge</depend>
-  
-  <depend>image_geometry</depend>
-  <depend>pcl_conversions</depend>
-  <depend>pcl_ros</depend>
-  <depend>sensor_msgs</depend>
-  <depend>stereo_msgs</depend> -->
 </package>

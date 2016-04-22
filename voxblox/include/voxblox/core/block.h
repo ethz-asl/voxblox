@@ -1,5 +1,7 @@
-#ifndef VOXBLOX_CORE_BLOCK_H
-#define VOXBLOX_CORE_BLOCK_H
+#ifndef VOXBLOX_CORE_BLOCK_H_
+#define VOXBLOX_CORE_BLOCK_H_
+
+#include <memory>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/voxel.h"
@@ -12,57 +14,57 @@ class BaseBlock {
   typedef std::shared_ptr<BaseBlock> Ptr;
   typedef std::shared_ptr<const BaseBlock> ConstPtr;
 
-  BaseBlock(size_t num_layers, const Coordinates& origin,
-            FloatingPoint block_size)
+  BaseBlock(size_t num_layers, const Point& origin, FloatingPoint block_size)
       : num_layers_(num_layers),
         origin_(origin),
         block_size_(block_size),
         has_data_(false) {}
+
   virtual ~BaseBlock() {}
 
   inline size_t computeLinearIndexFromVoxelIndex(const VoxelIndex& index,
                                                  size_t vps) const {
     size_t linear_index = index.x() + vps * (index.y() + index.z() * vps);
-    // TODO remove this check
+
     DCHECK(index.x() >= 0 && index.x() < vps);
     DCHECK(index.y() >= 0 && index.y() < vps);
     DCHECK(index.z() >= 0 && index.z() < vps);
 
-    DCHECK(linear_index < vps * vps * vps);
-    DCHECK(linear_index >= 0);
+    DCHECK_LT(linear_index, vps * vps * vps);
+    DCHECK_GE(linear_index, 0);
     return linear_index;
   }
 
   inline VoxelIndex computeVoxelIndexFromCoordinates(
-      const Coordinates& coords, FloatingPoint voxel_size_inv) const {
+      const Point& coords, FloatingPoint voxel_size_inv) const {
     return floorVectorAndDowncast((coords - origin_) * voxel_size_inv);
   }
 
-  inline size_t computeLinearIndexFromCoordinates(const Coordinates& coords,
+  inline size_t computeLinearIndexFromCoordinates(const Point& coords,
                                                   FloatingPoint voxel_size_inv,
                                                   size_t vps) const {
     return computeLinearIndexFromVoxelIndex(
         computeVoxelIndexFromCoordinates(coords, voxel_size_inv), vps);
   }
 
-  inline Coordinates computeCoordinatesFromLinearIndex(size_t linear_index,
-                                                       FloatingPoint voxel_size,
-                                                       size_t vps) const {
+  inline Point computeCoordinatesFromLinearIndex(size_t linear_index,
+                                                 FloatingPoint voxel_size,
+                                                 size_t vps) const {
     return computeCoordinatesFromVoxelIndex(
         computeVoxelIndexFromLinearIndex(linear_index, vps), voxel_size);
   }
 
-  inline Coordinates computeCoordinatesFromVoxelIndex(
+  inline Point computeCoordinatesFromVoxelIndex(
       const VoxelIndex& index, FloatingPoint voxel_size) const {
-    return (index.cast<FloatingPoint>() + 0.5 * Coordinates::Ones()) *
-               voxel_size +
+    return (index.cast<FloatingPoint>() + 0.5 * Point::Ones()) * voxel_size +
            origin_;
   }
 
+  // TODO(mfehr, helenol): Fix this function
   inline VoxelIndex computeVoxelIndexFromLinearIndex(size_t linear_index,
                                                      size_t vps) const {
-    // DEFINITELY WRONG NEEDS FIXIN'
     CHECK(false);
+
     int rem = linear_index;
     VoxelIndex result;
     std::div_t div_temp = std::div(rem, vps * vps);
@@ -74,78 +76,16 @@ class BaseBlock {
     return result;
   }
 
-  const Coordinates& getOrigin() const { return origin_; }
+  const Point& getOrigin() const { return origin_; }
 
  protected:
   size_t num_layers_;
-  Coordinates origin_;
+  Point origin_;
   FloatingPoint block_size_;
+
+  // Is set to true if any one of the voxels in this block received an update.
   bool has_data_;
 };
-
-class TsdfBlock : public BaseBlock {
- public:
-  typedef std::shared_ptr<TsdfBlock> Ptr;
-  typedef std::shared_ptr<const BaseBlock> ConstPtr;
-
-  TsdfBlock(const Coordinates& origin, size_t voxels_per_side,
-            FloatingPoint voxel_size)
-      : BaseBlock(1, origin, voxels_per_side * voxel_size),
-        has_changed_(false) {
-    tsdf_layer_.reset(new VoxelArray<TsdfVoxel>(voxels_per_side, voxel_size));
-  }
-  virtual ~TsdfBlock() {}
-
-  inline const TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) const {
-    return tsdf_layer_->voxels[index];
-  }
-  inline const TsdfVoxel& getTsdfVoxelByVoxelIndex(
-      const VoxelIndex& index) const {
-    return tsdf_layer_->voxels[computeLinearIndexFromVoxelIndex(
-        index, tsdf_layer_->voxels_per_side)];
-  }
-  inline const TsdfVoxel& getTsdfVoxelByCoordinates(
-      const Coordinates& coords) const {
-    return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
-        coords, tsdf_layer_->voxel_size_inv, tsdf_layer_->voxels_per_side)];
-  }
-
-  inline TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) {
-    DCHECK(index < tsdf_layer_->num_voxels);
-    return tsdf_layer_->voxels[index];
-  }
-  inline TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index) {
-    // TODO(mfehrenol) remove this check for performance reasons
-
-    DCHECK(tsdf_layer_);
-    size_t linear_index =
-        computeLinearIndexFromVoxelIndex(index, tsdf_layer_->voxels_per_side);
-    DCHECK(linear_index >= 0);
-    DCHECK(linear_index < tsdf_layer_->num_voxels);
-    return tsdf_layer_->voxels[linear_index];
-  }
-  inline TsdfVoxel& getTsdfVoxelByCoordinates(const Coordinates& coords) {
-    return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
-        coords, tsdf_layer_->voxel_size_inv, tsdf_layer_->voxels_per_side)];
-  }
-  inline size_t getNumTsdfVoxels() const { return tsdf_layer_->num_voxels; }
-
-  inline Coordinates getCoordinatesOfTsdfVoxelByLinearIndex(
-      size_t index) const {
-    return computeCoordinatesFromLinearIndex(index, tsdf_layer_->voxel_size,
-                                             tsdf_layer_->voxels_per_side);
-  }
-  inline Coordinates getCoordinatesOfTsdfVoxelByVoxelIndex(
-      const VoxelIndex& index) const {
-    return computeCoordinatesFromVoxelIndex(index, tsdf_layer_->voxel_size);
-  }
-
- protected:
-  bool has_changed_;
-
-  std::unique_ptr<VoxelArray<TsdfVoxel> > tsdf_layer_;
-};
-
 }  // namespace voxblox
 
-#endif  // VOXBLOX_BLOCK_H
+#endif  // VOXBLOX_CORE_BLOCK_H_

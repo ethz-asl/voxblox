@@ -1,39 +1,31 @@
-#include "voxblox/core/block.h"
-#include "voxblox/core/map.h"
+#include "voxblox/core/tsdf_block.h"
+#include "voxblox/core/tsdf_map.h"
 #include "voxblox/integrator/ray_integrator.h"
 #include "voxblox/io/sdf_ply.h"
-
-#include <iostream>
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-using namespace voxblox;
+using namespace voxblox;  // NOLINT
 
+// TODO(mfehr, helenol): Replace this playground with proper unit tests.
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
   google::ParseCommandLineFlags(&argc, &argv, false);
   google::InstallFailureSignalHandler();
 
-  voxblox::TsdfBlock my_cool_block(Eigen::Vector3d::Zero(), 8, 0.1);
-  voxblox::TsdfMap::Ptr my_cool_map(new voxblox::TsdfMap(8, 0.1));
-  /*my_cool_map->allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));
+  TsdfMap::Config config;
+  config.tsdf_voxel_size = 0.2;
+  config.tsdf_voxels_per_side = 16;
 
-  std::cout << "Started putting lots of boxes in.\n";
-  int box_size = 1;
-  for (int i = -box_size; i < box_size; ++i) {
-    for (int j = -box_size; j < box_size; ++j) {
-      for (int k = -box_size; k < box_size; ++k) {
-        my_cool_map->allocateBlockPtrByIndex(voxblox::BlockIndex(i, j, k));
-      }
-    }
-  }
-  std::cout << "Finished putting lots of boxes in.\n"; */
+  Integrator::Config integrator_config;
+  integrator_config.default_truncation_distance = 0.1;
+  integrator_config.max_weight = 1000.0;
+  integrator_config.voxel_carving_enabled = true;
 
-  voxblox::Coordinates my_coordinate(1, 2, 3);
-
-  voxblox::Integrator my_cool_integrator(my_cool_map,
-                                         Integrator::IntegratorConfig());
+  TsdfBlock my_cool_block(Eigen::Vector3d::Zero(), 8, 0.1);
+  TsdfMap::Ptr my_cool_map = std::make_shared<TsdfMap>(config);
+  Integrator my_cool_integrator(my_cool_map, integrator_config);
 
   Point sensor_origin(1, 0.4, 2.3);
   Transformation transform(sensor_origin, Eigen::Quaterniond::Identity());
@@ -46,7 +38,7 @@ int main(int argc, char* argv[]) {
   my_cool_integrator.integratePointCloud(transform, measurements, colors);
 
   // Now output the ply file.
-  std::cout << "Output ply to test_tsdf.ply\n";
+  LOG(INFO) << "Output ply to test_tsdf.ply\n";
   voxblox::io::outputMapAsPly(*my_cool_map, "test_tsdf.ply",
                               voxblox::io::kSdfDistanceColor);
 

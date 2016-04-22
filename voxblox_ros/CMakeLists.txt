@@ -9,20 +9,20 @@ add_definitions(-std=c++11)
 #############
 # LIBRARIES #
 #############
-#cs_add_library(${PROJECT_NAME}
-#  src/voxblox.cc
-#)
+
+# TODO(mfehr, helenol): Add a library as soon as we have source files.
 
 ############
 # BINARIES #
 ############
+
 cs_add_executable(voxblox_node
   src/voxblox_node.cc
 )
-#target_link_libraries(voxblox_node ${PROJECT_NAME})
 
 ##########
 # EXPORT #
 ##########
+
 cs_install()
 cs_export()
