@@ -5,6 +5,8 @@
 #include <Eigen/StdVector>
 #include <unordered_map>
 
+#include "voxblox/core/common.h"
+
 namespace voxblox {
 
 struct BlockIndexHash {
@@ -13,15 +15,17 @@ struct BlockIndexHash {
   static constexpr size_t prime3 = 83492791;
 
   std::size_t operator()(const BlockIndex& index) const {
-    return (index.x() * prime1 ^ index.y() * prime2 ^ index.z() * prime3);
+    return (static_cast<unsigned int>(index.x()) * prime1 ^ index.y() * prime2 ^ index.z() * prime3);
   }
 };
 
-template <typename KeyType>
+template <typename ValueType>
 struct BlockHashMapType {
   typedef std::unordered_map<
-      BlockIndex, KeyType, BlockIndexHash, std::equal_to<BlockIndex> > type;
+      BlockIndex, ValueType, BlockIndexHash, std::equal_to<BlockIndex> > type;
 };
+
+typedef typename BlockHashMapType<IndexVector>::type HierarchicalIndex;
 
 typedef std::vector<BlockIndex, Eigen::aligned_allocator<BlockIndex> >
     BlockIndexList;

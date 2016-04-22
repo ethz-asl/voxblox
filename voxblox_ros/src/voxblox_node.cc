@@ -1,7 +1,9 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <pcl/conversions.h>
+#include <pcl/filters/filter.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -9,6 +11,7 @@
 #include <visualization_msgs/MarkerArray.h>
 
 #include "voxblox/core/map.h"
+#include "voxblox/integrator/ray_integrator.h"
 
 namespace voxblox {
 
@@ -23,8 +26,8 @@ class VoxbloxNode {
     sdf_marker_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
         "sdf_markers", 1, true);
     sdf_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("sdf_pointcloud",
-                                                               1, true);
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+            "sdf_pointcloud", 1, true);
 
     pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
                                     &VoxbloxNode::insertPointcloudWithTf, this);
@@ -32,9 +35,11 @@ class VoxbloxNode {
     // 16 vps at 0.2 resolution. TODO(helenol): load these from params for
     // faster prototyping...
     tsdf_map_.reset(new TsdfMap(16, 0.2));
+    ray_integrator_.reset(
+        new Integrator(tsdf_map_, Integrator::IntegratorConfig()));
 
     // TODO(helenol): TEST CODE!!! REMOVE.
-    tsdf_map_->allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));
+    // tsdf_map_->allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));
     ros::spinOnce();
     publishMarkers();
   }
@@ -68,16 +73,46 @@ class VoxbloxNode {
   ros::Publisher sdf_pointcloud_pub_;
 
   std::shared_ptr<TsdfMap> tsdf_map_;
+  std::shared_ptr<Integrator> ray_integrator_;
 };
 
 void VoxbloxNode::insertPointcloudWithTf(
-    const sensor_msgs::PointCloud2::ConstPtr& pointcloud) {
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg) {
   // Look up transform from sensor frame to world frame.
-  Transformation sensor_to_world;
-  if (lookupTransform(pointcloud->header.frame_id, world_frame_,
-                      pointcloud->header.stamp, &sensor_to_world)) {
+  Transformation T_G_C;
+  if (lookupTransform(pointcloud_msg->header.frame_id, world_frame_,
+                      pointcloud_msg->header.stamp, &T_G_C)) {
     // INTEGRATOR CALL BELOW:
     // insertPointcloud(sensor_to_world, pointcloud);
+
+    // Convert the PCL pointcloud into our awesome format.
+    // TODO(helenol): improve...
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+    // pointcloud_pcl is modified below:
+    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+
+    // Filter out NaNs. :|
+    std::vector<int> indices;
+    pcl::removeNaNFromPointCloud(pointcloud_pcl, pointcloud_pcl, indices);
+
+    Pointcloud points_C;
+    Colors colors;
+    points_C.reserve(pointcloud_pcl.size());
+    colors.reserve(pointcloud_pcl.size());
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      points_C.push_back(Point(pointcloud_pcl.points[i].x,
+                               pointcloud_pcl.points[i].y,
+                               pointcloud_pcl.points[i].z));
+      colors.push_back(
+          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
+                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+    }
+
+    ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
+    ray_integrator_->integratePointCloud(T_G_C, points_C, colors);
+    ROS_INFO("Finished integrating, have %d blocks.",
+             tsdf_map_->getNumberOfAllocatedBlocks());
+    publishMarkers();
   }
   // ??? Should we transform the pointcloud???? Or not. I think probably best
   // not to.
@@ -97,6 +132,7 @@ void VoxbloxNode::publishMarkers() {
   size_t num_blocks = tsdf_map_->getNumberOfAllocatedBlocks();
   // This function is block-specific:
   size_t num_voxels_per_block = tsdf_map_->getVoxelsPerBlock();
+  size_t vps = tsdf_map_->getVoxelsPerSide();
 
   pointcloud.reserve(num_blocks * num_voxels_per_block);
 
@@ -108,18 +144,29 @@ void VoxbloxNode::publishMarkers() {
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     const TsdfBlock& block = tsdf_map_->getBlockByIndex(index);
-    for (size_t i = 0; i < num_voxels_per_block; ++i) {
-      float distance = block.getTsdfVoxelByLinearIndex(i).distance;
 
-      // Get back the original coordinate of this voxel.
-      Coordinates coord = block.getCoordinatesOfTsdfVoxelByLinearIndex(i);
+    VoxelIndex voxel_index = VoxelIndex::Zero();
+    for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
+      for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
+        for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
+          const TsdfVoxel& voxel = block.getTsdfVoxelByVoxelIndex(voxel_index);
 
-      pcl::PointXYZI point;
-      point.x = coord.x();
-      point.y = coord.y();
-      point.z = coord.z();
-      point.intensity = distance;
-      pointcloud.push_back(point);
+          float distance = voxel.distance;
+          float weight = voxel.weight;
+
+          // Get back the original coordinate of this voxel.
+          Coordinates coord =
+              block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
+          if (weight > 0.0) {
+            pcl::PointXYZI point;
+            point.x = coord.x();
+            point.y = coord.y();
+            point.z = coord.z();
+            point.intensity = distance;
+            pointcloud.push_back(point);
+          }
+        }
+      }
     }
   }
 

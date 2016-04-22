@@ -9,9 +9,9 @@ add_definitions(-std=c++11)
 #############
 # LIBRARIES #
 #############
-cs_add_library(${PROJECT_NAME}
-  src/voxblox.cc
-)
+#cs_add_library(${PROJECT_NAME}
+#  src/voxblox.cc
+#)
 
 ############
 # BINARIES #
@@ -19,7 +19,7 @@ cs_add_library(${PROJECT_NAME}
 cs_add_executable(voxblox_rox
   src/voxblox.cc
 )
-target_link_libraries(voxblox_rox ${PROJECT_NAME})
+#target_link_libraries(voxblox_rox ${PROJECT_NAME})
 
 ##########
 # EXPORT #

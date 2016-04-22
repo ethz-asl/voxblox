@@ -14,6 +14,8 @@ struct MapConfig {};
 template <typename BlockType>
 class Map {
  public:
+  typedef std::shared_ptr<Map> Ptr;
+
   typedef typename BlockHashMapType<typename BlockType::Ptr>::type BlockHashMap;
 
   virtual ~Map() {}
@@ -43,6 +45,7 @@ class Map {
     if (it != block_map_.end()) {
       return it->second;
     } else {
+      LOG(WARNING) << "Returning null ptr to block!";
       return typename BlockType::ConstPtr();
     }
   }
@@ -52,6 +55,7 @@ class Map {
     if (it != block_map_.end()) {
       return it->second;
     } else {
+      LOG(WARNING) << "Returning null ptr to block!";
       return typename BlockType::Ptr();
     }
   }
@@ -62,8 +66,10 @@ class Map {
       const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
+      //LOG(INFO) << "Access block index " << index.transpose();
       return it->second;
     } else {
+      //LOG(INFO) << "Allocate block index " << index.transpose();
       return allocateNewBlock(index);
     }
   }
@@ -88,10 +94,7 @@ class Map {
   // Coord to block index.
   inline BlockIndex computeBlockIndexFromCoordinates(
       const Coordinates& coords) const {
-    return VoxelIndex(
-        static_cast<int>(std::floor(coords.x() * block_size_inv_)),
-        static_cast<int>(std::floor(coords.y() * block_size_inv_)),
-        static_cast<int>(std::floor(coords.z() * block_size_inv_)));
+    return floorVectorAndDowncast(coords * block_size_inv_);
   }
 
   // Pure virtual function -- inheriting class MUST overwrite.
@@ -103,6 +106,7 @@ class Map {
   }
 
   void removeBlock(const BlockIndex& index) { block_map_.erase(index); }
+
   void removeBlockByCoordinates(const Coordinates& coords) {
     block_map_.erase(computeBlockIndexFromCoordinates(coords));
   }
@@ -119,6 +123,8 @@ class Map {
 
   size_t getNumberOfAllocatedBlocks() const { return block_map_.size(); }
 
+  FloatingPoint getBlockSize() const { return block_size_; }
+
  protected:
   Map(FloatingPoint block_size) : block_size_(block_size) {
     block_size_inv_ = 1.0 / block_size_;
@@ -134,19 +140,22 @@ class Map {
 
 class TsdfMap : public Map<TsdfBlock> {
  public:
+  typedef std::shared_ptr<TsdfMap> Ptr;
+
   TsdfMap(size_t voxels_per_side, FloatingPoint voxel_size)
       : Map(voxel_size * voxels_per_side),
         voxel_size_(voxel_size),
         voxels_per_side_(voxels_per_side) {}
 
   virtual TsdfBlock::Ptr allocateNewBlock(const BlockIndex& index) {
-    auto my_iter = block_map_.find(index);
-    auto insert_status = block_map_.emplace(
-        index,
-        std::make_shared<TsdfBlock>(index.cast<FloatingPoint>() * block_size_,
-                                    voxels_per_side_, voxel_size_));
+    auto insert_status = block_map_.insert(
+        std::make_pair(index, std::shared_ptr<TsdfBlock>(new TsdfBlock(
+                                  index.cast<FloatingPoint>() * block_size_,
+                                  voxels_per_side_, voxel_size_))));
     CHECK(insert_status.second) << "Block already exists when allocating at "
                                 << index.transpose();
+    CHECK(insert_status.first->second != nullptr) << "Second is null!";
+    CHECK(insert_status.first->first == index) << "Added to wrong index!";
     return insert_status.first->second;
   }
 
@@ -154,6 +163,10 @@ class TsdfMap : public Map<TsdfBlock> {
   size_t getVoxelsPerBlock() const {
     return voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
   }
+
+  FloatingPoint getVoxelSize() const { return voxel_size_; }
+
+  size_t getVoxelsPerSide() const { return voxels_per_side_; }
 
  protected:
   size_t voxels_per_side_;

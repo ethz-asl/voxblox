@@ -22,17 +22,20 @@ class BaseBlock {
 
   inline size_t computeLinearIndexFromVoxelIndex(const VoxelIndex& index,
                                                  size_t vps) const {
-    return index.x() + vps * (index.y() + index.z() * vps);
+    size_t linear_index = index.x() + vps * (index.y() + index.z() * vps);
+    // TODO remove this check
+    CHECK(index.x() >= 0 && index.x() < vps);
+    CHECK(index.y() >= 0 && index.y() < vps);
+    CHECK(index.z() >= 0 && index.z() < vps);
+
+    CHECK_LT(linear_index, vps * vps * vps);
+    CHECK_GE(linear_index, 0);
+    return linear_index;
   }
 
   inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Coordinates& coords, FloatingPoint voxel_size_inv) const {
-    return VoxelIndex(static_cast<int>(std::floor((coords.x() - origin_.x()) *
-                                                  voxel_size_inv)),
-                      static_cast<int>(std::floor((coords.y() - origin_.y()) *
-                                                  voxel_size_inv)),
-                      static_cast<int>(std::floor((coords.z() - origin_.z()) *
-                                                  voxel_size_inv)));
+    return floorVectorAndDowncast((coords - origin_) * voxel_size_inv);
   }
 
   inline size_t computeLinearIndexFromCoordinates(const Coordinates& coords,
@@ -51,11 +54,15 @@ class BaseBlock {
 
   inline Coordinates computeCoordinatesFromVoxelIndex(
       const VoxelIndex& index, FloatingPoint voxel_size) const {
-    return index.cast<FloatingPoint>() * voxel_size + origin_;
+    return (index.cast<FloatingPoint>() + 0.5 * Coordinates::Ones()) *
+               voxel_size +
+           origin_;
   }
 
   inline VoxelIndex computeVoxelIndexFromLinearIndex(size_t linear_index,
                                                      size_t vps) const {
+    // DEFINITELY WRONG NEEDS FIXIN'
+    CHECK(false);
     int rem = linear_index;
     VoxelIndex result;
     std::div_t div_temp = std::div(rem, vps * vps);
@@ -67,6 +74,8 @@ class BaseBlock {
     return result;
   }
 
+  const Coordinates& getOrigin() const { return origin_; }
+
  protected:
   size_t num_layers_;
   Coordinates origin_;
@@ -74,7 +83,7 @@ class BaseBlock {
   bool has_data_;
 };
 
-class TsdfBlock : BaseBlock {
+class TsdfBlock : public BaseBlock {
  public:
   typedef std::shared_ptr<TsdfBlock> Ptr;
   typedef std::shared_ptr<const BaseBlock> ConstPtr;
@@ -93,7 +102,7 @@ class TsdfBlock : BaseBlock {
   inline const TsdfVoxel& getTsdfVoxelByVoxelIndex(
       const VoxelIndex& index) const {
     return tsdf_layer_->voxels[computeLinearIndexFromVoxelIndex(
-        index, tsdf_layer_->voxel_size_inv)];
+        index, tsdf_layer_->voxels_per_side)];
   }
   inline const TsdfVoxel& getTsdfVoxelByCoordinates(
       const Coordinates& coords) const {
@@ -102,11 +111,18 @@ class TsdfBlock : BaseBlock {
   }
 
   inline TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) {
+    CHECK_LT(index, tsdf_layer_->num_voxels);
     return tsdf_layer_->voxels[index];
   }
   inline TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index) {
-    return tsdf_layer_->voxels[computeLinearIndexFromVoxelIndex(
-        index, tsdf_layer_->voxel_size_inv)];
+    // TODO(mfehrenol) remove this check for performance reasons
+
+    CHECK(tsdf_layer_);
+    size_t linear_index =
+        computeLinearIndexFromVoxelIndex(index, tsdf_layer_->voxels_per_side);
+    CHECK_GE(linear_index, 0);
+    CHECK_LT(linear_index, tsdf_layer_->num_voxels);
+    return tsdf_layer_->voxels[linear_index];
   }
   inline TsdfVoxel& getTsdfVoxelByCoordinates(const Coordinates& coords) {
     return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
