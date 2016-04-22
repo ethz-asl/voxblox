@@ -1,9 +1,10 @@
-#ifndef VOXBLOX_BLOCK_HASH_H
-#define VOXBLOX_BLOCK_HASH_H
+#ifndef VOXBLOX_BLOCK_HASH_H_
+#define VOXBLOX_BLOCK_HASH_H_
+
+#include <functional>
+#include <unordered_map>
 
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
-#include <unordered_map>
 
 #include "voxblox/core/common.h"
 
@@ -15,21 +16,21 @@ struct BlockIndexHash {
   static constexpr size_t prime3 = 83492791;
 
   std::size_t operator()(const BlockIndex& index) const {
-    return (static_cast<unsigned int>(index.x()) * prime1 ^ index.y() * prime2 ^ index.z() * prime3);
+    return (static_cast<unsigned int>(index.x()) * prime1 ^ index.y() * prime2 ^
+            index.z() * prime3);
   }
 };
 
 template <typename ValueType>
 struct BlockHashMapType {
-  typedef std::unordered_map<
-      BlockIndex, ValueType, BlockIndexHash, std::equal_to<BlockIndex> > type;
+  typedef std::unordered_map<BlockIndex, ValueType, BlockIndexHash,
+                             std::equal_to<BlockIndex> > type;
 };
 
-typedef typename BlockHashMapType<IndexVector>::type HierarchicalIndex;
+typedef typename BlockHashMapType<IndexVector>::type HierarchicalIndexMap;
 
-typedef std::vector<BlockIndex, Eigen::aligned_allocator<BlockIndex> >
-    BlockIndexList;
+typedef typename HierarchicalIndexMap::value_type HierarchicalIndex;
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_BLOCK_HASH_H
+#endif  // VOXBLOX_BLOCK_HASH_H_

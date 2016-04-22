@@ -1,15 +1,16 @@
-#ifndef VOXBLOX_CORE_VOXEL_H
-#define VOXBLOX_CORE_VOXEL_H
+#ifndef VOXBLOX_CORE_VOXEL_H_
+#define VOXBLOX_CORE_VOXEL_H_
+
+#include <cstdint>
 
 #include "voxblox/core/common.h"
-#include <cstdint>
 
 namespace voxblox {
 
 struct TsdfVoxel {
- float distance = 0.0;
- float weight = 0.0;
- Color color;
+  float distance = 0.0;
+  float weight = 0.0;
+  Color color;
 };
 
 struct EsdfVoxel {
@@ -24,4 +25,4 @@ struct OccupancyVoxel {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_VOXEL_H
+#endif  // VOXBLOX_CORE_VOXEL_H_
