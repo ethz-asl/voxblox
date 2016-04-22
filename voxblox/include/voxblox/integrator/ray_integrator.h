@@ -14,7 +14,9 @@ namespace voxblox {
 class Integrator {
  public:
   struct IntegratorConfig {
-    float truncation_distance = 0.1;
+    float default_truncation_distance = 0.1;
+    float max_weight = 100.0;
+    bool voxel_carving_enabled = true;
   };
 
   Integrator(const TsdfMap::Ptr& map, const IntegratorConfig& config)
@@ -99,6 +101,26 @@ class Integrator {
     }
   }
 
+  void updateTsdfVoxel(const Point& origin, const Point& point_C,
+                       const Point& point_G, const Point& voxel_center,
+                       const Color& color, const float truncation_distance, TsdfVoxel* tsdf_voxel) {
+    const float sdf = static_cast<float>((point_G - voxel_center).norm());
+    const float weight = 1.0f;
+    const float new_weight = tsdf_voxel->weight + weight;
+
+    tsdf_voxel->color = Color::blendTwoColors(tsdf_voxel->color,
+                                              tsdf_voxel->weight, color,
+                                              weight);
+    const float new_sdf = (sdf * weight
+        + tsdf_voxel->distance * tsdf_voxel->weight) / new_weight;
+
+    tsdf_voxel->distance =
+        (new_sdf > 0.0) ?
+            std::min(truncation_distance, new_sdf) :
+            std::max(-truncation_distance, new_sdf);
+    tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
+  }
+
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
     CHECK_EQ(points_C.size(), colors.size());
@@ -107,8 +129,16 @@ class Integrator {
     const Point& origin_scaled = origin * voxel_size_inv_;
 
     for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
-      const Point& point_G = T_G_C * points_C[pt_idx];
+      const Point& point_C = points_C[pt_idx];
+      const Point& point_G = T_G_C * point_C;
       const Color& color = colors[pt_idx];
+
+      const Ray unit_ray = (point_G - origin).normalized();
+
+      const FloatingPoint truncation_distance = config_.default_truncation_distance;
+
+      const Point ray_end = point_G + unit_ray * truncation_distance;
+      const Point ray_start = (config_.voxel_carving_enabled) ? origin : (point_G - unit_ray * truncation_distance);
 
       const Point& point_G_scaled = point_G * voxel_size_inv_;
 
@@ -148,23 +178,13 @@ class Integrator {
         CHECK(block);
         for (const VoxelIndex& local_voxel_index : hi_index.second) {
           //LOG(INFO) << "Local voxel index: " << local_voxel_index.transpose();
-          const Coordinates voxel_center =
-              block->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
-          TsdfVoxel& tsdf_voxel =
-              block->getTsdfVoxelByVoxelIndex(local_voxel_index);
+          const Coordinates voxel_center = block
+              ->getCoordinatesOfTsdfVoxelByVoxelIndex(local_voxel_index);
+          TsdfVoxel& tsdf_voxel = block->getTsdfVoxelByVoxelIndex(
+              local_voxel_index);
 
-          const float sdf = static_cast<float>((point_G - voxel_center).norm());
-          const float weight = 1.0f;
-
-          const float new_weight = tsdf_voxel.weight + weight;
-
-          tsdf_voxel.color = Color::blendTwoColors(
-              tsdf_voxel.color, tsdf_voxel.weight, color, weight);
-
-          tsdf_voxel.distance =
-              (sdf * weight + tsdf_voxel.distance * tsdf_voxel.weight) /
-              new_weight;
-          tsdf_voxel.weight = new_weight;
+          updateTsdfVoxel(origin, point_C, point_G, voxel_center, color,
+                          truncation_distance, &tsdf_voxel);
 
           blx_ctrx++;
         }
