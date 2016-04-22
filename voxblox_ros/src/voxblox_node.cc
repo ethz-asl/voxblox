@@ -26,7 +26,7 @@ class VoxbloxNode {
     sdf_marker_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
         "sdf_markers", 1, true);
     sdf_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
             "sdf_pointcloud", 1, true);
 
     pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
@@ -34,9 +34,13 @@ class VoxbloxNode {
 
     // 16 vps at 0.2 resolution. TODO(helenol): load these from params for
     // faster prototyping...
-    tsdf_map_.reset(new TsdfMap(16, 0.2));
+
+    Integrator::IntegratorConfig config;
+    config.voxel_carving_enabled = false;
+
+    tsdf_map_.reset(new TsdfMap(16, 0.02));
     ray_integrator_.reset(
-        new Integrator(tsdf_map_, Integrator::IntegratorConfig()));
+        new Integrator(tsdf_map_, config));
 
     // TODO(helenol): TEST CODE!!! REMOVE.
     // tsdf_map_->allocateBlockPtrByIndex(voxblox::BlockIndex(1, 2, 3));
@@ -52,6 +56,7 @@ class VoxbloxNode {
   bool lookupTransform(const std::string& from_frame,
                        const std::string& to_frame, const ros::Time& timestamp,
                        Transformation* transform);
+  void publishTsdfSurfacePoints();
 
  private:
   ros::NodeHandle nh_;
@@ -103,16 +108,16 @@ void VoxbloxNode::insertPointcloudWithTf(
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
-      colors.push_back(
-          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
-                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+      colors.push_back(Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
+                             pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
     }
 
     ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
     ray_integrator_->integratePointCloud(T_G_C, points_C, colors);
     ROS_INFO("Finished integrating, have %d blocks.",
              tsdf_map_->getNumberOfAllocatedBlocks());
-    publishMarkers();
+    //publishMarkers();
+    publishTsdfSurfacePoints();
   }
   // ??? Should we transform the pointcloud???? Or not. I think probably best
   // not to.
@@ -157,12 +162,72 @@ void VoxbloxNode::publishMarkers() {
           // Get back the original coordinate of this voxel.
           Coordinates coord =
               block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
+
           if (weight > 0.0) {
             pcl::PointXYZI point;
             point.x = coord.x();
             point.y = coord.y();
             point.z = coord.z();
             point.intensity = distance;
+            pointcloud.push_back(point);
+          }
+        }
+      }
+    }
+  }
+
+  pointcloud.header.frame_id = world_frame_;
+  sdf_pointcloud_pub_.publish(pointcloud);
+}
+
+void VoxbloxNode::publishTsdfSurfacePoints() {
+  CHECK(tsdf_map_) << "TSDF map not allocated.";
+
+  // Create a pointcloud with distance = intensity.
+  pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+
+  // Iterate over all voxels to create a pointcloud.
+  // TODO(helenol): move this to general IO, replace ply writer with writing
+  // this out.
+  size_t num_blocks = tsdf_map_->getNumberOfAllocatedBlocks();
+  // This function is block-specific:
+  size_t num_voxels_per_block = tsdf_map_->getVoxelsPerBlock();
+  size_t vps = tsdf_map_->getVoxelsPerSide();
+
+  pointcloud.reserve(num_blocks * num_voxels_per_block);
+
+  BlockIndexList blocks;
+  tsdf_map_->getAllAllocatedBlocks(&blocks);
+
+  // Iterate over all blocks.
+  const float max_distance = 0.5;
+  for (const BlockIndex& index : blocks) {
+    // Iterate over all voxels in said blocks.
+    const TsdfBlock& block = tsdf_map_->getBlockByIndex(index);
+
+    VoxelIndex voxel_index = VoxelIndex::Zero();
+    for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
+      for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
+        for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
+          const TsdfVoxel& voxel = block.getTsdfVoxelByVoxelIndex(voxel_index);
+
+          float distance = voxel.distance;
+          float weight = voxel.weight;
+          const Color color = voxel.color;
+
+          // Get back the original coordinate of this voxel.
+          Coordinates coord =
+              block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
+
+
+          if (std::abs(distance) < 0.1 && weight > 0) {
+            pcl::PointXYZRGB point;
+            point.x = coord.x();
+            point.y = coord.y();
+            point.z = coord.z();
+            point.r = color.r;
+            point.g = color.g;
+            point.b = color.b;
             pointcloud.push_back(point);
           }
         }
