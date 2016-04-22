@@ -24,12 +24,12 @@ class BaseBlock {
                                                  size_t vps) const {
     size_t linear_index = index.x() + vps * (index.y() + index.z() * vps);
     // TODO remove this check
-    CHECK(index.x() >= 0 && index.x() < vps);
-    CHECK(index.y() >= 0 && index.y() < vps);
-    CHECK(index.z() >= 0 && index.z() < vps);
+    DCHECK(index.x() >= 0 && index.x() < vps);
+    DCHECK(index.y() >= 0 && index.y() < vps);
+    DCHECK(index.z() >= 0 && index.z() < vps);
 
-    CHECK_LT(linear_index, vps * vps * vps);
-    CHECK_GE(linear_index, 0);
+    DCHECK(linear_index < vps * vps * vps);
+    DCHECK(linear_index >= 0);
     return linear_index;
   }
 
@@ -111,17 +111,17 @@ class TsdfBlock : public BaseBlock {
   }
 
   inline TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) {
-    CHECK_LT(index, tsdf_layer_->num_voxels);
+    DCHECK(index < tsdf_layer_->num_voxels);
     return tsdf_layer_->voxels[index];
   }
   inline TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index) {
     // TODO(mfehrenol) remove this check for performance reasons
 
-    CHECK(tsdf_layer_);
+    DCHECK(tsdf_layer_);
     size_t linear_index =
         computeLinearIndexFromVoxelIndex(index, tsdf_layer_->voxels_per_side);
-    CHECK_GE(linear_index, 0);
-    CHECK_LT(linear_index, tsdf_layer_->num_voxels);
+    DCHECK(linear_index >= 0);
+    DCHECK(linear_index < tsdf_layer_->num_voxels);
     return tsdf_layer_->voxels[linear_index];
   }
   inline TsdfVoxel& getTsdfVoxelByCoordinates(const Coordinates& coords) {

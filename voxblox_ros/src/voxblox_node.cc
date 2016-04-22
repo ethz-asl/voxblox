@@ -49,7 +49,7 @@ class VoxbloxNode {
   }
 
   void insertPointcloudWithTf(
-      const sensor_msgs::PointCloud2::ConstPtr& pointcloud);
+      const sensor_msgs::PointCloud2::Ptr& pointcloud);
 
   void publishMarkers();
 
@@ -82,7 +82,7 @@ class VoxbloxNode {
 };
 
 void VoxbloxNode::insertPointcloudWithTf(
-    const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg) {
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
   // Look up transform from sensor frame to world frame.
   Transformation T_G_C;
   if (lookupTransform(pointcloud_msg->header.frame_id, world_frame_,
@@ -92,6 +92,14 @@ void VoxbloxNode::insertPointcloudWithTf(
 
     // Convert the PCL pointcloud into our awesome format.
     // TODO(helenol): improve...
+    // Horrible hack fix to fix color parsing colors in PCL.
+    for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
+      if (pointcloud_msg->fields[d].name == std::string("rgb")) {
+        pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
+      }
+      LOG(INFO) << "Got field named: " << pointcloud_msg->fields[d].name;
+    }
+
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
@@ -126,7 +134,7 @@ void VoxbloxNode::insertPointcloudWithTf(
 }
 
 void VoxbloxNode::publishMarkers() {
-  CHECK(tsdf_map_) << "TSDF map not allocated.";
+  DCHECK(tsdf_map_) << "TSDF map not allocated.";
 
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
@@ -181,7 +189,7 @@ void VoxbloxNode::publishMarkers() {
 }
 
 void VoxbloxNode::publishTsdfSurfacePoints() {
-  CHECK(tsdf_map_) << "TSDF map not allocated.";
+  DCHECK(tsdf_map_) << "TSDF map not allocated.";
 
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZRGB> pointcloud;

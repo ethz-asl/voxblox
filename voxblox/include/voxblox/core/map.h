@@ -152,10 +152,10 @@ class TsdfMap : public Map<TsdfBlock> {
         std::make_pair(index, std::shared_ptr<TsdfBlock>(new TsdfBlock(
                                   index.cast<FloatingPoint>() * block_size_,
                                   voxels_per_side_, voxel_size_))));
-    CHECK(insert_status.second) << "Block already exists when allocating at "
+    DCHECK(insert_status.second) << "Block already exists when allocating at "
                                 << index.transpose();
-    CHECK(insert_status.first->second != nullptr) << "Second is null!";
-    CHECK(insert_status.first->first == index) << "Added to wrong index!";
+    DCHECK(insert_status.first->second != nullptr) << "Second is null!";
+    DCHECK(insert_status.first->first == index) << "Added to wrong index!";
     return insert_status.first->second;
   }
 

@@ -21,7 +21,7 @@ class Integrator {
 
   Integrator(const TsdfMap::Ptr& map, const IntegratorConfig& config)
       : map_(map), config_(config) {
-    CHECK(map_);
+    DCHECK(map_);
 
     voxel_size_ = map_->getVoxelSize();
     block_size_ = map_->getBlockSize();
@@ -32,12 +32,12 @@ class Integrator {
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
   }
 
-  int signum(FloatingPoint x) const { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
+  inline int signum(FloatingPoint x) const { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
 
   // Assume side length is 1 -- pre-scale your values accordingly!!!!
   void castRay(const Point& start_coord, const Point& end_coord,
                std::vector<AnyIndex>* indices) {
-    CHECK_NOTNULL(indices);
+    DCHECK(indices != nullptr);
 
     constexpr FloatingPoint kTolerance = 1e-6;
 
@@ -91,8 +91,8 @@ class Integrator {
 
       int t_min_idx;
       FloatingPoint t_min = t_to_next_boundary.minCoeff(&t_min_idx);
-      CHECK_LT(t_min_idx, 3);
-      CHECK_GE(t_min_idx, 0);
+      DCHECK(t_min_idx < 3);
+      DCHECK(t_min_idx >= 0);
 
       curr_index[t_min_idx] += step_direction_signs[t_min_idx];
       t_to_next_boundary[t_min_idx] += t_step_size[t_min_idx];
@@ -101,7 +101,7 @@ class Integrator {
     }
   }
 
-  void updateTsdfVoxel(const Point& origin, const Point& point_C,
+  inline void updateTsdfVoxel(const Point& origin, const Point& point_C,
                        const Point& point_G, const Point& voxel_center,
                        const Color& color, const float truncation_distance, TsdfVoxel* tsdf_voxel) {
     const float sdf = static_cast<float>((point_G - voxel_center).norm());
@@ -123,7 +123,7 @@ class Integrator {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
-    CHECK_EQ(points_C.size(), colors.size());
+    DCHECK(points_C.size() == colors.size());
 
     const Point& origin = T_G_C.getPosition();
     const Point& origin_scaled = origin * voxel_size_inv_;
@@ -175,7 +175,7 @@ class Integrator {
       for (const HierarchicalIndex::value_type& hi_index : hi_index_map) {
         TsdfBlock::Ptr block = map_->allocateBlockPtrByIndex(hi_index.first);
         // TODO remove
-        CHECK(block);
+        DCHECK(block);
         for (const VoxelIndex& local_voxel_index : hi_index.second) {
           //LOG(INFO) << "Local voxel index: " << local_voxel_index.transpose();
           const Coordinates voxel_center = block
