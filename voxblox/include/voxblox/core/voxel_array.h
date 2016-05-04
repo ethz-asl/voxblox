@@ -62,8 +62,6 @@ struct VoxelArray {
   // TODO(mfehr, helenol): Fix this function
   inline VoxelIndex computeVoxelIndexFromLinearIndex(
       size_t linear_index) const {
-    CHECK(false);
-
     int rem = linear_index;
     VoxelIndex result;
     std::div_t div_temp = std::div(rem, voxels_per_side * voxels_per_side);
