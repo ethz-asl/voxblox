@@ -28,42 +28,61 @@ TEST_F(TsdfMapTest, BlockAllocation) {
   map_->allocateNewBlockByCoordinates(Point(-10.0, 13.5, 20.0));
   EXPECT_EQ(2, map_->getNumberOfAllocatedBlocks());
 }
-/*
-TEST_F(ESDFUpdateTest, DeleteObstacle) {
-  // map_.setBoxFree(Eigen::Vector2d(1, 0), Eigen::Vector2d(2, 1));
-  mav_planning_utils::timing::Timer timer_update("map/update");
-  map_.updateMapIncremental();
-  timer_update.Stop();
-  // map_.printMatlabMatrix();
+
+TEST_F(TsdfMapTest, IndexLookups) {
+  TsdfBlock::Ptr block =
+      map_->allocateNewBlockByCoordinates(Point(0.0, 0.0, 0.0));
+
+  TsdfBlock::Ptr block2 = map_->getBlockPtrByCoordinates(Point(0.0, 0.1, 0.0));
+  EXPECT_EQ(block, block2);
+
+  // Now check voxel indexing within this block.
+  Point test_point(0.0, 0.2, 0.0);
+  TsdfVoxel& voxel = block->getTsdfVoxelByCoordinates(test_point);
+  voxel.weight = 1.0;
+  voxel.distance = 0.5;
+
+  size_t linear_index =
+      block->getTsdfLayer().computeLinearIndexFromCoordinates(test_point);
+  VoxelIndex voxel_index =
+      block->getTsdfLayer().computeVoxelIndexFromCoordinates(test_point);
+
+  EXPECT_TRUE(EIGEN_MATRIX_EQUAL(
+      voxel_index,
+      block->getTsdfLayer().computeVoxelIndexFromLinearIndex(linear_index)));
+
+  EXPECT_TRUE(EIGEN_MATRIX_NEAR(
+      test_point, block->getCoordinatesOfTsdfVoxelByLinearIndex(linear_index),
+      0.1));
+  EXPECT_TRUE(EIGEN_MATRIX_NEAR(
+      test_point, block->getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index),
+      0.1));
+
+  test_point = Point(-0.4, -0.2, 0.6);
+  block = map_->getBlockPtrByCoordinates(test_point);
+
+  linear_index =
+      block->getTsdfLayer().computeLinearIndexFromCoordinates(test_point);
+  voxel_index =
+      block->getTsdfLayer().computeVoxelIndexFromCoordinates(test_point);
+
+  EXPECT_TRUE(EIGEN_MATRIX_EQUAL(
+      voxel_index,
+      block->getTsdfLayer().computeVoxelIndexFromLinearIndex(linear_index)));
+
+  EXPECT_TRUE(EIGEN_MATRIX_NEAR(
+      test_point, block->getCoordinatesOfTsdfVoxelByLinearIndex(linear_index),
+      0.1));
+  EXPECT_TRUE(EIGEN_MATRIX_NEAR(
+      test_point, block->getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index),
+      0.1));
 }
 
-TEST_F(ESDFUpdateTest, AddInside) {
-  // map_.setBoxOccupied(Eigen::Vector2d(2, 1), Eigen::Vector2d(3, 2));
-  // map_.setBoxOccupied(Eigen::Vector2d(2.25, 1.25), Eigen::Vector2d(2.75,
-  // 1.75));
-  map_.updateMapIncremental();
-  // map_.printMatlabMatrix();
-}
-
-TEST_F(ESDFUpdateTest, AddRandom) {
-  // map_.setBoxOccupied(Eigen::Vector2d(1.25, 2.25), Eigen::Vector2d(1.75,
-  // 2.75));
-  int key = map_.getNearestFreeSpace(Eigen::Vector2d(3.5, 3.5), 0.5);
-  Eigen::VectorXd pos = map_.getMetricPosFromKey(key);
-  std::cout << pos << std::endl;
-  map_.updateMapIncremental();
-  // map_.printMatlabMatrix();
-}
-*/
-int main(int argc, char **argv) {
-
+int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   google::InitGoogleLogging(argv[0]);
-  //google::ParseCommandLineFlags(&argc, &argv, false);
-  //google::InstallFailureSignalHandler();
 
   int result = RUN_ALL_TESTS();
-  //timing::Timing::Print(std::cout);
 
   return result;
 }
