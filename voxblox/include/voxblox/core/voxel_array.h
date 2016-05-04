@@ -59,7 +59,6 @@ struct VoxelArray {
            origin;
   }
 
-  // TODO(mfehr, helenol): Fix this function
   inline VoxelIndex computeVoxelIndexFromLinearIndex(
       size_t linear_index) const {
     int rem = linear_index;
