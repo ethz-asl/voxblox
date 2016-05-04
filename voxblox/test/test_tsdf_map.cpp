@@ -59,7 +59,7 @@ TEST_F(TsdfMapTest, IndexLookups) {
       0.1));
 
   test_point = Point(-0.4, -0.2, 0.6);
-  block = map_->getBlockPtrByCoordinates(test_point);
+  block = map_->allocateNewBlockByCoordinates(test_point);
 
   linear_index =
       block->getTsdfLayer().computeLinearIndexFromCoordinates(test_point);
