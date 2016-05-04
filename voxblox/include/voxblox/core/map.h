@@ -98,7 +98,7 @@ class Map {
 
   inline typename BlockType::Ptr allocateNewBlockByCoordinates(
       const Point& coords) {
-    allocateNewBlock(computeBlockIndexFromCoordinates(coords));
+    return allocateNewBlock(computeBlockIndexFromCoordinates(coords));
   }
 
   void removeBlock(const BlockIndex& index) { block_map_.erase(index); }

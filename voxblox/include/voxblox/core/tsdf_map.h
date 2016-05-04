@@ -50,8 +50,8 @@ class TsdfMap : public Map<TsdfBlock> {
   size_t getTsdfVoxelsPerSide() const { return voxels_per_side_; }
 
  protected:
-  size_t voxels_per_side_;
   FloatingPoint voxel_size_;
+  size_t voxels_per_side_;
 };
 
 }  // namespace voxblox
