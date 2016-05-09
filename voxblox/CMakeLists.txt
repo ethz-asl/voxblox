@@ -20,9 +20,19 @@ cs_add_executable(voxblox_rox
   src/voxblox.cc
 )
 
+
+
+#########
+# TESTS #
+#########
+
+catkin_add_gtest(test_tsdf_map
+  test/test_tsdf_map.cpp
+)
+target_link_libraries(test_tsdf_map ${catkin_LIBRARIES})
+
 ##########
 # EXPORT #
 ##########
-
 cs_install()
 cs_export()
