@@ -20,54 +20,49 @@ class TsdfBlock : public BaseBlock {
             FloatingPoint voxel_size)
       : BaseBlock(1, origin, voxels_per_side * voxel_size),
         has_changed_(false) {
-    tsdf_layer_.reset(new VoxelArray<TsdfVoxel>(voxels_per_side, voxel_size));
+    tsdf_layer_.reset(
+        new VoxelArray<TsdfVoxel>(voxels_per_side, voxel_size, origin));
   }
 
   virtual ~TsdfBlock() {}
 
-  inline const TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) const {
-    return tsdf_layer_->voxels[index];
-  }
+  const VoxelArray<TsdfVoxel>& getTsdfLayer() const { return *tsdf_layer_; }
+  VoxelArray<TsdfVoxel>& getTsdfLayerMutable() { return *tsdf_layer_; }
 
-  inline const TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index)
-      const {
-    return tsdf_layer_->voxels
-        [computeLinearIndexFromVoxelIndex(index, tsdf_layer_->voxels_per_side)];
+  VoxelArray<TsdfVoxel>* getTsdfLayerPtr() { return tsdf_layer_.get(); }
+
+  // Convenience functions for accessing voxels (could also be done at the
+  // layer level).
+  inline const TsdfVoxel& getTsdfVoxelByVoxelIndex(
+      const VoxelIndex& index) const {
+    return tsdf_layer_->getVoxelByVoxelIndex(index);
   }
 
   inline const TsdfVoxel& getTsdfVoxelByCoordinates(const Point& coords) const {
-    return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
-        coords, tsdf_layer_->voxel_size_inv, tsdf_layer_->voxels_per_side)];
+    return tsdf_layer_->getVoxelByCoordinates(coords);
   }
 
   inline TsdfVoxel& getTsdfVoxelByLinearIndex(size_t index) {
-    DCHECK_LT(index, tsdf_layer_->num_voxels);
-    return tsdf_layer_->voxels[index];
+    return tsdf_layer_->getVoxelByLinearIndex(index);
   }
+
   inline TsdfVoxel& getTsdfVoxelByVoxelIndex(const VoxelIndex& index) {
-    DCHECK(tsdf_layer_);
-    size_t linear_index =
-        computeLinearIndexFromVoxelIndex(index, tsdf_layer_->voxels_per_side);
-    DCHECK_GE(linear_index, 0);
-    DCHECK_LT(linear_index, tsdf_layer_->num_voxels);
-    return tsdf_layer_->voxels[linear_index];
+    return tsdf_layer_->getVoxelByVoxelIndex(index);
   }
 
   inline TsdfVoxel& getTsdfVoxelByCoordinates(const Point& coords) {
-    return tsdf_layer_->voxels[computeLinearIndexFromCoordinates(
-        coords, tsdf_layer_->voxel_size_inv, tsdf_layer_->voxels_per_side)];
+    return tsdf_layer_->getVoxelByCoordinates(coords);
   }
 
   inline size_t getNumTsdfVoxels() const { return tsdf_layer_->num_voxels; }
 
   inline Point getCoordinatesOfTsdfVoxelByLinearIndex(size_t index) const {
-    return computeCoordinatesFromLinearIndex(index, tsdf_layer_->voxel_size,
-                                             tsdf_layer_->voxels_per_side);
+    return tsdf_layer_->computeCoordinatesFromLinearIndex(index);
   }
 
-  inline Point getCoordinatesOfTsdfVoxelByVoxelIndex(const VoxelIndex& index)
-      const {
-    return computeCoordinatesFromVoxelIndex(index, tsdf_layer_->voxel_size);
+  inline Point getCoordinatesOfTsdfVoxelByVoxelIndex(
+      const VoxelIndex& index) const {
+    return tsdf_layer_->computeCoordinatesFromVoxelIndex(index);
   }
 
  protected:
