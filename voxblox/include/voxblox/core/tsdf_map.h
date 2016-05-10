@@ -21,17 +21,21 @@ class TsdfMap {
   };
 
   explicit TsdfMap(Config config)
-      : tsdf_layer_(config.tsdf_voxel_size, config.tsdf_voxels_per_side) {
+      : tsdf_layer_(new Layer<TsdfVoxel>(config.tsdf_voxel_size,
+                                         config.tsdf_voxels_per_side)) {
     block_size_ = config.tsdf_voxel_size * config.tsdf_voxels_per_side;
   }
 
   virtual ~TsdfMap() {}
 
+  Layer<TsdfVoxel>* getTsdfLayerPtr() { return tsdf_layer_.get(); }
+  const Layer<TsdfVoxel>& getTsdfLayer() const { return *tsdf_layer_; }
+
  protected:
   FloatingPoint block_size_;
 
   // The layers.
-  Layer<TsdfVoxel> tsdf_layer_;
+  Layer<TsdfVoxel>::Ptr tsdf_layer_;
 };
 
 }  // namespace voxblox

@@ -1,7 +1,6 @@
-//#include "voxblox/core/tsdf_block.h"
 #include "voxblox/core/tsdf_map.h"
-//#include "voxblox/integrator/ray_integrator.h"
-//#include "voxblox/io/sdf_ply.h"
+#include "voxblox/integrator/tsdf_integrator.h"
+#include "voxblox/io/sdf_ply.h"
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
@@ -18,14 +17,14 @@ int main(int argc, char* argv[]) {
   config.tsdf_voxel_size = 0.2;
   config.tsdf_voxels_per_side = 16;
 
-  /*TsdfIntegrator::Config integrator_config;
+  TsdfIntegrator::Config integrator_config;
   integrator_config.default_truncation_distance = 0.1;
   integrator_config.max_weight = 1000.0;
   integrator_config.voxel_carving_enabled = true;
 
-  TsdfBlock my_cool_block(Eigen::Vector3d::Zero(), 8, 0.1); */
   TsdfMap::Ptr my_cool_map = std::make_shared<TsdfMap>(config);
-  //TsdfIntegrator my_cool_integrator(my_cool_map, integrator_config);
+  TsdfIntegrator my_cool_integrator(my_cool_map->getTsdfLayerPtr(),
+                                    integrator_config);
 
   Point sensor_origin(1, 0.4, 2.3);
   Transformation transform(sensor_origin, Eigen::Quaterniond::Identity());
@@ -35,12 +34,12 @@ int main(int argc, char* argv[]) {
   Colors colors;
   colors.push_back(Color());
 
-  /* my_cool_integrator.integratePointCloud(transform, measurements, colors);
+  my_cool_integrator.integratePointCloud(transform, measurements, colors);
 
   // Now output the ply file.
   LOG(INFO) << "Output ply to test_tsdf.ply\n";
-  voxblox::io::outputMapAsPly(*my_cool_map, "test_tsdf.ply",
-                              voxblox::io::kSdfDistanceColor); */
+  voxblox::io::outputLayerAsPly(my_cool_map->getTsdfLayer(), "test_tsdf.ply",
+                              voxblox::io::kSdfDistanceColor);
 
   return 0;
 }

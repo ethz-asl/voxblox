@@ -103,8 +103,8 @@ class Layer {
   typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) {
     auto insert_status = block_map_.insert(
         std::make_pair(index, std::shared_ptr<BlockType>(new BlockType(
-                                  index.cast<FloatingPoint>() * block_size_,
-                                  voxels_per_side_, voxel_size_))));
+                                  voxels_per_side_, voxel_size_,
+                                  index.cast<FloatingPoint>() * block_size_))));
 
     DCHECK(insert_status.second) << "Block already exists when allocating at "
                                  << index.transpose();
@@ -136,7 +136,9 @@ class Layer {
 
   size_t getNumberOfAllocatedBlocks() const { return block_map_.size(); }
 
-  FloatingPoint getBlockSize() const { return block_size_; }
+  FloatingPoint block_size() const { return block_size_; }
+  FloatingPoint voxel_size() const { return voxel_size_; }
+  size_t voxels_per_side() const { return voxels_per_side_; }
 
  private:
   FloatingPoint voxel_size_;
