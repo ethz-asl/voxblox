@@ -18,14 +18,14 @@ int main(int argc, char* argv[]) {
   config.tsdf_voxel_size = 0.2;
   config.tsdf_voxels_per_side = 16;
 
-  Integrator::Config integrator_config;
+  TsdfIntegrator::Config integrator_config;
   integrator_config.default_truncation_distance = 0.1;
   integrator_config.max_weight = 1000.0;
   integrator_config.voxel_carving_enabled = true;
 
   TsdfBlock my_cool_block(Eigen::Vector3d::Zero(), 8, 0.1);
   TsdfMap::Ptr my_cool_map = std::make_shared<TsdfMap>(config);
-  Integrator my_cool_integrator(my_cool_map, integrator_config);
+  TsdfIntegrator my_cool_integrator(my_cool_map, integrator_config);
 
   Point sensor_origin(1, 0.4, 2.3);
   Transformation transform(sensor_origin, Eigen::Quaterniond::Identity());

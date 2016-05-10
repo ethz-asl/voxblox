@@ -10,8 +10,8 @@
 #include <tf/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include "voxblox/core/tsdf_map.h"
-#include "voxblox/integrator/ray_integrator.h"
+#include <voxblox/core/tsdf_map.h>
+#include <voxblox/integrator/ray_integrator.h>
 
 namespace voxblox {
 
@@ -38,9 +38,9 @@ class VoxbloxNode {
     config.tsdf_voxels_per_side = 16;
     tsdf_map_.reset(new TsdfMap(config));
 
-    Integrator::Config integrator_config;
+    RayIntegrator::Config integrator_config;
     integrator_config.voxel_carving_enabled = false;
-    ray_integrator_.reset(new Integrator(tsdf_map_, integrator_config));
+    ray_integrator_.reset(new TsdfIntegrator(tsdf_map_, integrator_config));
 
     ros::spinOnce();
     publishTsdfSurfacePoints();
@@ -76,7 +76,7 @@ class VoxbloxNode {
   ros::Publisher sdf_pointcloud_pub_;
 
   std::shared_ptr<TsdfMap> tsdf_map_;
-  std::shared_ptr<Integrator> ray_integrator_;
+  std::shared_ptr<TsdfIntegrator> ray_integrator_;
 };
 
 void VoxbloxNode::insertPointcloudWithTf(
