@@ -11,7 +11,7 @@
 #include <visualization_msgs/MarkerArray.h>
 
 #include <voxblox/core/tsdf_map.h>
-#include <voxblox/integrator/ray_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
 
 namespace voxblox {
 
@@ -38,9 +38,10 @@ class VoxbloxNode {
     config.tsdf_voxels_per_side = 16;
     tsdf_map_.reset(new TsdfMap(config));
 
-    RayIntegrator::Config integrator_config;
-    integrator_config.voxel_carving_enabled = false;
-    ray_integrator_.reset(new TsdfIntegrator(tsdf_map_, integrator_config));
+    TsdfIntegrator::Config integrator_config;
+    integrator_config.voxel_carving_enabled = true;
+    tsdf_integrator_.reset(
+        new TsdfIntegrator(tsdf_map_->getTsdfLayerPtr(), integrator_config));
 
     ros::spinOnce();
     publishTsdfSurfacePoints();
@@ -76,7 +77,7 @@ class VoxbloxNode {
   ros::Publisher sdf_pointcloud_pub_;
 
   std::shared_ptr<TsdfMap> tsdf_map_;
-  std::shared_ptr<TsdfIntegrator> ray_integrator_;
+  std::shared_ptr<TsdfIntegrator> tsdf_integrator_;
 };
 
 void VoxbloxNode::insertPointcloudWithTf(
@@ -117,9 +118,9 @@ void VoxbloxNode::insertPointcloudWithTf(
     }
 
     ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
-    ray_integrator_->integratePointCloud(T_G_C, points_C, colors);
+    tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
     ROS_INFO("Finished integrating, have %d blocks.",
-             tsdf_map_->getNumberOfAllocatedBlocks());
+             tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
     // publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
   }
@@ -138,34 +139,34 @@ void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
   // Iterate over all voxels to create a pointcloud.
   // TODO(helenol): move this to general IO, replace ply writer with writing
   // this out.
-  size_t num_blocks = tsdf_map_->getNumberOfAllocatedBlocks();
+  size_t num_blocks = tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks();
   // This function is block-specific:
-  size_t num_voxels_per_block = tsdf_map_->getTsdfVoxelsPerBlock();
-  size_t vps = tsdf_map_->getTsdfVoxelsPerSide();
+  size_t vps = tsdf_map_->getTsdfLayer().voxels_per_side();
+  size_t num_voxels_per_block = vps * vps * vps;
 
   pointcloud.reserve(num_blocks * num_voxels_per_block);
 
   BlockIndexList blocks;
-  tsdf_map_->getAllAllocatedBlocks(&blocks);
+  tsdf_map_->getTsdfLayer().getAllAllocatedBlocks(&blocks);
 
   // Iterate over all blocks.
   const float max_distance = 0.5;
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
-    const TsdfBlock& block = tsdf_map_->getBlockByIndex(index);
+    const Block<TsdfVoxel>& block =
+        tsdf_map_->getTsdfLayer().getBlockByIndex(index);
 
     VoxelIndex voxel_index = VoxelIndex::Zero();
     for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
       for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
         for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
-          const TsdfVoxel& voxel = block.getTsdfVoxelByVoxelIndex(voxel_index);
+          const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
           float distance = voxel.distance;
           float weight = voxel.weight;
 
           // Get back the original coordinate of this voxel.
-          Point coord =
-              block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
+          Point coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
 
           if (weight > 0.0) {
             pcl::PointXYZI point;
@@ -189,41 +190,40 @@ void VoxbloxNode::publishTsdfSurfacePoints() {
 
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
-
   // Iterate over all voxels to create a pointcloud.
   // TODO(helenol): move this to general IO, replace ply writer with writing
   // this out.
-  size_t num_blocks = tsdf_map_->getNumberOfAllocatedBlocks();
+  size_t num_blocks = tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks();
   // This function is block-specific:
-  size_t num_voxels_per_block = tsdf_map_->getTsdfVoxelsPerBlock();
-  size_t vps = tsdf_map_->getTsdfVoxelsPerSide();
+  size_t vps = tsdf_map_->getTsdfLayer().voxels_per_side();
+  size_t num_voxels_per_block = vps * vps * vps;
 
   pointcloud.reserve(num_blocks * num_voxels_per_block);
 
   BlockIndexList blocks;
-  tsdf_map_->getAllAllocatedBlocks(&blocks);
-
-  const float surface_distance_thresh = (tsdf_map_->getTsdfVoxelSize() * 0.75);
+  tsdf_map_->getTsdfLayer().getAllAllocatedBlocks(&blocks);
 
   // Iterate over all blocks.
   const float max_distance = 0.5;
+  const float surface_distance_thresh =
+      tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
-    const TsdfBlock& block = tsdf_map_->getBlockByIndex(index);
+    const Block<TsdfVoxel>& block =
+        tsdf_map_->getTsdfLayer().getBlockByIndex(index);
 
     VoxelIndex voxel_index = VoxelIndex::Zero();
     for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
       for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
         for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
-          const TsdfVoxel& voxel = block.getTsdfVoxelByVoxelIndex(voxel_index);
+          const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
           float distance = voxel.distance;
           float weight = voxel.weight;
-          const Color color = voxel.color;
+          Color color = voxel.color;
 
           // Get back the original coordinate of this voxel.
-          Point coord =
-              block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
+          Point coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
 
           if (std::abs(distance) < surface_distance_thresh && weight > 0) {
             pcl::PointXYZRGB point;
@@ -264,8 +264,7 @@ bool VoxbloxNode::lookupTransform(const std::string& from_frame,
   try {
     tf_listener_.lookupTransform(to_frame, from_frame, time_to_lookup,
                                  tf_transform);
-  }
-  catch (tf::TransformException& ex) {  // NOLINT
+  } catch (tf::TransformException& ex) {  // NOLINT
     ROS_ERROR_STREAM(
         "Error getting TF transform from sensor data: " << ex.what());
     return false;
