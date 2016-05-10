@@ -7,13 +7,13 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
-#include <voxblox/core/tsdf_map.h>
-#include <voxblox/integrator/integrator_utils.h>
+#include "voxblox/core/layer.h"
+#include "voxblox/core/voxel.h"
+#include "voxblox/integrator/integrator_utils.h"
 
 namespace voxblox {
 
-template <typename MapType>
-class RayIntegrator {
+class TsdfIntegrator {
  public:
   struct Config {
     float default_truncation_distance = 0.1;
@@ -21,13 +21,13 @@ class RayIntegrator {
     bool voxel_carving_enabled = true;
   };
 
-  RayIntegrator(const typename MapType::Ptr& map, const Config& config)
-      : map_(map), config_(config) {
-    DCHECK(map_);
+  TsdfIntegrator(Layer<TsdfVoxel>* layer, const Config& config)
+      : layer_(layer), config_(config) {
+    DCHECK(layer_);
 
-    voxel_size_ = map_->getTsdfLayerPtr()->voxel_size;
-    block_size_ = map_->getBlockSize();
-    voxels_per_side_ = map_->getTsdfLayerPtr()->voxels_per_side;
+    voxel_size_ = layer_->voxel_size();
+    block_size_ = layer_->block_size();
+    voxels_per_side_ = layer_->voxels_per_side();
 
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_inv_ = 1.0 / block_size_;
@@ -104,15 +104,13 @@ class RayIntegrator {
       }
 
       for (const HierarchicalIndex& hierarchical_idx : hierarchical_idx_map) {
-        TsdfBlock::Ptr block =
-            map_->allocateBlockPtrByIndex(hierarchical_idx.first);
+        Block<TsdfVoxel>::Ptr block =
+            layer_->allocateBlockPtrByIndex(hierarchical_idx.first);
         DCHECK(block);
         for (const VoxelIndex& local_voxel_idx : hierarchical_idx.second) {
           const Point voxel_center_G =
-              block->getTsdfLayerPtr()->computeCoordinatesFromVoxelIndex(
-                  local_voxel_idx);
-          TsdfVoxel& tsdf_voxel =
-              block->getTsdfLayerPtr()->getVoxelByVoxelIndex(local_voxel_idx);
+              block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
+          TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
 
           updateTsdfVoxel(origin, point_C, point_G, voxel_center_G, color,
                           truncation_distance, &tsdf_voxel);
@@ -122,7 +120,7 @@ class RayIntegrator {
   }
 
  protected:
-  typename MapType::Ptr map_;
+  Layer<TsdfVoxel>* layer_;
 
   Config config_;
 
@@ -136,11 +134,6 @@ class RayIntegrator {
   FloatingPoint voxels_per_side_inv_;
   FloatingPoint block_size_inv_;
 };
-
-// Rename integrators of common map types.
-typedef RayIntegrator<TsdfMap> TsdfIntegrator;
-
-
 
 }  // namespace voxblox
 
