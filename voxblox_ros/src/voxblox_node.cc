@@ -47,7 +47,6 @@ class VoxbloxNode {
     nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
     config.tsdf_voxel_size = static_cast<float>(voxel_size);
     config.tsdf_voxels_per_side = voxels_per_side;
-
     tsdf_map_.reset(new TsdfMap(config));
 
     // Determine integrator parameters.
@@ -55,14 +54,17 @@ class VoxbloxNode {
     integrator_config.voxel_carving_enabled = true;
     integrator_config.default_truncation_distance = config.tsdf_voxel_size * 4;
 
+    double truncation_distance = integrator_config.default_truncation_distance;
+    double max_weight = integrator_config.max_weight;
     nh_private_.param("voxel_carving_enabled",
                       integrator_config.voxel_carving_enabled,
                       integrator_config.voxel_carving_enabled);
-    nh_private_.param("truncation_distance",
-                      integrator_config.default_truncation_distance,
-                      integrator_config.default_truncation_distance);
-    nh_private_.param("max_weight", integrator_config.max_weight,
-                      integrator_config.max_weight);
+    nh_private_.param("truncation_distance", truncation_distance,
+                      truncation_distance);
+    nh_private_.param("max_weight", max_weight, max_weight);
+    integrator_config.default_truncation_distance =
+        static_cast<float>(truncation_distance);
+    integrator_config.max_weight = static_cast<float>(max_weight);
 
     tsdf_integrator_.reset(
         new TsdfIntegrator(tsdf_map_->getTsdfLayerPtr(), integrator_config));
