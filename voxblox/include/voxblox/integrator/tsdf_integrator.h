@@ -86,6 +86,7 @@ class TsdfIntegrator {
       for (const HierarchicalIndex& hierarchical_idx : hierarchical_idx_map) {
         Block<TsdfVoxel>::Ptr block =
             layer_->allocateBlockPtrByIndex(hierarchical_idx.first);
+        block->updated() = true;
         DCHECK(block);
         for (const VoxelIndex& local_voxel_idx : hierarchical_idx.second) {
           const Point voxel_center_G =
