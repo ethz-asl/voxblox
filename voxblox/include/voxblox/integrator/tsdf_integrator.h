@@ -10,6 +10,7 @@
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
+#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
@@ -79,8 +80,11 @@ class TsdfIntegrator {
       const Point& point_G_scaled = point_G * voxel_size_inv_;
 
       IndexVector global_voxel_index;
+      timing::Timer cast_ray_timer("cast_ray");
       castRay(origin_scaled, point_G_scaled, &global_voxel_index);
+      cast_ray_timer.Stop();
 
+      timing::Timer create_index_timer("create_hi_index");
       HierarchicalIndexMap hierarchical_idx_map;
       for (const AnyIndex& global_voxel_idx : global_voxel_index) {
         BlockIndex block_idx = floorVectorAndDowncast(
@@ -102,7 +106,9 @@ class TsdfIntegrator {
 
         hierarchical_idx_map[block_idx].push_back(local_voxel_idx);
       }
+      create_index_timer.Stop();
 
+      timing::Timer update_voxels_timer("update_voxels");
       for (const HierarchicalIndex& hierarchical_idx : hierarchical_idx_map) {
         Block<TsdfVoxel>::Ptr block =
             layer_->allocateBlockPtrByIndex(hierarchical_idx.first);
@@ -116,6 +122,7 @@ class TsdfIntegrator {
                           truncation_distance, &tsdf_voxel);
         }
       }
+      update_voxels_timer.Stop();
     }
   }
 
