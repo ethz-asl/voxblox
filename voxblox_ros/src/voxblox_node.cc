@@ -39,9 +39,9 @@ class VoxbloxNode {
     config.tsdf_voxel_size = 0.10;
     config.tsdf_voxels_per_side = 16;
 
-    nh_private_.param("tsdf_voxel_size", config.tsdf_voxel_size,
+    nh_private_.param<float>("tsdf_voxel_size", config.tsdf_voxel_size,
                       config.tsdf_voxel_size);
-    nh_private_.param("tsdf_voxels_per_side", config.tsdf_voxels_per_side,
+    nh_private_.param<float>("tsdf_voxels_per_side", config.tsdf_voxels_per_side,
                       config.tsdf_voxels_per_side);
 
     tsdf_map_.reset(new TsdfMap(config));
