@@ -24,8 +24,11 @@ class VoxbloxNode {
     // Advertise topics.
     sdf_marker_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
         "sdf_markers", 1, true);
-    sdf_pointcloud_pub_ =
+    surface_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+            "surface_pointcloud", 1, true);
+    sdf_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
             "sdf_pointcloud", 1, true);
 
     pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
@@ -92,6 +95,7 @@ class VoxbloxNode {
   // Publish markers for visualization.
   ros::Publisher sdf_marker_pub_;
   ros::Publisher sdf_pointcloud_pub_;
+  ros::Publisher surface_pointcloud_pub_;
 
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::shared_ptr<TsdfIntegrator> tsdf_integrator_;
@@ -116,6 +120,8 @@ void VoxbloxNode::insertPointcloudWithTf(
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
 
+    timing::Timer ptcloud_timer("ptcloud_preprocess");
+
     // Filter out NaNs. :|
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(pointcloud_pcl, pointcloud_pcl, indices);
@@ -133,6 +139,8 @@ void VoxbloxNode::insertPointcloudWithTf(
                 pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
     }
 
+    ptcloud_timer.Stop();
+
     ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
     ros::WallTime start = ros::WallTime::now();
     tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
@@ -140,7 +148,7 @@ void VoxbloxNode::insertPointcloudWithTf(
     ROS_INFO("Finished integrating in %f seconds, have %d blocks.",
              (end - start).toSec(),
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
-    // publishAllUpdatedTsdfVoxels();
+    publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
 
     ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
@@ -260,7 +268,7 @@ void VoxbloxNode::publishTsdfSurfacePoints() {
   }
 
   pointcloud.header.frame_id = world_frame_;
-  sdf_pointcloud_pub_.publish(pointcloud);
+  surface_pointcloud_pub_.publish(pointcloud);
 }
 
 // Stolen from octomap_manager

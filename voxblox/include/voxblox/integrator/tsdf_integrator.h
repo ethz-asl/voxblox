@@ -40,7 +40,15 @@ class TsdfIntegrator {
                               const Color& color,
                               const float truncation_distance,
                               TsdfVoxel* tsdf_voxel) {
-    const float sdf = static_cast<float>((point_G - voxel_center).norm());
+    Eigen::Vector3d voxel_direction = point_G - voxel_center;
+    Eigen::Vector3d ray_direction = point_G - origin;
+
+    float sdf = static_cast<float>(voxel_direction.norm());
+    // Figure out if it's in front of the plane or behind.
+    if (voxel_direction.dot(ray_direction) < 0) {
+      sdf = -sdf;
+    }
+
     const float weight = 1.0f;
     const float new_weight = tsdf_voxel->weight + weight;
 
@@ -58,57 +66,23 @@ class TsdfIntegrator {
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
     DCHECK_EQ(points_C.size(), colors.size());
+    timing::Timer integrate_timer("integrate");
 
     const Point& origin = T_G_C.getPosition();
-    const Point& origin_scaled = origin * voxel_size_inv_;
 
     for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
       const Point& point_C = points_C[pt_idx];
       const Point& point_G = T_G_C * point_C;
       const Color& color = colors[pt_idx];
 
-      const Ray unit_ray = (point_G - origin).normalized();
-
-      const FloatingPoint truncation_distance =
-          config_.default_truncation_distance;
-
-      const Point ray_end = point_G + unit_ray * truncation_distance;
-      const Point ray_start = (config_.voxel_carving_enabled)
-                                  ? origin
-                                  : (point_G - unit_ray * truncation_distance);
-
-      const Point& point_G_scaled = point_G * voxel_size_inv_;
-
-      IndexVector global_voxel_index;
-      timing::Timer cast_ray_timer("cast_ray");
-      castRay(origin_scaled, point_G_scaled, &global_voxel_index);
-      cast_ray_timer.Stop();
-
-      timing::Timer create_index_timer("create_hi_index");
       HierarchicalIndexMap hierarchical_idx_map;
-      for (const AnyIndex& global_voxel_idx : global_voxel_index) {
-        BlockIndex block_idx = floorVectorAndDowncast(
-            global_voxel_idx.cast<FloatingPoint>() * voxels_per_side_inv_);
+      FloatingPoint truncation_distance = config_.default_truncation_distance;
 
-        VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side_,
-                                   global_voxel_idx.y() % voxels_per_side_,
-                                   global_voxel_idx.z() % voxels_per_side_);
+      getHierarchicalIndexAlongRay(
+          origin, point_G, voxels_per_side_, voxel_size_, truncation_distance,
+          config_.voxel_carving_enabled, &hierarchical_idx_map);
 
-        if (local_voxel_idx.x() < 0) {
-          local_voxel_idx.x() += voxels_per_side_;
-        }
-        if (local_voxel_idx.y() < 0) {
-          local_voxel_idx.y() += voxels_per_side_;
-        }
-        if (local_voxel_idx.z() < 0) {
-          local_voxel_idx.z() += voxels_per_side_;
-        }
-
-        hierarchical_idx_map[block_idx].push_back(local_voxel_idx);
-      }
-      create_index_timer.Stop();
-
-      timing::Timer update_voxels_timer("update_voxels");
+      timing::Timer update_voxels_timer("integrate/update_voxels");
       for (const HierarchicalIndex& hierarchical_idx : hierarchical_idx_map) {
         Block<TsdfVoxel>::Ptr block =
             layer_->allocateBlockPtrByIndex(hierarchical_idx.first);
@@ -124,6 +98,7 @@ class TsdfIntegrator {
       }
       update_voxels_timer.Stop();
     }
+    integrate_timer.Stop();
   }
 
  protected:
