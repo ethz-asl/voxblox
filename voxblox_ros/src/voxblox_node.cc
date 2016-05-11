@@ -31,15 +31,32 @@ class VoxbloxNode {
     pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
                                     &VoxbloxNode::insertPointcloudWithTf, this);
 
-    // TODO(helenol): load these from params for faster prototyping...
-
+    // Determine map parameters.
     TsdfMap::Config config;
-    config.tsdf_voxel_size = 0.02;
+    config.tsdf_voxel_size = 0.10;
     config.tsdf_voxels_per_side = 16;
+
+    nh_private_.param("tsdf_voxel_size", config.tsdf_voxel_size,
+                      config.tsdf_voxel_size);
+    nh_private_.param("tsdf_voxels_per_side", config.tsdf_voxels_per_side,
+                      config.tsdf_voxels_per_side);
+
     tsdf_map_.reset(new TsdfMap(config));
 
+    // Determine integrator parameters.
     TsdfIntegrator::Config integrator_config;
     integrator_config.voxel_carving_enabled = true;
+    integrator_config.default_truncation_distance = config.tsdf_voxel_size * 4;
+
+    nh_private_.param("voxel_carving_enabled",
+                      integrator_config.voxel_carving_enabled,
+                      integrator_config.voxel_carving_enabled);
+    nh_private_.param("truncation_distance",
+                      integrator_config.default_truncation_distance,
+                      integrator_config.default_truncation_distance);
+    nh_private_.param("max_weight", integrator_config.max_weight,
+                      integrator_config.max_weight);
+
     tsdf_integrator_.reset(
         new TsdfIntegrator(tsdf_map_->getTsdfLayerPtr(), integrator_config));
 
@@ -93,7 +110,6 @@ void VoxbloxNode::insertPointcloudWithTf(
       if (pointcloud_msg->fields[d].name == std::string("rgb")) {
         pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
       }
-      LOG(INFO) << "Got field named: " << pointcloud_msg->fields[d].name;
     }
 
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
@@ -118,10 +134,13 @@ void VoxbloxNode::insertPointcloudWithTf(
     }
 
     ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
+    ros::WallTime start = ros::WallTime::now();
     tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
-    ROS_INFO("Finished integrating, have %d blocks.",
+    ros::WallTime end = ros::WallTime::now();
+    ROS_INFO("Finished integrating in %f seconds, have %d blocks.",
+             (end - start).toSec(),
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
-    // publishAllUpdatedTsdfVoxels();
+    //publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
   }
   // ??? Should we transform the pointcloud???? Or not. I think probably best
@@ -150,7 +169,6 @@ void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
   tsdf_map_->getTsdfLayer().getAllAllocatedBlocks(&blocks);
 
   // Iterate over all blocks.
-  const float max_distance = 0.5;
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     const Block<TsdfVoxel>& block =
@@ -204,7 +222,6 @@ void VoxbloxNode::publishTsdfSurfacePoints() {
   tsdf_map_->getTsdfLayer().getAllAllocatedBlocks(&blocks);
 
   // Iterate over all blocks.
-  const float max_distance = 0.5;
   const float surface_distance_thresh =
       tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
   for (const BlockIndex& index : blocks) {
