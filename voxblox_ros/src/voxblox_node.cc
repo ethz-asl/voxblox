@@ -140,8 +140,10 @@ void VoxbloxNode::insertPointcloudWithTf(
     ROS_INFO("Finished integrating in %f seconds, have %d blocks.",
              (end - start).toSec(),
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
-    //publishAllUpdatedTsdfVoxels();
+    // publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
+
+    ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
   }
   // ??? Should we transform the pointcloud???? Or not. I think probably best
   // not to.
