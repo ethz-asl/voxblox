@@ -72,6 +72,8 @@ inline Eigen::Vector3i floorVectorAndDowncast(
                          static_cast<int>(std::floor(vector.z())));
 }
 
+inline int signum(FloatingPoint x) { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_COMMON_H_

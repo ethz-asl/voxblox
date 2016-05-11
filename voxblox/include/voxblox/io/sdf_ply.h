@@ -5,7 +5,7 @@
 #include <string>
 
 #include "voxblox/io/ply_writer.h"
-#include "voxblox/core/map.h"
+#include "voxblox/core/layer.h"
 
 namespace voxblox {
 
@@ -18,25 +18,26 @@ enum PlyOutputTypes {
   kSdfIsosurface
 };
 
-template <typename MapType>
-bool outputMapAsPly(const MapType& map, const std::string& filename,
-                    PlyOutputTypes type) {
+template <typename VoxelType>
+bool outputLayerAsPly(const Layer<VoxelType>& layer,
+                      const std::string& filename, PlyOutputTypes type) {
   return false;
 }
 
 template <>
-bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
-                             PlyOutputTypes type) {
+bool outputLayerAsPly<TsdfVoxel>(const Layer<TsdfVoxel>& layer,
+                                 const std::string& filename,
+                                 PlyOutputTypes type) {
   // Create a PlyWriter.
   PlyWriter writer(filename);
 
   if (type == kSdfDistanceColor) {
     // In this case, we get all the allocated voxels and color them based on
     // distance value.
-    size_t num_blocks = map.getNumberOfAllocatedBlocks();
+    size_t num_blocks = layer.getNumberOfAllocatedBlocks();
     // This function is block-specific:
-    size_t num_voxels_per_block = map.getTsdfVoxelsPerBlock();
-    size_t vps = map.getTsdfVoxelsPerSide();
+    size_t vps = layer.voxels_per_side();
+    size_t num_voxels_per_block = vps * vps * vps;
 
     // Maybe this isn't strictly true, since actually we may have stuff with 0
     // weight...
@@ -48,7 +49,7 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
     }
 
     BlockIndexList blocks;
-    map.getAllAllocatedBlocks(&blocks);
+    layer.getAllAllocatedBlocks(&blocks);
 
     int observed_voxels = 0;
 
@@ -56,21 +57,21 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
     const float max_distance = 20;
     for (const BlockIndex& index : blocks) {
       // Iterate over all voxels in said blocks.
-      const TsdfBlock& block = map.getBlockByIndex(index);
+      const Block<TsdfVoxel>& block = layer.getBlockByIndex(index);
 
       VoxelIndex voxel_index = VoxelIndex::Zero();
       for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
         for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
           for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
             const TsdfVoxel& voxel =
-                block.getTsdfVoxelByVoxelIndex(voxel_index);
+                block.getVoxelByVoxelIndex(voxel_index);
 
             float distance = voxel.distance;
             float weight = voxel.weight;
 
             // Get back the original coordinate of this voxel.
             Point coord =
-                block.getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index);
+                block.computeCoordinatesFromVoxelIndex(voxel_index);
 
             // Decide how to color this.
             // Distance > 0 = blue, distance < 0 = red.
@@ -79,16 +80,10 @@ bool outputMapAsPly<TsdfMap>(const TsdfMap& map, const std::string& filename,
                 std::max<float>(1 - distance / max_distance, 0.0),
                 Color(0, 0, 255, 0),
                 std::max<float>(1 + distance / max_distance, 0.0));
-            uint8_t color[3];
+            Color color;
             if (weight > 0) {
-              color[0] = distance_color.r;
-              color[1] = distance_color.g;
-              color[2] = distance_color.b;
+              color = distance_color;
               observed_voxels++;
-            } else {
-              color[0] = 0;
-              color[1] = 0;
-              color[2] = 0;
             }
             writer.writeVertex(coord, color);
           }
