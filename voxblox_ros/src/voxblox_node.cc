@@ -42,10 +42,12 @@ class VoxbloxNode {
     // Workaround for OS X on mac mini not having specializations for float
     // for some reason.
     double voxel_size = config.tsdf_voxel_size;
+    int voxels_per_side = config.tsdf_voxels_per_side;
     nh_private_.param("tsdf_voxel_size", voxel_size, voxel_size);
+    nh_private_.param("tsdf_voxels_per_side", voxels_per_side,
+                      voxels_per_side);
     config.tsdf_voxel_size = static_cast<float>(voxel_size);
-    nh_private_.param("tsdf_voxels_per_side", config.tsdf_voxels_per_side,
-                      config.tsdf_voxels_per_side);
+    config.voxels_per_side = static_cast<float>(voxels_per_side);
 
     tsdf_map_.reset(new TsdfMap(config));
 
