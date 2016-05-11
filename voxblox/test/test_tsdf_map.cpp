@@ -20,62 +20,57 @@ class TsdfMapTest : public ::testing::Test {
 
 TEST_F(TsdfMapTest, BlockAllocation) {
   // Should have no blocks by default.
-  EXPECT_EQ(0, map_->getNumberOfAllocatedBlocks());
-  map_->allocateNewBlockByCoordinates(Point(0.0, 0.15, 0.0));
-  EXPECT_EQ(1, map_->getNumberOfAllocatedBlocks());
-  map_->allocateNewBlockByCoordinates(Point(0.0, 0.13, 0.0));
-  EXPECT_EQ(1, map_->getNumberOfAllocatedBlocks());
-  map_->allocateNewBlockByCoordinates(Point(-10.0, 13.5, 20.0));
-  EXPECT_EQ(2, map_->getNumberOfAllocatedBlocks());
+  EXPECT_EQ(0, map_->getTsdfLayer().getNumberOfAllocatedBlocks());
+  map_->getTsdfLayerPtr()->allocateNewBlockByCoordinates(Point(0.0, 0.15, 0.0));
+  EXPECT_EQ(1, map_->getTsdfLayerPtr()->getNumberOfAllocatedBlocks());
+  map_->getTsdfLayerPtr()->allocateNewBlockByCoordinates(Point(0.0, 0.13, 0.0));
+  EXPECT_EQ(1, map_->getTsdfLayerPtr()->getNumberOfAllocatedBlocks());
+  map_->getTsdfLayerPtr()->allocateNewBlockByCoordinates(
+      Point(-10.0, 13.5, 20.0));
+  EXPECT_EQ(2, map_->getTsdfLayerPtr()->getNumberOfAllocatedBlocks());
 }
 
 TEST_F(TsdfMapTest, IndexLookups) {
-  TsdfBlock::Ptr block =
-      map_->allocateNewBlockByCoordinates(Point(0.0, 0.0, 0.0));
+  Block<TsdfVoxel>::Ptr block =
+      map_->getTsdfLayerPtr()->allocateNewBlockByCoordinates(
+          Point(0.0, 0.0, 0.0));
 
-  TsdfBlock::Ptr block2 = map_->getBlockPtrByCoordinates(Point(0.0, 0.1, 0.0));
+  Block<TsdfVoxel>::Ptr block2 =
+      map_->getTsdfLayerPtr()->getBlockPtrByCoordinates(Point(0.0, 0.1, 0.0));
   EXPECT_EQ(block, block2);
 
   // Now check voxel indexing within this block.
   Point test_point(0.0, 0.2, 0.0);
-  TsdfVoxel& voxel = block->getTsdfVoxelByCoordinates(test_point);
+  TsdfVoxel& voxel = block->getVoxelByCoordinates(test_point);
   voxel.weight = 1.0;
   voxel.distance = 0.5;
 
-  size_t linear_index =
-      block->getTsdfLayer().computeLinearIndexFromCoordinates(test_point);
-  VoxelIndex voxel_index =
-      block->getTsdfLayer().computeVoxelIndexFromCoordinates(test_point);
+  size_t linear_index = block->computeLinearIndexFromCoordinates(test_point);
+  VoxelIndex voxel_index = block->computeVoxelIndexFromCoordinates(test_point);
 
   EXPECT_TRUE(EIGEN_MATRIX_EQUAL(
-      voxel_index,
-      block->getTsdfLayer().computeVoxelIndexFromLinearIndex(linear_index)));
+      voxel_index, block->computeVoxelIndexFromLinearIndex(linear_index)));
 
   EXPECT_TRUE(EIGEN_MATRIX_NEAR(
-      test_point, block->getCoordinatesOfTsdfVoxelByLinearIndex(linear_index),
+      test_point, block->computeCoordinatesFromLinearIndex(linear_index),
       0.1));
   EXPECT_TRUE(EIGEN_MATRIX_NEAR(
-      test_point, block->getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index),
+      test_point, block->computeCoordinatesFromVoxelIndex(voxel_index),
       0.1));
 
   test_point = Point(-0.4, -0.2, 0.6);
-  block = map_->allocateNewBlockByCoordinates(test_point);
+  block = map_->getTsdfLayerPtr()->allocateNewBlockByCoordinates(test_point);
 
-  linear_index =
-      block->getTsdfLayer().computeLinearIndexFromCoordinates(test_point);
-  voxel_index =
-      block->getTsdfLayer().computeVoxelIndexFromCoordinates(test_point);
+  linear_index = block->computeLinearIndexFromCoordinates(test_point);
+  voxel_index = block->computeVoxelIndexFromCoordinates(test_point);
 
   EXPECT_TRUE(EIGEN_MATRIX_EQUAL(
-      voxel_index,
-      block->getTsdfLayer().computeVoxelIndexFromLinearIndex(linear_index)));
+      voxel_index, block->computeVoxelIndexFromLinearIndex(linear_index)));
 
   EXPECT_TRUE(EIGEN_MATRIX_NEAR(
-      test_point, block->getCoordinatesOfTsdfVoxelByLinearIndex(linear_index),
-      0.1));
+      test_point, block->computeCoordinatesFromLinearIndex(linear_index), 0.1));
   EXPECT_TRUE(EIGEN_MATRIX_NEAR(
-      test_point, block->getCoordinatesOfTsdfVoxelByVoxelIndex(voxel_index),
-      0.1));
+      test_point, block->computeCoordinatesFromVoxelIndex(voxel_index), 0.1));
 }
 
 int main(int argc, char** argv) {

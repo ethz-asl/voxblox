@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_CORE_MAP_H_
-#define VOXBLOX_CORE_MAP_H_
+#ifndef VOXBLOX_CORE_LAYER_H_
+#define VOXBLOX_CORE_LAYER_H_
 
 #include <glog/logging.h>
 #include <utility>
@@ -10,14 +10,20 @@
 
 namespace voxblox {
 
-template <typename BlockType>
-class Map {
+template <typename VoxelType>
+class Layer {
  public:
-  typedef std::shared_ptr<Map> Ptr;
-
+  typedef std::shared_ptr<Layer> Ptr;
+  typedef Block<VoxelType> BlockType;
   typedef typename BlockHashMapType<typename BlockType::Ptr>::type BlockHashMap;
 
-  virtual ~Map() {}
+  explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
+      : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
+    block_size_ = voxel_size_ * voxels_per_side_;
+    block_size_inv_ = 1.0 / block_size_;
+  }
+
+  virtual ~Layer() {}
 
   // By index.
   inline const BlockType& getBlockByIndex(const BlockIndex& index) const {
@@ -88,13 +94,25 @@ class Map {
   }
 
   // Coord to block index.
-  inline BlockIndex computeBlockIndexFromCoordinates(const Point& coords)
-      const {
+  inline BlockIndex computeBlockIndexFromCoordinates(
+      const Point& coords) const {
     return floorVectorAndDowncast(coords * block_size_inv_);
   }
 
   // Pure virtual function -- inheriting class MUST overwrite.
-  virtual typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) = 0;
+  typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) {
+    auto insert_status = block_map_.insert(
+        std::make_pair(index, std::shared_ptr<BlockType>(new BlockType(
+                                  voxels_per_side_, voxel_size_,
+                                  index.cast<FloatingPoint>() * block_size_))));
+
+    DCHECK(insert_status.second) << "Block already exists when allocating at "
+                                 << index.transpose();
+
+    DCHECK_NOTNULL(insert_status.first->second);
+    DCHECK_EQ(insert_status.first->first, index);
+    return insert_status.first->second;
+  }
 
   inline typename BlockType::Ptr allocateNewBlockByCoordinates(
       const Point& coords) {
@@ -118,13 +136,13 @@ class Map {
 
   size_t getNumberOfAllocatedBlocks() const { return block_map_.size(); }
 
-  FloatingPoint getBlockSize() const { return block_size_; }
+  FloatingPoint block_size() const { return block_size_; }
+  FloatingPoint voxel_size() const { return voxel_size_; }
+  size_t voxels_per_side() const { return voxels_per_side_; }
 
- protected:
-  explicit Map(FloatingPoint block_size) : block_size_(block_size) {
-    block_size_inv_ = 1.0 / block_size_;
-  }
-
+ private:
+  FloatingPoint voxel_size_;
+  size_t voxels_per_side_;
   FloatingPoint block_size_;
 
   // Derived types.

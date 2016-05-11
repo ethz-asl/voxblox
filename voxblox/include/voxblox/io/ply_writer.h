@@ -78,7 +78,7 @@ class PlyWriter {
     return true;
   }
 
-  bool writeVertex(const Point& coord, const uint8_t rgb[3]) {
+  bool writeVertex(const Point& coord, const Color& rgb) {
     if (!header_written_) {
       if (!writeHeader()) {
         return false;
@@ -88,8 +88,8 @@ class PlyWriter {
       return false;
     }
     file_ << coord.x() << " " << coord.y() << " " << coord.z() << " ";
-    file_ << static_cast<int>(rgb[0]) << " " << static_cast<int>(rgb[1]) << " "
-          << static_cast<int>(rgb[2]) << std::endl;
+    file_ << static_cast<int>(rgb.r) << " " << static_cast<int>(rgb.g) << " "
+          << static_cast<int>(rgb.b) << std::endl;
     return true;
   }
 
