@@ -6,6 +6,15 @@ catkin_simple(ALL_DEPS_REQUIRED)
 
 add_definitions(-std=c++11)
 
+############
+# PROTOBUF #
+############
+
+set(PROTO_DEFNS proto/Block.proto
+                proto/Layer.proto)
+PROTOBUF_CATKIN_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 #############
 # LIBRARIES #
 #############
