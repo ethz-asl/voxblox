@@ -141,7 +141,6 @@ class TsdfIntegrator {
       Point mean_point_C = Point::Zero();
       Color mean_color;
       float current_weight = 0.0;
-      double num_entries = kv.second.size();
 
       for (size_t pt_idx : kv.second) {
         const Point& point_C = points_C[pt_idx];
