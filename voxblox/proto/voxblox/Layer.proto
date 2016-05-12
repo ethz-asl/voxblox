@@ -1,6 +1,6 @@
 package voxblox;
 
-import "voxblox/Block.proto";
+import "Block.proto";
 
 message LayerProto {
   optional double voxel_size = 1;

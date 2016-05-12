@@ -11,8 +11,8 @@ add_definitions(-std=c++11 -Wno-sign-compare)
 # PROTOBUF #
 ############
 
-set(PROTO_DEFNS proto/Block.proto
-                proto/Layer.proto)
+set(PROTO_DEFNS proto/voxblox/Block.proto
+                proto/voxblox/Layer.proto)
 PROTOBUF_CATKIN_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
@@ -20,7 +20,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # LIBRARIES #
 #############
 cs_add_library(${PROJECT_NAME}
+  src/core/block.cc
   src/utils/timing.cc
+  ${PROTO_SRCS}
 )
 
 ############
@@ -44,4 +46,5 @@ target_link_libraries(test_tsdf_map ${PROJECT_NAME} ${catkin_LIBRARIES})
 # EXPORT #
 ##########
 cs_install()
-cs_export()
+cs_export(INCLUDE_DIRS include ${CMAKE_CURRENT_BINARY_DIR}
+          CFG_EXTRAS voxblox-extras.cmake)
