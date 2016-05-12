@@ -1,0 +1,13 @@
+package voxblox;
+
+import "voxblox/Block.proto";
+
+message LayerProto {
+  optional double voxel_size = 1;
+  
+  optional uint32 voxels_per_side = 2;
+  
+  optional double block_size = 3;
+
+  repeated BlockProto blocks = 4;
+}

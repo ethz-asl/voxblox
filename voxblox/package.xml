@@ -20,4 +20,5 @@
   <depend>glog_catkin</depend>
   <depend>gflags_catkin</depend>
   <depend>minkindr</depend>
+  <depend>protobuf_catkin</depend>
 </package>
