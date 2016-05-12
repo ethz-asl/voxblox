@@ -7,6 +7,7 @@
       <remap from="pointcloud" to="stereo_dense_reconstruction/pcl"/>
       <param name="tsdf_voxel_size" value="0.10" />
       <param name="tsdf_voxels_per_side" value="16" />
+      <param name="voxel_carving_enabled" value="true" />
     </node>
   </group>
 </launch>

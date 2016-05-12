@@ -149,7 +149,7 @@ void VoxbloxNode::insertPointcloudWithTf(
 
     ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
     ros::WallTime start = ros::WallTime::now();
-    tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
+    tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
     ros::WallTime end = ros::WallTime::now();
     ROS_INFO("Finished integrating in %f seconds, have %d blocks.",
              (end - start).toSec(),
@@ -239,7 +239,7 @@ void VoxbloxNode::publishTsdfSurfacePoints() {
 
   // Iterate over all blocks.
   const float surface_distance_thresh =
-      tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
+      tsdf_map_->getTsdfLayer().voxel_size() * 0.5;
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     const Block<TsdfVoxel>& block =
