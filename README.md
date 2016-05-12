@@ -1,5 +1,4 @@
 # voxblox
 voxblox voxblox voxblox
 
-![voxblox](https://cloud.githubusercontent.com/assets/5616392/15014695/d20cd7ac-1207-11e6-9476-8c5b733c8eb7.gif)
-
+![voxblox_small](https://cloud.githubusercontent.com/assets/5616392/15180357/536a8776-1781-11e6-8c1d-f2dfa34b1408.gif)

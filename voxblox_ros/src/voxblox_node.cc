@@ -36,8 +36,6 @@ class VoxbloxNode {
 
     // Determine map parameters.
     TsdfMap::Config config;
-    config.tsdf_voxel_size = 0.10;
-    config.tsdf_voxels_per_side = 16;
 
     // Workaround for OS X on mac mini not having specializations for float
     // for some reason.
@@ -159,10 +157,6 @@ void VoxbloxNode::insertPointcloudWithTf(
 
     ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
   }
-  // ??? Should we transform the pointcloud???? Or not. I think probably best
-  // not to.
-  // Pass to integrator, which should take minkindr transform and a pointcloud
-  // in sensor frame.
 }
 
 void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
