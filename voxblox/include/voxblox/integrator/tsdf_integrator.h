@@ -107,9 +107,77 @@ class TsdfIntegrator {
     integrate_timer.Stop();
   }
 
-  void integratePointCloudMerged(const Transformation& T_G_C,
+  void integratePointCloudNoHiIndex(const Transformation& T_G_C,
                                     const Pointcloud& points_C,
                                     const Colors& colors) {
+    DCHECK_EQ(points_C.size(), colors.size());
+    timing::Timer integrate_timer("integrate");
+
+    const Point& origin = T_G_C.getPosition();
+
+    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
+      const Point& point_C = points_C[pt_idx];
+      const Point point_G = T_G_C * point_C;
+      const Color& color = colors[pt_idx];
+
+      HierarchicalIndexMap hierarchical_idx_map;
+      FloatingPoint truncation_distance = config_.default_truncation_distance;
+
+      Point start = origin;
+      Point end = point_G;
+
+      const Ray unit_ray = (end - start).normalized();
+
+      const Point ray_end = end + unit_ray * truncation_distance;
+      const Point ray_start = config_.voxel_carving_enabled
+                                  ? start
+                                  : (end - unit_ray * truncation_distance);
+
+      const Point& start_scaled = ray_start * voxel_size_inv_;
+      const Point& end_scaled = ray_end * voxel_size_inv_;
+
+      IndexVector global_voxel_index;
+      timing::Timer cast_ray_timer("integrate/cast_ray");
+      castRay(start_scaled, end_scaled, &global_voxel_index);
+      cast_ray_timer.Stop();
+
+      timing::Timer update_voxels_timer("integrate/update_voxels");
+      for (const AnyIndex& global_voxel_idx : global_voxel_index) {
+        BlockIndex block_idx = floorVectorAndDowncast(
+            global_voxel_idx.cast<FloatingPoint>() * voxels_per_side_inv_);
+
+        VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side_,
+                                   global_voxel_idx.y() % voxels_per_side_,
+                                   global_voxel_idx.z() % voxels_per_side_);
+
+        if (local_voxel_idx.x() < 0) {
+          local_voxel_idx.x() += voxels_per_side_;
+        }
+        if (local_voxel_idx.y() < 0) {
+          local_voxel_idx.y() += voxels_per_side_;
+        }
+        if (local_voxel_idx.z() < 0) {
+          local_voxel_idx.z() += voxels_per_side_;
+        }
+
+        Block<TsdfVoxel>::Ptr block =
+            layer_->allocateBlockPtrByIndex(block_idx);
+
+        const Point voxel_center_G =
+            block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
+        TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
+
+        updateTsdfVoxel(origin, point_C, point_G, voxel_center_G, color,
+                        truncation_distance, &tsdf_voxel);
+      }
+      update_voxels_timer.Stop();
+    }
+    integrate_timer.Stop();
+  }
+
+  void integratePointCloudMerged(const Transformation& T_G_C,
+                                 const Pointcloud& points_C,
+                                 const Colors& colors) {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
