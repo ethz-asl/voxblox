@@ -173,4 +173,4 @@ class Layer {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_MAP_H_
+#endif  // VOXBLOX_CORE_LAYER_H_
