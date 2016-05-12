@@ -72,7 +72,7 @@ class TsdfIntegrator {
 
     for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
       const Point& point_C = points_C[pt_idx];
-      const Point& point_G = T_G_C * point_C;
+      const Point point_G = T_G_C * point_C;
       const Color& color = colors[pt_idx];
 
       HierarchicalIndexMap hierarchical_idx_map;
