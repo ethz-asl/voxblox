@@ -24,6 +24,13 @@ typedef std::vector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
+// For triangle meshing/vertex access.
+typedef size_t VertexIndex;
+typedef std::vector<VertexIndex> VertexIndexList;
+typedef Eigen::Matrix<FloatingPoint, 3, 3> Triangle;
+typedef std::vector<Triangle, Eigen::aligned_allocator<Triangle> >
+    TriangleVector;
+
 // Transformation type for defining sensor orientation.
 typedef kindr::minimal::QuatTransformation Transformation;
 

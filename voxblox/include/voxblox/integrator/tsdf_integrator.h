@@ -174,7 +174,6 @@ class TsdfIntegrator {
       Point mean_point_C = Point::Zero();
       Color mean_color;
       float current_weight = 0.0;
-      double num_entries = kv.second.size();
 
       for (size_t pt_idx : kv.second) {
         const Point& point_C = points_C[pt_idx];
@@ -190,11 +189,7 @@ class TsdfIntegrator {
       }
 
       const Point point_G = T_G_C * mean_point_C;
-
-      FloatingPoint truncation_distance = config_.default_truncation_distance;
-
       const Ray unit_ray = (point_G - origin).normalized();
-
       const Point ray_end = point_G + unit_ray * truncation_distance;
       const Point ray_start = config_.voxel_carving_enabled
                                   ? origin
