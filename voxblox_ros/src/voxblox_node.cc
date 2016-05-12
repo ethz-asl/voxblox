@@ -147,7 +147,7 @@ void VoxbloxNode::insertPointcloudWithTf(
 
     ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
     ros::WallTime start = ros::WallTime::now();
-    tsdf_integrator_->integratePointCloudNoHiIndex(T_G_C, points_C, colors);
+    tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
     ros::WallTime end = ros::WallTime::now();
     ROS_INFO("Finished integrating in %f seconds, have %d blocks.",
              (end - start).toSec(),
