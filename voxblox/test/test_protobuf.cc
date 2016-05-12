@@ -83,18 +83,24 @@ void ProtobufTest<TsdfVoxel>::SetUpLayer() const {
 typedef ProtobufTest<TsdfVoxel> ProtobufTsdfTest;
 
 TEST_F(ProtobufTsdfTest, BlockSerialization) {
-  const BlockIndex block_idx = {1u, kNumDummyBlocks,
-                                kNumDummyBlocks * kNumDummyBlocks};
-  const Block<TsdfVoxel>& block = layer_->getBlockByIndex(block_idx);
+  for (size_t block_nr = 0u; block_nr < kNumDummyBlocks; ++block_nr) {
+    BlockIndex block_idx;
+    block_idx.x() = static_cast<int>(block_nr);
+    block_idx.y() = static_cast<int>(block_nr * kNumDummyBlocks);
+    block_idx.z() =
+        static_cast<int>(block_nr * kNumDummyBlocks * kNumDummyBlocks);
 
-  // Convert to BlockProto.
-  BlockProto proto_block;
-  block.getProto(&proto_block);
+    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(block_idx);
 
-  // Create from BlockProto.
-  Block<TsdfVoxel> block_from_proto(proto_block);
+    // Convert to BlockProto.
+    BlockProto proto_block;
+    block.getProto(&proto_block);
 
-  CompareBlocks(block, block_from_proto);
+    // Create from BlockProto.
+    Block<TsdfVoxel> block_from_proto(proto_block);
+
+    CompareBlocks(block, block_from_proto);
+  }
 }
 
 int main(int argc, char** argv) {
