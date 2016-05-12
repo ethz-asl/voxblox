@@ -74,7 +74,7 @@ void getHierarchicalIndexAlongRay(const Point& start, const Point& end,
                                   FloatingPoint truncation_distance,
                                   bool voxel_carving_enabled,
                                   HierarchicalIndexMap* hierarchical_idx_map) {
-  hierarchical_idx_map->clear();
+  DCHECK_NOTNULL(hierarchical_idx_map->clear());
 
   FloatingPoint voxels_per_side_inv = 1.0 / voxels_per_side;
   FloatingPoint voxel_size_inv = 1.0 / voxel_size;
@@ -85,8 +85,8 @@ void getHierarchicalIndexAlongRay(const Point& start, const Point& end,
   const Point ray_start =
       voxel_carving_enabled ? start : (end - unit_ray * truncation_distance);
 
-  const Point& start_scaled = ray_start * voxel_size_inv;
-  const Point& end_scaled = ray_end * voxel_size_inv;
+  const Point start_scaled = ray_start * voxel_size_inv;
+  const Point end_scaled = ray_end * voxel_size_inv;
 
   IndexVector global_voxel_index;
   timing::Timer cast_ray_timer("integrate/cast_ray");
