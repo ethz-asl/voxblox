@@ -1,10 +1,9 @@
-#include <iostream>
 #include <eigen-checks/gtest.h>
 #include <eigen-checks/entrypoint.h>
 
 #include "voxblox/core/tsdf_map.h"
 
-using namespace voxblox;
+using namespace voxblox;  // NOLINT
 
 class TsdfMapTest : public ::testing::Test {
  protected:
@@ -52,11 +51,9 @@ TEST_F(TsdfMapTest, IndexLookups) {
       voxel_index, block->computeVoxelIndexFromLinearIndex(linear_index)));
 
   EXPECT_TRUE(EIGEN_MATRIX_NEAR(
-      test_point, block->computeCoordinatesFromLinearIndex(linear_index),
-      0.1));
+      test_point, block->computeCoordinatesFromLinearIndex(linear_index), 0.1));
   EXPECT_TRUE(EIGEN_MATRIX_NEAR(
-      test_point, block->computeCoordinatesFromVoxelIndex(voxel_index),
-      0.1));
+      test_point, block->computeCoordinatesFromVoxelIndex(voxel_index), 0.1));
 
   test_point = Point(-0.4, -0.2, 0.6);
   block = map_->getTsdfLayerPtr()->allocateNewBlockByCoordinates(test_point);

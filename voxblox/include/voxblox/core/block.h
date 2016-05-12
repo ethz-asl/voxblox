@@ -121,11 +121,24 @@ class Block {
 
   bool has_data() const { return has_data_; }
   bool updated() const { return updated_; }
+  size_t num_voxels() const { return num_voxels_; }
+  FloatingPoint block_size() const { return block_size_; }
 
   bool& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
-  void GetProto(BlockProto* proto) const;
+  void getProto(BlockProto* proto) const {
+    proto->set_voxels_per_side(voxels_per_side_);
+    proto->set_voxel_size(voxel_size_);
+
+    proto->set_origin_x(origin_.x());
+    proto->set_origin_y(origin_.y());
+    proto->set_origin_z(origin_.z());
+
+    proto->set_has_data(has_data_);
+
+    SerializeVoxelData(voxels_.get(), proto);
+  }
 
  private:
   void DeserializeVoxelData(const BlockProto& proto, VoxelType* voxels);
