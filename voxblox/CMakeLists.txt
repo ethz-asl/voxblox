@@ -10,7 +10,6 @@ add_definitions(-std=c++11 -Wno-sign-compare)
 ############
 # PROTOBUF #
 ############
-
 set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
 PROTOBUF_CATKIN_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
@@ -39,9 +38,14 @@ target_link_libraries(voxblox_rox ${PROJECT_NAME})
 # TESTS #
 #########
 catkin_add_gtest(test_tsdf_map
-  test/test_tsdf_map.cpp
+  test/test_tsdf_map.cc
 )
 target_link_libraries(test_tsdf_map ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+catkin_add_gtest(test_protobuf
+  test/test_protobuf.cc
+)
+target_link_libraries(test_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 ##########
 # EXPORT #

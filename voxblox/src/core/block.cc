@@ -54,19 +54,4 @@ void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
   }
   DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, proto->voxel_data_size());
 }
-
-template <class VoxelType>
-void Block<VoxelType>::GetProto(BlockProto* proto) const {
-  proto->set_voxels_per_side(voxels_per_side_);
-  proto->set_voxel_size(voxel_size_);
-
-  proto->set_origin_x(origin_.x());
-  proto->set_origin_y(origin_.y());
-  proto->set_origin_z(origin_.z());
-
-  proto->set_has_data(has_data_);
-
-  SerializeVoxelData(voxels_.get(), proto);
-}
-
 }  // namespace voxblox

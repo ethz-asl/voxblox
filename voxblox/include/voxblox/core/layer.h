@@ -158,7 +158,7 @@ class Layer {
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
 
-  void GetProto(LayerProto* proto) const;
+  void getProto(LayerProto* proto) const;
 
  private:
   FloatingPoint voxel_size_;

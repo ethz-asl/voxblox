@@ -4,8 +4,8 @@
 
 namespace voxblox {
 
-template <class VoxelType>
-void Layer<VoxelType>::GetProto(LayerProto* proto) const {
+template <typename VoxelType>
+void Layer<VoxelType>::getProto(LayerProto* proto) const {
   proto->set_voxel_size(voxel_size_);
   proto->set_voxels_per_side(voxels_per_side_);
 
