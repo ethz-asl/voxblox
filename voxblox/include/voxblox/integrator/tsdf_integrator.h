@@ -133,8 +133,8 @@ class TsdfIntegrator {
                                   ? start
                                   : (end - unit_ray * truncation_distance);
 
-      const Point& start_scaled = ray_start * voxel_size_inv_;
-      const Point& end_scaled = ray_end * voxel_size_inv_;
+      const Point start_scaled = ray_start * voxel_size_inv_;
+      const Point end_scaled = ray_end * voxel_size_inv_;
 
       IndexVector global_voxel_index;
       timing::Timer cast_ray_timer("integrate/cast_ray");
@@ -142,6 +142,10 @@ class TsdfIntegrator {
       cast_ray_timer.Stop();
 
       timing::Timer update_voxels_timer("integrate/update_voxels");
+
+      BlockIndex last_block_idx = BlockIndex::Zero();
+      Block<TsdfVoxel>::Ptr block;
+
       for (const AnyIndex& global_voxel_idx : global_voxel_index) {
         BlockIndex block_idx = floorVectorAndDowncast(
             global_voxel_idx.cast<FloatingPoint>() * voxels_per_side_inv_);
@@ -160,8 +164,10 @@ class TsdfIntegrator {
           local_voxel_idx.z() += voxels_per_side_;
         }
 
-        Block<TsdfVoxel>::Ptr block =
-            layer_->allocateBlockPtrByIndex(block_idx);
+        if (!block || block_idx != last_block_idx) {
+          block = layer_->allocateBlockPtrByIndex(block_idx);
+          last_block_idx = block_idx;
+        }
 
         const Point voxel_center_G =
             block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
