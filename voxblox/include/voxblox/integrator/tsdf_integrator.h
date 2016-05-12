@@ -35,6 +35,11 @@ class TsdfIntegrator {
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
   }
 
+  float getVoxelWeight(const Point& point_C, const Point& point_G,
+                       const Point& voxel_center) const {
+    return 1.0f;
+  }
+
   inline void updateTsdfVoxel(const Point& origin, const Point& point_C,
                               const Point& point_G, const Point& voxel_center,
                               const Color& color,
@@ -49,7 +54,7 @@ class TsdfIntegrator {
       sdf = -sdf;
     }
 
-    const float weight = 1.0f;
+    const float weight = getVoxelWeight(point_C, point_G, voxel_center);
     const float new_weight = tsdf_voxel->weight + weight;
 
     tsdf_voxel->color = Color::blendTwoColors(
@@ -99,6 +104,83 @@ class TsdfIntegrator {
       }
       update_voxels_timer.Stop();
     }
+    integrate_timer.Stop();
+  }
+
+  void integratePointCloudMerged(const Transformation& T_G_C,
+                                    const Pointcloud& points_C,
+                                    const Colors& colors) {
+    DCHECK_EQ(points_C.size(), colors.size());
+    timing::Timer integrate_timer("integrate");
+
+    const Point& origin = T_G_C.getPosition();
+
+    // Pre-compute a list of unique voxels to end on.
+    // Create a hashmap: VOXEL INDEX -> index in original cloud.
+    BlockHashMapType<std::vector<size_t>>::type voxel_map;
+    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
+      const Point& point_C = points_C[pt_idx];
+      const Point point_G = T_G_C * point_C;
+
+      // Figure out what the end voxel is here.
+      VoxelIndex voxel_index = floorVectorAndDowncast(
+          point_G.cast<FloatingPoint>() * voxel_size_inv_);
+      voxel_map[voxel_index].push_back(pt_idx);
+    }
+
+    LOG(INFO) << "Went from " << points_C.size() << " points to "
+              << voxel_map.size() << " raycasts.";
+
+    FloatingPoint truncation_distance = config_.default_truncation_distance;
+    for (const BlockHashMapType<std::vector<size_t>>::type::value_type& kv :
+         voxel_map) {
+      if (kv.second.empty()) {
+        continue;
+      }
+      // Key actually doesn't matter at all.
+      Point mean_point_C = Point::Zero();
+      Color mean_color;
+      float current_weight = 0.0;
+      double num_entries = kv.second.size();
+
+      for (size_t pt_idx : kv.second) {
+        const Point& point_C = points_C[pt_idx];
+        const Color& color = colors[pt_idx];
+
+        // TODO(helenol): proper weights, proper merging.
+        float point_weight = getVoxelWeight(point_C, point_C, point_C);
+        mean_point_C =
+            (mean_point_C * current_weight + point_C * point_weight) /
+            (current_weight + point_weight);
+        mean_color = Color::blendTwoColors(mean_color, current_weight, color,
+                                           point_weight);
+      }
+
+      const Point point_G = T_G_C * mean_point_C;
+
+      HierarchicalIndexMap hierarchical_idx_map;
+      getHierarchicalIndexAlongRay(
+          origin, point_G, voxels_per_side_, voxel_size_, truncation_distance,
+          config_.voxel_carving_enabled, &hierarchical_idx_map);
+
+      timing::Timer update_voxels_timer("integrate/update_voxels");
+      for (const HierarchicalIndex& hierarchical_idx : hierarchical_idx_map) {
+        Block<TsdfVoxel>::Ptr block =
+            layer_->allocateBlockPtrByIndex(hierarchical_idx.first);
+        block->updated() = true;
+        DCHECK(block);
+        for (const VoxelIndex& local_voxel_idx : hierarchical_idx.second) {
+          const Point voxel_center_G =
+              block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
+          TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
+
+          updateTsdfVoxel(origin, mean_point_C, point_G, voxel_center_G,
+                          mean_color, truncation_distance, &tsdf_voxel);
+        }
+      }
+      update_voxels_timer.Stop();
+    }
+
     integrate_timer.Stop();
   }
 
