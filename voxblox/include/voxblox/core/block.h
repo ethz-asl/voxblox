@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "voxblox/Block.pb.h"
 #include "voxblox/core/common.h"
 
 namespace voxblox {
@@ -22,6 +23,8 @@ class Block {
     block_size_ = voxels_per_side_ * voxel_size_;
     voxels_.reset(new VoxelType[num_voxels_]);
   }
+
+  explicit Block(const BlockProto& proto);
 
   ~Block() {}
 
@@ -113,6 +116,8 @@ class Block {
   bool& has_data() { return has_data_; }
 
  private:
+  void DeserializeVoxelData(const BlockProto& proto, VoxelType* voxels);
+
   // Base parameters.
   const size_t voxels_per_side_;
   const FloatingPoint voxel_size_;
