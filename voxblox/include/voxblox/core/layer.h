@@ -4,6 +4,7 @@
 #include <glog/logging.h>
 #include <utility>
 
+#include "./Layer.pb.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/block_hash.h"
@@ -21,6 +22,23 @@ class Layer {
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
     block_size_ = voxel_size_ * voxels_per_side_;
     block_size_inv_ = 1.0 / block_size_;
+  }
+
+  explicit Layer(const LayerProto& proto)
+      : voxel_size_(proto.voxel_size()),
+        voxels_per_side_(proto.voxels_per_side()) {
+    block_size_ = voxel_size_ * voxels_per_side_;
+    block_size_inv_ = 1.0 / block_size_;
+
+    const size_t num_blocks = proto.blocks_size();
+    block_map_.reserve(num_blocks);
+
+    for (size_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
+      typename BlockType::Ptr block_ptr(new BlockType(proto.blocks(block_idx)));
+      const BlockIndex block_index =
+          computeBlockIndexFromCoordinates(block_ptr->origin());
+      block_map_[block_index] = block_ptr;
+    }
   }
 
   virtual ~Layer() {}
@@ -139,6 +157,8 @@ class Layer {
   FloatingPoint block_size() const { return block_size_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
+
+  void GetProto(LayerProto* proto) const;
 
  private:
   FloatingPoint voxel_size_;

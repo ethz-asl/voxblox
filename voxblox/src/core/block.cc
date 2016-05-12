@@ -1,4 +1,3 @@
-
 #include "voxblox/core/block.h"
 #include "voxblox/core/voxel.h"
 
@@ -35,7 +34,7 @@ template <>
 void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
                                           BlockProto* proto) const {
   constexpr size_t kNumDataPacketsPerVoxel = 3;
-  for (size_t voxel_idx; voxel_idx < num_voxels_; ++voxel_idx) {
+  for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
     const TsdfVoxel& voxel = voxels[voxel_idx];
 
     // TODO(mfehr, helenol): find a better way to do this!
@@ -54,6 +53,20 @@ void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
                           (static_cast<uint32_t>(voxel.color.r) << 24));
   }
   DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, proto->voxel_data_size());
+}
+
+template <class VoxelType>
+void Block<VoxelType>::GetProto(BlockProto* proto) const {
+  proto->set_voxels_per_side(voxels_per_side_);
+  proto->set_voxel_size(voxel_size_);
+
+  proto->set_origin_x(origin_.x());
+  proto->set_origin_y(origin_.y());
+  proto->set_origin_z(origin_.z());
+
+  proto->set_has_data(has_data_);
+
+  SerializeVoxelData(voxels_.get(), proto);
 }
 
 }  // namespace voxblox
