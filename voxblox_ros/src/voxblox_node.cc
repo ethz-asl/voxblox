@@ -24,22 +24,46 @@ class VoxbloxNode {
     // Advertise topics.
     sdf_marker_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
         "sdf_markers", 1, true);
-    sdf_pointcloud_pub_ =
+    surface_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+            "surface_pointcloud", 1, true);
+    sdf_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
             "sdf_pointcloud", 1, true);
 
     pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
                                     &VoxbloxNode::insertPointcloudWithTf, this);
 
-    // TODO(helenol): load these from params for faster prototyping...
-
+    // Determine map parameters.
     TsdfMap::Config config;
-    config.tsdf_voxel_size = 0.02;
-    config.tsdf_voxels_per_side = 16;
+
+    // Workaround for OS X on mac mini not having specializations for float
+    // for some reason.
+    double voxel_size = config.tsdf_voxel_size;
+    int voxels_per_side = config.tsdf_voxels_per_side;
+    nh_private_.param("tsdf_voxel_size", voxel_size, voxel_size);
+    nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
+    config.tsdf_voxel_size = static_cast<float>(voxel_size);
+    config.tsdf_voxels_per_side = voxels_per_side;
     tsdf_map_.reset(new TsdfMap(config));
 
+    // Determine integrator parameters.
     TsdfIntegrator::Config integrator_config;
     integrator_config.voxel_carving_enabled = true;
+    integrator_config.default_truncation_distance = config.tsdf_voxel_size * 4;
+
+    double truncation_distance = integrator_config.default_truncation_distance;
+    double max_weight = integrator_config.max_weight;
+    nh_private_.param("voxel_carving_enabled",
+                      integrator_config.voxel_carving_enabled,
+                      integrator_config.voxel_carving_enabled);
+    nh_private_.param("truncation_distance", truncation_distance,
+                      truncation_distance);
+    nh_private_.param("max_weight", max_weight, max_weight);
+    integrator_config.default_truncation_distance =
+        static_cast<float>(truncation_distance);
+    integrator_config.max_weight = static_cast<float>(max_weight);
+
     tsdf_integrator_.reset(
         new TsdfIntegrator(tsdf_map_->getTsdfLayerPtr(), integrator_config));
 
@@ -75,6 +99,7 @@ class VoxbloxNode {
   // Publish markers for visualization.
   ros::Publisher sdf_marker_pub_;
   ros::Publisher sdf_pointcloud_pub_;
+  ros::Publisher surface_pointcloud_pub_;
 
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::shared_ptr<TsdfIntegrator> tsdf_integrator_;
@@ -93,12 +118,13 @@ void VoxbloxNode::insertPointcloudWithTf(
       if (pointcloud_msg->fields[d].name == std::string("rgb")) {
         pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
       }
-      LOG(INFO) << "Got field named: " << pointcloud_msg->fields[d].name;
     }
 
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+
+    timing::Timer ptcloud_timer("ptcloud_preprocess");
 
     // Filter out NaNs. :|
     std::vector<int> indices;
@@ -117,17 +143,20 @@ void VoxbloxNode::insertPointcloudWithTf(
                 pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
     }
 
+    ptcloud_timer.Stop();
+
     ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
-    tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
-    ROS_INFO("Finished integrating, have %d blocks.",
+    ros::WallTime start = ros::WallTime::now();
+    tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
+    ros::WallTime end = ros::WallTime::now();
+    ROS_INFO("Finished integrating in %f seconds, have %d blocks.",
+             (end - start).toSec(),
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
-    // publishAllUpdatedTsdfVoxels();
+    publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
+
+    ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
   }
-  // ??? Should we transform the pointcloud???? Or not. I think probably best
-  // not to.
-  // Pass to integrator, which should take minkindr transform and a pointcloud
-  // in sensor frame.
 }
 
 void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
@@ -150,7 +179,6 @@ void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
   tsdf_map_->getTsdfLayer().getAllAllocatedBlocks(&blocks);
 
   // Iterate over all blocks.
-  const float max_distance = 0.5;
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     const Block<TsdfVoxel>& block =
@@ -204,9 +232,8 @@ void VoxbloxNode::publishTsdfSurfacePoints() {
   tsdf_map_->getTsdfLayer().getAllAllocatedBlocks(&blocks);
 
   // Iterate over all blocks.
-  const float max_distance = 0.5;
   const float surface_distance_thresh =
-      tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
+      tsdf_map_->getTsdfLayer().voxel_size() * 0.5;
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     const Block<TsdfVoxel>& block =
@@ -241,7 +268,7 @@ void VoxbloxNode::publishTsdfSurfacePoints() {
   }
 
   pointcloud.header.frame_id = world_frame_;
-  sdf_pointcloud_pub_.publish(pointcloud);
+  surface_pointcloud_pub_.publish(pointcloud);
 }
 
 // Stolen from octomap_manager
