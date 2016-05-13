@@ -136,6 +136,10 @@ class Layer {
 
   size_t getNumberOfAllocatedBlocks() const { return block_map_.size(); }
 
+  bool hasBlock(const BlockIndex& block_index) const {
+    return block_map_.count(block_index);
+  }
+
   FloatingPoint block_size() const { return block_size_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }

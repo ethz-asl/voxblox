@@ -45,7 +45,7 @@ struct Mesh {
   inline bool hasColors() const { return !colors.empty(); }
   inline bool hasIndices() const { return !indices.empty(); }
 
-  inline void clearAll() {
+  inline void clear() {
     vertices.clear();
     normals.clear();
     colors.clear();
