@@ -35,7 +35,16 @@ class MeshIntegrator {
   }
 
   // Generates mesh for the entire tsdf layer from scratch.
-  void generateWholeMesh() { mesh_layer_->clear(); }
+  void generateWholeMesh() {
+    mesh_layer_->clear();
+    // Get all of the blocks in the TSDF layer, and mesh each one.
+    BlockIndexList all_tsdf_blocks;
+    tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
+
+    for (const BlockIndex& block_index : all_tsdf_blocks) {
+      updateMeshForBlock(block_index);
+    }
+  }
 
   void generateMeshForUpdatedBlocks() {
     // Only update parts of the mesh for blocks that have updated.
@@ -43,6 +52,7 @@ class MeshIntegrator {
 
   void updateMeshForBlock(const BlockIndex& block_index) {
     Mesh::Ptr mesh = mesh_layer_->allocateMeshPtrByIndex(block_index);
+    mesh->clear();
     // This block should already exist, otherwise it makes no sense to update
     // the mesh for it. ;)
     Block<TsdfVoxel>::ConstPtr block =
@@ -80,12 +90,84 @@ class MeshIntegrator {
 
       // Do not extract a mesh here if one of the corner is unobserved and
       // outside the truncation region.
+      // TODO(helenol): comment above from open_chisel, but no actual checks
+      // on distance are ever made. Definitely we should skip doing checks of
+      // voxels that are too far from the surface...
       if (voxel.weight <= 1e-6) {
         all_neighbors_observed = false;
         break;
       }
       corner_coords.col(i) = coords + cube_coord_offsets.col(i);
       corner_sdf(i) = voxel.distance;
+    }
+
+    if (all_neighbors_observed) {
+      MarchingCubes::meshCube(corner_coords, corner_sdf, next_mesh_index, mesh);
+    }
+  }
+
+  void extractMeshOnBorder(const Block<TsdfVoxel>::ConstPtr& block,
+                           const VoxelIndex& index, const Point& coords,
+                           VertexIndex* next_mesh_index, Mesh* mesh) {
+    DCHECK_NOTNULL(mesh);
+    Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
+        cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
+    Eigen::Matrix<FloatingPoint, 3, 8> corner_coords;
+    Eigen::Matrix<FloatingPoint, 8, 1> corner_sdf;
+    bool all_neighbors_observed = true;
+
+    for (int i = 0; i < 8; ++i) {
+      VoxelIndex corner_index = index + cube_index_offsets_.col(i);
+
+      if (block->isValidVoxelIndex(corner_index)) {
+        const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(corner_index);
+
+        if (voxel.weight <= 1e-6) {
+          all_neighbors_observed = false;
+          break;
+        }
+        corner_coords.col(i) = coords + cube_coord_offsets.col(i);
+        corner_sdf(i) = voxel.distance;
+      } else {
+        // We have to access a different block.
+        BlockIndex block_offset = Eigen::Vector3i::Zero();
+
+        for (int j = 0; j < 3; j++) {
+          if (corner_index(j) < 0) {
+            block_offset(j) = -1;
+            corner_index(j) = voxels_per_side_ - 1;
+          } else if (corner_index(j) >= voxels_per_side_) {
+            block_offset(j) = 1;
+            corner_index(j) = 0;
+          }
+        }
+
+        BlockIndex neighbor_index = block->block_index() + block_offset;
+
+        if (tsdf_layer_->hasBlock(neighbor_index)) {
+          Block<TsdfVoxel>::ConstPtr neighbor_block =
+              tsdf_layer_->getBlockPtrByIndex(neighbor_index);
+
+          // TODO(helenol): check should not be necessary.
+          /* if (!neighborChunk->IsCoordValid(cornerIDX.x(), cornerIDX.y(),
+                                           cornerIDX.z())) {
+            allNeighborsObserved = false;
+            break;
+          } */
+
+          const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(corner_index);
+
+          if (voxel.weight <= 1e-6) {
+            all_neighbors_observed = false;
+            break;
+          }
+          corner_coords.col(i) = coords + cube_coord_offsets.col(i);
+          corner_sdf(i) = voxel.distance;
+        } else {
+          all_neighbors_observed = false;
+          break;
+        }
+      }
     }
 
     if (all_neighbors_observed) {
