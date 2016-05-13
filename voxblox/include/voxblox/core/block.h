@@ -127,18 +127,7 @@ class Block {
   bool& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
-  void getProto(BlockProto* proto) const {
-    proto->set_voxels_per_side(voxels_per_side_);
-    proto->set_voxel_size(voxel_size_);
-
-    proto->set_origin_x(origin_.x());
-    proto->set_origin_y(origin_.y());
-    proto->set_origin_z(origin_.z());
-
-    proto->set_has_data(has_data_);
-
-    SerializeVoxelData(voxels_.get(), proto);
-  }
+  void getProto(BlockProto* proto) const;
 
  private:
   void DeserializeVoxelData(const BlockProto& proto, VoxelType* voxels);
@@ -163,5 +152,7 @@ class Block {
 };
 
 }  // namespace voxblox
+
+#include "voxblox/core/block_inl.h"
 
 #endif  // VOXBLOX_CORE_BLOCK_H_
