@@ -17,24 +17,16 @@ class Block {
   Block(size_t voxels_per_side, FloatingPoint voxel_size, const Point& origin)
       : voxels_per_side_(voxels_per_side),
         voxel_size_(voxel_size),
-        origin_(origin) {
+        origin_(origin),
+        has_data_(false),
+        updated_(false) {
     num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_ = voxels_per_side_ * voxel_size_;
     voxels_.reset(new VoxelType[num_voxels_]);
   }
 
-  explicit Block(const BlockProto& proto)
-      : voxels_per_side_(proto.voxels_per_side()),
-        voxel_size_(proto.voxel_size()),
-        origin_(proto.origin_x(), proto.origin_y(), proto.origin_z()) {
-    num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
-    voxel_size_inv_ = 1.0 / voxel_size_;
-    block_size_ = voxels_per_side_ * voxel_size_;
-
-    voxels_.reset(new VoxelType[num_voxels_]);
-    DeserializeVoxelData(proto, voxels_.get());
-  }
+  explicit Block(const BlockProto& proto);
 
   ~Block() {}
 
@@ -129,7 +121,9 @@ class Block {
 
   void getProto(BlockProto* proto) const;
 
-  bool mergeBlock();
+  bool mergeBlock(const Block<VoxelType>& other_block);
+
+  size_t getMemorySize() const;
 
  private:
   void DeserializeVoxelData(const BlockProto& proto, VoxelType* voxels);

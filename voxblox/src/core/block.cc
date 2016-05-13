@@ -54,4 +54,9 @@ void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
   }
   DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, proto->voxel_data_size());
 }
+
+// TODO(mfehr): Add serialization for EsdfVoxel
+
+// TODO(mfehr): Add serialization for OccupancyVoxel
+
 }  // namespace voxblox

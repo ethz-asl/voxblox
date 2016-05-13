@@ -1,5 +1,5 @@
-#include <eigen-checks/gtest.h>
-#include <eigen-checks/entrypoint.h>
+#include <iostream>
+
 #include <gtest/gtest.h>
 
 #include "./Block.pb.h"
@@ -50,11 +50,29 @@ class ProtobufTest : public ::testing::Test {
     for (const BlockIndex& index_A : blocks_A) {
       BlockIndexList::const_iterator it =
           std::find(blocks_B.begin(), blocks_B.end(), index_A);
-      EXPECT_NE(it, blocks_B.end());
+      if (it != blocks_B.end()) {
+        const Block<VoxelType>& block_A = layer_A.getBlockByIndex(index_A);
+        const Block<VoxelType>& block_B = layer_B.getBlockByIndex(*it);
+        CompareBlocks(block_A, block_B);
+      } else {
+        ADD_FAILURE();
+        std::cout << "Block at index [" << index_A.transpose()
+                  << "] in layer_A does not exists in layer_B";
+      }
+    }
 
-      const Block<VoxelType>& block_A = layer_A.getBlockByIndex(index_A);
-      const Block<VoxelType>& block_B = layer_B.getBlockByIndex(*it);
-      CompareBlocks(block_A, block_B);
+    for (const BlockIndex& index_B : blocks_B) {
+      BlockIndexList::const_iterator it =
+          std::find(blocks_A.begin(), blocks_A.end(), index_B);
+      if (it != blocks_A.end()) {
+        const Block<VoxelType>& block_B = layer_A.getBlockByIndex(index_B);
+        const Block<VoxelType>& block_A = layer_B.getBlockByIndex(*it);
+        CompareBlocks(block_B, block_A);
+      } else {
+        ADD_FAILURE();
+        std::cout << std::endl << "Block at index [" << index_B.transpose()
+                  << "] in layer_B does not exists in layer_A" << std::endl;
+      }
     }
   }
 
@@ -67,7 +85,7 @@ class ProtobufTest : public ::testing::Test {
   const double voxel_size_ = 0.02;
   const size_t voxels_per_side_ = 16u;
 
-  static constexpr size_t kNumDummyBlocks = 5u;
+  static constexpr size_t kDummyBlockPerSide = 10u;
   static constexpr double kTolerance = 1e-10;
 };
 
@@ -85,44 +103,51 @@ void ProtobufTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
 template <>
 void ProtobufTest<TsdfVoxel>::SetUpLayer() const {
   CHECK(layer_);
-  for (size_t block_nr = 0u; block_nr < kNumDummyBlocks; ++block_nr) {
-    BlockIndex block_idx;
-    block_idx.x() = static_cast<int>(block_nr);
-    block_idx.y() = static_cast<int>(block_nr * kNumDummyBlocks);
-    block_idx.z() =
-        static_cast<int>(block_nr * kNumDummyBlocks * kNumDummyBlocks);
 
-    Block<TsdfVoxel>::Ptr block = layer_->allocateBlockPtrByIndex(block_idx);
-    TsdfVoxel& voxel = block->getVoxelByLinearIndex(block_nr);
-    voxel.distance = block_nr * 0.5;
-    voxel.weight = block_nr * 0.25;
-    voxel.color.r = block_nr;
-    voxel.color.g = block_nr + 1;
-    voxel.color.b = block_nr + 2;
-    voxel.color.a = block_nr + 3;
+  int32_t half_index_range = kDummyBlockPerSide / 2;
+
+  for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
+    for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
+      for (int32_t z = -half_index_range; z <= half_index_range; ++z) {
+        BlockIndex block_idx = {x, y, z};
+        Block<TsdfVoxel>::Ptr block =
+            layer_->allocateBlockPtrByIndex(block_idx);
+        TsdfVoxel& voxel =
+            block->getVoxelByLinearIndex((x * z + y) % voxels_per_side_);
+        voxel.distance = x * y * 0.66 + z;
+        voxel.weight = y * z * 0.33 + x;
+        voxel.color.r = static_cast<uint8_t>(x % 255);
+        voxel.color.g = static_cast<uint8_t>(y % 255);
+        voxel.color.b = static_cast<uint8_t>(z % 255);
+        voxel.color.a = static_cast<uint8_t>(x + y % 255);
+
+        block->has_data() = true;
+      }
+    }
   }
+
+  double size_in_MB = static_cast<double>(layer_->getMemorySize()) * 1e-6;
+  std::cout << std::endl << "Set up a test TSDF layer of size " << size_in_MB
+            << " MB";
 }
 
 typedef ProtobufTest<TsdfVoxel> ProtobufTsdfTest;
 
 TEST_F(ProtobufTsdfTest, BlockSerialization) {
-  for (size_t block_nr = 0u; block_nr < kNumDummyBlocks; ++block_nr) {
-    BlockIndex block_idx;
-    block_idx.x() = static_cast<int>(block_nr);
-    block_idx.y() = static_cast<int>(block_nr * kNumDummyBlocks);
-    block_idx.z() =
-        static_cast<int>(block_nr * kNumDummyBlocks * kNumDummyBlocks);
-
-    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(block_idx);
+  BlockIndexList block_index_list;
+  layer_->getAllAllocatedBlocks(&block_index_list);
+  for (const BlockIndex& index : block_index_list) {
+    Block<TsdfVoxel>::Ptr block = layer_->getBlockPtrByIndex(index);
+    ASSERT_NE(block.get(), nullptr);
 
     // Convert to BlockProto.
     BlockProto proto_block;
-    block.getProto(&proto_block);
+    block->getProto(&proto_block);
 
     // Create from BlockProto.
     Block<TsdfVoxel> block_from_proto(proto_block);
 
-    CompareBlocks(block, block_from_proto);
+    CompareBlocks(*block, block_from_proto);
   }
 }
 
@@ -135,6 +160,42 @@ TEST_F(ProtobufTsdfTest, LayerSerialization) {
   Layer<TsdfVoxel> layer_from_proto(proto_layer);
 
   CompareLayers(*layer_, layer_from_proto);
+}
+
+TEST_F(ProtobufTsdfTest, LayerSerializationToFile) {
+  const std::string file = "layer_test.tsdf.voxblox";
+
+  layer_->saveToFile(file);
+
+  Layer<TsdfVoxel> layer_from_file(file);
+
+  // CompareLayers(*layer_, layer_from_file);
+}
+
+TEST_F(ProtobufTsdfTest, LayerSubsetSerializationToFile) {
+  const std::string file = "subset_layer_test.tsdf.voxblox";
+
+  BlockIndexList block_index_list;
+  BlockIndex block_index_1 = {-4, 5, 0};
+  block_index_list.push_back(block_index_1);
+  BlockIndex block_index_4 = {3, -1, -2};
+  block_index_list.push_back(block_index_4);
+
+  constexpr bool kIncludeAllBlocks = false;
+  layer_->saveSubsetToFile(file, block_index_list, kIncludeAllBlocks);
+
+  Layer<TsdfVoxel> layer_from_file(file);
+
+  // Remove all other blocks for comparison.
+  BlockIndexList all_block_indices;
+  layer_->getAllAllocatedBlocks(&all_block_indices);
+  for (const BlockIndex& index : all_block_indices) {
+    if (index != block_index_1 && index != block_index_4) {
+      layer_->removeBlock(index);
+    }
+  }
+
+  CompareLayers(*layer_, layer_from_file);
 }
 
 int main(int argc, char** argv) {

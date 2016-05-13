@@ -2,6 +2,7 @@
 #define VOXBLOX_CORE_LAYER_INL_H_
 
 #include <fstream>  // NOLINT
+#include <utility>
 #include <string>
 
 #include <glog/logging.h>
@@ -41,7 +42,7 @@ Layer<VoxelType>::Layer(const std::string file_path) {
 
   // Main config parameter.
   voxel_size_ = proto_layer.voxel_size();
-  voxels_per_side_ = proto_layer.voxel_size();
+  voxels_per_side_ = proto_layer.voxels_per_side();
 
   // Derived config parameter.
   block_size_ = voxel_size_ * voxels_per_side_;
@@ -106,7 +107,6 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
     LOG(ERROR) << "Couldn't open " << file_path << " for writing.";
     return false;
   }
-
   const bool success = proto_layer.SerializeToOstream(&layer_file);
   layer_file.close();
   if (!success) {
@@ -148,22 +148,35 @@ bool Layer<VoxelType>::addBlocksFromProtoToLayer(
       const BlockIndex block_index =
           computeBlockIndexFromCoordinates(block_ptr->origin());
       switch (strategy) {
-        case BlockMergingStrategy::kProhibit:
-          CHECK_EQ(block_map_.count(block_index), 0u);
-          block_map_[block_index] = block_ptr;
-          break;
-        case BlockMergingStrategy::kReplace:
-          block_map_[block_index] = block_ptr;
-          break;
-        case BlockMergingStrategy::kDiscard:
-          block_map_.insert(block_index, block_ptr);
-          break;
-        case BlockMergingStrategy::kMerge:
+        case BlockMergingStrategy::kProhibit: {
           typename BlockHashMap::iterator it = block_map_.find(block_index);
           if (it == block_map_.end()) {
             block_map_[block_index] = block_ptr;
           } else {
-            it->second.mergeBlock(*block_ptr);
+            LOG(ERROR) << "New index: " << block_index.transpose()
+                       << " collides with old index: " << it->first.transpose();
+          }
+        }
+
+        /*
+                  CHECK_EQ(block_map_.count(block_index), 0u) << "New index: "
+           << block_index;
+                  block_map_[block_index] = block_ptr;
+                  */
+        break;
+        case BlockMergingStrategy::kReplace:
+          block_map_[block_index] = block_ptr;
+          break;
+        case BlockMergingStrategy::kDiscard:
+          block_map_.insert(std::make_pair(block_index, block_ptr));
+          break;
+        case BlockMergingStrategy::kMerge: {
+          typename BlockHashMap::iterator it = block_map_.find(block_index);
+          if (it == block_map_.end()) {
+            block_map_[block_index] = block_ptr;
+          } else {
+            it->second->mergeBlock(*block_ptr);
+          }
           }
           break;
         default:
@@ -200,12 +213,45 @@ bool Layer<VoxelType>::readProtoLayerFromFile(const std::string& file_path,
     return false;
   }
 
-  const bool success = proto_layer->ParseFromIstream(&layer_file);
+  google::protobuf::io::IstreamInputStream zero_copy_input(&layer_file);
+  google::protobuf::io::CodedInputStream decoder(&zero_copy_input);
+  decoder.SetTotalBytesLimit(kMaxLayerSizeInBytes, -1);
+  const bool success = proto_layer->ParseFromCodedStream(&decoder) &&
+                       decoder.ConsumedEntireMessage() && layer_file.eof();
   layer_file.close();
   if (!success) {
     LOG(ERROR) << "Failed to parse Layer from file: " << file_path;
   }
   return success;
+}
+
+template <typename VoxelType>
+size_t Layer<VoxelType>::getMemorySize() const {
+  size_t size = 0u;
+
+  // Calculate size of members
+  size += sizeof(voxel_size_);
+  size += sizeof(voxels_per_side_);
+  size += sizeof(block_size_);
+  size += sizeof(block_size_inv_);
+
+  // Calculate size of the hash mab.
+  for (unsigned i = 0; i < block_map_.bucket_count(); ++i) {
+    size_t bucket_size = block_map_.bucket_size(i);
+    if (bucket_size == 0) {
+      size++;
+    } else {
+      size += bucket_size;
+    }
+  }
+
+  // Calculate size of blocks
+  size_t num_blocks = getNumberOfAllocatedBlocks();
+  if (num_blocks > 0u) {
+    typename Block<VoxelType>::Ptr block = block_map_.begin()->second;
+    size += num_blocks * block->getMemorySize();
+  }
+  return size;
 }
 
 }  // namespace voxblox
