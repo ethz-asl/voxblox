@@ -35,6 +35,13 @@ class Layer {
 
   virtual ~Layer() {}
 
+  enum class BlockMergingStrategy {
+    kProhibit,
+    kReplace,
+    kDiscard,
+    kMerge
+  };
+
   inline const BlockType& getBlockByIndex(const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
@@ -149,25 +156,17 @@ class Layer {
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
 
+  // Serialization tools.
   void getProto(LayerProto* proto) const;
   void getProto(const BlockIndexList& blocks_to_include, bool include_all,
                 LayerProto* proto) const;
-
+  bool isCompatible(const LayerProto& layer_proto) const;
   bool saveToFile(const std::string& file_path) const;
   bool saveSubsetToFile(const std::string& file_path,
                         BlockIndexList blocks_to_include,
                         bool include_all_blocks) const;
-
-  enum class BlockMergingStrategy {
-    kProhibit,
-    kReplace,
-    kDiscard,
-    kMerge
-  };
   bool loadBlocksFromFile(const std::string& file_path,
                           BlockMergingStrategy strategy);
-
-  bool isCompatible(const LayerProto& layer_proto) const;
 
  private:
   // Used for serialization only.
@@ -177,6 +176,11 @@ class Layer {
     kOccupancy = 3
   };
   Type getType() const;
+
+  bool addBlocksFromProtoToLayer(const LayerProto& proto_layer,
+                                 BlockMergingStrategy strategy);
+  bool readProtoLayerFromFile(const std::string& file_path,
+                              LayerProto* proto_layer) const;
 
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;

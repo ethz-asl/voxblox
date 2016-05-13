@@ -129,6 +129,8 @@ class Block {
 
   void getProto(BlockProto* proto) const;
 
+  bool mergeBlock();
+
  private:
   void DeserializeVoxelData(const BlockProto& proto, VoxelType* voxels);
   void SerializeVoxelData(const VoxelType* voxels, BlockProto* proto) const;
