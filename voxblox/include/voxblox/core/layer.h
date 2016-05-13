@@ -4,6 +4,7 @@
 #include <glog/logging.h>
 #include <utility>
 
+#include "./Block.pb.h"
 #include "./Layer.pb.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/block.h"
@@ -17,6 +18,7 @@ class Layer {
   typedef std::shared_ptr<Layer> Ptr;
   typedef Block<VoxelType> BlockType;
   typedef typename BlockHashMapType<typename BlockType::Ptr>::type BlockHashMap;
+  typedef typename std::pair<BlockIndex, typename BlockType::Ptr> BlockMapPair;
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
@@ -43,7 +45,6 @@ class Layer {
 
   virtual ~Layer() {}
 
-  // By index.
   inline const BlockType& getBlockByIndex(const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
@@ -158,7 +159,14 @@ class Layer {
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
 
-  void getProto(LayerProto* proto) const;
+  void getProto(LayerProto* proto) const {
+    proto->set_voxel_size(voxel_size_);
+    proto->set_voxels_per_side(voxels_per_side_);
+
+    for (const BlockMapPair& pair : block_map_) {
+      pair.second->getProto(proto->add_blocks());
+    }
+  }
 
  private:
   FloatingPoint voxel_size_;
