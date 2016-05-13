@@ -35,6 +35,29 @@ class ProtobufTest : public ::testing::Test {
     }
   }
 
+  void CompareLayers(const Layer<VoxelType>& layer_A,
+                     const Layer<VoxelType>& layer_B) {
+    EXPECT_NEAR(layer_A.voxel_size(), layer_B.voxel_size(), kTolerance);
+    EXPECT_NEAR(layer_A.block_size(), layer_B.block_size(), kTolerance);
+    EXPECT_EQ(layer_A.voxels_per_side(), layer_B.voxels_per_side());
+    EXPECT_EQ(layer_A.getNumberOfAllocatedBlocks(),
+              layer_B.getNumberOfAllocatedBlocks());
+
+    BlockIndexList blocks_A, blocks_B;
+    layer_A.getAllAllocatedBlocks(&blocks_A);
+    layer_B.getAllAllocatedBlocks(&blocks_B);
+    EXPECT_EQ(blocks_A.size(), blocks_B.size());
+    for (const BlockIndex& index_A : blocks_A) {
+      BlockIndexList::const_iterator it =
+          std::find(blocks_B.begin(), blocks_B.end(), index_A);
+      EXPECT_NE(it, blocks_B.end());
+
+      const Block<VoxelType>& block_A = layer_A.getBlockByIndex(index_A);
+      const Block<VoxelType>& block_B = layer_B.getBlockByIndex(*it);
+      CompareBlocks(block_A, block_B);
+    }
+  }
+
   void CompareVoxel(const VoxelType& voxel_A, const VoxelType& voxel_B) const;
 
   void SetUpLayer() const;
@@ -101,6 +124,17 @@ TEST_F(ProtobufTsdfTest, BlockSerialization) {
 
     CompareBlocks(block, block_from_proto);
   }
+}
+
+TEST_F(ProtobufTsdfTest, LayerSerialization) {
+  // Convert to LayerProto.
+  LayerProto proto_layer;
+  layer_->getProto(&proto_layer);
+
+  // Create from LayerProto.
+  Layer<TsdfVoxel> layer_from_proto(proto_layer);
+
+  CompareLayers(*layer_, layer_from_proto);
 }
 
 int main(int argc, char** argv) {
