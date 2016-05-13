@@ -25,23 +25,29 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
       << "Incorrect voxel type, proto type: " << proto.type()
       << " layer type: " << static_cast<int>(getType());
 
+  // Derived config parameter.
   block_size_ = voxel_size_ * voxels_per_side_;
   block_size_inv_ = 1.0 / block_size_;
 
-  const size_t num_blocks = proto.blocks_size();
-  block_map_.reserve(num_blocks);
-
-  for (size_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
-    typename BlockType::Ptr block_ptr(new BlockType(proto.blocks(block_idx)));
-    const BlockIndex block_index =
-        computeBlockIndexFromCoordinates(block_ptr->origin());
-    block_map_[block_index] = block_ptr;
-  }
+  addBlocksFromProtoToLayer(proto, BlockMergingStrategy::kProhibit);
 }
 
 template <typename VoxelType>
 Layer<VoxelType>::Layer(const std::string file_path) {
-  // TODO(mfehr): implement!
+  CHECK(!file_path.empty());
+
+  LayerProto proto_layer;
+  readProtoLayerFromFile(file_path, &proto_layer);
+
+  // Main config parameter.
+  voxel_size_ = proto_layer.voxel_size();
+  voxels_per_side_ = proto_layer.voxel_size();
+
+  // Derived config parameter.
+  block_size_ = voxel_size_ * voxels_per_side_;
+  block_size_inv_ = 1.0 / block_size_;
+
+  addBlocksFromProtoToLayer(proto_layer, BlockMergingStrategy::kProhibit);
 }
 
 template <typename VoxelType>
@@ -116,23 +122,10 @@ bool Layer<VoxelType>::loadBlocksFromFile(const std::string& file_path,
   CHECK(!file_path.empty());
 
   LayerProto proto_layer;
-
-  std::ifstream layer_file;
-  layer_file.open(file_path, std::fstream::in);
-  if (!layer_file.is_open()) {
-    LOG(ERROR) << "Couldn't open " << file_path << " for reading.";
-    return false;
-  }
-
-  const bool success = proto_layer.ParseFromIstream(&layer_file);
-  layer_file.close();
-  if (!success) {
-    LOG(ERROR) << "Failed to parse Layer from file: " << file_path;
-    return false;
-  }
+  readProtoLayerFromFile(file_path, &proto_layer);
 
   if (isCompatible(proto_layer)) {
-    // TODO(mfehr): implement!
+    return addProtoBlocksToLayer(proto_layer, strategy);
   } else {
     LOG(ERROR) << "The blocks loaded from '" << file_path
                << "' are not compatible with this layer!";
@@ -143,12 +136,76 @@ bool Layer<VoxelType>::loadBlocksFromFile(const std::string& file_path,
 }
 
 template <typename VoxelType>
+bool Layer<VoxelType>::addBlocksFromProtoToLayer(
+    const LayerProto& proto_layer, BlockMergingStrategy strategy) {
+  if (isCompatible(proto_layer)) {
+    const size_t num_blocks = proto_layer.blocks_size();
+    const size_t num_blocks_total = block_map_.size();
+    block_map_.reserve(num_blocks_total);
+    for (size_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
+      typename BlockType::Ptr block_ptr(
+          new BlockType(proto_layer.blocks(block_idx)));
+      const BlockIndex block_index =
+          computeBlockIndexFromCoordinates(block_ptr->origin());
+      switch (strategy) {
+        case BlockMergingStrategy::kProhibit:
+          CHECK_EQ(block_map_.count(block_index), 0u);
+          block_map_[block_index] = block_ptr;
+          break;
+        case BlockMergingStrategy::kReplace:
+          block_map_[block_index] = block_ptr;
+          break;
+        case BlockMergingStrategy::kDiscard:
+          block_map_.insert(block_index, block_ptr);
+          break;
+        case BlockMergingStrategy::kMerge:
+          typename BlockHashMap::iterator it = block_map_.find(block_index);
+          if (it == block_map_.end()) {
+            block_map_[block_index] = block_ptr;
+          } else {
+            it->second.mergeBlock(*block_ptr);
+          }
+          break;
+        default:
+          LOG(FATAL) << "Unknown BlockMergingStrategy: "
+                     << static_cast<int>(strategy);
+          return false;
+      }
+    }
+    return true;
+  } else {
+    LOG(ERROR)
+        << "The blocks from this protobuf are not compatible with this layer!";
+    return false;
+  }
+}
+
+template <typename VoxelType>
 bool Layer<VoxelType>::isCompatible(const LayerProto& layer_proto) const {
   bool compatible = true;
   compatible &= (layer_proto.voxel_size() == voxel_size_);
   compatible &= (layer_proto.voxels_per_side() == voxels_per_side_);
   compatible &= (layer_proto.type() == static_cast<int32_t>(getType()));
   return compatible;
+}
+
+template <typename VoxelType>
+bool Layer<VoxelType>::readProtoLayerFromFile(const std::string& file_path,
+                                              LayerProto* proto_layer) const {
+  CHECK_NOTNULL(proto_layer);
+  std::ifstream layer_file;
+  layer_file.open(file_path, std::fstream::in);
+  if (!layer_file.is_open()) {
+    LOG(ERROR) << "Couldn't open " << file_path << " for reading.";
+    return false;
+  }
+
+  const bool success = proto_layer->ParseFromIstream(&layer_file);
+  layer_file.close();
+  if (!success) {
+    LOG(ERROR) << "Failed to parse Layer from file: " << file_path;
+  }
+  return success;
 }
 
 }  // namespace voxblox

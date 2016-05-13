@@ -21,6 +21,13 @@ void Block<VoxelType>::getProto(BlockProto* proto) const {
   SerializeVoxelData(voxels_.get(), proto);
 }
 
+template <typename VoxelType>
+bool Block<VoxelType>::mergeBlock() {
+  // TODO(mfehr): implement
+  LOG(FATAL) << "NOT IMPLEMENTED";
+  return false;
+}
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_BLOCK_INL_H_
