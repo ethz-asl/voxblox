@@ -6,6 +6,9 @@ message LayerProto {
   optional double voxel_size = 1;
   
   optional uint32 voxels_per_side = 2;
+  
+  // See enum class Layer::Type
+  optional int32 type = 3;
 
-  repeated BlockProto blocks = 3;
+  repeated BlockProto blocks = 4;
 }

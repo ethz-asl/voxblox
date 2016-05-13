@@ -2,6 +2,7 @@
 #define VOXBLOX_CORE_LAYER_H_
 
 #include <glog/logging.h>
+#include <string>
 #include <utility>
 
 #include "./Block.pb.h"
@@ -26,22 +27,11 @@ class Layer {
     block_size_inv_ = 1.0 / block_size_;
   }
 
-  explicit Layer(const LayerProto& proto)
-      : voxel_size_(proto.voxel_size()),
-        voxels_per_side_(proto.voxels_per_side()) {
-    block_size_ = voxel_size_ * voxels_per_side_;
-    block_size_inv_ = 1.0 / block_size_;
+  // Create the layer from protobuf object.
+  explicit Layer(const LayerProto& proto);
 
-    const size_t num_blocks = proto.blocks_size();
-    block_map_.reserve(num_blocks);
-
-    for (size_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
-      typename BlockType::Ptr block_ptr(new BlockType(proto.blocks(block_idx)));
-      const BlockIndex block_index =
-          computeBlockIndexFromCoordinates(block_ptr->origin());
-      block_map_[block_index] = block_ptr;
-    }
-  }
+  // Create the layer from protobuf file.
+  explicit Layer(const std::string file_path);
 
   virtual ~Layer() {}
 
@@ -159,16 +149,35 @@ class Layer {
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
 
-  void getProto(LayerProto* proto) const {
-    proto->set_voxel_size(voxel_size_);
-    proto->set_voxels_per_side(voxels_per_side_);
+  void getProto(LayerProto* proto) const;
+  void getProto(const BlockIndexList& blocks_to_include, bool include_all,
+                LayerProto* proto) const;
 
-    for (const BlockMapPair& pair : block_map_) {
-      pair.second->getProto(proto->add_blocks());
-    }
-  }
+  bool saveToFile(const std::string& file_path) const;
+  bool saveSubsetToFile(const std::string& file_path,
+                        BlockIndexList blocks_to_include,
+                        bool include_all_blocks) const;
+
+  enum class BlockMergingStrategy {
+    kProhibit,
+    kReplace,
+    kDiscard,
+    kMerge
+  };
+  bool loadBlocksFromFile(const std::string& file_path,
+                          BlockMergingStrategy strategy);
+
+  bool isCompatible(const LayerProto& layer_proto) const;
 
  private:
+  // Used for serialization only.
+  enum Type {
+    kTsdf = 1,
+    kEsdf = 2,
+    kOccupancy = 3
+  };
+  Type getType() const;
+
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;
   FloatingPoint block_size_;
@@ -180,5 +189,7 @@ class Layer {
 };
 
 }  // namespace voxblox
+
+#include "voxblox/core/layer_inl.h"
 
 #endif  // VOXBLOX_CORE_LAYER_H_
