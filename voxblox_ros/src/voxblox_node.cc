@@ -321,9 +321,15 @@ bool VoxbloxNode::generateMeshCallback(std_srvs::Empty::Request& request,
   MeshIntegrator mesh_integrator(tsdf_map_->getTsdfLayerPtr(),
                                  mesh_layer.get());
 
+  timing::Timer generate_mesh_timer("mesh/generate");
   mesh_integrator.generateWholeMesh();
+  generate_mesh_timer.Stop();
 
-  bool success = outputMeshLayerAsPly("./mesh.ply", mesh_layer);
+  bool success = outputMeshLayerAsPly("/Users/helen/mesh.ply", mesh_layer);
+  ROS_INFO("Output file as PLY.");
+
+  ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
+
   return success;
 }
 

@@ -8,7 +8,8 @@
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in all
+// The above copyright notice and this permission notice shall be included in
+// all
 // copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -94,6 +95,36 @@ class MeshIntegrator {
         }
       }
     }
+
+    // Max X plane (takes care of max-Y corner as well).
+    voxel_index.x() = vps - 1;
+    for (voxel_index.z() = 0; voxel_index.z() < vps - 1; voxel_index.z()++) {
+      for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
+        Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
+        extractMeshOnBorder(block, voxel_index, coords, &next_mesh_index,
+                            mesh.get());
+      }
+    }
+
+    // Max Y plane.
+    voxel_index.y() = vps - 1;
+    for (voxel_index.z() = 0; voxel_index.z() < vps - 1; voxel_index.z()++) {
+      for (voxel_index.x() = 0; voxel_index.x() < vps - 1; voxel_index.x()++) {
+        Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
+        extractMeshOnBorder(block, voxel_index, coords, &next_mesh_index,
+                            mesh.get());
+      }
+    }
+
+    // Max Z plane (also takes care of corners).
+    voxel_index.z() = vps - 1;
+    for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
+      for (voxel_index.x() = 0; voxel_index.x() < vps; voxel_index.x()++) {
+        Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
+        extractMeshOnBorder(block, voxel_index, coords, &next_mesh_index,
+                            mesh.get());
+      }
+    }
   }
 
   void extractMeshInsideBlock(const Block<TsdfVoxel>::ConstPtr& block,
@@ -171,13 +202,13 @@ class MeshIntegrator {
               tsdf_layer_->getBlockPtrByIndex(neighbor_index);
 
           // TODO(helenol): check should not be necessary.
-          /* if (!neighborChunk->IsCoordValid(cornerIDX.x(), cornerIDX.y(),
-                                           cornerIDX.z())) {
-            allNeighborsObserved = false;
+          if (!neighbor_block->isValidVoxelIndex(corner_index)) {
+            all_neighbors_observed = false;
             break;
-          } */
+          }
 
-          const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(corner_index);
+          const TsdfVoxel& voxel =
+              neighbor_block->getVoxelByVoxelIndex(corner_index);
 
           if (voxel.weight <= 1e-6) {
             all_neighbors_observed = false;
