@@ -7,11 +7,14 @@
 #include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/io/mesh_ply.h>
+#include <voxblox/mesh/mesh_integrator.h>
 
 namespace voxblox {
 
@@ -67,6 +70,10 @@ class VoxbloxNode {
     tsdf_integrator_.reset(
         new TsdfIntegrator(tsdf_map_->getTsdfLayerPtr(), integrator_config));
 
+    // Advertise services.
+    generate_mesh_srv_ = nh_private_.advertiseService(
+        "generate_mesh", &VoxbloxNode::generateMeshCallback, this);
+
     ros::spinOnce();
     publishTsdfSurfacePoints();
   }
@@ -80,6 +87,9 @@ class VoxbloxNode {
                        Transformation* transform);
 
   void publishTsdfSurfacePoints();
+
+  bool generateMeshCallback(std_srvs::Empty::Request& request,
+                            std_srvs::Empty::Response& response);
 
  private:
   ros::NodeHandle nh_;
@@ -100,6 +110,9 @@ class VoxbloxNode {
   ros::Publisher sdf_marker_pub_;
   ros::Publisher sdf_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
+
+  // Services.
+  ros::ServiceServer generate_mesh_srv_;
 
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::shared_ptr<TsdfIntegrator> tsdf_integrator_;
@@ -145,11 +158,11 @@ void VoxbloxNode::insertPointcloudWithTf(
 
     ptcloud_timer.Stop();
 
-    ROS_INFO("Integrating a pointcloud with %d points.", points_C.size());
+    ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
     ros::WallTime start = ros::WallTime::now();
     tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
     ros::WallTime end = ros::WallTime::now();
-    ROS_INFO("Finished integrating in %f seconds, have %d blocks.",
+    ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
              (end - start).toSec(),
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
     publishAllUpdatedTsdfVoxels();
@@ -299,6 +312,19 @@ bool VoxbloxNode::lookupTransform(const std::string& from_frame,
 
   tf::transformTFToKindr(tf_transform, transform);
   return true;
+}
+
+bool VoxbloxNode::generateMeshCallback(std_srvs::Empty::Request& request,
+                                       std_srvs::Empty::Response& response) {
+  MeshLayer::Ptr mesh_layer(new MeshLayer(tsdf_map_->block_size()));
+
+  MeshIntegrator mesh_integrator(tsdf_map_->getTsdfLayerPtr(),
+                                 mesh_layer.get());
+
+  mesh_integrator.generateWholeMesh();
+
+  bool success = outputMeshLayerAsPly("./mesh.ply", mesh_layer);
+  return success;
 }
 
 }  // namespace voxblox
