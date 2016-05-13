@@ -168,6 +168,10 @@ class Layer {
   bool loadBlocksFromFile(const std::string& file_path,
                           BlockMergingStrategy strategy);
 
+  size_t getMemorySize() const;
+
+  static constexpr size_t kMaxLayerSizeInBytes = 5000000u;  // 500MB
+
  private:
   // Used for serialization only.
   enum Type {
