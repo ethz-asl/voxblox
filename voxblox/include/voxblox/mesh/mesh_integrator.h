@@ -85,9 +85,9 @@ class MeshIntegrator {
     VertexIndex next_mesh_index = 0;
 
     VoxelIndex voxel_index;
-    for (voxel_index.x() = 1; voxel_index.x() < vps - 1; ++voxel_index.x()) {
-      for (voxel_index.y() = 1; voxel_index.y() < vps - 1; ++voxel_index.y()) {
-        for (voxel_index.z() = 1; voxel_index.z() < vps - 1;
+    for (voxel_index.x() = 0; voxel_index.x() < vps - 1; ++voxel_index.x()) {
+      for (voxel_index.y() = 0; voxel_index.y() < vps - 1; ++voxel_index.y()) {
+        for (voxel_index.z() = 0; voxel_index.z() < vps - 1;
              ++voxel_index.z()) {
           Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
           extractMeshInsideBlock(block, voxel_index, coords, &next_mesh_index,
