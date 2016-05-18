@@ -71,6 +71,22 @@ class VoxbloxNode {
     tsdf_integrator_.reset(
         new TsdfIntegrator(tsdf_map_->getTsdfLayerPtr(), integrator_config));
 
+    // Mesh settings.
+    nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
+    std::string color_mode("color");
+    nh_private_.param("color_mode", color_mode, color_mode);
+    if (color_mode == "color") {
+      color_mode_ = ColorMode::kColor;
+    } else if (color_mode == "height") {
+      color_mode_ = ColorMode::kHeight;
+    } else if (color_mode == "normals") {
+      color_mode_ = ColorMode::kNormals;
+    } else if (color_mode == "lambert") {
+      color_mode_ = ColorMode::kLambert;
+    } else {  // Default case is gray.
+      color_mode_ = ColorMode::kGray;
+    }
+
     // Advertise services.
     generate_mesh_srv_ = nh_private_.advertiseService(
         "generate_mesh", &VoxbloxNode::generateMeshCallback, this);
@@ -99,6 +115,12 @@ class VoxbloxNode {
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
+
+  // Mesh output settings. Mesh is only written to file if mesh_filename_ is not
+  // empty.
+  std::string mesh_filename_;
+  // How to color the mesh.
+  ColorMode color_mode_;
 
   // To be replaced (at least optionally) with odometry + static transform from
   // IMU to visual frame.
@@ -330,19 +352,23 @@ bool VoxbloxNode::generateMeshCallback(std_srvs::Empty::Request& request,
   timing::Timer publish_mesh_timer("mesh/publish");
   visualization_msgs::MarkerArray marker_array;
   marker_array.markers.resize(1);
-  fillMarkerWithMesh(mesh_layer, ColorMode::kNormals, &marker_array.markers[0]);
+  fillMarkerWithMesh(mesh_layer, color_mode_, &marker_array.markers[0]);
   mesh_pub_.publish(marker_array);
   publish_mesh_timer.Stop();
 
-  timing::Timer output_mesh_timer("mesh/output");
-  bool success = outputMeshLayerAsPly("/Users/helen/mesh.ply", mesh_layer);
-  output_mesh_timer.Stop();
+  if (!mesh_filename_.empty()) {
+    timing::Timer output_mesh_timer("mesh/output");
+    bool success = outputMeshLayerAsPly(mesh_filename_, mesh_layer);
+    output_mesh_timer.Stop();
+    if (success) {
+      ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
+    } else {
+      ROS_INFO("Failed to output mesh as PLY: %s", mesh_filename_.c_str());
+    }
+  }
 
-  ROS_INFO("Output file as PLY.");
-
-  ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
-
-  return success;
+  ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
+  return true;
 }
 
 }  // namespace voxblox
