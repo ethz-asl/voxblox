@@ -35,14 +35,14 @@
 
 namespace voxblox {
 
-enum ColorMode { kColor = 0, kHeight, kLambert, kNormals };
+enum ColorMode { kColor = 0, kHeight, kNormals, kGray, kLambert };
+
+std_msgs::ColorRGBA rainbowColorMap(double h);
 
 Point lambertShading(const Point& normal, const Point& light) {
   return std::max<FloatingPoint>(normal.dot(light), 0.0f) *
          Point(0.5, 0.5, 0.5);
 }
-
-std_msgs::ColorRGBA rainbowColorMap(double h);
 
 void lambertColorFromNormal(const Point& normal,
                             std_msgs::ColorRGBA* color_msg) {
@@ -53,15 +53,15 @@ void lambertColorFromNormal(const Point& normal,
   Point lambert = lambertShading(normal, light_dir) +
                   lambertShading(normal, light_dir2) + ambient;
 
-  color_msg->r = std::max<FloatingPoint>(lambert.x(), 1.0);
-  color_msg->g = std::max<FloatingPoint>(lambert.y(), 1.0);
-  color_msg->b = std::max<FloatingPoint>(lambert.z(), 1.0);
+  color_msg->r = std::min<FloatingPoint>(lambert.x(), 1.0);
+  color_msg->g = std::min<FloatingPoint>(lambert.y(), 1.0);
+  color_msg->b = std::min<FloatingPoint>(lambert.z(), 1.0);
   color_msg->a = 1.0;
 }
 
 void normalColorFromNormal(const Point& normal,
                            std_msgs::ColorRGBA* color_msg) {
-  // Normals should be in the scale -1 to 1, so we need to shif them to
+  // Normals should be in the scale -1 to 1, so we need to shift them to
   // 0 -> 1 range.
   color_msg->r = normal.x() * 0.5 + 0.5;
   color_msg->g = normal.y() * 0.5 + 0.5;
@@ -111,7 +111,7 @@ void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
     if (color_mode == kColor) {
       CHECK(mesh->hasColors());
     }
-    if (color_mode == kLambert || color_mode == kNormals) {
+    if (color_mode == kNormals || color_mode == kLambert) {
       CHECK(mesh->hasNormals());
     }
 
@@ -127,11 +127,14 @@ void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
         case kHeight:
           heightColorFromVertex(mesh->vertices[i], &color_msg);
           break;
+        case kNormals:
+          normalColorFromNormal(mesh->normals[i], &color_msg);
+          break;
         case kLambert:
           lambertColorFromNormal(mesh->normals[i], &color_msg);
           break;
-        case kNormals:
-          normalColorFromNormal(mesh->normals[i], &color_msg);
+        case kGray:
+          color_msg.r = color_msg.g = color_msg.b = 0.5;
           break;
       }
       color_msg.a = 1.0;
