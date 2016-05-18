@@ -82,15 +82,12 @@ class TsdfIntegrator {
 
       FloatingPoint truncation_distance = config_.default_truncation_distance;
 
-      Point start = origin;
-      Point end = point_G;
+      const Ray unit_ray = (point_G - origin).normalized();
 
-      const Ray unit_ray = (end - start).normalized();
-
-      const Point ray_end = end + unit_ray * truncation_distance;
+      const Point ray_end = point_G + unit_ray * truncation_distance;
       const Point ray_start = config_.voxel_carving_enabled
-                                  ? start
-                                  : (end - unit_ray * truncation_distance);
+                                  ? origin
+                                  : (point_G - unit_ray * truncation_distance);
 
       const Point start_scaled = ray_start * voxel_size_inv_;
       const Point end_scaled = ray_end * voxel_size_inv_;
