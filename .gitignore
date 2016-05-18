@@ -31,8 +31,12 @@
 .cproject
 .project
 
+# Python (for lint)
+*.pyc
+
 # Temporary files
 *~
 
 # Mac 
 .DS_Store
+
