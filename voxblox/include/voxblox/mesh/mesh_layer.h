@@ -115,12 +115,12 @@ class MeshLayer {
     mesh_map_.erase(computeBlockIndexFromCoordinates(coords));
   }
 
-  void getAllAllocatedMeshes(BlockIndexList* meshs) const {
-    meshs->clear();
-    meshs->reserve(mesh_map_.size());
+  void getAllAllocatedMeshes(BlockIndexList* meshes) const {
+    meshes->clear();
+    meshes->reserve(mesh_map_.size());
     for (const std::pair<const BlockIndex, typename Mesh::Ptr>& kv :
          mesh_map_) {
-      meshs->emplace_back(kv.first);
+      meshes->emplace_back(kv.first);
     }
   }
 

@@ -16,6 +16,8 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
+#include "voxblox_ros/visualization.h"
+
 namespace voxblox {
 
 // TODO(helenol): Split into a ROS wrapper/server and a node that actually
@@ -25,8 +27,8 @@ class VoxbloxNode {
   VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private)
       : nh_(nh), nh_private_(nh_private), world_frame_("world") {
     // Advertise topics.
-    sdf_marker_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
-        "sdf_markers", 1, true);
+    mesh_pub_ =
+        nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
     surface_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
             "surface_pointcloud", 1, true);
@@ -106,7 +108,7 @@ class VoxbloxNode {
   ros::Subscriber pointcloud_sub_;
 
   // Publish markers for visualization.
-  ros::Publisher sdf_marker_pub_;
+  ros::Publisher mesh_pub_;
   ros::Publisher sdf_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
 
@@ -324,6 +326,13 @@ bool VoxbloxNode::generateMeshCallback(std_srvs::Empty::Request& request,
   timing::Timer generate_mesh_timer("mesh/generate");
   mesh_integrator.generateWholeMesh();
   generate_mesh_timer.Stop();
+
+  timing::Timer publish_mesh_timer("mesh/publish");
+  visualization_msgs::MarkerArray marker_array;
+  marker_array.markers.resize(1);
+  fillMarkerWithMesh(mesh_layer, ColorMode::kNormals, &marker_array.markers[0]);
+  mesh_pub_.publish(marker_array);
+  publish_mesh_timer.Stop();
 
   timing::Timer output_mesh_timer("mesh/output");
   bool success = outputMeshLayerAsPly("/Users/helen/mesh.ply", mesh_layer);
