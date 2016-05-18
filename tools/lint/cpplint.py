@@ -1225,15 +1225,15 @@ def CheckForHeaderGuard(filename, lines, error):
           cppvar)
     return
 
-  if endif != ('#endif  // %s' % cppvar):
-    error_level = 0
-    if endif != ('#endif  // %s' % (cppvar + '_')):
-      error_level = 5
+  #if endif != ('#endif  // %s' % cppvar):
+  #  error_level = 0
+  #  if endif != ('#endif  // %s' % (cppvar + '_')):
+  #    error_level = 5
 
-    ParseNolintSuppressions(filename, lines[endif_linenum], endif_linenum,
-                            error)
-    error(filename, endif_linenum, 'build/header_guard', error_level,
-          '#endif line should be "#endif  // %s"' % cppvar)
+  #   ParseNolintSuppressions(filename, lines[endif_linenum], endif_linenum,
+  #                           error)
+  #  error(filename, endif_linenum, 'build/header_guard', error_level,
+  #        '#endif line should be "#endif  // %s"' % cppvar)
 
 
 def CheckForUnicodeReplacementCharacters(filename, lines, error):
