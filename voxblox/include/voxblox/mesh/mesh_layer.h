@@ -18,7 +18,7 @@ class MeshLayer {
   typedef std::shared_ptr<const MeshLayer> ConstPtr;
   typedef typename BlockHashMapType<Mesh::Ptr>::type MeshMap;
 
-  MeshLayer(FloatingPoint block_size) : block_size_(block_size) {}
+  explicit MeshLayer(FloatingPoint block_size) : block_size_(block_size) {}
   virtual ~MeshLayer() {}
 
   // By index.

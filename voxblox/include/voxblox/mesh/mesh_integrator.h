@@ -60,7 +60,7 @@ class MeshIntegrator {
     block_size_inv_ = 1.0 / block_size_;
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
 
-    cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+    cube_index_offsets_  << 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
         0, 0, 1, 1, 1, 1;
   }
 
