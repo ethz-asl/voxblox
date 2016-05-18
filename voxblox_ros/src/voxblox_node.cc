@@ -20,8 +20,6 @@
 
 namespace voxblox {
 
-// TODO(helenol): Split into a ROS wrapper/server and a node that actually
-//                sets settings, etc. Follow open_chisel model.
 class VoxbloxNode {
  public:
   VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private)
@@ -105,8 +103,8 @@ class VoxbloxNode {
 
   void publishTsdfSurfacePoints();
 
-  bool generateMeshCallback(std_srvs::Empty::Request& request,
-                            std_srvs::Empty::Response& response);
+  bool generateMeshCallback(std_srvs::Empty::Request& request,     // NOLINT
+                            std_srvs::Empty::Response& response);  // NOLINT
 
  private:
   ros::NodeHandle nh_;
@@ -337,8 +335,9 @@ bool VoxbloxNode::lookupTransform(const std::string& from_frame,
   return true;
 }
 
-bool VoxbloxNode::generateMeshCallback(std_srvs::Empty::Request& request,
-                                       std_srvs::Empty::Response& response) {
+bool VoxbloxNode::generateMeshCallback(
+    std_srvs::Empty::Request& request,
+    std_srvs::Empty::Response& response) {  // NOLINT
   MeshLayer::Ptr mesh_layer(new MeshLayer(tsdf_map_->block_size()));
 
   MeshIntegrator::Config mesh_config;

@@ -24,6 +24,7 @@
 #ifndef VOXBLOX_ROS_VISUALIZATION_H_
 #define VOXBLOX_ROS_VISUALIZATION_H_
 
+#include <algorithm>
 #include <visualization_msgs/Marker.h>
 #include <eigen_conversions/eigen_msg.h>
 

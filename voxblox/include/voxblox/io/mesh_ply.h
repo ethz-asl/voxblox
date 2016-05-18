@@ -21,10 +21,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#ifndef VOXBLOX_MESH_MESH_PLY_H_
+#define VOXBLOX_MESH_MESH_PLY_H_
+
 #include "voxblox/mesh/mesh_layer.h"
 
 #include <iostream>
 #include <fstream>
+#include <string>
 
 namespace voxblox {
 
@@ -115,4 +119,6 @@ bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh) {
 
   return true;
 }
-}
+}  // namespace voxblox
+
+#endif  // VOXBLOX_MESH_MESH_PLY_H_
