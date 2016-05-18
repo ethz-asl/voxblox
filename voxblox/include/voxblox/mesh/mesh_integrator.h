@@ -76,9 +76,23 @@ class MeshIntegrator {
     }
   }
 
-  void generateMeshForUpdatedBlocks() {
+  void generateMeshForUpdatedBlocks(bool clear_updated_flag) {
     // Only update parts of the mesh for blocks that have updated.
-    CHECK(false);
+    // clear_updated_flag decides whether to reset 'updated' after updating the
+    // mesh.
+    BlockIndexList all_tsdf_blocks;
+    tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
+
+    for (const BlockIndex& block_index : all_tsdf_blocks) {
+      Block<TsdfVoxel>::Ptr block =
+          tsdf_layer_->getBlockPtrByIndex(block_index);
+      if (block->updated()) {
+        updateMeshForBlock(block_index);
+        if (clear_updated_flag) {
+          block->updated() = false;
+        }
+      }
+    }
   }
 
   void updateMeshForBlock(const BlockIndex& block_index) {
