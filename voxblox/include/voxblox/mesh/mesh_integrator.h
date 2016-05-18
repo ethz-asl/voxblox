@@ -321,10 +321,11 @@ class MeshIntegrator {
         } else {
           const Block<TsdfVoxel>::ConstPtr neighbor_block =
               tsdf_layer_->getBlockPtrByCoordinates(pos + offset);
-          if (!block) {
+          if (!neighbor_block) {
             return false;
           }
-          const TsdfVoxel& pos_vox = block->getVoxelByCoordinates(pos + offset);
+          const TsdfVoxel& pos_vox =
+              neighbor_block->getVoxelByCoordinates(pos + offset);
           (*grad)(i) += sign * static_cast<FloatingPoint>(pos_vox.distance);
           if (pos_vox.weight < kMinWeight) {
             return false;
