@@ -50,7 +50,6 @@ class Layer {
     if (it != block_map_.end()) {
       return it->second;
     } else {
-      LOG(WARNING) << "Returning null ptr to block!";
       return typename BlockType::ConstPtr();
     }
   }
@@ -60,7 +59,6 @@ class Layer {
     if (it != block_map_.end()) {
       return it->second;
     } else {
-      LOG(WARNING) << "Returning null ptr to block!";
       return typename BlockType::Ptr();
     }
   }
