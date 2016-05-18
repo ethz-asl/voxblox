@@ -77,11 +77,11 @@ bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh) {
   stream << "property float x" << std::endl;
   stream << "property float y" << std::endl;
   stream << "property float z" << std::endl;
-  /* if (mesh->HasColors()) {
+  if (mesh->hasColors()) {
     stream << "property uchar red" << std::endl;
     stream << "property uchar green" << std::endl;
     stream << "property uchar blue" << std::endl;
-  } */
+  }
   stream << "element face " << num_points / 3 << std::endl;
   stream << "property list uchar int vertex_index" << std::endl;
   stream << "end_header" << std::endl;
@@ -90,14 +90,14 @@ bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh) {
   for (const Point& vert : mesh->vertices) {
     stream << vert(0) << " " << vert(1) << " " << vert(2);
 
-    /* if (mesh->HasColors()) {
-      const Vec3& color = mesh->colors[vert_idx];
-      int r = static_cast<int>(color(0) * 255.0f);
-      int g = static_cast<int>(color(1) * 255.0f);
-      int b = static_cast<int>(color(2) * 255.0f);
-
+    if (mesh->hasColors()) {
+      const Color& color = mesh->colors[vert_idx];
+      int r = static_cast<int>(color.r);
+      int g = static_cast<int>(color.g);
+      int b = static_cast<int>(color.b);
+      // Uint8 prints as character otherwise. :(
       stream << " " << r << " " << g << " " << b;
-    } */
+    }
 
     stream << std::endl;
     vert_idx++;

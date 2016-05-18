@@ -39,8 +39,16 @@ namespace voxblox {
 
 class MeshIntegrator {
  public:
-  MeshIntegrator(Layer<TsdfVoxel>* tsdf_layer, MeshLayer* mesh_layer)
-      : tsdf_layer_(tsdf_layer), mesh_layer_(mesh_layer) {
+  struct Config {
+    bool use_color = true;
+    bool compute_normals = true;
+  };
+
+  static constexpr FloatingPoint kMinWeight = 1e-6;
+
+  MeshIntegrator(Layer<TsdfVoxel>* tsdf_layer, MeshLayer* mesh_layer,
+                 const Config& config)
+      : tsdf_layer_(tsdf_layer), mesh_layer_(mesh_layer), config_(config) {
     DCHECK_NOTNULL(tsdf_layer_);
     DCHECK_NOTNULL(mesh_layer_);
 
@@ -125,6 +133,15 @@ class MeshIntegrator {
                             mesh.get());
       }
     }
+
+    // Update colors if needed.
+    if (config_.use_color) {
+      updateMeshColor(block, mesh.get());
+    }
+
+    if (config_.compute_normals) {
+      computeMeshNormals(block, mesh.get());
+    }
   }
 
   void extractMeshInsideBlock(const Block<TsdfVoxel>::ConstPtr& block,
@@ -202,10 +219,10 @@ class MeshIntegrator {
               tsdf_layer_->getBlockPtrByIndex(neighbor_index);
 
           // TODO(helenol): check should not be necessary.
-          if (!neighbor_block->isValidVoxelIndex(corner_index)) {
+          /* if (!neighbor_block->isValidVoxelIndex(corner_index)) {
             all_neighbors_observed = false;
             break;
-          }
+          } */
 
           const TsdfVoxel& voxel =
               neighbor_block->getVoxelByVoxelIndex(corner_index);
@@ -228,9 +245,104 @@ class MeshIntegrator {
     }
   }
 
+  void updateMeshColor(const Block<TsdfVoxel>::ConstPtr& block, Mesh* mesh) {
+    mesh->colors.clear();
+    mesh->colors.resize(mesh->indices.size());
+
+    // TODO(helenol): just use nearest neighbor color strategy for now.
+    // In the future, interpolate intelligently... Trilinear or whatever.
+    // Best yet, be able to choose.
+    for (size_t i = 0; i < mesh->vertices.size(); i++) {
+      const Point& vertex = mesh->vertices[i];
+      VoxelIndex voxel_index = block->computeVoxelIndexFromCoordinates(vertex);
+      if (block->isValidVoxelIndex(voxel_index)) {
+        mesh->colors[i] = block->getVoxelByVoxelIndex(voxel_index).color;
+      } else {
+        // Get the nearest block.
+        const Block<TsdfVoxel>::ConstPtr neighbor_block =
+            tsdf_layer_->getBlockPtrByCoordinates(vertex);
+        if (neighbor_block) {
+          mesh->colors[i] = neighbor_block->getVoxelByCoordinates(vertex).color;
+        }
+      }
+    }
+  }
+
+  void computeMeshNormals(const Block<TsdfVoxel>::ConstPtr& block, Mesh* mesh) {
+    mesh->normals.clear();
+    mesh->normals.resize(mesh->indices.size(), Point::Zero());
+
+    Point grad;
+    FloatingPoint dist;
+    for (size_t i = 0; i < mesh->vertices.size(); i++) {
+      const Point& pos = mesh->vertices[i];
+      // Otherwise the norm stays 0.
+      if (getDistanceAndGradient(pos, &dist, &grad)) {
+        mesh->normals[i] = grad.normalized();
+      }
+    }
+  }
+
+  // TODO(helenol): this has no interpolation within the voxel.
+  // At least add an option in the future...
+  bool getDistanceAndGradient(const Point& pos, FloatingPoint* distance,
+                              Point* grad) {
+    CHECK_NOTNULL(distance);
+    CHECK_NOTNULL(grad);
+    // If we're lucky, everything is within one block.
+    const Block<TsdfVoxel>::ConstPtr block =
+        tsdf_layer_->getBlockPtrByCoordinates(pos);
+    if (!block) {
+      return false;
+    }
+    const TsdfVoxel& voxel = block->getVoxelByCoordinates(pos);
+    *distance = static_cast<FloatingPoint>(voxel.distance);
+    if (voxel.weight < kMinWeight) {
+      return false;
+    }
+
+    // Now get the gradient.
+    *grad = Point::Zero();
+    VoxelIndex voxel_index = VoxelIndex::Zero();
+    Point offset = Point::Zero();
+    // Iterate over all 3 D, and over negative and positive signs in central
+    // difference.
+    for (unsigned int i = 0; i < 3; ++i) {
+      for (int sign = -1; sign <= 1; sign += 2) {
+        offset = Point::Zero();
+        offset(i) = sign * voxel_size_;
+        voxel_index = block->computeVoxelIndexFromCoordinates(pos + offset);
+        if (block->isValidVoxelIndex(voxel_index)) {
+          const TsdfVoxel& pos_vox = block->getVoxelByVoxelIndex(voxel_index);
+          (*grad)(i) = static_cast<FloatingPoint>(pos_vox.distance);
+          if (pos_vox.weight < kMinWeight) {
+            return false;
+          }
+        } else {
+          const Block<TsdfVoxel>::ConstPtr neighbor_block =
+              tsdf_layer_->getBlockPtrByCoordinates(pos + offset);
+          if (!block) {
+            return false;
+          }
+          const TsdfVoxel& pos_vox = block->getVoxelByCoordinates(pos + offset);
+          (*grad)(i) += sign * static_cast<FloatingPoint>(pos_vox.distance);
+          if (pos_vox.weight < kMinWeight) {
+            return false;
+          }
+        }
+      }
+    }
+    // Scale by correct size.
+    // This is central difference, so it's 2x voxel size between measurements.
+    *grad /= (2 * voxel_size_);
+    return true;
+  }
+
  protected:
   Layer<TsdfVoxel>* tsdf_layer_;
   MeshLayer* mesh_layer_;
+
+  Config config_;
 
   // Cached map config.
   FloatingPoint voxel_size_;

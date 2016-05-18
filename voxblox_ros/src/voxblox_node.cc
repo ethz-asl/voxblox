@@ -39,7 +39,6 @@ class VoxbloxNode {
 
     // Determine map parameters.
     TsdfMap::Config config;
-
     // Workaround for OS X on mac mini not having specializations for float
     // for some reason.
     double voxel_size = config.tsdf_voxel_size;
@@ -318,14 +317,18 @@ bool VoxbloxNode::generateMeshCallback(std_srvs::Empty::Request& request,
                                        std_srvs::Empty::Response& response) {
   MeshLayer::Ptr mesh_layer(new MeshLayer(tsdf_map_->block_size()));
 
-  MeshIntegrator mesh_integrator(tsdf_map_->getTsdfLayerPtr(),
-                                 mesh_layer.get());
+  MeshIntegrator::Config mesh_config;
+  MeshIntegrator mesh_integrator(tsdf_map_->getTsdfLayerPtr(), mesh_layer.get(),
+                                 mesh_config);
 
   timing::Timer generate_mesh_timer("mesh/generate");
   mesh_integrator.generateWholeMesh();
   generate_mesh_timer.Stop();
 
+  timing::Timer output_mesh_timer("mesh/output");
   bool success = outputMeshLayerAsPly("/Users/helen/mesh.ply", mesh_layer);
+  output_mesh_timer.Stop();
+
   ROS_INFO("Output file as PLY.");
 
   ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
