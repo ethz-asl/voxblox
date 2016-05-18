@@ -125,6 +125,7 @@ class TsdfIntegrator {
 
         if (!block || block_idx != last_block_idx) {
           block = layer_->allocateBlockPtrByIndex(block_idx);
+          block->updated() = true;
           last_block_idx = block_idx;
         }
 
@@ -228,6 +229,7 @@ class TsdfIntegrator {
 
         if (!block || block_idx != last_block_idx) {
           block = layer_->allocateBlockPtrByIndex(block_idx);
+          block->updated() = true;
           last_block_idx = block_idx;
         }
 
