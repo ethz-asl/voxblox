@@ -1209,15 +1209,15 @@ def CheckForHeaderGuard(filename, lines, error):
 
   # The guard should be PATH_FILE_H_, but we also allow PATH_FILE_H__
   # for backward compatibility.
-  if ifndef != cppvar:
-    error_level = 0
-    if ifndef != cppvar + '_':
-      error_level = 5
-
-    ParseNolintSuppressions(filename, lines[ifndef_linenum], ifndef_linenum,
-                            error)
-    error(filename, ifndef_linenum, 'build/header_guard', error_level,
-          '#ifndef header guard has wrong style, please use: %s' % cppvar)
+  #if ifndef != cppvar:
+  #  error_level = 0
+  #  if ifndef != cppvar + '_':
+  #    error_level = 5
+  #
+  # ParseNolintSuppressions(filename, lines[ifndef_linenum], ifndef_linenum,
+  #                          error)
+  #  error(filename, ifndef_linenum, 'build/header_guard', error_level,
+  #        '#ifndef header guard has wrong style, please use: %s' % cppvar)
 
   if define != ifndef:
     error(filename, 0, 'build/header_guard', 5,
@@ -1225,15 +1225,15 @@ def CheckForHeaderGuard(filename, lines, error):
           cppvar)
     return
 
-  if endif != ('#endif  // %s' % cppvar):
-    error_level = 0
-    if endif != ('#endif  // %s' % (cppvar + '_')):
-      error_level = 5
+  #if endif != ('#endif  // %s' % cppvar):
+  #  error_level = 0
+  #  if endif != ('#endif  // %s' % (cppvar + '_')):
+  #    error_level = 5
 
-    ParseNolintSuppressions(filename, lines[endif_linenum], endif_linenum,
-                            error)
-    error(filename, endif_linenum, 'build/header_guard', error_level,
-          '#endif line should be "#endif  // %s"' % cppvar)
+  #   ParseNolintSuppressions(filename, lines[endif_linenum], endif_linenum,
+  #                           error)
+  #  error(filename, endif_linenum, 'build/header_guard', error_level,
+  #        '#endif line should be "#endif  // %s"' % cppvar)
 
 
 def CheckForUnicodeReplacementCharacters(filename, lines, error):
