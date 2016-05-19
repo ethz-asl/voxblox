@@ -9,6 +9,7 @@
       <param name="tsdf_voxels_per_side" value="16" />
       <param name="voxel_carving_enabled" value="true" />
       <param name="color_mode" value="color" />
+      <param name="use_tf_transforms" value="true" />
     </node>
   </group>
 </launch>
