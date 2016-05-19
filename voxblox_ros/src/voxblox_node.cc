@@ -1,5 +1,6 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
+#include <minkindr_conversions/kindr_xml.h>
 #include <pcl/conversions.h>
 #include <pcl/filters/filter.h>
 #include <pcl/point_types.h>
@@ -97,7 +98,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       world_frame_("world"),
       use_tf_transforms_(true),
-      timestamp_tolerance_ns_(1000) {
+      // 10 ms here:
+      timestamp_tolerance_ns_(10000000) {
   // Advertise topics.
   mesh_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
@@ -172,7 +174,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // C is the sensor frame that produces the depth data). It is possible to
   // specific T_C_D and set invert_static_tranform to true.
   if (!use_tf_transforms_) {
-    pointcloud_sub_ =
+    transform_sub_ =
         nh_.subscribe("transform", 40, &VoxbloxNode::transformCallback, this);
     // Retrieve T_D_C from params.
     Eigen::Matrix4d transform_mat;
@@ -180,17 +182,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     XmlRpc::XmlRpcValue T_B_D_xml;
     // TODO(helenol): split out into a function to avoid duplication.
     if (nh_private_.getParam("T_B_D", T_B_D_xml)) {
-      // Make sure this is an array.
-      ROS_ASSERT(T_B_D_xml.getType() == XmlRpc::XmlRpcValue::TypeArray);
-      for (size_t i = 0; i < 4; ++i) {
-        ROS_ASSERT(T_B_D_xml[i].getType() == XmlRpc::XmlRpcValue::TypeArray);
-        for (size_t j = 0; j < 4; ++j) {
-          transform_mat(i, j) = static_cast<double>(T_B_D_xml[i][j]);
-        }
-      }
-
-      // Convert this to a minkindr transformation.
-      T_B_D_ = Transformation(transform_mat);
+      kindr::minimal::xmlRpcToKindr(T_B_D_xml, &T_B_D_);
 
       // See if we need to invert it.
       bool invert_static_tranform = false;
@@ -203,17 +195,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     transform_mat.setIdentity();
     XmlRpc::XmlRpcValue T_B_C_xml;
     if (nh_private_.getParam("T_B_C", T_B_C_xml)) {
-      // Make sure this is an array.
-      ROS_ASSERT(T_B_C_xml.getType() == XmlRpc::XmlRpcValue::TypeArray);
-      for (size_t i = 0; i < 4; ++i) {
-        ROS_ASSERT(T_B_C_xml[i].getType() == XmlRpc::XmlRpcValue::TypeArray);
-        for (size_t j = 0; j < 4; ++j) {
-          transform_mat(i, j) = static_cast<double>(T_B_C_xml[i][j]);
-        }
-      }
+      kindr::minimal::xmlRpcToKindr(T_B_C_xml, &T_B_C_);
 
-      // Convert this to a minkindr transformation.
-      T_B_C_ = Transformation(transform_mat);
       // See if we need to invert it.
       bool invert_static_tranform = false;
       nh_private_.param("invert_T_B_C", invert_static_tranform,
@@ -222,6 +205,9 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
         T_B_C_ = T_B_C_.inverse();
       }
     }
+
+    ROS_INFO_STREAM("Static transforms loaded from file.\nT_B_D:\n"
+                    << T_B_D_ << "\nT_B_C:" << T_B_C_);
   }
 
   ros::spinOnce();
@@ -476,6 +462,15 @@ bool VoxbloxNode::lookupTransformQueue(const std::string& from_frame,
     // And also clear the queue up to this point. This leaves the current
     // message in place.
     transform_queue_.erase(transform_queue_.begin(), it);
+  } else {
+    ROS_WARN_STREAM_THROTTLE(
+        30, "No match found for transform timestamp: " << timestamp);
+    if (!transform_queue_.empty()) {
+      ROS_WARN_STREAM_THROTTLE(
+          30,
+          "Queue front: " << transform_queue_.front().header.stamp
+                          << " back: " << transform_queue_.back().header.stamp);
+    }
   }
   return match_found;
 }

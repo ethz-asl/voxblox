@@ -8,7 +8,7 @@
       <param name="tsdf_voxel_size" value="0.10" />
       <param name="tsdf_voxels_per_side" value="16" />
       <param name="voxel_carving_enabled" value="true" />
-      <param name="color_mode" value="normals" />
+      <param name="color_mode" value="color" />
     </node>
   </group>
 </launch>
