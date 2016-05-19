@@ -20,6 +20,9 @@ class TsdfIntegrator {
     float default_truncation_distance = 0.1;
     float max_weight = 100.0;
     bool voxel_carving_enabled = true;
+    // Units below: meters.
+    FloatingPoint min_ray_length = 1e-3;
+    FloatingPoint max_ray_length = 5.0;
   };
 
   TsdfIntegrator(Layer<TsdfVoxel>* layer, const Config& config)
@@ -79,6 +82,14 @@ class TsdfIntegrator {
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
       const Color& color = colors[pt_idx];
+
+      FloatingPoint ray_distance = (point_G - origin).norm();
+      if (ray_distance < config_.min_ray_length) {
+        continue;
+      } else if (ray_distance > config_.max_ray_length) {
+        // TODO(helenol): clear until max ray length instead.
+        continue;
+      }
 
       FloatingPoint truncation_distance = config_.default_truncation_distance;
 
@@ -152,6 +163,14 @@ class TsdfIntegrator {
     for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
+
+      FloatingPoint ray_distance = (point_G - origin).norm();
+      if (ray_distance < config_.min_ray_length) {
+        continue;
+      } else if (ray_distance > config_.max_ray_length) {
+        // TODO(helenol): clear until max ray length instead.
+        continue;
+      }
 
       // Figure out what the end voxel is here.
       VoxelIndex voxel_index = floorVectorAndDowncast(
