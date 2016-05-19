@@ -46,6 +46,7 @@ class VoxbloxNode {
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
   bool generateMeshCallback(std_srvs::Empty::Request& request,     // NOLINT
                             std_srvs::Empty::Response& response);  // NOLINT
+  void updateMeshEvent(const ros::TimerEvent& e);
 
  private:
   ros::NodeHandle nh_;
@@ -83,6 +84,9 @@ class VoxbloxNode {
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
+
+  // Timers.
+  ros::Timer update_mesh_timer_;
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
@@ -172,6 +176,17 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Advertise services.
   generate_mesh_srv_ = nh_private_.advertiseService(
       "generate_mesh", &VoxbloxNode::generateMeshCallback, this);
+
+  // If set, use a timer to progressively integrate the mesh.
+  double update_mesh_every_n_sec = 0.0;
+  nh_private_.param("update_mesh_every_n_sec", update_mesh_every_n_sec,
+                    update_mesh_every_n_sec);
+
+  if (update_mesh_every_n_sec > 0.0) {
+    update_mesh_timer_ =
+        nh_private_.createTimer(ros::Duration(update_mesh_every_n_sec),
+                                &VoxbloxNode::updateMeshEvent, this);
+  }
 
   // Transform settings.
   nh_private_.param("use_tf_transforms", use_tf_transforms_,
@@ -517,6 +532,21 @@ bool VoxbloxNode::generateMeshCallback(
 
   ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
   return true;
+}
+
+void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
+  timing::Timer generate_mesh_timer("mesh/update");
+  const bool clear_updated_flag = true;
+  mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+  generate_mesh_timer.Stop();
+
+  // TODO(helenol): also think about how to update markers incrementally?
+  timing::Timer publish_mesh_timer("mesh/publish");
+  visualization_msgs::MarkerArray marker_array;
+  marker_array.markers.resize(1);
+  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
+  mesh_pub_.publish(marker_array);
+  publish_mesh_timer.Stop();
 }
 
 }  // namespace voxblox
