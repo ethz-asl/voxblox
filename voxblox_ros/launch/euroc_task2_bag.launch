@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<launch>
+
+   <!-- Run stereo_dense_reconstruction_node-->
+  <node name="stereo_dense_reconstruction_node" pkg="stereo_dense_reconstruction_nodes" type="stereo_dense_reconstruction_node" clear_params="true" output="screen">
+    <remap from="image_cam0"          to="cam0/image_raw" />
+    <remap from="image_cam1"          to="cam1/image_raw" />
+    <remap from="calib_cam0"          to="cam0/calibration" />
+    <remap from="calib_cam1"          to="cam1/calibration" />
+
+    <!-- Specify the tf-name of the stereo camera's reference frame. This is not mandatory if optimizer is turned off.-->
+    <remap from="/ref"                to="/imu0" />
+
+    <!-- Specify if images need to be undistorted -->
+    <param name="undistort_images" value="true"/>
+
+    <param name="calibration_from_topic" value="false"/>
+
+     <!-- Optional: Specify which optional images/pcls should be published
+     <param name="publish_disparity_map" value="true"/>
+     <param name="publish_pcl_of_vision" value="true"/>
+     <param name="publish_fused_depthmap" value="true"/>
+     <param name="publish_fused_image" value="true"/>-->
+
+    <!-- Optional: Specify if default transform world->cam should be published if none has been found -->
+    <param name="publish_world_cam_default_tf" value="true"/>
+
+    <!-- Load parameters -->
+    <rosparam file="$(find stereo_dense_reconstruction_nodes)/cfg/ParamsHalfRes.yaml"/>
+
+    <!-- Load stereo camera calibration from yaml file (only used if visensor_msgs not found)-->
+    <rosparam file="$(find mav_startup)/parameters/mavs/ijrr_euroc_datasets/camchain_radtan.yaml"/>
+  </node>
+</launch>
