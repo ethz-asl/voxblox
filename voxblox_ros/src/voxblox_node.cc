@@ -87,6 +87,9 @@ class VoxbloxNode {
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::shared_ptr<TsdfIntegrator> tsdf_integrator_;
+  // Mesh accessories.
+  std::shared_ptr<MeshLayer> mesh_layer_;
+  std::shared_ptr<MeshIntegrator> mesh_integrator_;
 
   // Transform queue, used only when use_tf_transforms is false.
   std::deque<geometry_msgs::TransformStamped> transform_queue_;
@@ -159,6 +162,12 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   } else {  // Default case is gray.
     color_mode_ = ColorMode::kGray;
   }
+
+  mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
+
+  MeshIntegrator::Config mesh_config;
+  mesh_integrator_.reset(new MeshIntegrator(tsdf_map_->getTsdfLayerPtr(),
+                                            mesh_layer_.get(), mesh_config));
 
   // Advertise services.
   generate_mesh_srv_ = nh_private_.advertiseService(
@@ -478,26 +487,26 @@ bool VoxbloxNode::lookupTransformQueue(const std::string& from_frame,
 bool VoxbloxNode::generateMeshCallback(
     std_srvs::Empty::Request& request,
     std_srvs::Empty::Response& response) {  // NOLINT
-  MeshLayer::Ptr mesh_layer(new MeshLayer(tsdf_map_->block_size()));
-
-  MeshIntegrator::Config mesh_config;
-  MeshIntegrator mesh_integrator(tsdf_map_->getTsdfLayerPtr(), mesh_layer.get(),
-                                 mesh_config);
-
   timing::Timer generate_mesh_timer("mesh/generate");
-  mesh_integrator.generateWholeMesh();
+  const bool clear_mesh = false;
+  if (clear_mesh) {
+    mesh_integrator_->generateWholeMesh();
+  } else {
+    const bool clear_updated_flag = true;
+    mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+  }
   generate_mesh_timer.Stop();
 
   timing::Timer publish_mesh_timer("mesh/publish");
   visualization_msgs::MarkerArray marker_array;
   marker_array.markers.resize(1);
-  fillMarkerWithMesh(mesh_layer, color_mode_, &marker_array.markers[0]);
+  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
   mesh_pub_.publish(marker_array);
   publish_mesh_timer.Stop();
 
   if (!mesh_filename_.empty()) {
     timing::Timer output_mesh_timer("mesh/output");
-    bool success = outputMeshLayerAsPly(mesh_filename_, mesh_layer);
+    bool success = outputMeshLayerAsPly(mesh_filename_, mesh_layer_);
     output_mesh_timer.Stop();
     if (success) {
       ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
