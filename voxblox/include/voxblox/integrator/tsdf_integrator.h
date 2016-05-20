@@ -178,7 +178,7 @@ class TsdfIntegrator {
       voxel_map[voxel_index].push_back(pt_idx);
     }
 
-    LOG(5) << "Went from " << points_C.size() << " points to "
+    VLOG(5) << "Went from " << points_C.size() << " points to "
            << voxel_map.size() << " raycasts.";
 
     FloatingPoint truncation_distance = config_.default_truncation_distance;

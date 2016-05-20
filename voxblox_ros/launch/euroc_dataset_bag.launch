@@ -42,5 +42,7 @@
     <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" />
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
+
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/euroc_0_02.ply" />
   </node>
 </launch>
