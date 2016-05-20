@@ -514,7 +514,7 @@ bool VoxbloxNode::generateMeshCallback(
     std_srvs::Empty::Request& request,
     std_srvs::Empty::Response& response) {  // NOLINT
   timing::Timer generate_mesh_timer("mesh/generate");
-  const bool clear_mesh = false;
+  const bool clear_mesh = true;
   if (clear_mesh) {
     mesh_integrator_->generateWholeMesh();
   } else {

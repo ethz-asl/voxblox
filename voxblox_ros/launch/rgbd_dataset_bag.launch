@@ -10,5 +10,7 @@
     <remap from="transform" to="camera_imu/vrpn_client/estimated_transform" />
 
     <rosparam file="$(find voxblox_ros)/cfg/rgbd_dataset.yaml"/>
+
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/rgbd_0_02.ply" />
   </node>
 </launch>

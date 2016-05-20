@@ -29,6 +29,7 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
+#include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/mesh/marching_cubes.h"
@@ -257,12 +258,21 @@ class MeshIntegrator {
     mesh->colors.clear();
     mesh->colors.resize(mesh->indices.size());
 
-    // TODO(helenol): just use nearest neighbor color strategy for now.
-    // In the future, interpolate intelligently... Trilinear or whatever.
-    // Best yet, be able to choose.
+    // Use nearest-neighbor search.
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
       const Point& vertex = mesh->vertices[i];
       VoxelIndex voxel_index = block->computeVoxelIndexFromCoordinates(vertex);
+      Point voxel_center = block->computeCoordinatesFromVoxelIndex(voxel_index);
+
+      // Should be within half a voxel of the voxel center in all dimensions, or
+      // it belongs in the other one.
+      Point dist_from_center = vertex - voxel_center;
+      for (unsigned int j = 0; j < 3; ++i) {
+        if (std::abs(dist_from_center(j)) > voxel_size_ / 2.0) {
+          voxel_index(j) += signum(dist_from_center(j));
+        }
+      }
+
       if (block->isValidVoxelIndex(voxel_index)) {
         mesh->colors[i] = block->getVoxelByVoxelIndex(voxel_index).color;
       } else {
@@ -342,7 +352,8 @@ class MeshIntegrator {
       }
     }
     // Scale by correct size.
-    // This is central difference, so it's 2x voxel size between measurements.
+    // This is central difference, so it's 2x voxel size between
+    // measurements.
     *grad /= (2 * voxel_size_);
     return true;
   }
