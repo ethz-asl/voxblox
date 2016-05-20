@@ -40,3 +40,5 @@
 # Mac 
 .DS_Store
 
+# Mesh results
+mesh_results
