@@ -52,6 +52,8 @@ class VoxbloxNode {
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
+  bool verbose_;
+
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
@@ -103,6 +105,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
                          const ros::NodeHandle& nh_private)
     : nh_(nh),
       nh_private_(nh_private),
+      verbose_(true),
       world_frame_("world"),
       use_tf_transforms_(true),
       // 10 ms here:
@@ -118,6 +121,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
 
   pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
                                   &VoxbloxNode::insertPointcloudWithTf, this);
+
+  nh_private_.param("verbose", verbose_, verbose_);
 
   // Determine map parameters.
   TsdfMap::Config config;
@@ -278,17 +283,23 @@ void VoxbloxNode::insertPointcloudWithTf(
 
     ptcloud_timer.Stop();
 
-    ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
+    if (verbose_) {
+      ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
+    }
     ros::WallTime start = ros::WallTime::now();
     tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
     ros::WallTime end = ros::WallTime::now();
-    ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
-             (end - start).toSec(),
-             tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
+    if (verbose_) {
+      ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
+               (end - start).toSec(),
+               tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
+    }
     publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
 
-    ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
+    if (verbose_) {
+      ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
+    }
   }
 }
 
