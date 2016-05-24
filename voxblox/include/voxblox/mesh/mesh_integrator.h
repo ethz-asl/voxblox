@@ -45,7 +45,7 @@ class MeshIntegrator {
     bool compute_normals = true;
   };
 
-  static constexpr FloatingPoint kMinWeight = 1e-6;
+  static constexpr FloatingPoint kMinWeight = 2.0;
 
   MeshIntegrator(Layer<TsdfVoxel>* tsdf_layer, MeshLayer* mesh_layer,
                  const Config& config)

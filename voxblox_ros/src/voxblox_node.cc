@@ -350,7 +350,7 @@ void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
             point.x = coord.x();
             point.y = coord.y();
             point.z = coord.z();
-            point.intensity = distance;
+            point.intensity = weight;
             pointcloud.push_back(point);
           }
         }
