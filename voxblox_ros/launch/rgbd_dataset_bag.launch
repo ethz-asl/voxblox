@@ -2,15 +2,17 @@
 <launch>
   <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="--alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="camera/depth/points"/>
-    <param name="tsdf_voxel_size" value="0.02" />
+    <param name="tsdf_voxel_size" value="0.10" />
     <param name="tsdf_voxels_per_side" value="16" />
     <param name="voxel_carving_enabled" value="true" />
     <param name="color_mode" value="color" />
     <param name="use_tf_transforms" value="false" />
     <remap from="transform" to="camera_imu/vrpn_client/estimated_transform" />
+    <param name="update_mesh_every_n_sec" value="0.0" />
+    <param name="verbose" value="true" />
 
     <rosparam file="$(find voxblox_ros)/cfg/rgbd_dataset.yaml"/>
 
-    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/rgbd_0_02.ply" />
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/rgbd_0_02_new.ply" />
   </node>
 </launch>

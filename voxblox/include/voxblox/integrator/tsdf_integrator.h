@@ -47,7 +47,7 @@ class TsdfIntegrator {
                               const Point& point_G, const Point& voxel_center,
                               const Color& color,
                               const float truncation_distance,
-                              TsdfVoxel* tsdf_voxel) {
+                              const float weight, TsdfVoxel* tsdf_voxel) {
     Eigen::Vector3d voxel_direction = point_G - voxel_center;
     Eigen::Vector3d ray_direction = point_G - origin;
 
@@ -57,7 +57,6 @@ class TsdfIntegrator {
       sdf = -sdf;
     }
 
-    const float weight = getVoxelWeight(point_C, point_G, voxel_center);
     const float new_weight = tsdf_voxel->weight + weight;
 
     tsdf_voxel->color = Color::blendTwoColors(
@@ -141,8 +140,9 @@ class TsdfIntegrator {
             block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
         TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
 
+        const float weight = getVoxelWeight(point_C, point_G, voxel_center_G);
         updateTsdfVoxel(origin, point_C, point_G, voxel_center_G, color,
-                        truncation_distance, &tsdf_voxel);
+                        truncation_distance, weight, &tsdf_voxel);
       }
       update_voxels_timer.Stop();
     }
@@ -179,7 +179,7 @@ class TsdfIntegrator {
     }
 
     VLOG(5) << "Went from " << points_C.size() << " points to "
-           << voxel_map.size() << " raycasts.";
+            << voxel_map.size() << " raycasts.";
 
     FloatingPoint truncation_distance = config_.default_truncation_distance;
     for (const BlockHashMapType<std::vector<size_t>>::type::value_type& kv :
@@ -190,7 +190,7 @@ class TsdfIntegrator {
       // Key actually doesn't matter at all.
       Point mean_point_C = Point::Zero();
       Color mean_color;
-      float current_weight = 0.0;
+      float total_weight = 0.0;
 
       for (size_t pt_idx : kv.second) {
         const Point& point_C = points_C[pt_idx];
@@ -198,11 +198,11 @@ class TsdfIntegrator {
 
         // TODO(helenol): proper weights, proper merging.
         float point_weight = getVoxelWeight(point_C, point_C, point_C);
-        mean_point_C =
-            (mean_point_C * current_weight + point_C * point_weight) /
-            (current_weight + point_weight);
-        mean_color = Color::blendTwoColors(mean_color, current_weight, color,
+        mean_point_C = (mean_point_C * total_weight + point_C * total_weight) /
+                       (total_weight + point_weight);
+        mean_color = Color::blendTwoColors(mean_color, total_weight, color,
                                            point_weight);
+        total_weight += point_weight;
       }
 
       const Point point_G = T_G_C * mean_point_C;
@@ -253,9 +253,9 @@ class TsdfIntegrator {
             block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
         TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
 
-        // TODO(helenol): actually use new weight!
         updateTsdfVoxel(origin, mean_point_C, point_G, voxel_center_G,
-                        mean_color, truncation_distance, &tsdf_voxel);
+                        mean_color, truncation_distance, total_weight,
+                        &tsdf_voxel);
       }
       update_voxels_timer.Stop();
     }
