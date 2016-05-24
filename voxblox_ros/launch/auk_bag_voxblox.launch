@@ -10,7 +10,7 @@
       <param name="voxel_carving_enabled" value="true" />
       <param name="color_mode" value="color" />
       <param name="use_tf_transforms" value="true" />
-      <param name="update_mesh_every_n_sec" value="1.0" />
+      <param name="update_mesh_every_n_sec" value="0.0" />
       <param name="verbose" value="false" />
     </node>
   </group>

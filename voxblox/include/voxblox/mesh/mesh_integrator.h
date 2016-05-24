@@ -267,7 +267,7 @@ class MeshIntegrator {
       // Should be within half a voxel of the voxel center in all dimensions, or
       // it belongs in the other one.
       Point dist_from_center = vertex - voxel_center;
-      for (unsigned int j = 0; j < 3; ++i) {
+      for (unsigned int j = 0; j < 3; ++j) {
         if (std::abs(dist_from_center(j)) > voxel_size_ / 2.0) {
           voxel_index(j) += signum(dist_from_center(j));
         }
