@@ -29,7 +29,7 @@
     <rosparam file="$(find stereo_dense_reconstruction_nodes)/cfg/ParamsHalfRes.yaml"/>
 
     <!-- Load stereo camera calibration from yaml file (only used if visensor_msgs not found)-->
-    <rosparam file="$(find mav_startup)/parameters/mavs/ijrr_euroc_datasets/camchain_radtan.yaml"/>
+    <rosparam file="$(find mav_startup)/parameters/mavs/ijrr_euroc_datasets/camchain.yaml"/>
   </node>
 
   <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="--alsologtostderr" clear_params="true">
@@ -43,6 +43,6 @@
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
 
-    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/euroc_0_02.ply" />
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/euroc_0_02_equi.ply" />
   </node>
 </launch>
