@@ -39,6 +39,7 @@
     <param name="voxel_carving_enabled" value="true" />
     <param name="color_mode" value="color" />
     <param name="use_tf_transforms" value="false" />
+    <param name="verbose" value="true" />
     <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" />
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
