@@ -546,6 +546,9 @@ bool VoxbloxNode::generateMeshCallback(
 }
 
 void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
+  if (verbose_) {
+    ROS_INFO("Updating mesh.");
+  }
   timing::Timer generate_mesh_timer("mesh/update");
   const bool clear_updated_flag = true;
   mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
