@@ -7,6 +7,7 @@
 #include "voxblox/core/block.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/io/layer_io.h"
 
 using namespace voxblox;  // NOLINT
 
@@ -85,7 +86,7 @@ class ProtobufTest : public ::testing::Test {
   const double voxel_size_ = 0.02;
   const size_t voxels_per_side_ = 16u;
 
-  static constexpr size_t kDummyBlockPerSide = 10u;
+  static constexpr size_t kDummyBlockPerSide = 14u;
   static constexpr double kTolerance = 1e-10;
 };
 
@@ -156,8 +157,11 @@ TEST_F(ProtobufTsdfTest, LayerSerialization) {
   LayerProto proto_layer;
   layer_->getProto(&proto_layer);
 
-  // Create from LayerProto.
+  // Create from LayerProto header.
   Layer<TsdfVoxel> layer_from_proto(proto_layer);
+
+  // Remove all blocks for comparison.
+  layer_->removeAllBlocks();
 
   CompareLayers(*layer_, layer_from_proto);
 }
@@ -165,15 +169,16 @@ TEST_F(ProtobufTsdfTest, LayerSerialization) {
 TEST_F(ProtobufTsdfTest, LayerSerializationToFile) {
   const std::string file = "layer_test.tsdf.voxblox";
 
-  layer_->saveToFile(file);
+  io::SaveLayer(*layer_, file);
 
-  Layer<TsdfVoxel> layer_from_file(file);
+  Layer<TsdfVoxel>::Ptr layer_from_file;
+  io::LoadLayer<TsdfVoxel>(file, &layer_from_file);
 
-  // CompareLayers(*layer_, layer_from_file);
+  CompareLayers(*layer_, *layer_from_file);
 }
 
-TEST_F(ProtobufTsdfTest, LayerSubsetSerializationToFile) {
-  const std::string file = "subset_layer_test.tsdf.voxblox";
+TEST_F(ProtobufTsdfTest, DISABLED_LayerSubsetSerializationToFile) {
+  const std::string file = "subset_layer_test_1.tsdf.voxblox";
 
   BlockIndexList block_index_list;
   BlockIndex block_index_1 = {-4, 5, 0};
@@ -182,9 +187,11 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationToFile) {
   block_index_list.push_back(block_index_4);
 
   constexpr bool kIncludeAllBlocks = false;
-  layer_->saveSubsetToFile(file, block_index_list, kIncludeAllBlocks);
 
-  Layer<TsdfVoxel> layer_from_file(file);
+  io::SaveLayerSubset(*layer_, file, block_index_list, kIncludeAllBlocks);
+
+  Layer<TsdfVoxel>::Ptr layer_from_file;
+  io::LoadLayer<TsdfVoxel>(file, &layer_from_file);
 
   // Remove all other blocks for comparison.
   BlockIndexList all_block_indices;
@@ -195,7 +202,47 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationToFile) {
     }
   }
 
-  CompareLayers(*layer_, layer_from_file);
+  CompareLayers(*layer_, *layer_from_file);
+}
+
+// Save the example layer to file, and prepare another layer with 4 existing
+// blocks. Load all the blocks from the example layer file into layer and
+// compare.
+TEST_F(ProtobufTsdfTest, DISABLED_LayerSubsetSerializationFromFile) {
+  const std::string file = "subset_layer_test_2.tsdf.voxblox";
+
+  io::SaveLayer(*layer_, file);
+
+  // These are the existing blocks in the layer
+  BlockIndexList block_index_list;
+  BlockIndex block_index_1 = {-4000, 5000, 0};
+  block_index_list.push_back(block_index_1);
+  BlockIndex block_index_2 = {-7000, 2000, 1000};
+  block_index_list.push_back(block_index_2);
+  BlockIndex block_index_3 = {3000, 0, 9000};
+  block_index_list.push_back(block_index_3);
+  BlockIndex block_index_4 = {3000, -1000, -2000};
+  block_index_list.push_back(block_index_4);
+
+  Layer<TsdfVoxel>::Ptr layer_with_blocks_from_file(
+      new Layer<TsdfVoxel>(voxel_size_, voxels_per_side_));
+  layer_with_blocks_from_file->allocateNewBlock(block_index_1);
+  layer_with_blocks_from_file->allocateNewBlock(block_index_2);
+  layer_with_blocks_from_file->allocateNewBlock(block_index_3);
+  layer_with_blocks_from_file->allocateNewBlock(block_index_4);
+
+  // Now load the blocks from the file layer and add it.
+  io::LoadBlocksFromFile<TsdfVoxel>(
+      file, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit,
+      &layer_with_blocks_from_file);
+
+  // Add those blocks to the layer for comparison.
+  layer_->allocateNewBlock(block_index_1);
+  layer_->allocateNewBlock(block_index_2);
+  layer_->allocateNewBlock(block_index_3);
+  layer_->allocateNewBlock(block_index_4);
+
+  CompareLayers(*layer_, *layer_with_blocks_from_file);
 }
 
 int main(int argc, char** argv) {

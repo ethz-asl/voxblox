@@ -15,6 +15,7 @@
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
 #include "voxblox/core/block.h"
+#include "voxblox/utils/protobuf_utils.h"
 
 namespace voxblox {
 
@@ -30,59 +31,17 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
   block_size_ = voxel_size_ * voxels_per_side_;
   block_size_inv_ = 1.0 / block_size_;
 
-  addBlocksFromProtoToLayer(proto, BlockMergingStrategy::kProhibit);
+  CHECK_GT(proto.voxel_size(), 0.0);
+  CHECK_GT(proto.voxels_per_side(), 0u);
 }
 
 template <typename VoxelType>
-Layer<VoxelType>::Layer(const std::string file_path) {
-  CHECK(!file_path.empty());
-
-  LayerProto proto_layer;
-  readProtoLayerFromFile(file_path, &proto_layer);
-
-  // Main config parameter.
-  voxel_size_ = proto_layer.voxel_size();
-  voxels_per_side_ = proto_layer.voxels_per_side();
-
-  // Derived config parameter.
-  block_size_ = voxel_size_ * voxels_per_side_;
-  block_size_inv_ = 1.0 / block_size_;
-
-  addBlocksFromProtoToLayer(proto_layer, BlockMergingStrategy::kProhibit);
-}
-
-template <typename VoxelType>
-void Layer<VoxelType>::getProto(const BlockIndexList& blocks_to_include,
-                                bool include_all, LayerProto* proto) const {
+void Layer<VoxelType>::getProto(LayerProto* proto) const {
   CHECK_NOTNULL(proto);
 
   proto->set_voxel_size(voxel_size_);
   proto->set_voxels_per_side(voxels_per_side_);
   proto->set_type(static_cast<int32_t>(getType()));
-
-  if (!include_all && blocks_to_include.empty()) {
-    // If no blocks should be included, the conversion is done.
-    return;
-  }
-
-  for (const BlockMapPair& pair : block_map_) {
-    if (include_all) {
-      pair.second->getProto(proto->add_blocks());
-    } else {
-      // Check if this block should be included.
-      BlockIndexList::const_iterator it = std::find(
-          blocks_to_include.begin(), blocks_to_include.end(), pair.first);
-      if (it != blocks_to_include.end()) {
-        pair.second->getProto(proto->add_blocks());
-      }
-    }
-  }
-}
-
-template <typename VoxelType>
-void Layer<VoxelType>::getProto(LayerProto* proto) const {
-  constexpr bool kIncludeAllBlocks = true;
-  getProto(BlockIndexList(), kIncludeAllBlocks, proto);
 }
 
 template <typename VoxelType>
@@ -96,101 +55,131 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
                                         BlockIndexList blocks_to_include,
                                         bool include_all_blocks) const {
   CHECK(!file_path.empty());
-
-  LayerProto proto_layer;
-  getProto(blocks_to_include, include_all_blocks, &proto_layer);
-
-  std::fstream layer_file;
-  layer_file.open(file_path.c_str(), std::fstream::out | std::fstream::trunc |
-                                         std::fstream::binary);
-  if (!layer_file.is_open()) {
-    LOG(ERROR) << "Couldn't open " << file_path << " for writing.";
-    return false;
-  }
-  const bool success = proto_layer.SerializeToOstream(&layer_file);
-  layer_file.close();
-  if (!success) {
-    LOG(ERROR) << "Failed to save Layer to file: " << file_path;
-    return false;
-  }
-  return true;
-}
-
-template <typename VoxelType>
-bool Layer<VoxelType>::loadBlocksFromFile(const std::string& file_path,
-                                          BlockMergingStrategy strategy) {
-  CHECK(!file_path.empty());
-
-  LayerProto proto_layer;
-  readProtoLayerFromFile(file_path, &proto_layer);
-
-  if (isCompatible(proto_layer)) {
-    return addProtoBlocksToLayer(proto_layer, strategy);
-  } else {
-    LOG(ERROR) << "The blocks loaded from '" << file_path
-               << "' are not compatible with this layer!";
+  std::fstream outfile;
+  outfile.open(file_path, std::fstream::out | std::fstream::binary);
+  if (!outfile.is_open()) {
+    LOG(ERROR) << "Could not open file for writing: " << file_path;
     return false;
   }
 
-  return true;
-}
+  // Only serialize the blocks if there are any.
+  // Count the number of blocks that need to be serialized.
+  size_t num_blocks_to_write = 0u;
+  if ((include_all_blocks && !block_map_.empty()) ||
+      !blocks_to_include.empty()) {
+    for (const BlockMapPair& pair : block_map_) {
+      bool write_block_to_file = include_all_blocks;
 
-template <typename VoxelType>
-bool Layer<VoxelType>::addBlocksFromProtoToLayer(
-    const LayerProto& proto_layer, BlockMergingStrategy strategy) {
-  if (isCompatible(proto_layer)) {
-    const size_t num_blocks = proto_layer.blocks_size();
-    const size_t num_blocks_total = block_map_.size();
-    block_map_.reserve(num_blocks_total);
-    for (size_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
-      typename BlockType::Ptr block_ptr(
-          new BlockType(proto_layer.blocks(block_idx)));
-      const BlockIndex block_index =
-          computeBlockIndexFromCoordinates(block_ptr->origin());
-      switch (strategy) {
-        case BlockMergingStrategy::kProhibit: {
-          typename BlockHashMap::iterator it = block_map_.find(block_index);
-          if (it == block_map_.end()) {
-            block_map_[block_index] = block_ptr;
-          } else {
-            LOG(ERROR) << "New index: " << block_index.transpose()
-                       << " collides with old index: " << it->first.transpose();
-          }
+      if (!write_block_to_file) {
+        BlockIndexList::const_iterator it = std::find(
+            blocks_to_include.begin(), blocks_to_include.end(), pair.first);
+        if (it != blocks_to_include.end()) {
+          ++num_blocks_to_write;
         }
-
-        /*
-                  CHECK_EQ(block_map_.count(block_index), 0u) << "New index: "
-           << block_index;
-                  block_map_[block_index] = block_ptr;
-                  */
-        break;
-        case BlockMergingStrategy::kReplace:
-          block_map_[block_index] = block_ptr;
-          break;
-        case BlockMergingStrategy::kDiscard:
-          block_map_.insert(std::make_pair(block_index, block_ptr));
-          break;
-        case BlockMergingStrategy::kMerge: {
-          typename BlockHashMap::iterator it = block_map_.find(block_index);
-          if (it == block_map_.end()) {
-            block_map_[block_index] = block_ptr;
-          } else {
-            it->second->mergeBlock(*block_ptr);
-          }
-          }
-          break;
-        default:
-          LOG(FATAL) << "Unknown BlockMergingStrategy: "
-                     << static_cast<int>(strategy);
-          return false;
+      } else {
+        ++num_blocks_to_write;
       }
     }
-    return true;
+  }
+  if (include_all_blocks) {
+    CHECK_EQ(num_blocks_to_write, block_map_.size());
+  } else {
+    CHECK_LE(num_blocks_to_write, block_map_.size());
+    CHECK_LE(num_blocks_to_write, blocks_to_include.size());
+  }
+
+  // Write the total number of messages to the beginning of this file.
+  // One layer header and then all the block maps
+  const uint32_t num_messages = 1u + num_blocks_to_write;
+  if (!utils::writeProtoMsgCountToStream(num_messages, &outfile)) {
+    LOG(ERROR) << "Could not write message number to file.";
+    outfile.close();
+    return false;
+  }
+
+  // Write out the layer header.
+  LayerProto proto_layer;
+  getProto(&proto_layer);
+  if (!utils::writeProtoMsgToStream(proto_layer, &outfile)) {
+    LOG(ERROR) << "Could not write layer header message.";
+    outfile.close();
+    return false;
+  }
+
+  // Serialize blocks.
+  for (const BlockMapPair& pair : block_map_) {
+    bool write_block_to_file = include_all_blocks;
+    if (!write_block_to_file) {
+      BlockIndexList::const_iterator it = std::find(
+          blocks_to_include.begin(), blocks_to_include.end(), pair.first);
+      if (it != blocks_to_include.end()) {
+        write_block_to_file = true;
+      }
+    }
+    if (write_block_to_file) {
+      BlockProto block_proto;
+      pair.second->getProto(&block_proto);
+
+      if (!utils::writeProtoMsgToStream(block_proto, &outfile)) {
+        LOG(ERROR) << "Could not write block message.";
+        outfile.close();
+        return false;
+      }
+    }
+  }
+  outfile.close();
+  return true;
+}
+
+template <typename VoxelType>
+bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
+                                         BlockMergingStrategy strategy) {
+  if (isCompatible(block_proto)) {
+    typename BlockType::Ptr block_ptr(new BlockType(block_proto));
+    const BlockIndex block_index =
+        computeBlockIndexFromCoordinates(block_ptr->origin());
+    switch (strategy) {
+      case BlockMergingStrategy::kProhibit: {
+        typename BlockHashMap::iterator it = block_map_.find(block_index);
+        if (it == block_map_.end()) {
+          block_map_[block_index] = block_ptr;
+        } else {
+          LOG(ERROR) << "New index: " << block_index.transpose()
+                     << " collides with old index: " << it->first.transpose();
+        }
+      }
+
+      /*
+       CHECK_EQ(block_map_.count(block_index), 0u) << "New index: "
+       << block_index;
+       block_map_[block_index] = block_ptr;
+       */
+      break;
+      case BlockMergingStrategy::kReplace:
+        block_map_[block_index] = block_ptr;
+        break;
+      case BlockMergingStrategy::kDiscard:
+        block_map_.insert(std::make_pair(block_index, block_ptr));
+        break;
+      case BlockMergingStrategy::kMerge: {
+        typename BlockHashMap::iterator it = block_map_.find(block_index);
+        if (it == block_map_.end()) {
+          block_map_[block_index] = block_ptr;
+        } else {
+          it->second->mergeBlock(*block_ptr);
+        }
+      } break;
+      default:
+        LOG(FATAL) << "Unknown BlockMergingStrategy: "
+                   << static_cast<int>(strategy);
+        return false;
+    }
   } else {
     LOG(ERROR)
         << "The blocks from this protobuf are not compatible with this layer!";
     return false;
   }
+  return true;
 }
 
 template <typename VoxelType>
@@ -203,26 +192,11 @@ bool Layer<VoxelType>::isCompatible(const LayerProto& layer_proto) const {
 }
 
 template <typename VoxelType>
-bool Layer<VoxelType>::readProtoLayerFromFile(const std::string& file_path,
-                                              LayerProto* proto_layer) const {
-  CHECK_NOTNULL(proto_layer);
-  std::ifstream layer_file;
-  layer_file.open(file_path, std::fstream::in);
-  if (!layer_file.is_open()) {
-    LOG(ERROR) << "Couldn't open " << file_path << " for reading.";
-    return false;
-  }
-
-  google::protobuf::io::IstreamInputStream zero_copy_input(&layer_file);
-  google::protobuf::io::CodedInputStream decoder(&zero_copy_input);
-  decoder.SetTotalBytesLimit(kMaxLayerSizeInBytes, -1);
-  const bool success = proto_layer->ParseFromCodedStream(&decoder) &&
-                       decoder.ConsumedEntireMessage() && layer_file.eof();
-  layer_file.close();
-  if (!success) {
-    LOG(ERROR) << "Failed to parse Layer from file: " << file_path;
-  }
-  return success;
+bool Layer<VoxelType>::isCompatible(const BlockProto& block_proto) const {
+  bool compatible = true;
+  compatible &= (block_proto.voxel_size() == voxel_size_);
+  compatible &= (block_proto.voxels_per_side() == voxels_per_side_);
+  return compatible;
 }
 
 template <typename VoxelType>
@@ -253,7 +227,6 @@ size_t Layer<VoxelType>::getMemorySize() const {
   }
   return size;
 }
-
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_LAYER_INL_H_
