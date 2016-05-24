@@ -44,6 +44,6 @@
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
 
-    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/euroc_0_02_equi.ply" />
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon euroc).ply" />
   </node>
 </launch>

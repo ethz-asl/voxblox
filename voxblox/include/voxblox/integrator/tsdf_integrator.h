@@ -39,7 +39,18 @@ class TsdfIntegrator {
 
   float getVoxelWeight(const Point& point_C, const Point& point_G,
                        const Point& voxel_center) const {
-    return 1.0f;
+    FloatingPoint dist_z = std::abs(point_C.z());
+    FloatingPoint dist_ray = (point_G - voxel_center).norm();
+    if (dist_z > 1e-6) {
+      float distance_weight = 1.0 / dist_z;
+      if (dist_ray > config_.default_truncation_distance) {
+        return 1.0;
+      } else {
+        return distance_weight;
+      }
+    } else {
+      return 0;
+    }
   }
 
   inline void updateTsdfVoxel(const Point& origin, const Point& point_C,
@@ -163,7 +174,7 @@ class TsdfIntegrator {
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
 
-      FloatingPoint ray_distance = (point_G - origin).norm();
+      FloatingPoint ray_distance = (point_C).norm();
       if (ray_distance < config_.min_ray_length_m) {
         continue;
       } else if (ray_distance > config_.max_ray_length_m) {
@@ -195,9 +206,8 @@ class TsdfIntegrator {
         const Point& point_C = points_C[pt_idx];
         const Color& color = colors[pt_idx];
 
-        // TODO(helenol): proper weights, proper merging.
         float point_weight = getVoxelWeight(point_C, point_C, point_C);
-        mean_point_C = (mean_point_C * total_weight + point_C * total_weight) /
+        mean_point_C = (mean_point_C * total_weight + point_C * point_weight) /
                        (total_weight + point_weight);
         mean_color = Color::blendTwoColors(mean_color, total_weight, color,
                                            point_weight);

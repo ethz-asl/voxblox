@@ -313,15 +313,20 @@ class MeshIntegrator {
     if (!block) {
       return false;
     }
-    const TsdfVoxel& voxel = block->getVoxelByCoordinates(pos);
+    VoxelIndex voxel_index = block->computeVoxelIndexFromCoordinates(pos);
+    const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(voxel_index);
     *distance = static_cast<FloatingPoint>(voxel.distance);
     if (voxel.weight < kMinWeight) {
       return false;
     }
 
+    FloatingPoint interpolated_distance =
+        static_cast<FloatingPoint>(voxel.distance);
+    Point voxel_center = block->computeCoordinatesFromVoxelIndex(voxel_index);
+    Point weight = (pos - voxel_center) / voxel_size_;
+
     // Now get the gradient.
     *grad = Point::Zero();
-    VoxelIndex voxel_index = VoxelIndex::Zero();
     Point offset = Point::Zero();
     // Iterate over all 3 D, and over negative and positive signs in central
     // difference.
@@ -332,7 +337,7 @@ class MeshIntegrator {
         voxel_index = block->computeVoxelIndexFromCoordinates(pos + offset);
         if (block->isValidVoxelIndex(voxel_index)) {
           const TsdfVoxel& pos_vox = block->getVoxelByVoxelIndex(voxel_index);
-          (*grad)(i) = static_cast<FloatingPoint>(pos_vox.distance);
+          (*grad)(i) += sign * static_cast<FloatingPoint>(pos_vox.distance);
           if (pos_vox.weight < kMinWeight) {
             return false;
           }
