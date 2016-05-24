@@ -1,4 +1,4 @@
-#include <iostream>
+#include <iostream>  // NOLINT
 
 #include <gtest/gtest.h>
 
@@ -86,7 +86,7 @@ class ProtobufTest : public ::testing::Test {
   const double voxel_size_ = 0.02;
   const size_t voxels_per_side_ = 16u;
 
-  static constexpr size_t kDummyBlockPerSide = 14u;
+  static constexpr size_t kBlockVolumeDiameter = 12u;
   static constexpr double kTolerance = 1e-10;
 };
 
@@ -105,7 +105,7 @@ template <>
 void ProtobufTest<TsdfVoxel>::SetUpLayer() const {
   CHECK(layer_);
 
-  int32_t half_index_range = kDummyBlockPerSide / 2;
+  int32_t half_index_range = kBlockVolumeDiameter / 2;
 
   for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
     for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
