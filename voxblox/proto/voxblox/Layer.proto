@@ -9,6 +9,4 @@ message LayerProto {
   
   // See enum class Layer::Type
   optional int32 type = 3;
-
-  repeated BlockProto blocks = 4;
 }

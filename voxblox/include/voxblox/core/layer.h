@@ -27,11 +27,8 @@ class Layer {
     block_size_inv_ = 1.0 / block_size_;
   }
 
-  // Create the layer from protobuf object.
+  // Create the layer from protobuf layer header.
   explicit Layer(const LayerProto& proto);
-
-  // Create the layer from protobuf file.
-  explicit Layer(const std::string file_path);
 
   virtual ~Layer() {}
 
@@ -136,6 +133,7 @@ class Layer {
   }
 
   void removeBlock(const BlockIndex& index) { block_map_.erase(index); }
+  void removeAllBlocks() { block_map_.clear(); }
 
   void removeBlockByCoordinates(const Point& coords) {
     block_map_.erase(computeBlockIndexFromCoordinates(coords));
@@ -158,15 +156,14 @@ class Layer {
 
   // Serialization tools.
   void getProto(LayerProto* proto) const;
-  void getProto(const BlockIndexList& blocks_to_include, bool include_all,
-                LayerProto* proto) const;
   bool isCompatible(const LayerProto& layer_proto) const;
+  bool isCompatible(const BlockProto& layer_proto) const;
   bool saveToFile(const std::string& file_path) const;
   bool saveSubsetToFile(const std::string& file_path,
                         BlockIndexList blocks_to_include,
                         bool include_all_blocks) const;
-  bool loadBlocksFromFile(const std::string& file_path,
-                          BlockMergingStrategy strategy);
+  bool addBlockFromProto(const BlockProto& block_proto,
+                         BlockMergingStrategy strategy);
 
   size_t getMemorySize() const;
 
@@ -180,11 +177,6 @@ class Layer {
     kOccupancy = 3
   };
   Type getType() const;
-
-  bool addBlocksFromProtoToLayer(const LayerProto& proto_layer,
-                                 BlockMergingStrategy strategy);
-  bool readProtoLayerFromFile(const std::string& file_path,
-                              LayerProto* proto_layer) const;
 
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;
