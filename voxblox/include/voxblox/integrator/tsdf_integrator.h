@@ -20,9 +20,8 @@ class TsdfIntegrator {
     float default_truncation_distance = 0.1;
     float max_weight = 100.0;
     bool voxel_carving_enabled = true;
-    // Units below: meters.
-    FloatingPoint min_ray_length = 1e-3;
-    FloatingPoint max_ray_length = 5.0;
+    FloatingPoint min_ray_length_m = 1e-3;
+    FloatingPoint max_ray_length_m = 5.0;
   };
 
   TsdfIntegrator(Layer<TsdfVoxel>* layer, const Config& config)
@@ -83,9 +82,9 @@ class TsdfIntegrator {
       const Color& color = colors[pt_idx];
 
       FloatingPoint ray_distance = (point_G - origin).norm();
-      if (ray_distance < config_.min_ray_length) {
+      if (ray_distance < config_.min_ray_length_m) {
         continue;
-      } else if (ray_distance > config_.max_ray_length) {
+      } else if (ray_distance > config_.max_ray_length_m) {
         // TODO(helenol): clear until max ray length instead.
         continue;
       }
@@ -165,9 +164,9 @@ class TsdfIntegrator {
       const Point point_G = T_G_C * point_C;
 
       FloatingPoint ray_distance = (point_G - origin).norm();
-      if (ray_distance < config_.min_ray_length) {
+      if (ray_distance < config_.min_ray_length_m) {
         continue;
-      } else if (ray_distance > config_.max_ray_length) {
+      } else if (ray_distance > config_.max_ray_length_m) {
         // TODO(helenol): clear until max ray length instead.
         continue;
       }
