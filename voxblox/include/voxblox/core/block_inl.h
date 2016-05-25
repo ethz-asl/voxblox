@@ -59,7 +59,7 @@ size_t Block<VoxelType>::getMemorySize() const {
   size += sizeof(updated_);
 
   if (num_voxels_ > 0u) {
-    size += num_voxels_ * sizeof(voxels_[0]);
+    size += (num_voxels_ * sizeof(voxels_[0]));
   }
   return size;
 }

@@ -7,7 +7,7 @@
 
 namespace voxblox {
 
-struct TsdfVoxel {
+struct TsdfVoxel{
   float distance = 0.0;
   float weight = 0.0;
   Color color;
@@ -22,6 +22,34 @@ struct OccupancyVoxel {
   float occupancy_probability = 0.5;
   bool observed = false;
 };
+
+// Used for serialization only.
+enum class VoxelTypes {
+    kNotSerializable = 0,
+    kTsdf = 1,
+    kEsdf = 2,
+    kOccupancy = 3
+};
+
+template <typename Type>
+VoxelTypes getVoxelType(){
+  return VoxelTypes::kNotSerializable;
+}
+
+template <>
+inline VoxelTypes getVoxelType<TsdfVoxel>(){
+  return VoxelTypes::kTsdf;
+}
+
+template <>
+inline VoxelTypes getVoxelType<EsdfVoxel>(){
+  return VoxelTypes::kEsdf;
+}
+
+template <>
+inline VoxelTypes getVoxelType<OccupancyVoxel>(){
+  return VoxelTypes::kOccupancy;
+}
 
 }  // namespace voxblox
 

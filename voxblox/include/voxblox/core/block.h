@@ -132,7 +132,6 @@ class Block {
 
   // Basic function accessors.
   size_t voxels_per_side() const { return voxels_per_side_; }
-  size_t num_voxels() const { return num_voxels_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
   Point origin() const { return origin_; }
 

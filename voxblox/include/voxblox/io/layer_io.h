@@ -78,9 +78,8 @@ template <typename VoxelType>
 bool LoadBlocksFromFile(
     const std::string& file_path,
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
-    typename Layer<VoxelType>::Ptr* layer_ptr) {
+    Layer<VoxelType>* layer_ptr) {
   CHECK_NOTNULL(layer_ptr);
-  CHECK(*layer_ptr);
 
   // Open and check the file
   std::fstream proto_file;
@@ -113,7 +112,7 @@ bool LoadBlocksFromFile(
     LOG(ERROR) << "Could not read layer protobuf message.";
     return false;
   }
-  if (!(*layer_ptr)->isCompatible(layer_proto)) {
+  if (!layer_ptr->isCompatible(layer_proto)) {
     LOG(ERROR) << "The layer information read from file is not compatible with "
                   "the current layer!";
     return false;
@@ -130,7 +129,7 @@ bool LoadBlocksFromFile(
       return false;
     }
 
-    if (!(*layer_ptr)->addBlockFromProto(block_proto, strategy)) {
+    if (!layer_ptr->addBlockFromProto(block_proto, strategy)) {
       LOG(ERROR) << "Could not add the block protobuf message to the layer!";
       return false;
     }
