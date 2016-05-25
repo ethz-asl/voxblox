@@ -12,17 +12,22 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 
 
 # Usage Instructions
-## How to add serialization for a new layer
-The following features are implemented for the TSDF voxel type:
+
+## Serialization
+
+Serialization is currently implemented for:
+ * TSDF layers
+ * ...
+
+The following serialization tools are implemented:
 * Store a layer to file
 * Load layer from file
 * Store a subset of the blocks of a layer to file
 * Load blocks from file and add to a layer
 
-In order to support serialization for other voxel types one simply needs to:
+### How to add serialization for a new layer
 
-
- - [ ] Implement the following functions in ```block.cc```:
+ - [ ] In **```block.cc```**: Implement the (de)serialization
 
 ```
 template <>
@@ -38,22 +43,20 @@ void Block<YOUR_FANCY_VOXEL>::SerializeVoxelData(const YOUR_FANCY_VOXEL* voxels,
 }
 ```
 
- - [ ] Add a type enum in ```layer.h```:
+ - [ ] In  **```voxel.h```**: Add a type enum and implement the ```getVoxelType()``` function:
 
 ```
-enum Type {
-    kTsdf = 1,
-    kEsdf = 2,
-    kOccupancy = 3,
-    kYOUR_FANCY_VOXEL_ENUM = 666
- };
-```
+enum class VoxelTypes {
+  kNotSerializable = 0,
+  kTsdf = 1,
+  kEsdf = 2,
+  kOccupancy = 3,
+  kYOUR_FANCY_VOXEL
+};
 
- - [ ] Implement the following function in ```layer.cc```:
-
-```
 template <>
-Layer<YOUR_FANCY_VOXEL>::Type Layer<YOUR_FANCY_VOXEL>::getType() const {
-  return kYOUR_FANCY_VOXEL_ENUM;
+inline VoxelTypes getVoxelType<YOUR_FANCY_VOXEL>() {
+  return VoxelTypes::kYOUR_FANCY_VOXEL;
 }
 ```
+
