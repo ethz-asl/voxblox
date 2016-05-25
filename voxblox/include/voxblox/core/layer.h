@@ -10,6 +10,7 @@
 #include "voxblox/core/common.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/block_hash.h"
+#include "voxblox/core/voxel.h"
 
 namespace voxblox {
 
@@ -169,16 +170,8 @@ class Layer {
 
   size_t getMemorySize() const;
 
-  static constexpr size_t kMaxLayerSizeInBytes = 5000000u;  // 500MB
-
  private:
-  // Used for serialization only.
-  enum Type {
-    kTsdf = 1,
-    kEsdf = 2,
-    kOccupancy = 3
-  };
-  Type getType() const;
+  VoxelTypes getType() const;
 
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;

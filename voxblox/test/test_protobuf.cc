@@ -75,6 +75,8 @@ class ProtobufTest : public ::testing::Test {
                   << "] in layer_B does not exists in layer_A" << std::endl;
       }
     }
+
+    EXPECT_EQ(layer_A.getMemorySize(), layer_B.getMemorySize());
   }
 
   void CompareVoxel(const VoxelType& voxel_A, const VoxelType& voxel_B) const;
@@ -177,7 +179,7 @@ TEST_F(ProtobufTsdfTest, LayerSerializationToFile) {
   CompareLayers(*layer_, *layer_from_file);
 }
 
-TEST_F(ProtobufTsdfTest, DISABLED_LayerSubsetSerializationToFile) {
+TEST_F(ProtobufTsdfTest, LayerSubsetSerializationToFile) {
   const std::string file = "subset_layer_test_1.tsdf.voxblox";
 
   BlockIndexList block_index_list;
@@ -208,7 +210,7 @@ TEST_F(ProtobufTsdfTest, DISABLED_LayerSubsetSerializationToFile) {
 // Save the example layer to file, and prepare another layer with 4 existing
 // blocks. Load all the blocks from the example layer file into layer and
 // compare.
-TEST_F(ProtobufTsdfTest, DISABLED_LayerSubsetSerializationFromFile) {
+TEST_F(ProtobufTsdfTest, LayerSubsetSerializationFromFile) {
   const std::string file = "subset_layer_test_2.tsdf.voxblox";
 
   io::SaveLayer(*layer_, file);
@@ -224,12 +226,11 @@ TEST_F(ProtobufTsdfTest, DISABLED_LayerSubsetSerializationFromFile) {
   BlockIndex block_index_4 = {3000, -1000, -2000};
   block_index_list.push_back(block_index_4);
 
-  Layer<TsdfVoxel>::Ptr layer_with_blocks_from_file(
-      new Layer<TsdfVoxel>(voxel_size_, voxels_per_side_));
-  layer_with_blocks_from_file->allocateNewBlock(block_index_1);
-  layer_with_blocks_from_file->allocateNewBlock(block_index_2);
-  layer_with_blocks_from_file->allocateNewBlock(block_index_3);
-  layer_with_blocks_from_file->allocateNewBlock(block_index_4);
+  Layer<TsdfVoxel> layer_with_blocks_from_file(voxel_size_, voxels_per_side_);
+  layer_with_blocks_from_file.allocateNewBlock(block_index_1);
+  layer_with_blocks_from_file.allocateNewBlock(block_index_2);
+  layer_with_blocks_from_file.allocateNewBlock(block_index_3);
+  layer_with_blocks_from_file.allocateNewBlock(block_index_4);
 
   // Now load the blocks from the file layer and add it.
   io::LoadBlocksFromFile<TsdfVoxel>(
@@ -242,7 +243,7 @@ TEST_F(ProtobufTsdfTest, DISABLED_LayerSubsetSerializationFromFile) {
   layer_->allocateNewBlock(block_index_3);
   layer_->allocateNewBlock(block_index_4);
 
-  CompareLayers(*layer_, *layer_with_blocks_from_file);
+  CompareLayers(*layer_, layer_with_blocks_from_file);
 }
 
 int main(int argc, char** argv) {

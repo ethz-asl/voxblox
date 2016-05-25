@@ -15,6 +15,7 @@
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
 #include "voxblox/core/block.h"
+#include "voxblox/core/voxel.h"
 #include "voxblox/utils/protobuf_utils.h"
 
 namespace voxblox {
@@ -23,7 +24,8 @@ template <typename VoxelType>
 Layer<VoxelType>::Layer(const LayerProto& proto)
     : voxel_size_(proto.voxel_size()),
       voxels_per_side_(proto.voxels_per_side()) {
-  CHECK_EQ(getType(), static_cast<Type>(proto.type()))
+
+  CHECK_EQ(static_cast<int>(getType()), static_cast<int>(proto.type()))
       << "Incorrect voxel type, proto type: " << proto.type()
       << " layer type: " << static_cast<int>(getType());
 
@@ -38,6 +40,10 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
 template <typename VoxelType>
 void Layer<VoxelType>::getProto(LayerProto* proto) const {
   CHECK_NOTNULL(proto);
+
+  CHECK_NE(static_cast<int>(getType()),
+      static_cast<int>(VoxelTypes::kNotSerializable))
+          << "The voxel type of this layer is not serializable!";
 
   proto->set_voxel_size(voxel_size_);
   proto->set_voxels_per_side(voxels_per_side_);
@@ -54,6 +60,10 @@ template <typename VoxelType>
 bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
                                         BlockIndexList blocks_to_include,
                                         bool include_all_blocks) const {
+  CHECK_NE(static_cast<int>(getType()),
+      static_cast<int>(VoxelTypes::kNotSerializable))
+          << "The voxel type of this layer is not serializable!";
+
   CHECK(!file_path.empty());
   std::fstream outfile;
   outfile.open(file_path, std::fstream::out | std::fstream::binary);
@@ -134,26 +144,19 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
 template <typename VoxelType>
 bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
                                          BlockMergingStrategy strategy) {
+  CHECK_NE(static_cast<int>(getType()),
+      static_cast<int>(VoxelTypes::kNotSerializable))
+          << "The voxel type of this layer is not serializable!";
+
   if (isCompatible(block_proto)) {
     typename BlockType::Ptr block_ptr(new BlockType(block_proto));
     const BlockIndex block_index =
         computeBlockIndexFromCoordinates(block_ptr->origin());
     switch (strategy) {
-      case BlockMergingStrategy::kProhibit: {
-        typename BlockHashMap::iterator it = block_map_.find(block_index);
-        if (it == block_map_.end()) {
-          block_map_[block_index] = block_ptr;
-        } else {
-          LOG(ERROR) << "New index: " << block_index.transpose()
-                     << " collides with old index: " << it->first.transpose();
-        }
-      }
-
-      /*
-       CHECK_EQ(block_map_.count(block_index), 0u) << "New index: "
-       << block_index;
-       block_map_[block_index] = block_ptr;
-       */
+      case BlockMergingStrategy::kProhibit:
+        CHECK_EQ(block_map_.count(block_index), 0u)
+          << "Block collision at index: " << block_index;
+        block_map_[block_index] = block_ptr;
       break;
       case BlockMergingStrategy::kReplace:
         block_map_[block_index] = block_ptr;
@@ -209,16 +212,6 @@ size_t Layer<VoxelType>::getMemorySize() const {
   size += sizeof(block_size_);
   size += sizeof(block_size_inv_);
 
-  // Calculate size of the hash mab.
-  for (unsigned i = 0; i < block_map_.bucket_count(); ++i) {
-    size_t bucket_size = block_map_.bucket_size(i);
-    if (bucket_size == 0) {
-      size++;
-    } else {
-      size += bucket_size;
-    }
-  }
-
   // Calculate size of blocks
   size_t num_blocks = getNumberOfAllocatedBlocks();
   if (num_blocks > 0u) {
@@ -227,6 +220,12 @@ size_t Layer<VoxelType>::getMemorySize() const {
   }
   return size;
 }
+
+template <typename VoxelType>
+VoxelTypes Layer<VoxelType>::getType() const {
+  return getVoxelType<VoxelType>();
+}
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_LAYER_INL_H_
