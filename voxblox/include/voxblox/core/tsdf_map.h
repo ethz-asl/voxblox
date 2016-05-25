@@ -31,6 +31,8 @@ class TsdfMap {
   Layer<TsdfVoxel>* getTsdfLayerPtr() { return tsdf_layer_.get(); }
   const Layer<TsdfVoxel>& getTsdfLayer() const { return *tsdf_layer_; }
 
+  FloatingPoint block_size() const { return block_size_; }
+
  protected:
   FloatingPoint block_size_;
 
