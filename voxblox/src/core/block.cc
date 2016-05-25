@@ -39,10 +39,12 @@ void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
 
     // TODO(mfehr, helenol): find a better way to do this!
 
-    const uint32_t* bytes_1_ptr = reinterpret_cast<const uint32_t*>(&voxel.distance);
+    const uint32_t* bytes_1_ptr =
+        reinterpret_cast<const uint32_t*>(&voxel.distance);
     proto->add_voxel_data(*bytes_1_ptr);
 
-    const uint32_t* bytes_2_ptr = reinterpret_cast<const uint32_t*>(&voxel.weight);
+    const uint32_t* bytes_2_ptr =
+        reinterpret_cast<const uint32_t*>(&voxel.weight);
     proto->add_voxel_data(*bytes_2_ptr);
 
     proto->add_voxel_data(static_cast<uint32_t>(voxel.color.a) |
