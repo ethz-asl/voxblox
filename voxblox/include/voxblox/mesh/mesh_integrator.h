@@ -47,9 +47,9 @@ class MeshIntegrator {
 
   static constexpr FloatingPoint kMinWeight = 1e-3;
 
-  MeshIntegrator(Layer<TsdfVoxel>* tsdf_layer, MeshLayer* mesh_layer,
-                 const Config& config)
-      : tsdf_layer_(tsdf_layer), mesh_layer_(mesh_layer), config_(config) {
+  MeshIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
+                 MeshLayer* mesh_layer)
+      : config_(config), tsdf_layer_(tsdf_layer), mesh_layer_(mesh_layer) {
     DCHECK_NOTNULL(tsdf_layer_);
     DCHECK_NOTNULL(mesh_layer_);
 
@@ -162,6 +162,7 @@ class MeshIntegrator {
   void extractMeshInsideBlock(const Block<TsdfVoxel>::ConstPtr& block,
                               const VoxelIndex& index, const Point& coords,
                               VertexIndex* next_mesh_index, Mesh* mesh) {
+    DCHECK_NOTNULL(next_mesh_index);
     DCHECK_NOTNULL(mesh);
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
@@ -169,7 +170,7 @@ class MeshIntegrator {
     Eigen::Matrix<FloatingPoint, 8, 1> corner_sdf;
     bool all_neighbors_observed = true;
 
-    for (int i = 0; i < 8; ++i) {
+    for (unsigned int i = 0; i < 8; ++i) {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
       const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(corner_index);
 
@@ -201,7 +202,7 @@ class MeshIntegrator {
     Eigen::Matrix<FloatingPoint, 8, 1> corner_sdf;
     bool all_neighbors_observed = true;
 
-    for (int i = 0; i < 8; ++i) {
+    for (unsigned int i = 0; i < 8; ++i) {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
 
       if (block->isValidVoxelIndex(corner_index)) {
@@ -364,10 +365,10 @@ class MeshIntegrator {
   }
 
  protected:
+  Config config_;
+
   Layer<TsdfVoxel>* tsdf_layer_;
   MeshLayer* mesh_layer_;
-
-  Config config_;
 
   // Cached map config.
   FloatingPoint voxel_size_;

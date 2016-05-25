@@ -36,6 +36,7 @@ bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh);
 
 bool outputMeshLayerAsPly(const std::string& filename,
                           const MeshLayer::ConstPtr& mesh_layer) {
+  DCHECK(mesh_layer);
   Mesh::Ptr combined_mesh(new Mesh(mesh_layer->block_size(), Point::Zero()));
   // Combine everything in the layer into one giant combined mesh.
   size_t v = 0;
@@ -68,6 +69,7 @@ bool outputMeshLayerAsPly(const std::string& filename,
 }
 
 bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh) {
+  DCHECK(mesh);
   std::ofstream stream(filename.c_str());
 
   if (!stream) {
