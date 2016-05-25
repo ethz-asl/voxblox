@@ -116,7 +116,7 @@ void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
       CHECK(mesh->hasNormals());
     }
 
-    for (size_t i = 0; i < mesh->vertices.size(); i++) {
+    for (size_t i = 0u; i < mesh->vertices.size(); i++) {
       geometry_msgs::Point point_msg;
       tf::pointEigenToMsg(mesh->vertices[i], point_msg);
       marker->points.push_back(point_msg);
