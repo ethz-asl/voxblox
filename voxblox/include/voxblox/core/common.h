@@ -24,13 +24,23 @@ typedef std::vector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
+// For triangle meshing/vertex access.
+typedef size_t VertexIndex;
+typedef std::vector<VertexIndex> VertexIndexList;
+typedef Eigen::Matrix<FloatingPoint, 3, 3> Triangle;
+typedef std::vector<Triangle, Eigen::aligned_allocator<Triangle> >
+    TriangleVector;
+
 // Transformation type for defining sensor orientation.
 typedef kindr::minimal::QuatTransformation Transformation;
 
 struct Color {
   Color() : r(0), g(0), b(0), a(0) {}
+  Color(uint8_t _r, uint8_t _g, uint8_t _b)
+      : Color(_r, _g, _b, 255) {}
   Color(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a)
       : r(_r), g(_g), b(_b), a(_a) {}
+
 
   uint8_t r;
   uint8_t g;
@@ -58,6 +68,19 @@ struct Color {
 
     return new_color;
   }
+
+  // Now a bunch of static colors to use! :)
+  static const Color White() { return Color(255, 255, 255); }
+  static const Color Black() { return Color(0, 0, 0); }
+  static const Color Gray() { return Color(127, 127, 127); }
+  static const Color Red() { return Color(255, 0, 0); }
+  static const Color Green() { return Color(0, 255, 0); }
+  static const Color Blue() { return Color(0, 0, 255); }
+  static const Color Yellow() { return Color(255, 255, 0); }
+  static const Color Orange() { return Color(255, 127, 0); }
+  static const Color Purple() { return Color(127, 0, 255); }
+  static const Color Teal() { return Color(0, 255, 255); }
+  static const Color Pink() { return Color(255, 0, 127); }
 };
 
 // Pointcloud types for external interface.

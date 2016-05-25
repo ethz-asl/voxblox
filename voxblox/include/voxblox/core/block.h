@@ -106,8 +106,33 @@ class Block {
     return voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
+  inline bool isValidVoxelIndex(const VoxelIndex& index) const {
+    if (index.x() < 0 || index.x() >= voxels_per_side_) {
+      return false;
+    }
+    if (index.y() < 0 || index.y() >= voxels_per_side_) {
+      return false;
+    }
+    if (index.z() < 0 || index.z() >= voxels_per_side_) {
+      return false;
+    }
+    return true;
+  }
+
+  inline bool isValidLinearIndex(size_t index) const {
+    if (index < 0 || index >= num_voxels_) {
+      return false;
+    }
+    return true;
+  }
+
+  BlockIndex block_index() const {
+    return floorVectorAndDowncast(origin_ / block_size_);
+  }
+
   // Basic function accessors.
   size_t voxels_per_side() const { return voxels_per_side_; }
+  size_t num_voxels() const { return num_voxels_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
   Point origin() const { return origin_; }
 

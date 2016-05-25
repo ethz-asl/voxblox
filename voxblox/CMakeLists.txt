@@ -5,7 +5,7 @@ find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
 set(CMAKE_MACOSX_RPATH 0)
-add_definitions(-std=c++11 -Wno-sign-compare)
+add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
 ############
 # PROTOBUF #
@@ -22,6 +22,7 @@ cs_add_library(${PROJECT_NAME}
   src/core/block.cc
   src/core/layer.cc
   src/utils/timing.cc
+  src/mesh/marching_cubes.cc
   ${PROTO_SRCS}
 )
 
