@@ -42,8 +42,8 @@ void Layer<VoxelType>::getProto(LayerProto* proto) const {
   CHECK_NOTNULL(proto);
 
   CHECK_NE(static_cast<int>(getType()),
-      static_cast<int>(VoxelTypes::kNotSerializable))
-          << "The voxel type of this layer is not serializable!";
+           static_cast<int>(VoxelTypes::kNotSerializable))
+      << "The voxel type of this layer is not serializable!";
 
   proto->set_voxel_size(voxel_size_);
   proto->set_voxels_per_side(voxels_per_side_);
@@ -61,8 +61,8 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
                                         BlockIndexList blocks_to_include,
                                         bool include_all_blocks) const {
   CHECK_NE(static_cast<int>(getType()),
-      static_cast<int>(VoxelTypes::kNotSerializable))
-          << "The voxel type of this layer is not serializable!";
+           static_cast<int>(VoxelTypes::kNotSerializable))
+      << "The voxel type of this layer is not serializable!";
 
   CHECK(!file_path.empty());
   std::fstream outfile;
@@ -145,8 +145,8 @@ template <typename VoxelType>
 bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
                                          BlockMergingStrategy strategy) {
   CHECK_NE(static_cast<int>(getType()),
-      static_cast<int>(VoxelTypes::kNotSerializable))
-          << "The voxel type of this layer is not serializable!";
+           static_cast<int>(VoxelTypes::kNotSerializable))
+      << "The voxel type of this layer is not serializable!";
 
   if (isCompatible(block_proto)) {
     typename BlockType::Ptr block_ptr(new BlockType(block_proto));
@@ -155,7 +155,7 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
     switch (strategy) {
       case BlockMergingStrategy::kProhibit:
         CHECK_EQ(block_map_.count(block_index), 0u)
-          << "Block collision at index: " << block_index;
+            << "Block collision at index: " << block_index;
         block_map_[block_index] = block_ptr;
       break;
       case BlockMergingStrategy::kReplace:
