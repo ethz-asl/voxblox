@@ -1,7 +1,7 @@
 #include "voxblox/core/tsdf_map.h"
 #include "voxblox/integrator/tsdf_integrator.h"
-#include "voxblox/mesh/mesh_integrator.h"
 #include "voxblox/io/sdf_ply.h"
+#include "voxblox/mesh/mesh_integrator.h"
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
