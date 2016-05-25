@@ -58,13 +58,13 @@ struct Color {
 
     Color new_color;
     new_color.r = static_cast<uint8_t>(first_color.r * first_weight +
-                                       second_color.r * second_weight);
+                                       second_color.r * second_weight + 0.5);
     new_color.g = static_cast<uint8_t>(first_color.g * first_weight +
-                                       second_color.g * second_weight);
+                                       second_color.g * second_weight + 0.5);
     new_color.b = static_cast<uint8_t>(first_color.b * first_weight +
-                                       second_color.b * second_weight);
+                                       second_color.b * second_weight + 0.5);
     new_color.a = static_cast<uint8_t>(first_color.a * first_weight +
-                                       second_color.a * second_weight);
+                                       second_color.a * second_weight + 0.5);
 
     return new_color;
   }
