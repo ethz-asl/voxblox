@@ -4,9 +4,9 @@
 #include <glog/logging.h>
 #include <utility>
 
+#include "voxblox/core/block_hash.h"
 #include "voxblox/core/common.h"
 #include "voxblox/mesh/mesh.h"
-#include "voxblox/core/block_hash.h"
 
 namespace voxblox {
 
