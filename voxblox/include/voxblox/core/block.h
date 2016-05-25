@@ -134,11 +134,10 @@ class Block {
   size_t voxels_per_side() const { return voxels_per_side_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
   Point origin() const { return origin_; }
+  FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
   bool updated() const { return updated_; }
-  size_t num_voxels() const { return num_voxels_; }
-  FloatingPoint block_size() const { return block_size_; }
 
   bool& updated() { return updated_; }
   bool& has_data() { return has_data_; }
