@@ -2,11 +2,15 @@
 #define VOXBLOX_CORE_LAYER_H_
 
 #include <glog/logging.h>
+#include <string>
 #include <utility>
 
+#include "./Block.pb.h"
+#include "./Layer.pb.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/block_hash.h"
+#include "voxblox/core/voxel.h"
 
 namespace voxblox {
 
@@ -16,6 +20,7 @@ class Layer {
   typedef std::shared_ptr<Layer> Ptr;
   typedef Block<VoxelType> BlockType;
   typedef typename BlockHashMapType<typename BlockType::Ptr>::type BlockHashMap;
+  typedef typename std::pair<BlockIndex, typename BlockType::Ptr> BlockMapPair;
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
@@ -23,9 +28,18 @@ class Layer {
     block_size_inv_ = 1.0 / block_size_;
   }
 
+  // Create the layer from protobuf layer header.
+  explicit Layer(const LayerProto& proto);
+
   virtual ~Layer() {}
 
-  // By index.
+  enum class BlockMergingStrategy {
+    kProhibit,
+    kReplace,
+    kDiscard,
+    kMerge
+  };
+
   inline const BlockType& getBlockByIndex(const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
     if (it != block_map_.end()) {
@@ -118,6 +132,7 @@ class Layer {
   }
 
   void removeBlock(const BlockIndex& index) { block_map_.erase(index); }
+  void removeAllBlocks() { block_map_.clear(); }
 
   void removeBlockByCoordinates(const Point& coords) {
     block_map_.erase(computeBlockIndexFromCoordinates(coords));
@@ -142,7 +157,22 @@ class Layer {
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
 
+  // Serialization tools.
+  void getProto(LayerProto* proto) const;
+  bool isCompatible(const LayerProto& layer_proto) const;
+  bool isCompatible(const BlockProto& layer_proto) const;
+  bool saveToFile(const std::string& file_path) const;
+  bool saveSubsetToFile(const std::string& file_path,
+                        BlockIndexList blocks_to_include,
+                        bool include_all_blocks) const;
+  bool addBlockFromProto(const BlockProto& block_proto,
+                         BlockMergingStrategy strategy);
+
+  size_t getMemorySize() const;
+
  private:
+  VoxelTypes getType() const;
+
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;
   FloatingPoint block_size_;
@@ -155,4 +185,6 @@ class Layer {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_MAP_H_
+#include "voxblox/core/layer_inl.h"
+
+#endif  // VOXBLOX_CORE_LAYER_H_

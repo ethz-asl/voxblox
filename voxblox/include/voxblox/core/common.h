@@ -97,6 +97,12 @@ inline Eigen::Vector3i floorVectorAndDowncast(
 
 inline int signum(FloatingPoint x) { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
 
+template <typename Type, typename... Arguments>
+inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
+  typedef typename std::remove_const<Type>::type TypeNonConst;
+  return std::allocate_shared<Type>(Eigen::aligned_allocator<TypeNonConst>(),
+                                    std::forward<Arguments>(arguments)...);
+}
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_COMMON_H_
