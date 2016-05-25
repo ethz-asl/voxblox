@@ -175,8 +175,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
   MeshIntegrator::Config mesh_config;
-  mesh_integrator_.reset(new MeshIntegrator(tsdf_map_->getTsdfLayerPtr(),
-                                            mesh_layer_.get(), mesh_config));
+  mesh_integrator_.reset(new MeshIntegrator(
+      mesh_config, tsdf_map_->getTsdfLayerPtr(), mesh_layer_.get()));
 
   // Advertise services.
   generate_mesh_srv_ = nh_private_.advertiseService(
