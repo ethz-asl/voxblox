@@ -50,7 +50,6 @@ class Layer {
     if (it != block_map_.end()) {
       return it->second;
     } else {
-      LOG(WARNING) << "Returning null ptr to block!";
       return typename BlockType::ConstPtr();
     }
   }
@@ -60,7 +59,6 @@ class Layer {
     if (it != block_map_.end()) {
       return it->second;
     } else {
-      LOG(WARNING) << "Returning null ptr to block!";
       return typename BlockType::Ptr();
     }
   }
@@ -135,6 +133,10 @@ class Layer {
   }
 
   size_t getNumberOfAllocatedBlocks() const { return block_map_.size(); }
+
+  bool hasBlock(const BlockIndex& block_index) const {
+    return block_map_.count(block_index);
+  }
 
   FloatingPoint block_size() const { return block_size_; }
   FloatingPoint voxel_size() const { return voxel_size_; }

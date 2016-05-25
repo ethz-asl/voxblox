@@ -4,18 +4,16 @@ project(voxblox_ros)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
-add_definitions(-std=c++11)
+add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
 #############
 # LIBRARIES #
 #############
-
 # TODO(mfehr, helenol): Add a library as soon as we have source files.
 
 ############
 # BINARIES #
 ############
-
 cs_add_executable(voxblox_node
   src/voxblox_node.cc
 )
@@ -23,6 +21,5 @@ cs_add_executable(voxblox_node
 ##########
 # EXPORT #
 ##########
-
 cs_install()
 cs_export()
