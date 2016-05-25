@@ -341,8 +341,8 @@ bool VoxbloxNode::generateMeshCallback(
   MeshLayer::Ptr mesh_layer(new MeshLayer(tsdf_map_->block_size()));
 
   MeshIntegrator::Config mesh_config;
-  MeshIntegrator mesh_integrator(tsdf_map_->getTsdfLayerPtr(), mesh_layer.get(),
-                                 mesh_config);
+  MeshIntegrator mesh_integrator(mesh_config, tsdf_map_->getTsdfLayerPtr(),
+                                 mesh_layer.get());
 
   timing::Timer generate_mesh_timer("mesh/generate");
   mesh_integrator.generateWholeMesh();
