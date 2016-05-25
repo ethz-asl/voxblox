@@ -20,6 +20,8 @@ class TsdfIntegrator {
     float default_truncation_distance = 0.1;
     float max_weight = 100.0;
     bool voxel_carving_enabled = true;
+    FloatingPoint min_ray_length_m = 1e-3;
+    FloatingPoint max_ray_length_m = 5.0;
   };
 
   TsdfIntegrator(Layer<TsdfVoxel>* layer, const Config& config)
@@ -79,6 +81,14 @@ class TsdfIntegrator {
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
       const Color& color = colors[pt_idx];
+
+      FloatingPoint ray_distance = (point_G - origin).norm();
+      if (ray_distance < config_.min_ray_length_m) {
+        continue;
+      } else if (ray_distance > config_.max_ray_length_m) {
+        // TODO(helenol): clear until max ray length instead.
+        continue;
+      }
 
       FloatingPoint truncation_distance = config_.default_truncation_distance;
 
@@ -153,14 +163,22 @@ class TsdfIntegrator {
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
 
+      FloatingPoint ray_distance = (point_G - origin).norm();
+      if (ray_distance < config_.min_ray_length_m) {
+        continue;
+      } else if (ray_distance > config_.max_ray_length_m) {
+        // TODO(helenol): clear until max ray length instead.
+        continue;
+      }
+
       // Figure out what the end voxel is here.
       VoxelIndex voxel_index = floorVectorAndDowncast(
           point_G.cast<FloatingPoint>() * voxel_size_inv_);
       voxel_map[voxel_index].push_back(pt_idx);
     }
 
-    LOG(INFO) << "Went from " << points_C.size() << " points to "
-              << voxel_map.size() << " raycasts.";
+    VLOG(5) << "Went from " << points_C.size() << " points to "
+           << voxel_map.size() << " raycasts.";
 
     FloatingPoint truncation_distance = config_.default_truncation_distance;
     for (const BlockHashMapType<std::vector<size_t>>::type::value_type& kv :

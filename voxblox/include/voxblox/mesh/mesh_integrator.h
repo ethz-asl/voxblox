@@ -178,7 +178,7 @@ class MeshIntegrator {
       // TODO(helenol): comment above from open_chisel, but no actual checks
       // on distance are ever made. Definitely we should skip doing checks of
       // voxels that are too far from the surface...
-      if (voxel.weight <= 1e-6) {
+      if (voxel.weight <= kMinWeight) {
         all_neighbors_observed = false;
         break;
       }
@@ -207,7 +207,7 @@ class MeshIntegrator {
       if (block->isValidVoxelIndex(corner_index)) {
         const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(corner_index);
 
-        if (voxel.weight <= 1e-6) {
+        if (voxel.weight <= kMinWeight) {
           all_neighbors_observed = false;
           break;
         }
@@ -233,16 +233,10 @@ class MeshIntegrator {
           Block<TsdfVoxel>::ConstPtr neighbor_block =
               tsdf_layer_->getBlockPtrByIndex(neighbor_index);
 
-          // TODO(helenol): check should not be necessary.
-          /* if (!neighbor_block->isValidVoxelIndex(corner_index)) {
-            all_neighbors_observed = false;
-            break;
-          } */
-
           const TsdfVoxel& voxel =
               neighbor_block->getVoxelByVoxelIndex(corner_index);
 
-          if (voxel.weight <= 1e-6) {
+          if (voxel.weight <= kMinWeight) {
             all_neighbors_observed = false;
             break;
           }
