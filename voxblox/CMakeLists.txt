@@ -22,6 +22,7 @@ cs_add_library(${PROJECT_NAME}
   src/core/block.cc
   src/core/layer.cc
   src/utils/timing.cc
+  src/mesh/marching_cubes.cc
   ${PROTO_SRCS}
 )
 
