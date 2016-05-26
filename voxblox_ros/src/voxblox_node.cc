@@ -70,6 +70,10 @@ class VoxbloxNode {
   // How to color the mesh.
   ColorMode color_mode_;
 
+  // Keep track of these for throttling.
+  ros::Duration min_time_between_msgs_;
+  ros::Time last_msg_time_;
+
   // To be replaced (at least optionally) with odometry + static transform from
   // IMU to visual frame.
   tf::TransformListener tf_listener_;
@@ -110,6 +114,13 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       use_tf_transforms_(true),
       // 10 ms here:
       timestamp_tolerance_ns_(10000000) {
+  // Before subscribing, determine minimum time between messages.
+  // 0 by default.
+  double min_time_between_msgs_sec = 0.0;
+  nh_private_.param("min_time_between_msgs_sec", min_time_between_msgs_sec,
+                    min_time_between_msgs_sec);
+  min_time_between_msgs_.fromSec(min_time_between_msgs_sec);
+
   // Advertise topics.
   mesh_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
@@ -245,6 +256,12 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
 
 void VoxbloxNode::insertPointcloudWithTf(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+  // Figure out if we should insert this.
+  if (pointcloud_msg->header.stamp - last_msg_time_ < min_time_between_msgs_) {
+    return;
+  }
+  last_msg_time_ = pointcloud_msg->header.stamp;
+
   // Look up transform from sensor frame to world frame.
   Transformation T_G_C;
   if (lookupTransform(pointcloud_msg->header.frame_id, world_frame_,
