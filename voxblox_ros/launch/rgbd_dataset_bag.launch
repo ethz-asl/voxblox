@@ -10,6 +10,7 @@
     <remap from="transform" to="camera_imu/vrpn_client/estimated_transform" />
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="verbose" value="false" />
+    <param name="min_time_between_msgs_sec" value="0.2" />
 
     <rosparam file="$(find voxblox_ros)/cfg/rgbd_dataset.yaml"/>
 
