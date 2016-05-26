@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "./Block.pb.h"
 #include "voxblox/core/common.h"
 
 namespace voxblox {
@@ -16,12 +17,16 @@ class Block {
   Block(size_t voxels_per_side, FloatingPoint voxel_size, const Point& origin)
       : voxels_per_side_(voxels_per_side),
         voxel_size_(voxel_size),
-        origin_(origin) {
+        origin_(origin),
+        has_data_(false),
+        updated_(false) {
     num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_ = voxels_per_side_ * voxel_size_;
     voxels_.reset(new VoxelType[num_voxels_]);
   }
+
+  explicit Block(const BlockProto& proto);
 
   ~Block() {}
 
@@ -127,9 +132,10 @@ class Block {
 
   // Basic function accessors.
   size_t voxels_per_side() const { return voxels_per_side_; }
-  size_t num_voxels() const { return num_voxels_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
+  size_t num_voxels() const { return num_voxels_; }
   Point origin() const { return origin_; }
+  FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
   bool updated() const { return updated_; }
@@ -137,7 +143,16 @@ class Block {
   bool& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
+  void getProto(BlockProto* proto) const;
+
+  bool mergeBlock(const Block<VoxelType>& other_block);
+
+  size_t getMemorySize() const;
+
  private:
+  void DeserializeVoxelData(const BlockProto& proto, VoxelType* voxels);
+  void SerializeVoxelData(const VoxelType* voxels, BlockProto* proto) const;
+
   // Base parameters.
   const size_t voxels_per_side_;
   const FloatingPoint voxel_size_;
@@ -157,5 +172,7 @@ class Block {
 };
 
 }  // namespace voxblox
+
+#include "voxblox/core/block_inl.h"
 
 #endif  // VOXBLOX_CORE_BLOCK_H_
