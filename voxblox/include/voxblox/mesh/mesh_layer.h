@@ -90,7 +90,7 @@ class MeshLayer {
   // Coord to mesh index.
   inline BlockIndex computeBlockIndexFromCoordinates(
       const Point& coords) const {
-    return floorVectorAndDowncast(coords * block_size_inv_);
+    return getGridIndexFromPoint(coords, block_size_inv_);
   }
 
   // Pure virtual function -- inheriting class MUST overwrite.

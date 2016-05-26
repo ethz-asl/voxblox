@@ -151,7 +151,7 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
   if (isCompatible(block_proto)) {
     typename BlockType::Ptr block_ptr(new BlockType(block_proto));
     const BlockIndex block_index =
-        computeBlockIndexFromCoordinates(block_ptr->origin());
+        getGridIndexFromOriginPoint(block_ptr->origin(), block_size_inv_);
     switch (strategy) {
       case BlockMergingStrategy::kProhibit:
         CHECK_EQ(block_map_.count(block_index), 0u)

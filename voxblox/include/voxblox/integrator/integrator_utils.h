@@ -21,8 +21,8 @@ void castRay(const Point& start_scaled, const Point& end_scaled,
 
   constexpr FloatingPoint kTolerance = 1e-6;
 
-  AnyIndex start_index = floorVectorAndDowncast(start_scaled);
-  AnyIndex end_index = floorVectorAndDowncast(end_scaled);
+  AnyIndex start_index = getGridIndexFromPoint(start_scaled);
+  AnyIndex end_index = getGridIndexFromPoint(end_scaled);
 
   Ray ray_scaled = end_scaled - start_scaled;
 
@@ -98,12 +98,10 @@ void getHierarchicalIndexAlongRay(const Point& start, const Point& end,
 
   timing::Timer create_index_timer("integrate/create_hi_index");
   for (const AnyIndex& global_voxel_idx : global_voxel_index) {
-    BlockIndex block_idx = floorVectorAndDowncast(
-        global_voxel_idx.cast<FloatingPoint>() * voxels_per_side_inv);
-
-    VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side,
-                               global_voxel_idx.y() % voxels_per_side,
-                               global_voxel_idx.z() % voxels_per_side);
+    BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
+        global_voxel_idx, voxels_per_side_inv);
+    VoxelIndex local_voxel_idx = getLocalFromGlobalVoxelIndex(
+        global_voxel_idx, voxels_per_side);
 
     if (local_voxel_idx.x() < 0) {
       local_voxel_idx.x() += voxels_per_side;
