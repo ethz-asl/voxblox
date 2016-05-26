@@ -53,6 +53,7 @@ class VoxbloxNode {
   ros::NodeHandle nh_private_;
 
   bool verbose_;
+  bool color_ptcloud_by_weight_;
 
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
@@ -110,6 +111,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       verbose_(true),
+      color_ptcloud_by_weight_(false),
       world_frame_("world"),
       use_tf_transforms_(true),
       // 10 ms here:
@@ -134,6 +136,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
                                   &VoxbloxNode::insertPointcloudWithTf, this);
 
   nh_private_.param("verbose", verbose_, verbose_);
+  nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
+                    color_ptcloud_by_weight_);
 
   // Determine map parameters.
   TsdfMap::Config config;
@@ -188,7 +192,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   }
 
   MeshIntegrator::Config mesh_config;
-  nh_private_.param("mesh_min_weight", mesh_config.min_weight, mesh_config.min_weight);
+  nh_private_.param("mesh_min_weight", mesh_config.min_weight,
+                    mesh_config.min_weight);
 
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
@@ -296,7 +301,6 @@ void VoxbloxNode::insertPointcloudWithTf(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
@@ -374,7 +378,11 @@ void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
             point.x = coord.x();
             point.y = coord.y();
             point.z = coord.z();
-            point.intensity = weight;
+            if (color_ptcloud_by_weight_) {
+              point.intensity = weight;
+            } else {
+              point.intensity = distance;
+            }
             pointcloud.push_back(point);
           }
         }
