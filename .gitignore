@@ -44,4 +44,4 @@
 mesh_results
 
 # Tools
-autolintc
+tools/lint/autolintc
