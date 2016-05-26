@@ -53,6 +53,7 @@ class VoxbloxNode {
   ros::NodeHandle nh_private_;
 
   bool verbose_;
+  bool color_ptcloud_by_weight_;
 
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
@@ -69,6 +70,10 @@ class VoxbloxNode {
   std::string mesh_filename_;
   // How to color the mesh.
   ColorMode color_mode_;
+
+  // Keep track of these for throttling.
+  ros::Duration min_time_between_msgs_;
+  ros::Time last_msg_time_;
 
   // To be replaced (at least optionally) with odometry + static transform from
   // IMU to visual frame.
@@ -106,10 +111,18 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       verbose_(true),
+      color_ptcloud_by_weight_(false),
       world_frame_("world"),
       use_tf_transforms_(true),
       // 10 ms here:
       timestamp_tolerance_ns_(10000000) {
+  // Before subscribing, determine minimum time between messages.
+  // 0 by default.
+  double min_time_between_msgs_sec = 0.0;
+  nh_private_.param("min_time_between_msgs_sec", min_time_between_msgs_sec,
+                    min_time_between_msgs_sec);
+  min_time_between_msgs_.fromSec(min_time_between_msgs_sec);
+
   // Advertise topics.
   mesh_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
@@ -123,6 +136,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
                                   &VoxbloxNode::insertPointcloudWithTf, this);
 
   nh_private_.param("verbose", verbose_, verbose_);
+  nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
+                    color_ptcloud_by_weight_);
 
   // Determine map parameters.
   TsdfMap::Config config;
@@ -148,6 +163,10 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
                     integrator_config.voxel_carving_enabled);
   nh_private_.param("truncation_distance", truncation_distance,
                     truncation_distance);
+  nh_private_.param("max_ray_length_m", integrator_config.max_ray_length_m,
+                    integrator_config.max_ray_length_m);
+  nh_private_.param("min_ray_length_m", integrator_config.min_ray_length_m,
+                    integrator_config.min_ray_length_m);
   nh_private_.param("max_weight", max_weight, max_weight);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
@@ -173,7 +192,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   }
 
   MeshIntegrator::Config mesh_config;
-  nh_private_.param("mesh_min_weight", mesh_config.min_weight, mesh_config.min_weight);
+  nh_private_.param("mesh_min_weight", mesh_config.min_weight,
+                    mesh_config.min_weight);
 
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
@@ -247,6 +267,12 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
 
 void VoxbloxNode::insertPointcloudWithTf(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+  // Figure out if we should insert this.
+  if (pointcloud_msg->header.stamp - last_msg_time_ < min_time_between_msgs_) {
+    return;
+  }
+  last_msg_time_ = pointcloud_msg->header.stamp;
+
   // Look up transform from sensor frame to world frame.
   Transformation T_G_C;
   if (lookupTransform(pointcloud_msg->header.frame_id, world_frame_,
@@ -275,7 +301,6 @@ void VoxbloxNode::insertPointcloudWithTf(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
@@ -353,7 +378,11 @@ void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
             point.x = coord.x();
             point.y = coord.y();
             point.z = coord.z();
-            point.intensity = distance;
+            if (color_ptcloud_by_weight_) {
+              point.intensity = weight;
+            } else {
+              point.intensity = distance;
+            }
             pointcloud.push_back(point);
           }
         }
@@ -517,7 +546,7 @@ bool VoxbloxNode::generateMeshCallback(
     std_srvs::Empty::Request& request,
     std_srvs::Empty::Response& response) {  // NOLINT
   timing::Timer generate_mesh_timer("mesh/generate");
-  const bool clear_mesh = false;
+  const bool clear_mesh = true;
   if (clear_mesh) {
     mesh_integrator_->generateWholeMesh();
   } else {
@@ -549,6 +578,9 @@ bool VoxbloxNode::generateMeshCallback(
 }
 
 void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
+  if (verbose_) {
+    ROS_INFO("Updating mesh.");
+  }
   timing::Timer generate_mesh_timer("mesh/update");
   const bool clear_updated_flag = true;
   mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);

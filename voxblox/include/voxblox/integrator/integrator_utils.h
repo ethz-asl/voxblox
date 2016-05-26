@@ -6,6 +6,8 @@
 
 #include <Eigen/Core>
 #include <glog/logging.h>
+#include <algorithm>
+#include <vector>
 
 #include "voxblox/core/common.h"
 #include "voxblox/utils/timing.h"
@@ -47,6 +49,10 @@ void castRay(const Point& start_scaled, const Point& end_scaled,
                          (std::abs(ray_scaled.z()) < kTolerance)
                              ? 2.0
                              : distance_to_boundaries.z() / ray_scaled.z());
+
+  if (start_index == end_index) {
+    return;
+  }
 
   // Distance to cross one grid cell along the ray in t.
   // Same as absolute inverse value of delta_coord.
