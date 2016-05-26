@@ -30,6 +30,8 @@
 # Eclipse
 .cproject
 .project
+/Debug/
+.settings
 
 # Python (for lint)
 *.pyc
@@ -39,4 +41,3 @@
 
 # Mac 
 .DS_Store
-
