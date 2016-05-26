@@ -237,8 +237,8 @@ class MeshIntegrator {
         BlockIndex neighbor_index = block.block_index() + block_offset;
 
         if (tsdf_layer_->hasBlock(neighbor_index)) {
-          Block<TsdfVoxel>::ConstPtr neighbor_block =
-              tsdf_layer_->getBlockPtrByIndex(neighbor_index);
+          const Block<TsdfVoxel>& neighbor_block =
+              tsdf_layer_->getBlockByIndex(neighbor_index);
 
           const TsdfVoxel& voxel =
               neighbor_block.getVoxelByVoxelIndex(corner_index);
