@@ -105,18 +105,20 @@ class Layer {
     return allocateBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
   }
 
-  // Coord to block index.
+  // IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
+  // function doesn't always compute the correct block index for coordinates
+  // near the block boundaries.
   inline BlockIndex computeBlockIndexFromCoordinates(
       const Point& coords) const {
-    return floorVectorAndDowncast(coords * block_size_inv_);
+    return getGridIndexFromPoint(coords, block_size_inv_);
   }
 
   // Pure virtual function -- inheriting class MUST overwrite.
   typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) {
     auto insert_status = block_map_.insert(
         std::make_pair(index, std::shared_ptr<BlockType>(new BlockType(
-                                  voxels_per_side_, voxel_size_,
-                                  index.cast<FloatingPoint>() * block_size_))));
+                    voxels_per_side_, voxel_size_,
+                    getOriginPointFromGridIndex(index, block_size_)))));
 
     DCHECK(insert_status.second) << "Block already exists when allocating at "
                                  << index.transpose();
