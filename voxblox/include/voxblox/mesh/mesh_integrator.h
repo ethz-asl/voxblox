@@ -45,8 +45,6 @@ class MeshIntegrator {
     FloatingPoint min_weight = 0.0001;
   };
 
-  static constexpr FloatingPoint kMinWeight = 1e-6;
-
   MeshIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
                  MeshLayer* mesh_layer)
       : config_(config), tsdf_layer_(tsdf_layer), mesh_layer_(mesh_layer) {
@@ -224,7 +222,7 @@ class MeshIntegrator {
         // We have to access a different block.
         BlockIndex block_offset = Eigen::Vector3i::Zero();
 
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0u; j < 3u; j++) {
           if (corner_index(j) < 0) {
             block_offset(j) = -1;
             corner_index(j) = voxels_per_side_ - 1;
@@ -332,7 +330,7 @@ class MeshIntegrator {
     Point offset = Point::Zero();
     // Iterate over all 3 D, and over negative and positive signs in central
     // difference.
-    for (unsigned int i = 0; i < 3; ++i) {
+    for (unsigned int i = 0u; i < 3u; ++i) {
       for (int sign = -1; sign <= 1; sign += 2) {
         offset = Point::Zero();
         offset(i) = sign * voxel_size_;
