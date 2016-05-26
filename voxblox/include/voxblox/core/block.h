@@ -23,6 +23,7 @@ class Block {
     num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_ = voxels_per_side_ * voxel_size_;
+    block_size_inv_ = 1.0 / block_size_;
     voxels_.reset(new VoxelType[num_voxels_]);
   }
 
@@ -49,7 +50,7 @@ class Block {
 
   inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Point& coords) const {
-    return floorVectorAndDowncast((coords - origin_) * voxel_size_inv_);
+    return getGridIndexFromPoint(coords - origin_, voxel_size_inv_);
   }
 
   inline size_t computeLinearIndexFromCoordinates(const Point& coords) const {
@@ -63,8 +64,7 @@ class Block {
   }
 
   inline Point computeCoordinatesFromVoxelIndex(const VoxelIndex& index) const {
-    return (index.cast<FloatingPoint>() + 0.5 * Point::Ones()) * voxel_size_ +
-           origin_;
+    return origin_ + getCenterPointFromGridIndex(index, voxel_size_);
   }
 
   inline VoxelIndex computeVoxelIndexFromLinearIndex(
@@ -127,7 +127,7 @@ class Block {
   }
 
   BlockIndex block_index() const {
-    return floorVectorAndDowncast(origin_ / block_size_);
+    return getGridIndexFromPoint(origin_, block_size_inv_);
   }
 
   // Basic function accessors.
@@ -162,6 +162,7 @@ class Block {
   size_t num_voxels_;
   FloatingPoint voxel_size_inv_;
   FloatingPoint block_size_;
+  FloatingPoint block_size_inv_;
 
   // Is set to true if any one of the voxels in this block received an update.
   bool has_data_;

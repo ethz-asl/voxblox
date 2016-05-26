@@ -102,9 +102,9 @@ class TsdfIntegrator {
       const Point start_scaled = ray_start * voxel_size_inv_;
       const Point end_scaled = ray_end * voxel_size_inv_;
 
-      IndexVector global_voxel_index;
+      IndexVector global_voxel_indices;
       timing::Timer cast_ray_timer("integrate/cast_ray");
-      castRay(start_scaled, end_scaled, &global_voxel_index);
+      castRay(start_scaled, end_scaled, &global_voxel_indices);
       cast_ray_timer.Stop();
 
       timing::Timer update_voxels_timer("integrate/update_voxels");
@@ -112,13 +112,11 @@ class TsdfIntegrator {
       BlockIndex last_block_idx = BlockIndex::Zero();
       Block<TsdfVoxel>::Ptr block;
 
-      for (const AnyIndex& global_voxel_idx : global_voxel_index) {
-        BlockIndex block_idx = floorVectorAndDowncast(
-            global_voxel_idx.cast<FloatingPoint>() * voxels_per_side_inv_);
-
-        VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side_,
-                                   global_voxel_idx.y() % voxels_per_side_,
-                                   global_voxel_idx.z() % voxels_per_side_);
+      for (const AnyIndex& global_voxel_idx : global_voxel_indices) {
+        BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
+            global_voxel_idx, voxels_per_side_inv_);
+        VoxelIndex local_voxel_idx = getLocalFromGlobalVoxelIndex(
+            global_voxel_idx, voxels_per_side_);
 
         if (local_voxel_idx.x() < 0) {
           local_voxel_idx.x() += voxels_per_side_;
@@ -172,8 +170,7 @@ class TsdfIntegrator {
       }
 
       // Figure out what the end voxel is here.
-      VoxelIndex voxel_index = floorVectorAndDowncast(
-          point_G.cast<FloatingPoint>() * voxel_size_inv_);
+      VoxelIndex voxel_index = getGridIndexFromPoint(point_G, voxel_size_inv_);
       voxel_map[voxel_index].push_back(pt_idx);
     }
 
@@ -225,8 +222,8 @@ class TsdfIntegrator {
       Block<TsdfVoxel>::Ptr block;
 
       for (const AnyIndex& global_voxel_idx : global_voxel_index) {
-        BlockIndex block_idx = floorVectorAndDowncast(
-            global_voxel_idx.cast<FloatingPoint>() * voxels_per_side_inv_);
+        BlockIndex block_idx = getGridIndexFromPoint(
+            global_voxel_idx.cast<FloatingPoint>(), voxels_per_side_inv_);
 
         VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side_,
                                    global_voxel_idx.y() % voxels_per_side_,
