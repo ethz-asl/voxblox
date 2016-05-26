@@ -21,7 +21,7 @@ class TsdfIntegrator {
     float max_weight = 10000.0;
     bool voxel_carving_enabled = true;
     FloatingPoint min_ray_length_m = 0.1;
-    FloatingPoint max_ray_length_m = 3.0;
+    FloatingPoint max_ray_length_m = 5.0;
   };
 
   TsdfIntegrator(Layer<TsdfVoxel>* layer, const Config& config)
@@ -44,25 +44,6 @@ class TsdfIntegrator {
       return 1.0 / (dist_z * dist_z);
     }
     return 0.0;
-
-    /*FloatingPoint dist = (origin - voxel_center).norm();
-    if (dist > 1e-6) {
-      return 1 / (dist * dist);
-    }
-    return 0.0; */
-
-    /*FloatingPoint dist_z = std::abs(point_C.z());
-    FloatingPoint dist_ray = (point_G - voxel_center).norm();
-    if (dist_z > 1e-6) {
-      float distance_weight = 1.0 / dist_z;
-      if (dist_ray > config_.default_truncation_distance) {
-        return 1.0;
-      } else {
-        return distance_weight;
-      }
-    } else {
-      return 0;
-    } */
   }
 
   inline void updateTsdfVoxel(const Point& origin, const Point& point_C,
@@ -82,12 +63,6 @@ class TsdfIntegrator {
     const float new_weight = tsdf_voxel->weight + weight;
     tsdf_voxel->color = Color::blendTwoColors(
         tsdf_voxel->color, tsdf_voxel->weight, color, weight);
-    // Only update color if we're near the surface here.
-    /* if (std::abs(sdf) < truncation_distance &&
-        !(color.r == 0 && color.b == 0 && color.g == 0)) {
-      tsdf_voxel->color = Color::blendTwoColors(
-          tsdf_voxel->color, tsdf_voxel->weight, color, weight);
-    } */
     const float new_sdf =
         (sdf * weight + tsdf_voxel->distance * tsdf_voxel->weight) / new_weight;
 
