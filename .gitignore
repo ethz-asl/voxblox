@@ -37,7 +37,7 @@
 # Temporary files
 *~
 
-# Mac 
+# Mac
 .DS_Store
 
 # Mesh results
