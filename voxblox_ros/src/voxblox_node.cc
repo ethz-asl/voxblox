@@ -172,9 +172,11 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     color_mode_ = ColorMode::kGray;
   }
 
+  MeshIntegrator::Config mesh_config;
+  nh_private_.param("mesh_min_weight", mesh_config.min_weight, mesh_config.min_weight);
+
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
-  MeshIntegrator::Config mesh_config;
   mesh_integrator_.reset(new MeshIntegrator(
       mesh_config, tsdf_map_->getTsdfLayerPtr(), mesh_layer_.get()));
 
@@ -273,6 +275,7 @@ void VoxbloxNode::insertPointcloudWithTf(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));

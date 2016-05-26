@@ -42,9 +42,8 @@ class MeshIntegrator {
   struct Config {
     bool use_color = true;
     bool compute_normals = true;
+    FloatingPoint min_weight = 0.0001;
   };
-
-  static constexpr FloatingPoint kMinWeight = 1e-6;
 
   MeshIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
                  MeshLayer* mesh_layer)
@@ -178,7 +177,7 @@ class MeshIntegrator {
       // TODO(helenol): comment above from open_chisel, but no actual checks
       // on distance are ever made. Definitely we should skip doing checks of
       // voxels that are too far from the surface...
-      if (voxel.weight <= kMinWeight) {
+      if (voxel.weight <= config_.min_weight) {
         all_neighbors_observed = false;
         break;
       }
@@ -207,7 +206,7 @@ class MeshIntegrator {
       if (block->isValidVoxelIndex(corner_index)) {
         const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(corner_index);
 
-        if (voxel.weight <= kMinWeight) {
+        if (voxel.weight <= config_.min_weight) {
           all_neighbors_observed = false;
           break;
         }
@@ -236,7 +235,7 @@ class MeshIntegrator {
           const TsdfVoxel& voxel =
               neighbor_block->getVoxelByVoxelIndex(corner_index);
 
-          if (voxel.weight <= kMinWeight) {
+          if (voxel.weight <= config_.min_weight) {
             all_neighbors_observed = false;
             break;
           }
@@ -306,7 +305,7 @@ class MeshIntegrator {
     }
     const TsdfVoxel& voxel = block->getVoxelByCoordinates(pos);
     *distance = static_cast<FloatingPoint>(voxel.distance);
-    if (voxel.weight < kMinWeight) {
+    if (voxel.weight < config_.min_weight) {
       return false;
     }
 
@@ -324,7 +323,7 @@ class MeshIntegrator {
         if (block->isValidVoxelIndex(voxel_index)) {
           const TsdfVoxel& pos_vox = block->getVoxelByVoxelIndex(voxel_index);
           (*grad)(i) = static_cast<FloatingPoint>(pos_vox.distance);
-          if (pos_vox.weight < kMinWeight) {
+          if (pos_vox.weight < config_.min_weight) {
             return false;
           }
         } else {
@@ -336,7 +335,7 @@ class MeshIntegrator {
           const TsdfVoxel& pos_vox =
               neighbor_block->getVoxelByCoordinates(pos + offset);
           (*grad)(i) += sign * static_cast<FloatingPoint>(pos_vox.distance);
-          if (pos_vox.weight < kMinWeight) {
+          if (pos_vox.weight < config_.min_weight) {
             return false;
           }
         }
