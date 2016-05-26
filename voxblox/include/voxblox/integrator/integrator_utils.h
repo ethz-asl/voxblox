@@ -1,6 +1,9 @@
 #ifndef VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
 #define VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
 
+#include <algorithm>
+#include <vector>
+
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <algorithm>
@@ -16,7 +19,7 @@ namespace voxblox {
 // should map to Local/Voxel indices.
 void castRay(const Point& start_scaled, const Point& end_scaled,
              std::vector<AnyIndex>* indices) {
-  DCHECK_NOTNULL(indices);
+  CHECK_NOTNULL(indices);
 
   constexpr FloatingPoint kTolerance = 1e-6;
 
