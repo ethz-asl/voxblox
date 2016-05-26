@@ -88,7 +88,7 @@ class ProtobufTest : public ::testing::Test {
   const double voxel_size_ = 0.02;
   const size_t voxels_per_side_ = 16u;
 
-  static constexpr size_t kBlockVolumeDiameter = 12u;
+  static constexpr size_t kBlockVolumeDiameter = 10u;
   static constexpr double kTolerance = 1e-10;
 };
 
