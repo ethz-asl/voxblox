@@ -102,6 +102,12 @@ class MeshIntegrator {
     Block<TsdfVoxel>::ConstPtr block =
         tsdf_layer_->getBlockPtrByIndex(block_index);
 
+    if (!block) {
+      LOG(ERROR) << "Trying to mesh a non-existent block at index: "
+                 << block_index.transpose();
+      return;
+    }
+
     size_t vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
@@ -111,7 +117,7 @@ class MeshIntegrator {
         for (voxel_index.z() = 0; voxel_index.z() < vps - 1;
              ++voxel_index.z()) {
           Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
-          extractMeshInsideBlock(block, voxel_index, coords, &next_mesh_index,
+          extractMeshInsideBlock(*block, voxel_index, coords, &next_mesh_index,
                                  mesh.get());
         }
       }
@@ -122,7 +128,7 @@ class MeshIntegrator {
     for (voxel_index.z() = 0; voxel_index.z() < vps - 1; voxel_index.z()++) {
       for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
-        extractMeshOnBorder(block, voxel_index, coords, &next_mesh_index,
+        extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
                             mesh.get());
       }
     }
@@ -132,7 +138,7 @@ class MeshIntegrator {
     for (voxel_index.z() = 0; voxel_index.z() < vps - 1; voxel_index.z()++) {
       for (voxel_index.x() = 0; voxel_index.x() < vps - 1; voxel_index.x()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
-        extractMeshOnBorder(block, voxel_index, coords, &next_mesh_index,
+        extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
                             mesh.get());
       }
     }
@@ -142,22 +148,22 @@ class MeshIntegrator {
     for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
       for (voxel_index.x() = 0; voxel_index.x() < vps; voxel_index.x()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
-        extractMeshOnBorder(block, voxel_index, coords, &next_mesh_index,
+        extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
                             mesh.get());
       }
     }
 
     // Update colors if needed.
     if (config_.use_color) {
-      updateMeshColor(block, mesh.get());
+      updateMeshColor(*block, mesh.get());
     }
 
     if (config_.compute_normals) {
-      computeMeshNormals(block, mesh.get());
+      computeMeshNormals(*block, mesh.get());
     }
   }
 
-  void extractMeshInsideBlock(const Block<TsdfVoxel>::ConstPtr& block,
+  void extractMeshInsideBlock(const Block<TsdfVoxel>& block,
                               const VoxelIndex& index, const Point& coords,
                               VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK_NOTNULL(next_mesh_index);
@@ -170,7 +176,7 @@ class MeshIntegrator {
 
     for (unsigned int i = 0; i < 8; ++i) {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
-      const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(corner_index);
+      const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(corner_index);
 
       // Do not extract a mesh here if one of the corner is unobserved and
       // outside the truncation region.
@@ -190,7 +196,7 @@ class MeshIntegrator {
     }
   }
 
-  void extractMeshOnBorder(const Block<TsdfVoxel>::ConstPtr& block,
+  void extractMeshOnBorder(const Block<TsdfVoxel>& block,
                            const VoxelIndex& index, const Point& coords,
                            VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK_NOTNULL(mesh);
@@ -203,8 +209,8 @@ class MeshIntegrator {
     for (unsigned int i = 0; i < 8; ++i) {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
 
-      if (block->isValidVoxelIndex(corner_index)) {
-        const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(corner_index);
+      if (block.isValidVoxelIndex(corner_index)) {
+        const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(corner_index);
 
         if (voxel.weight <= config_.min_weight) {
           all_neighbors_observed = false;
@@ -216,7 +222,7 @@ class MeshIntegrator {
         // We have to access a different block.
         BlockIndex block_offset = Eigen::Vector3i::Zero();
 
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0u; j < 3u; j++) {
           if (corner_index(j) < 0) {
             block_offset(j) = -1;
             corner_index(j) = voxels_per_side_ - 1;
@@ -226,14 +232,14 @@ class MeshIntegrator {
           }
         }
 
-        BlockIndex neighbor_index = block->block_index() + block_offset;
+        BlockIndex neighbor_index = block.block_index() + block_offset;
 
         if (tsdf_layer_->hasBlock(neighbor_index)) {
-          Block<TsdfVoxel>::ConstPtr neighbor_block =
-              tsdf_layer_->getBlockPtrByIndex(neighbor_index);
+          const Block<TsdfVoxel>& neighbor_block =
+              tsdf_layer_->getBlockByIndex(neighbor_index);
 
           const TsdfVoxel& voxel =
-              neighbor_block->getVoxelByVoxelIndex(corner_index);
+              neighbor_block.getVoxelByVoxelIndex(corner_index);
 
           if (voxel.weight <= config_.min_weight) {
             all_neighbors_observed = false;
@@ -253,18 +259,27 @@ class MeshIntegrator {
     }
   }
 
-  void updateMeshColor(const Block<TsdfVoxel>::ConstPtr& block, Mesh* mesh) {
+  void updateMeshColor(const Block<TsdfVoxel>& block, Mesh* mesh) {
     mesh->colors.clear();
     mesh->colors.resize(mesh->indices.size());
 
-    // TODO(helenol): just use nearest neighbor color strategy for now.
-    // In the future, interpolate intelligently... Trilinear or whatever.
-    // Best yet, be able to choose.
+    // Use nearest-neighbor search.
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
       const Point& vertex = mesh->vertices[i];
-      VoxelIndex voxel_index = block->computeVoxelIndexFromCoordinates(vertex);
-      if (block->isValidVoxelIndex(voxel_index)) {
-        mesh->colors[i] = block->getVoxelByVoxelIndex(voxel_index).color;
+      VoxelIndex voxel_index = block.computeVoxelIndexFromCoordinates(vertex);
+      Point voxel_center = block.computeCoordinatesFromVoxelIndex(voxel_index);
+
+      // Should be within half a voxel of the voxel center in all dimensions, or
+      // it belongs in the other one.
+      Point dist_from_center = vertex - voxel_center;
+      for (unsigned int j = 0; j < 3; ++j) {
+        if (std::abs(dist_from_center(j)) > voxel_size_ / 2.0) {
+          voxel_index(j) += signum(dist_from_center(j));
+        }
+      }
+
+      if (block.isValidVoxelIndex(voxel_index)) {
+        mesh->colors[i] = block.getVoxelByVoxelIndex(voxel_index).color;
       } else {
         // Get the nearest block.
         const Block<TsdfVoxel>::ConstPtr neighbor_block =
@@ -276,7 +291,7 @@ class MeshIntegrator {
     }
   }
 
-  void computeMeshNormals(const Block<TsdfVoxel>::ConstPtr& block, Mesh* mesh) {
+  void computeMeshNormals(const Block<TsdfVoxel>& block, Mesh* mesh) {
     mesh->normals.clear();
     mesh->normals.resize(mesh->indices.size(), Point::Zero());
 
@@ -303,7 +318,8 @@ class MeshIntegrator {
     if (!block) {
       return false;
     }
-    const TsdfVoxel& voxel = block->getVoxelByCoordinates(pos);
+    VoxelIndex voxel_index = block->computeVoxelIndexFromCoordinates(pos);
+    const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(voxel_index);
     *distance = static_cast<FloatingPoint>(voxel.distance);
     if (voxel.weight < config_.min_weight) {
       return false;
@@ -311,18 +327,17 @@ class MeshIntegrator {
 
     // Now get the gradient.
     *grad = Point::Zero();
-    VoxelIndex voxel_index = VoxelIndex::Zero();
     Point offset = Point::Zero();
     // Iterate over all 3 D, and over negative and positive signs in central
     // difference.
-    for (unsigned int i = 0; i < 3; ++i) {
+    for (unsigned int i = 0u; i < 3u; ++i) {
       for (int sign = -1; sign <= 1; sign += 2) {
         offset = Point::Zero();
         offset(i) = sign * voxel_size_;
         voxel_index = block->computeVoxelIndexFromCoordinates(pos + offset);
         if (block->isValidVoxelIndex(voxel_index)) {
           const TsdfVoxel& pos_vox = block->getVoxelByVoxelIndex(voxel_index);
-          (*grad)(i) = static_cast<FloatingPoint>(pos_vox.distance);
+          (*grad)(i) += sign * static_cast<FloatingPoint>(pos_vox.distance);
           if (pos_vox.weight < config_.min_weight) {
             return false;
           }
@@ -342,7 +357,8 @@ class MeshIntegrator {
       }
     }
     // Scale by correct size.
-    // This is central difference, so it's 2x voxel size between measurements.
+    // This is central difference, so it's 2x voxel size between
+    // measurements.
     *grad /= (2 * voxel_size_);
     return true;
   }

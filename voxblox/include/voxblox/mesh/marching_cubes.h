@@ -69,6 +69,11 @@ class MarchingCubes {
     DCHECK_NOTNULL(mesh);
     const int index = calculateVertexConfiguration(vertex_sdf);
 
+    // No edges in this cube.
+    if (index == 0) {
+      return;
+    }
+
     Eigen::Matrix<FloatingPoint, 3, 12> edge_vertex_coordinates;
     interpolateEdgeVertices(vertex_coords, vertex_sdf,
                             &edge_vertex_coordinates);
