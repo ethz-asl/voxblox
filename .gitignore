@@ -30,6 +30,8 @@
 # Eclipse
 .cproject
 .project
+/Debug/
+.settings
 
 # Python (for lint)
 *.pyc
@@ -37,7 +39,7 @@
 # Temporary files
 *~
 
-# Mac
+# Mac 
 .DS_Store
 
 # Mesh results

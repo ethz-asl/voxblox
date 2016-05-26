@@ -87,12 +87,64 @@ struct Color {
 typedef std::vector<Point> Pointcloud;
 typedef std::vector<Color> Colors;
 
-// TODO(mfehr, helenol): Potentially slow, fix this.
-inline Eigen::Vector3i floorVectorAndDowncast(
-    const Eigen::Matrix<FloatingPoint, 3, 1>& vector) {
-  return Eigen::Vector3i(static_cast<int>(std::floor(vector.x())),
-                         static_cast<int>(std::floor(vector.y())),
-                         static_cast<int>(std::floor(vector.z())));
+// IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
+// function doesn't always compute the correct grid index for coordinates
+// near the grid cell boundaries.
+inline AnyIndex getGridIndexFromPoint(const Point& point,
+                                      const FloatingPoint grid_size_inv) {
+  return AnyIndex(std::floor(point.x() * grid_size_inv),
+                  std::floor(point.y() * grid_size_inv),
+                  std::floor(point.z() * grid_size_inv));
+}
+
+// IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
+// function doesn't always compute the correct grid index for coordinates
+// near the grid cell boundaries.
+inline AnyIndex getGridIndexFromPoint(const Point& scaled_point) {
+  return AnyIndex(std::floor(scaled_point.x()), std::floor(scaled_point.y()),
+                  std::floor(scaled_point.z()));
+}
+
+inline AnyIndex getGridIndexFromOriginPoint(const Point& point,
+                                      const FloatingPoint grid_size_inv) {
+  return AnyIndex(std::floor(point.x() * grid_size_inv + 0.5),
+                  std::floor(point.y() * grid_size_inv + 0.5),
+                  std::floor(point.z() * grid_size_inv + 0.5));
+}
+
+inline Point getCenterPointFromGridIndex(const AnyIndex& idx,
+                                         FloatingPoint grid_size) {
+  return Point((static_cast<FloatingPoint>(idx.x()) + 0.5) * grid_size,
+               (static_cast<FloatingPoint>(idx.y()) + 0.5) * grid_size,
+               (static_cast<FloatingPoint>(idx.z()) + 0.5) * grid_size);
+}
+
+inline Point getOriginPointFromGridIndex(const AnyIndex& idx,
+                                         FloatingPoint grid_size) {
+  return Point(static_cast<FloatingPoint>(idx.x()) * grid_size,
+               static_cast<FloatingPoint>(idx.y()) * grid_size,
+               static_cast<FloatingPoint>(idx.z()) * grid_size);
+}
+
+inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
+    AnyIndex global_voxel_idx, FloatingPoint voxels_per_side_inv_) {
+  return BlockIndex(
+      std::floor(
+          static_cast<FloatingPoint>(global_voxel_idx.x())
+              * voxels_per_side_inv_),
+      std::floor(
+          static_cast<FloatingPoint>(global_voxel_idx.y())
+              * voxels_per_side_inv_),
+      std::floor(
+          static_cast<FloatingPoint>(global_voxel_idx.z())
+              * voxels_per_side_inv_));
+}
+
+inline VoxelIndex getLocalFromGlobalVoxelIndex(AnyIndex global_voxel_idx,
+                                               int voxels_per_side) {
+  return VoxelIndex(global_voxel_idx.x() % voxels_per_side,
+                    global_voxel_idx.y() % voxels_per_side,
+                    global_voxel_idx.z() % voxels_per_side);
 }
 
 inline int signum(FloatingPoint x) { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
