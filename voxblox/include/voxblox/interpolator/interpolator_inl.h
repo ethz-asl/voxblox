@@ -3,7 +3,7 @@
 
 namespace voxblox {
 
-Interpolator::Interpolator(const Layer<TsdfVoxel>& tsdf_layer)
+Interpolator::Interpolator(Layer<TsdfVoxel>* tsdf_layer)
     : tsdf_layer_(tsdf_layer) {}
 
 bool Interpolator::getDistance(const Point& pos, FloatingPoint* distance,
@@ -19,12 +19,11 @@ bool Interpolator::getGradient(const Point& pos, Point* grad,
                                const bool interpolate) const {
   CHECK_NOTNULL(grad);
 
-  Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr;
-  // = tsdf_layer_.getBlockPtrByCoordinates(pos);
+  Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr =
+      tsdf_layer_->getBlockPtrByCoordinates(pos);
   if (block_ptr == nullptr) {
     return false;
   }
-
   // Now get the gradient.
   *grad = Point::Zero();
   // Iterate over all 3 D, and over negative and positive signs in central
@@ -50,9 +49,9 @@ bool Interpolator::getGradient(const Point& pos, Point* grad,
 bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
                               InterpIndexes* voxel_indexes) const {
   // get voxel index
-  *block_index = tsdf_layer_.computeBlockIndexFromCoordinates(pos);
+  *block_index = tsdf_layer_->computeBlockIndexFromCoordinates(pos);
   Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr =
-      tsdf_layer_.getBlockPtrByIndex(*block_index);
+      tsdf_layer_->getBlockPtrByIndex(*block_index);
   if (block_ptr == nullptr) {
     return false;
   }
@@ -107,7 +106,7 @@ bool Interpolator::getDistancesAndWeights(const BlockIndex& block_index,
           new_block_index(j) -= 1;
         }
       }
-      block_ptr = tsdf_layer_.getBlockPtrByIndex(new_block_index);
+      block_ptr = tsdf_layer_->getBlockPtrByIndex(new_block_index);
       if (block_ptr == nullptr) {
         return false;
       }
@@ -117,7 +116,7 @@ bool Interpolator::getDistancesAndWeights(const BlockIndex& block_index,
         }
       }
     } else {
-      block_ptr = tsdf_layer_.getBlockPtrByIndex(block_index);
+      block_ptr = tsdf_layer_->getBlockPtrByIndex(block_index);
       voxel_index.array() = voxel_indexes.col(i);
       DCHECK_NOTNULL(block_ptr);
     }
@@ -158,6 +157,7 @@ bool Interpolator::getInterpDistance(const Point& pos,
 
   // interpolate
   *distance = weights_vector * (interp_table * distances.transpose());
+  return true;
 }
 
 bool Interpolator::getNearestDistance(const Point& pos,
@@ -165,7 +165,7 @@ bool Interpolator::getNearestDistance(const Point& pos,
   CHECK_NOTNULL(distance);
 
   Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr =
-      tsdf_layer_.getBlockPtrByCoordinates(pos);
+      tsdf_layer_->getBlockPtrByCoordinates(pos);
   if (block_ptr == nullptr) {
     return false;
   }
@@ -173,5 +173,7 @@ bool Interpolator::getNearestDistance(const Point& pos,
 
   return true;
 }
+
+}  // namespace voxblox
 
 #endif  // VOXBLOX_INTERPOLATOR_INL_H_
