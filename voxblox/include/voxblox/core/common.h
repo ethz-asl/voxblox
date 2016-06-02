@@ -12,11 +12,12 @@
 namespace voxblox {
 
 typedef double FloatingPoint;
+typedef int IndexElement;
 
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Point;
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Ray;
 
-typedef Eigen::Array<int, 3, 1> AnyIndex;
+typedef Eigen::Matrix<IndexElement, 3, 1> AnyIndex;
 typedef AnyIndex VoxelIndex;
 typedef AnyIndex BlockIndex;
 
@@ -42,7 +43,7 @@ typedef Eigen::Matrix<FloatingPoint, 3, 3> Matrix3;
 // Interpolation structure
 typedef Eigen::Matrix<FloatingPoint, 8 ,8> InterpTable;
 typedef Eigen::Matrix<FloatingPoint, 1 ,8> InterpVector;
-typedef Eigen::Array<int, 3, 8> InterpIndexes; //type must allow negatives
+typedef Eigen::Array<IndexElement, 3, 8> InterpIndexes; //type must allow negatives
 
 struct Color {
   Color() : r(0), g(0), b(0), a(0) {}

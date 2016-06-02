@@ -51,7 +51,8 @@ bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
                               InterpIndexes* voxel_indexes) const {
   // get voxel index
   *block_index = tsdf_layer_.computeBlockIndexFromCoordinates(pos);
-  Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr = tsdf_layer_.getBlockPtrByIndex(*block_index);
+  Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr =
+      tsdf_layer_.getBlockPtrByIndex(*block_index);
   if (block_ptr == nullptr) {
     return false;
   }
@@ -60,15 +61,17 @@ bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
   // shift index to bottom left corner voxel (makes math easier)
   Point center_offset =
       pos - block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
-  //cast is vital to allow negative indexes
-  voxel_indexes->colwise() = voxel_index.cast<typename InterpIndexes::RealScalar>().array() - (center_offset.array() < 0);
+  for (size_t i = 0; i < center_offset.rows(); ++i) {
+    if (center_offset(i) < 0) {
+      voxel_index(i) -= 1;
+    }
+  }
 
   // get indexes of neighbors
-  InterpIndexes voxel_indexes_;
-  voxel_indexes_ << 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1,
-      1, 0, 0, 0, 0, 1, 1, 1, 1;
+  (*voxel_indexes) << 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0,
+      0, 1, 1, 1, 1;
 
-  *voxel_indexes += voxel_index.array();
+  voxel_indexes->colwise() += voxel_index.array();
   return true;
 }
 
@@ -98,14 +101,21 @@ bool Interpolator::getDistancesAndWeights(const BlockIndex& block_index,
     VoxelIndex voxel_index;
     // if voxel index is negative get neighboring block and update index
     if ((voxel_indexes.col(i) < 0).any()) {
-      BlockIndex new_block_index;
-      new_block_index.array() = block_index.array() - (voxel_indexes.col(i) < 0);
+      BlockIndex new_block_index = voxel_indexes.col(i);
+      for (size_t j = 0; j < block_index.rows(); ++j) {
+        if (voxel_index(j, i) < 0) {
+          new_block_index(j) -= 1;
+        }
+      }
       block_ptr = tsdf_layer_.getBlockPtrByIndex(new_block_index);
       if (block_ptr == nullptr) {
         return false;
       }
-      voxel_index.array() = voxel_indexes.col(i) +
-                    block_ptr->voxels_per_side() * (voxel_index.col(i).array() > 0);
+      for (size_t j = 0; j < voxel_index.rows(); ++j) {
+        if (voxel_index(j, i) < 0) {
+          voxel_index(j) += block_ptr->voxels_per_side();
+        }
+      }
     } else {
       block_ptr = tsdf_layer_.getBlockPtrByIndex(block_index);
       voxel_index.array() = voxel_indexes.col(i);
@@ -135,17 +145,16 @@ bool Interpolator::getInterpDistance(const Point& pos,
   // get distances of 8 surrounding voxels and weights vector
   InterpVector distances;
   InterpVector weights_vector;
-  if (!getDistancesAndWeights(block_index, voxel_indexes, pos,
-                              &distances, &weights_vector)) {
+  if (!getDistancesAndWeights(block_index, voxel_indexes, pos, &distances,
+                              &weights_vector)) {
     return false;
   }
 
   // table for tri-linear interpolation
   InterpTable interp_table;
-  interp_table << 1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 1,
-      0, 0, 0, -1, 0, 1, 0, 0, 0, 0, 0, -1, 1, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0,
-      -1, 0, 1, 0, 1, -1, -1, 1, 0, 0, 0, 0, 1, -1, 0, 0, -1, 1, 0, 0, -1, 1, 1,
-      -1, 1, -1, -1, 1;
+  interp_table << 1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 1, 0,
+      0, 0, 0, 0, -1, 1, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, -1, 0, 1, 0, 1, -1, -1,
+      1, 0, 0, 0, 0, 1, -1, 0, 0, -1, 1, 0, 0, -1, 1, 1, -1, 1, -1, -1, 1;
 
   // interpolate
   *distance = weights_vector * (interp_table * distances.transpose());
@@ -155,7 +164,8 @@ bool Interpolator::getNearestDistance(const Point& pos,
                                       FloatingPoint* distance) const {
   CHECK_NOTNULL(distance);
 
-  Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr = tsdf_layer_.getBlockPtrByCoordinates(pos);
+  Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr =
+      tsdf_layer_.getBlockPtrByCoordinates(pos);
   if (block_ptr == nullptr) {
     return false;
   }

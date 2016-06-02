@@ -14,6 +14,8 @@ class Interpolator {
                    bool interpolate = false) const;
 
  private:
+  static AnyIndex isNegitive(AnyIndex index);
+
   bool setIndexes(const Point& pos, BlockIndex* block_index,
                   InterpIndexes* voxel_indexes) const;
 
