@@ -5,7 +5,7 @@ namespace voxblox {
 
 class Interpolator {
  public:
-  Interpolator(const Layer<TsdfVoxel>& tsdf_layer);
+  Interpolator(Layer<TsdfVoxel>* tsdf_layer);
 
   bool getGradient(const Point& pos, Point* grad,
                    const bool interpolate = false) const;
@@ -31,7 +31,7 @@ class Interpolator {
 
   bool getNearestDistance(const Point& pos, FloatingPoint* distance) const;
 
-  const Layer<TsdfVoxel>& tsdf_layer_;
+  Layer<TsdfVoxel>* tsdf_layer_;
 };
 }
 
