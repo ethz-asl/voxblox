@@ -63,7 +63,7 @@ bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
   for (size_t i = 0; i < center_offset.rows(); ++i) {
     if (center_offset(i) < 0) {
       voxel_index(i)--;
-      if(voxel_index(i) < 0){
+      if (voxel_index(i) < 0) {
         (*block_index)(i)--;
         voxel_index(i) += block_ptr->voxels_per_side();
       }
@@ -80,10 +80,10 @@ bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
 
 void Interpolator::getWeightsVector(const Point& voxel_pos, const Point& pos,
                                     InterpVector* weights_vector) const {
-  DCHECK_NOTNULL(weights_vector);
+  CHECK_NOTNULL(weights_vector);
 
   Point voxel_offset = pos - voxel_pos;
-  DCHECK((voxel_offset.array() > 0).all());
+  CHECK((voxel_offset.array() > 0).all());
 
   *weights_vector << 1, voxel_offset[0], voxel_offset[1], voxel_offset[2],
       voxel_offset[0] * voxel_offset[1], voxel_offset[1] * voxel_offset[2],
@@ -96,33 +96,30 @@ bool Interpolator::getDistancesAndWeights(const BlockIndex& block_index,
                                           const Point& pos,
                                           InterpVector* distances,
                                           InterpVector* weights_vector) const {
-  DCHECK_NOTNULL(distances);
+  CHECK_NOTNULL(distances);
 
   // for each voxel index
   for (size_t i = 0; i < voxel_indexes.cols(); ++i) {
-    Layer<TsdfVoxel>::BlockType::Ptr block_ptr;
-    VoxelIndex voxel_index;
+    Layer<TsdfVoxel>::BlockType::Ptr block_ptr =
+        tsdf_layer_->getBlockPtrByIndex(block_index);
+    if (block_ptr == nullptr) {
+      return false;
+    }
+
+    VoxelIndex voxel_index = voxel_indexes.col(i);
     // if voxel index is too large get neighboring block and update index
-    if ((voxel_indexes.col(i) > block_ptr->voxels_per_side()).any()) {
-      BlockIndex new_block_index = voxel_indexes.col(i);
+    if ((voxel_index.array() >= block_ptr->voxels_per_side()).any()) {
+      BlockIndex new_block_index = block_index;
       for (size_t j = 0; j < block_index.rows(); ++j) {
-        if (voxel_index(j, i) > block_ptr->voxels_per_side()) {
+        if (voxel_index(j) >= block_ptr->voxels_per_side()) {
           new_block_index(j)++;
+          voxel_index(j) -= block_ptr->voxels_per_side();
         }
       }
       block_ptr = tsdf_layer_->getBlockPtrByIndex(new_block_index);
       if (block_ptr == nullptr) {
         return false;
       }
-      for (size_t j = 0; j < voxel_index.rows(); ++j) {
-        if (voxel_index(j, i) > block_ptr->voxels_per_side()) {
-          voxel_index(j) -= block_ptr->voxels_per_side();
-        }
-      }
-    } else {
-      block_ptr = tsdf_layer_->getBlockPtrByIndex(block_index);
-      voxel_index.array() = voxel_indexes.col(i);
-      DCHECK_NOTNULL(block_ptr);
     }
     // use bottom left corner voxel to compute weights vector
     if (i == 0) {
