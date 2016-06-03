@@ -74,8 +74,9 @@ bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
   }
 
   // get indexes of neighbors
-  (*voxel_indexes) << 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0,
-      0, 1, 1, 1, 1;
+  (*voxel_indexes) << 0, 1, 0, 1, 0, 1, 0, 1, 
+                      0, 0, 1, 1, 0, 0, 1, 1,
+                      0, 0, 0, 0, 1, 1, 1, 1;
 
   voxel_indexes->colwise() += voxel_index.array();
   return true;
@@ -89,10 +90,14 @@ void Interpolator::getWeightsVector(const Point& voxel_pos, const Point& pos,
 
   CHECK((voxel_offset.array() >= 0).all());
 
-  *weights_vector << 1, voxel_offset[0], voxel_offset[1], voxel_offset[2],
-      voxel_offset[0] * voxel_offset[1], voxel_offset[1] * voxel_offset[2],
-      voxel_offset[2] * voxel_offset[0],
-      voxel_offset[0] * voxel_offset[1] * voxel_offset[2];
+  *weights_vector << 1, 
+                     voxel_offset[0], 
+                     voxel_offset[1], 
+                     voxel_offset[2],
+                     voxel_offset[0] * voxel_offset[1], 
+                     voxel_offset[1] * voxel_offset[2],
+                     voxel_offset[2] * voxel_offset[0],
+                     voxel_offset[0] * voxel_offset[1] * voxel_offset[2];
 }
 
 bool Interpolator::getDistancesAndWeights(const BlockIndex& block_index,
@@ -154,11 +159,16 @@ bool Interpolator::getInterpDistance(const Point& pos,
     return false;
   }
 
-  // table for tri-linear interpolation
+  // table for tri-linear interpolation (http://spie.org/samples/PM159.pdf)
   InterpTable interp_table;
-  interp_table << 1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 1, 0,
-      0, 0, 0, 0, -1, 1, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, -1, 0, 1, 0, 1, -1, -1,
-      1, 0, 0, 0, 0, 1, -1, 0, 0, -1, 1, 0, 0, -1, 1, 1, -1, 1, -1, -1, 1;
+  interp_table << 1, 0, 0, 0, 0, 0, 0, 0,
+                 -1, 0, 0, 0, 1, 0, 0, 0,
+                 -1, 0, 1, 0, 0, 0, 0, 0,
+                 -1, 1, 0, 0, 0, 0, 0, 0,
+                  1, 0,-1, 0,-1, 0, 1, 0,
+                  1,-1,-1, 1, 0, 0, 0, 0,
+                  1,-1, 0, 0,-1, 1, 0, 0,
+                 -1, 1, 1,-1, 1,-1,-1, 1;
 
   // interpolate
   *distance = weights_vector * (interp_table * distances.transpose());
