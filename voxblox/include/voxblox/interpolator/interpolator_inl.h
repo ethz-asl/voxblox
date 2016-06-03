@@ -1,8 +1,6 @@
 #ifndef VOXBLOX_INTERPOLATOR_INL_H_
 #define VOXBLOX_INTERPOLATOR_INL_H_
 
-#include <iostream>
-
 namespace voxblox {
 
 Interpolator::Interpolator(Layer<TsdfVoxel>* tsdf_layer)
@@ -63,8 +61,11 @@ bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
   Point center_offset =
       pos - block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
   for (size_t i = 0; i < center_offset.rows(); ++i) {
+    // ensure that the point we are interpolating to is always larger than the
+    // center of the voxel_index in all dimensions
     if (center_offset(i) < 0) {
       voxel_index(i)--;
+      // move blocks if needed
       if (voxel_index(i) < 0) {
         (*block_index)(i)--;
         voxel_index(i) += block_ptr->voxels_per_side();
