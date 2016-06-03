@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_INTERPOLATOR_INL_H_
 #define VOXBLOX_INTERPOLATOR_INL_H_
 
+#include <iostream>
+
 namespace voxblox {
 
 Interpolator::Interpolator(Layer<TsdfVoxel>* tsdf_layer)
@@ -9,7 +11,7 @@ Interpolator::Interpolator(Layer<TsdfVoxel>* tsdf_layer)
 bool Interpolator::getDistance(const Point& pos, FloatingPoint* distance,
                                bool interpolate) const {
   if (interpolate) {
-    return getNearestDistance(pos, distance);
+    return getInterpDistance(pos, distance);
   } else {
     return getNearestDistance(pos, distance);
   }
@@ -83,7 +85,8 @@ void Interpolator::getWeightsVector(const Point& voxel_pos, const Point& pos,
   CHECK_NOTNULL(weights_vector);
 
   Point voxel_offset = pos - voxel_pos;
-  CHECK((voxel_offset.array() > 0).all());
+
+  CHECK((voxel_offset.array() >= 0).all());
 
   *weights_vector << 1, voxel_offset[0], voxel_offset[1], voxel_offset[2],
       voxel_offset[0] * voxel_offset[1], voxel_offset[1] * voxel_offset[2],
