@@ -62,7 +62,11 @@ bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
       pos - block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
   for (size_t i = 0; i < center_offset.rows(); ++i) {
     if (center_offset(i) < 0) {
-      voxel_index(i) -= 1;
+      voxel_index(i)--;
+      if(voxel_index(i) < 0){
+        (*block_index)(i)--;
+        voxel_index(i) += block_ptr->voxels_per_side();
+      }
     }
   }
 
@@ -98,12 +102,12 @@ bool Interpolator::getDistancesAndWeights(const BlockIndex& block_index,
   for (size_t i = 0; i < voxel_indexes.cols(); ++i) {
     Layer<TsdfVoxel>::BlockType::Ptr block_ptr;
     VoxelIndex voxel_index;
-    // if voxel index is negative get neighboring block and update index
-    if ((voxel_indexes.col(i) < 0).any()) {
+    // if voxel index is too large get neighboring block and update index
+    if ((voxel_indexes.col(i) > block_ptr->voxels_per_side()).any()) {
       BlockIndex new_block_index = voxel_indexes.col(i);
       for (size_t j = 0; j < block_index.rows(); ++j) {
-        if (voxel_index(j, i) < 0) {
-          new_block_index(j) -= 1;
+        if (voxel_index(j, i) > block_ptr->voxels_per_side()) {
+          new_block_index(j)++;
         }
       }
       block_ptr = tsdf_layer_->getBlockPtrByIndex(new_block_index);
@@ -111,8 +115,8 @@ bool Interpolator::getDistancesAndWeights(const BlockIndex& block_index,
         return false;
       }
       for (size_t j = 0; j < voxel_index.rows(); ++j) {
-        if (voxel_index(j, i) < 0) {
-          voxel_index(j) += block_ptr->voxels_per_side();
+        if (voxel_index(j, i) > block_ptr->voxels_per_side()) {
+          voxel_index(j) -= block_ptr->voxels_per_side();
         }
       }
     } else {
