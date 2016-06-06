@@ -12,11 +12,12 @@
 namespace voxblox {
 
 typedef double FloatingPoint;
+typedef int IndexElement;
 
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Point;
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Ray;
 
-typedef Eigen::Vector3i AnyIndex;
+typedef Eigen::Matrix<IndexElement, 3, 1> AnyIndex;
 typedef AnyIndex VoxelIndex;
 typedef AnyIndex BlockIndex;
 
@@ -33,6 +34,16 @@ typedef std::vector<Triangle, Eigen::aligned_allocator<Triangle> >
 
 // Transformation type for defining sensor orientation.
 typedef kindr::minimal::QuatTransformation Transformation;
+typedef kindr::minimal::RotationQuaternion Rotation;
+
+// For alignment of layers / point clouds
+typedef Eigen::Matrix<FloatingPoint, 3, Eigen::Dynamic> PointsMatrix;
+typedef Eigen::Matrix<FloatingPoint, 3, 3> Matrix3;
+
+// Interpolation structure
+typedef Eigen::Matrix<FloatingPoint, 8 ,8> InterpTable;
+typedef Eigen::Matrix<FloatingPoint, 1 ,8> InterpVector;
+typedef Eigen::Array<IndexElement, 3, 8> InterpIndexes; //type must allow negatives
 
 struct Color {
   Color() : r(0), g(0), b(0), a(0) {}
