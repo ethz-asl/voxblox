@@ -73,7 +73,7 @@ class EsdfIntegrator {
 
     // Distance sqrt(2) set.
     for (unsigned int i = 0; i < 3; ++i) {
-      next_i = (i + 1) % 3;
+      unsigned int next_i = (i + 1) % 3;
       for (int j = -1; j <= 1; j += 2) {
         direction(i) = j;
         for (int k = -1; k <= 1; k += 2) {
@@ -115,12 +115,12 @@ class EsdfIntegrator {
     *neighbor_voxel_index += direction;
 
     for (unsigned int i = 0; i < 3; ++i) {
-      if (*neighbor_voxel_index(i) < 0) {
-        *neighbor_block_index(i)--;
-        *neighbor_voxel_index += esdf_voxels_per_side_;
-      } else if (*neighbor_voxel_index(i) >= esdf_voxels_per_side_) {
-        *neighbor_block_index(i)++;
-        *neighbor_voxel_index -= esdf_voxels_per_side_;
+      if ((*neighbor_voxel_index)(i) < 0) {
+        (*neighbor_block_index)(i)--;
+        (*neighbor_voxel_index)(i) += esdf_voxels_per_side_;
+      } else if ((*neighbor_voxel_index)(i) >= esdf_voxels_per_side_) {
+        (*neighbor_block_index)(i)++;
+        (*neighbor_voxel_index)(i) -= esdf_voxels_per_side_;
       }
     }
   }
