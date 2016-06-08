@@ -54,9 +54,12 @@ class EsdfIntegrator {
   }
 
   void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
+    timing::Timer esdf_timer("esdf");
+
     // Get a specific list of voxels in the TSDF layer, and propagate out from
     // there.
     // Go through all blocks in TSDF and copy their values for relevant voxels.
+    timing::Timer propagate_timer("esdf/propagate_tsdf");
     for (const BlockIndex& block_index : tsdf_blocks) {
       const Block<TsdfVoxel>& tsdf_block =
           tsdf_layer_->getBlockByIndex(block_index);
@@ -88,8 +91,9 @@ class EsdfIntegrator {
             esdf_voxel.observed = true;
 
             esdf_voxel.in_queue = true;
-            open_.push(std::make_pair(block_index,
-                       esdf_block->computeVoxelIndexFromLinearIndex(lin_index)));
+            open_.push(std::make_pair(
+                block_index,
+                esdf_block->computeVoxelIndexFromLinearIndex(lin_index)));
           }
         } else if (!esdf_voxel.observed) {
           // Outside of truncation distance, but actually observed in the
@@ -100,8 +104,14 @@ class EsdfIntegrator {
         }
       }
     }
+    propagate_timer.Stop();
+
+    timing::Timer update_timer("esdf/update_esdf");
     // Process the open set now.
     processOpenSet();
+    update_timer.Stop();
+
+    esdf_timer.Stop();
   }
 
   void processOpenSet() {
@@ -109,7 +119,8 @@ class EsdfIntegrator {
       std::pair<BlockIndex, VoxelIndex> kv = open_.front();
       open_.pop();
 
-      Block<EsdfVoxel>::Ptr esdf_block = esdf_layer_->getBlockPtrByIndex(kv.first);
+      Block<EsdfVoxel>::Ptr esdf_block =
+          esdf_layer_->getBlockPtrByIndex(kv.first);
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
       // See if you can update the neighbors.
