@@ -24,8 +24,8 @@ class TsdfIntegrator {
     FloatingPoint max_ray_length_m = 5.0;
   };
 
-  TsdfIntegrator(Layer<TsdfVoxel>* layer, const Config& config)
-      : layer_(layer), config_(config) {
+  TsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
+      : config_(config), layer_(layer) {
     DCHECK(layer_);
 
     voxel_size_ = layer_->voxel_size();
@@ -117,8 +117,8 @@ class TsdfIntegrator {
       for (const AnyIndex& global_voxel_idx : global_voxel_indices) {
         BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
             global_voxel_idx, voxels_per_side_inv_);
-        VoxelIndex local_voxel_idx = getLocalFromGlobalVoxelIndex(
-            global_voxel_idx, voxels_per_side_);
+        VoxelIndex local_voxel_idx =
+            getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
         if (local_voxel_idx.x() < 0) {
           local_voxel_idx.x() += voxels_per_side_;
@@ -267,9 +267,9 @@ class TsdfIntegrator {
   }
 
  protected:
-  Layer<TsdfVoxel>* layer_;
-
   Config config_;
+
+  Layer<TsdfVoxel>* layer_;
 
   // Cached map config.
   FloatingPoint voxel_size_;
