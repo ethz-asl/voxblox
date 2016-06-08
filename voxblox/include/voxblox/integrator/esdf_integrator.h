@@ -20,6 +20,10 @@ class EsdfIntegrator {
  public:
   struct Config {
     FloatingPoint max_distance_m = 1.5;
+    // Should mirror (or be smaller than) truncation distance in tsdf
+    // integrator.
+    FloatingPoint min_distance_m = 0.1;
+    float min_weight = 1e-6;
   };
 
   EsdfIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
@@ -37,11 +41,126 @@ class EsdfIntegrator {
     voxels_per_side_inv_ = 1.0 / voxels_per_side_; */
   }
 
-  void updateFromTsdfLayer() {}
+  void updateFromTsdfLayer(bool clear_updated_flag) {
+    BlockIndexList tsdf_blocks;
 
-  void updateFromTsdfVoxels() {
+    tsdf_layer_->getAllUpdatedBlocks(&tsdf_blocks);
+
+    if (clear_updated_flag) {
+      for (const BlockIndex& block_index : tsdf_blocks) {
+        tsdf_layer_->getBlockByIndex(block_index).updated() = false;
+      }
+    }
+  }
+
+  void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
     // Get a specific list of voxels in the TSDF layer, and propagate out from
     // there.
+    // Go through all blocks in TSDF and copy their values for relevant voxels.
+    for (const BlockIndex& block_index : tsdf_blocks) {
+      const Block<TsdfVoxel>& tsdf_block =
+          tsdf_layer_->getBlockByIndex(block_index);
+
+      // Allocate the same block in the ESDF layer.
+      // Block indices are the same across all layers.
+      Block<EsdfVoxel>::Ptr esdf_block =
+          esdf_layer_->allocateBlockPtrByIndex(block_index);
+
+      // TODO(helenol): assumes that TSDF and ESDF layer are the same size.
+      // This will not always be true...
+      const size_t num_voxels_per_block = tsdf_block.num_voxels();
+
+      for (size_t lin_index = 0; lin_index < num_voxels_per_block;
+           ++lin_index) {
+        const TsdfVoxel& tsdf_voxel =
+            tsdf_block.getVoxelByLinearIndex(lin_index);
+
+        if (tsdf_voxel.weight < config_.min_weight) {
+          continue;
+        }
+
+        EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
+
+        if (std::abs(tsdf_voxel.distance) < config_.min_distance_m) {
+          if (!esdf_voxel.observed ||
+              tsdf_voxel.distance < esdf_voxel.distance) {
+            esdf_voxel.distance = tsdf_voxel.distance;
+            esdf_voxel.observed = true;
+
+            esdf_voxel.in_queue = true;
+            open_.push(std::make_pair(block_index,
+                       esdf_block->computeVoxelIndexFromLinearIndex(lin_index)));
+          }
+        } else if (!esdf_voxel.observed) {
+          // Outside of truncation distance, but actually observed in the
+          // original map.
+          // Should we clear the distance to something?
+          // Should we add it to open?
+          esdf_voxel.observed = true;
+        }
+      }
+    }
+    // Process the open set now.
+    processOpenSet();
+  }
+
+  void processOpenSet() {
+    while (!open_.empty()) {
+      std::pair<BlockIndex, VoxelIndex> kv = open_.front();
+      open_.pop();
+
+      Block<EsdfVoxel>::Ptr esdf_block = esdf_layer_->getBlockPtrByIndex(kv.first);
+      EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
+
+      // See if you can update the neighbors.
+      std::vector<std::pair<BlockIndex, VoxelIndex> > neighbors;
+      std::vector<float> distances;
+      getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances);
+
+      // Do NOT update unobserved distances.
+      CHECK_EQ(neighbors.size(), distances.size());
+      for (size_t i = 0; i < neighbors.size(); ++i) {
+        BlockIndex neighbor_block_index = neighbors[i].first;
+        VoxelIndex neighbor_voxel_index = neighbors[i].second;
+
+        // Get the block for this voxel.
+        Block<EsdfVoxel>::Ptr neighbor_block = nullptr;
+        if (neighbor_block_index == kv.first) {
+          neighbor_block = esdf_block;
+        } else {
+          neighbor_block =
+              esdf_layer_->getBlockPtrByIndex(neighbor_block_index);
+          if (!neighbor_block) {
+            continue;
+          }
+        }
+        EsdfVoxel& neighbor_voxel =
+            neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+
+        if (!neighbor_voxel.observed) {
+          continue;
+        }
+
+        if (esdf_voxel.distance > 0 &&
+            esdf_voxel.distance + distances[i] < neighbor_voxel.distance) {
+          neighbor_voxel.distance = esdf_voxel.distance + distances[i];
+          if (!neighbor_voxel.in_queue) {
+            open_.push(neighbors[i]);
+            neighbor_voxel.in_queue = true;
+          }
+        }
+        if (esdf_voxel.distance < 0 &&
+            esdf_voxel.distance - distances[i] > neighbor_voxel.distance) {
+          neighbor_voxel.distance = esdf_voxel.distance - distances[i];
+          if (!neighbor_voxel.in_queue) {
+            open_.push(neighbors[i]);
+            neighbor_voxel.in_queue = true;
+          }
+        }
+      }
+
+      esdf_voxel.in_queue = false;
+    }
   }
 
   // Uses 26-connectivity and quasi-Euclidean distances.

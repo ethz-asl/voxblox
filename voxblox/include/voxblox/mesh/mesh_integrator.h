@@ -42,7 +42,7 @@ class MeshIntegrator {
   struct Config {
     bool use_color = true;
     bool compute_normals = true;
-    FloatingPoint min_weight = 0.0001;
+    float min_weight = 1e-4;
   };
 
   MeshIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
