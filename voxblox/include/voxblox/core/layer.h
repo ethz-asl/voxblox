@@ -33,12 +33,7 @@ class Layer {
 
   virtual ~Layer() {}
 
-  enum class BlockMergingStrategy {
-    kProhibit,
-    kReplace,
-    kDiscard,
-    kMerge
-  };
+  enum class BlockMergingStrategy { kProhibit, kReplace, kDiscard, kMerge };
 
   inline const BlockType& getBlockByIndex(const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
@@ -115,10 +110,10 @@ class Layer {
 
   // Pure virtual function -- inheriting class MUST overwrite.
   typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) {
-    auto insert_status = block_map_.insert(
-        std::make_pair(index, std::shared_ptr<BlockType>(new BlockType(
-                    voxels_per_side_, voxel_size_,
-                    getOriginPointFromGridIndex(index, block_size_)))));
+    auto insert_status = block_map_.insert(std::make_pair(
+        index, std::shared_ptr<BlockType>(new BlockType(
+                   voxels_per_side_, voxel_size_,
+                   getOriginPointFromGridIndex(index, block_size_)))));
 
     DCHECK(insert_status.second) << "Block already exists when allocating at "
                                  << index.transpose();
@@ -146,6 +141,16 @@ class Layer {
     for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
          block_map_) {
       blocks->emplace_back(kv.first);
+    }
+  }
+
+  void getAllUpdatedBlocks(BlockIndexList* blocks) const {
+    blocks->clear();
+    for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
+         block_map_) {
+      if (kv.second->updated()) {
+        blocks->emplace_back(kv.first);
+      }
     }
   }
 

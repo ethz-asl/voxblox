@@ -16,6 +16,7 @@ struct TsdfVoxel {
 struct EsdfVoxel {
   float distance = 0.0;
   bool observed = false;
+  bool in_queue = false;
 };
 
 struct OccupancyVoxel {
