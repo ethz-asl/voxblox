@@ -13,9 +13,10 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <deque>
 
-#include <voxblox/core/tsdf_map.h>
 #include <voxblox/core/esdf_map.h>
+#include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>

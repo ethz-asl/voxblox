@@ -11,6 +11,7 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/timing.h"
+#include "voxblox/core/block_hash.h"
 
 namespace voxblox {
 
@@ -56,20 +57,19 @@ class OccupancyIntegrator {
       return;
     }
     // Otherwise update and reclamp.
-    occ_voxel->probability_log =
-        std::min(std::max(probability_log + log_odds_update, clamp_min_log_),
-                 clamp_max_log_);
+    occ_voxel->probability_log = std::min(
+        std::max(occ_voxel->probability_log + log_odds_update, clamp_min_log_),
+        clamp_max_log_);
   }
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C) {
-    DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate_occ");
 
     const Point& origin = T_G_C.getPosition();
 
-    IndexVector free_cells;
-    IndexVector occupied_cells;
+    IndexSet free_cells;
+    IndexSet occupied_cells;
 
     const Point start_scaled = origin * voxel_size_inv_;
     Point end_scaled = Point::Zero();
@@ -93,7 +93,7 @@ class OccupancyIntegrator {
         if (free_cells.find(getGridIndexFromPoint(end_scaled)) ==
             free_cells.end()) {
           castRay(start_scaled, end_scaled, &global_voxel_indices);
-          free_cells->insert(global_voxel_indices.start(),
+          free_cells.insert(global_voxel_indices.begin(),
                              global_voxel_indices.end());
         }
       } else {
@@ -103,9 +103,9 @@ class OccupancyIntegrator {
           castRay(start_scaled, end_scaled, &global_voxel_indices);
 
           if (global_voxel_indices.size() > 2) {
-            free_cells->insert(global_voxel_indices.start(),
+            free_cells.insert(global_voxel_indices.begin(),
                                global_voxel_indices.end() - 1);
-            occupied_cells->insert(global_voxel_indices.back());
+            occupied_cells.insert(global_voxel_indices.back());
           }
         }
       }
@@ -116,9 +116,9 @@ class OccupancyIntegrator {
 
     // Clean up the lists: remove any occupied cells from free cells.
     for (const AnyIndex& global_index : occupied_cells) {
-      IndexVector::iterator cell_it = free_cells.find(global_index);
+      IndexSet::iterator cell_it = free_cells.find(global_index);
       if (cell_it != free_cells.end()) {
-        free_cells->erase(cell_it);
+        free_cells.erase(cell_it);
       }
     }
 
@@ -143,7 +143,7 @@ class OccupancyIntegrator {
       updateOccupancyVoxel(occupied, &occ_voxel);
     }
 
-    bool occupied = true;
+    occupied = true;
     for (const AnyIndex& global_voxel_idx : occupied_cells) {
       BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
           global_voxel_idx, voxels_per_side_inv_);

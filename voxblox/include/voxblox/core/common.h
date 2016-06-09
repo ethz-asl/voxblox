@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include <Eigen/Core>
 #include <glog/logging.h>
@@ -25,10 +26,8 @@ typedef AnyIndex VoxelIndex;
 typedef AnyIndex BlockIndex;
 
 typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
-typedef std::unordered_set<VoxelKey> VoxelKeySet;
 
 typedef std::vector<AnyIndex> IndexVector;
-typedef std::unordered_set<AnyIndex> IndexSet;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
