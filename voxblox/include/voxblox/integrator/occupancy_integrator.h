@@ -94,7 +94,7 @@ class OccupancyIntegrator {
             free_cells.end()) {
           castRay(start_scaled, end_scaled, &global_voxel_indices);
           free_cells.insert(global_voxel_indices.begin(),
-                             global_voxel_indices.end());
+                            global_voxel_indices.end());
         }
       } else {
         end_scaled = point_G * voxel_size_inv_;
@@ -104,7 +104,7 @@ class OccupancyIntegrator {
 
           if (global_voxel_indices.size() > 2) {
             free_cells.insert(global_voxel_indices.begin(),
-                               global_voxel_indices.end() - 1);
+                              global_voxel_indices.end() - 1);
             occupied_cells.insert(global_voxel_indices.back());
           }
         }
@@ -121,7 +121,6 @@ class OccupancyIntegrator {
         free_cells.erase(cell_it);
       }
     }
-
     // Then actually update the occupancy voxels.
     BlockIndex last_block_idx = BlockIndex::Zero();
     Block<OccupancyVoxel>::Ptr block;
@@ -142,6 +141,7 @@ class OccupancyIntegrator {
       OccupancyVoxel& occ_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
       updateOccupancyVoxel(occupied, &occ_voxel);
     }
+    block.reset();
 
     occupied = true;
     for (const AnyIndex& global_voxel_idx : occupied_cells) {
