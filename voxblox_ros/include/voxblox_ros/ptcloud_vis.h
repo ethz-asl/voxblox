@@ -18,6 +18,13 @@
 
 namespace voxblox {
 
+template <typename VoxelType>
+typedef std::function<bool(const VoxelType& voxel, Color* color)> // NOLINT
+      ShouldVisualizeVoxelFunctionType;
+
+
+
+
 
 }  // namespace voxblox
 
