@@ -13,7 +13,7 @@ namespace voxblox {
 
 class EsdfMap {
  public:
-  typedef std::shared_ptr<TsdfMap> Ptr;
+  typedef std::shared_ptr<EsdfMap> Ptr;
 
   struct Config {
     float esdf_voxel_size = 0.2;
