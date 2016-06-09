@@ -3,7 +3,9 @@
 
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
+#include <utility>
 
 #include <Eigen/Core>
 #include <glog/logging.h>
@@ -22,9 +24,14 @@ typedef Eigen::Matrix<IndexElement, 3, 1> AnyIndex;
 typedef AnyIndex VoxelIndex;
 typedef AnyIndex BlockIndex;
 
+typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
+typedef std::unordered_set<VoxelKey> VoxelKeySet;
+
 typedef std::vector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
+
+struct Color;
 
 // Pointcloud types for external interface.
 typedef std::vector<Point> Pointcloud;
@@ -46,9 +53,10 @@ typedef Eigen::Matrix<FloatingPoint, 3, Eigen::Dynamic> PointsMatrix;
 typedef Eigen::Matrix<FloatingPoint, 3, 3> Matrix3;
 
 // Interpolation structure
-typedef Eigen::Matrix<FloatingPoint, 8 ,8> InterpTable;
-typedef Eigen::Matrix<FloatingPoint, 1 ,8> InterpVector;
-typedef Eigen::Array<IndexElement, 3, 8> InterpIndexes; //type must allow negatives
+typedef Eigen::Matrix<FloatingPoint, 8, 8> InterpTable;
+typedef Eigen::Matrix<FloatingPoint, 1, 8> InterpVector;
+// Type must allow negatives:
+typedef Eigen::Array<IndexElement, 3, 8> InterpIndexes;
 
 struct Color {
   Color() : r(0), g(0), b(0), a(0) {}
