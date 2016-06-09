@@ -21,8 +21,8 @@
 // SOFTWARE.
 // Mesh output taken from open_chisel: github.com/personalrobotics/OpenChisel
 
-#ifndef VOXBLOX_ROS_VISUALIZATION_H_
-#define VOXBLOX_ROS_VISUALIZATION_H_
+#ifndef VOXBLOX_ROS_MESH_VIS_H_
+#define VOXBLOX_ROS_MESH_VIS_H_
 
 #include <algorithm>
 #include <visualization_msgs/Marker.h>
@@ -208,4 +208,4 @@ std_msgs::ColorRGBA rainbowColorMap(double h) {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_ROS_VISUALIZATION_H_
+#endif  // VOXBLOX_ROS_MESH_VIS_H_
