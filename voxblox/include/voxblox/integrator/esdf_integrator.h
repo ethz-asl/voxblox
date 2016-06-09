@@ -128,7 +128,7 @@ class EsdfIntegrator {
   void processOpenSet() {
     size_t num_updates = 0;
     while (!open_.empty()) {
-      std::pair<BlockIndex, VoxelIndex> kv = open_.front();
+      VoxelKey kv = open_.front();
       open_.pop();
 
       Block<EsdfVoxel>::Ptr esdf_block =
@@ -136,7 +136,7 @@ class EsdfIntegrator {
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
       // See if you can update the neighbors.
-      std::vector<std::pair<BlockIndex, VoxelIndex> > neighbors;
+      std::vector<VoxelKey> neighbors;
       std::vector<float> distances;
       getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances);
 
@@ -203,10 +203,10 @@ class EsdfIntegrator {
   }
 
   // Uses 26-connectivity and quasi-Euclidean distances.
-  void getNeighborsAndDistances(
-      const BlockIndex& block_index, const VoxelIndex& voxel_index,
-      std::vector<std::pair<BlockIndex, VoxelIndex> >* neighbors,
-      std::vector<float>* distances) {
+  void getNeighborsAndDistances(const BlockIndex& block_index,
+                                const VoxelIndex& voxel_index,
+                                std::vector<VoxelKey>* neighbors,
+                                std::vector<float>* distances) {
     static const double kSqrt2 = std::sqrt(2);
     static const double kSqrt3 = std::sqrt(3);
     static const size_t kNumNeighbors = 26;
@@ -214,7 +214,7 @@ class EsdfIntegrator {
     neighbors->reserve(kNumNeighbors);
     distances->reserve(kNumNeighbors);
 
-    std::pair<BlockIndex, VoxelIndex> neighbor;
+    VoxelKey neighbor;
     Eigen::Vector3i direction;
     direction.setZero();
     // Distance 1 set.
@@ -291,7 +291,7 @@ class EsdfIntegrator {
 
   // Open Queue for incremental updates. Contains global voxel indices
   // for the ESDF layer.
-  std::queue<std::pair<BlockIndex, VoxelIndex> > open_;
+  std::queue<VoxelKey> open_;
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;
