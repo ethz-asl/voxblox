@@ -45,12 +45,12 @@ class EsdfIntegrator {
   }
 
   void updateFromTsdfLayer(bool clear_updated_flag) {
-    esdf_layer_->removeAllBlocks();
+    // esdf_layer_->removeAllBlocks();
 
     BlockIndexList tsdf_blocks;
 
     tsdf_layer_->getAllAllocatedBlocks(&tsdf_blocks);
-    // tsdf_layer_->getAllUpdatedBlocks(&tsdf_blocks);
+    tsdf_layer_->getAllUpdatedBlocks(&tsdf_blocks);
     updateFromTsdfBlocks(tsdf_blocks);
 
     if (clear_updated_flag) {
