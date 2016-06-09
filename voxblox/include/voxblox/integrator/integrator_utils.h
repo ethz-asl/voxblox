@@ -6,8 +6,6 @@
 
 #include <Eigen/Core>
 #include <glog/logging.h>
-#include <algorithm>
-#include <vector>
 
 #include "voxblox/core/common.h"
 #include "voxblox/utils/timing.h"
@@ -74,6 +72,7 @@ void castRay(const Point& start_scaled, const Point& end_scaled,
     indices->push_back(curr_index);
   }
 }
+
 
 // Takes start and end in WORLD COORDINATES, does all pre-scaling and
 // sorting into hierarhical index.
