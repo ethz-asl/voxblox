@@ -34,6 +34,7 @@
 #include "voxblox/mesh/marching_cubes.h"
 #include "voxblox/mesh/mesh_layer.h"
 #include "voxblox/utils/timing.h"
+#include "voxblox/interpolator/interpolator.h"
 
 namespace voxblox {
 
@@ -295,72 +296,16 @@ class MeshIntegrator {
     mesh->normals.clear();
     mesh->normals.resize(mesh->indices.size(), Point::Zero());
 
+    Interpolator interpolator(tsdf_layer_);
+
     Point grad;
-    FloatingPoint dist;
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
       const Point& pos = mesh->vertices[i];
       // Otherwise the norm stays 0.
-      if (getDistanceAndGradient(pos, &dist, &grad)) {
+      if (interpolator.getGradient(pos, &grad, true)) {
         mesh->normals[i] = grad.normalized();
       }
     }
-  }
-
-  // TODO(helenol): this has no interpolation within the voxel.
-  // At least add an option in the future...
-  bool getDistanceAndGradient(const Point& pos, FloatingPoint* distance,
-                              Point* grad) {
-    CHECK_NOTNULL(distance);
-    CHECK_NOTNULL(grad);
-    // If we're lucky, everything is within one block.
-    const Block<TsdfVoxel>::ConstPtr block =
-        tsdf_layer_->getBlockPtrByCoordinates(pos);
-    if (!block) {
-      return false;
-    }
-    VoxelIndex voxel_index = block->computeVoxelIndexFromCoordinates(pos);
-    const TsdfVoxel& voxel = block->getVoxelByVoxelIndex(voxel_index);
-    *distance = static_cast<FloatingPoint>(voxel.distance);
-    if (voxel.weight < config_.min_weight) {
-      return false;
-    }
-
-    // Now get the gradient.
-    *grad = Point::Zero();
-    Point offset = Point::Zero();
-    // Iterate over all 3 D, and over negative and positive signs in central
-    // difference.
-    for (unsigned int i = 0u; i < 3u; ++i) {
-      for (int sign = -1; sign <= 1; sign += 2) {
-        offset = Point::Zero();
-        offset(i) = sign * voxel_size_;
-        voxel_index = block->computeVoxelIndexFromCoordinates(pos + offset);
-        if (block->isValidVoxelIndex(voxel_index)) {
-          const TsdfVoxel& pos_vox = block->getVoxelByVoxelIndex(voxel_index);
-          (*grad)(i) += sign * static_cast<FloatingPoint>(pos_vox.distance);
-          if (pos_vox.weight < config_.min_weight) {
-            return false;
-          }
-        } else {
-          const Block<TsdfVoxel>::ConstPtr neighbor_block =
-              tsdf_layer_->getBlockPtrByCoordinates(pos + offset);
-          if (!neighbor_block) {
-            return false;
-          }
-          const TsdfVoxel& pos_vox =
-              neighbor_block->getVoxelByCoordinates(pos + offset);
-          (*grad)(i) += sign * static_cast<FloatingPoint>(pos_vox.distance);
-          if (pos_vox.weight < config_.min_weight) {
-            return false;
-          }
-        }
-      }
-    }
-    // Scale by correct size.
-    // This is central difference, so it's 2x voxel size between
-    // measurements.
-    *grad /= (2 * voxel_size_);
-    return true;
   }
 
  protected:
