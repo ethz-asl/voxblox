@@ -14,6 +14,7 @@
 #include <deque>
 
 #include <voxblox/core/esdf_map.h>
+#include <voxblox/core/occupancy_map.h>
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
@@ -80,8 +81,7 @@ class VoxbloxNode {
   ros::Time last_msg_time_;
 
   // To be replaced (at least optionally) with odometry + static transform
-  // from
-  // IMU to visual frame.
+  // from IMU to visual frame.
   tf::TransformListener tf_listener_;
 
   // Data subscribers.
@@ -107,6 +107,9 @@ class VoxbloxNode {
   // ESDF maps (optional).
   std::shared_ptr<EsdfMap> esdf_map_;
   std::shared_ptr<EsdfIntegrator> esdf_integrator_;
+  // Occupancy maps (optional).
+  std::shared_ptr<OccupancyMap> occupancy_map_;
+  std::shared_ptr<OccupancyIntegrator> occupancy_integrator_;
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;
   std::shared_ptr<MeshIntegrator> mesh_integrator_;
@@ -138,11 +141,12 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   surface_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
           "surface_pointcloud", 1, true);
-  tsdf_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-      "tsdf_pointcloud", 1, true);
-  esdf_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-      "esdf_pointcloud", 1, true);
-
+  tsdf_pointcloud_pub_ =
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
+                                                              1, true);
+  esdf_pointcloud_pub_ =
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
+                                                              1, true);
 
   pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
                                   &VoxbloxNode::insertPointcloudWithTf, this);
@@ -198,6 +202,17 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                             tsdf_map_->getTsdfLayerPtr(),
                                             esdf_map_->getEsdfLayerPtr()));
+
+  // Occupancy settings.
+  OccupancyMap::Config occupancy_config;
+  // TODO(helenol): add possibility for different ESDF map sizes.
+  occupancy_config.occupancy_voxel_size = config.tsdf_voxel_size;
+  occupancy_config.occupancy_voxels_per_side = config.tsdf_voxels_per_side;
+  occupancy_map_.reset(new OccupancyMap(occupancy_config));
+
+  OccupancyIntegrator::Config occupancy_integrator_config;
+  occupancy_integrator_.reset(new OccupancyIntegrator(
+      occupancy_integrator_config, occupancy_map_->getOccupancyLayerPtr()));
 
   // Mesh settings.
   nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
@@ -340,6 +355,7 @@ void VoxbloxNode::insertPointcloudWithTf(
     }
     ros::WallTime start = ros::WallTime::now();
     tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
+    occupancy_integrator_->integratePointCloud(T_G_C, points_C);
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
       ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
