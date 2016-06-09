@@ -22,7 +22,8 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
-#include "voxblox_ros/visualization.h"
+#include "voxblox_ros/ptcloud_vis.h"
+#include "voxblox_ros/mesh_vis.h"
 
 namespace voxblox {
 
