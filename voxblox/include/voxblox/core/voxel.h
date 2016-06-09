@@ -20,7 +20,7 @@ struct EsdfVoxel {
 };
 
 struct OccupancyVoxel {
-  float occupancy_probability = 0.5;
+  float probability_log = 0.0;
   bool observed = false;
 };
 

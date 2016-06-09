@@ -4,8 +4,8 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 #include <glog/logging.h>
@@ -28,6 +28,7 @@ typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 typedef std::unordered_set<VoxelKey> VoxelKeySet;
 
 typedef std::vector<AnyIndex> IndexVector;
+typedef std::unordered_set<AnyIndex> IndexSet;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
