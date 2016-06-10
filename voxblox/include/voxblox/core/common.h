@@ -41,17 +41,16 @@ typedef Eigen::Matrix<FloatingPoint, 3, Eigen::Dynamic> PointsMatrix;
 typedef Eigen::Matrix<FloatingPoint, 3, 3> Matrix3;
 
 // Interpolation structure
-typedef Eigen::Matrix<FloatingPoint, 8 ,8> InterpTable;
-typedef Eigen::Matrix<FloatingPoint, 1 ,8> InterpVector;
-typedef Eigen::Array<IndexElement, 3, 8> InterpIndexes; //type must allow negatives
+typedef Eigen::Matrix<FloatingPoint, 8, 8> InterpTable;
+typedef Eigen::Matrix<FloatingPoint, 1, 8> InterpVector;
+typedef Eigen::Array<IndexElement, 3, 8>
+    InterpIndexes;  // type must allow negatives
 
 struct Color {
   Color() : r(0), g(0), b(0), a(0) {}
-  Color(uint8_t _r, uint8_t _g, uint8_t _b)
-      : Color(_r, _g, _b, 255) {}
+  Color(uint8_t _r, uint8_t _g, uint8_t _b) : Color(_r, _g, _b, 255) {}
   Color(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a)
       : r(_r), g(_g), b(_b), a(_a) {}
-
 
   uint8_t r;
   uint8_t g;
@@ -68,14 +67,14 @@ struct Color {
     second_weight /= total_weight;
 
     Color new_color;
-    new_color.r = static_cast<uint8_t>(round(first_color.r * first_weight +
-                                       second_color.r * second_weight));
-    new_color.g = static_cast<uint8_t>(round(first_color.g * first_weight +
-                                       second_color.g * second_weight));
-    new_color.b = static_cast<uint8_t>(round(first_color.b * first_weight +
-                                       second_color.b * second_weight));
-    new_color.a = static_cast<uint8_t>(round(first_color.a * first_weight +
-                                       second_color.a * second_weight));
+    new_color.r = static_cast<uint8_t>(
+        round(first_color.r * first_weight + second_color.r * second_weight));
+    new_color.g = static_cast<uint8_t>(
+        round(first_color.g * first_weight + second_color.g * second_weight));
+    new_color.b = static_cast<uint8_t>(
+        round(first_color.b * first_weight + second_color.b * second_weight));
+    new_color.a = static_cast<uint8_t>(
+        round(first_color.a * first_weight + second_color.a * second_weight));
 
     return new_color;
   }
@@ -117,10 +116,10 @@ inline AnyIndex getGridIndexFromPoint(const Point& scaled_point) {
 }
 
 inline AnyIndex getGridIndexFromOriginPoint(const Point& point,
-                                      const FloatingPoint grid_size_inv) {
-  return AnyIndex(std::floor(point.x() * grid_size_inv + 0.5),
-                  std::floor(point.y() * grid_size_inv + 0.5),
-                  std::floor(point.z() * grid_size_inv + 0.5));
+                                            const FloatingPoint grid_size_inv) {
+  return AnyIndex(std::round(point.x() * grid_size_inv),
+                  std::round(point.y() * grid_size_inv),
+                  std::round(point.z() * grid_size_inv));
 }
 
 inline Point getCenterPointFromGridIndex(const AnyIndex& idx,
@@ -140,15 +139,12 @@ inline Point getOriginPointFromGridIndex(const AnyIndex& idx,
 inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
     AnyIndex global_voxel_idx, FloatingPoint voxels_per_side_inv_) {
   return BlockIndex(
-      std::floor(
-          static_cast<FloatingPoint>(global_voxel_idx.x())
-              * voxels_per_side_inv_),
-      std::floor(
-          static_cast<FloatingPoint>(global_voxel_idx.y())
-              * voxels_per_side_inv_),
-      std::floor(
-          static_cast<FloatingPoint>(global_voxel_idx.z())
-              * voxels_per_side_inv_));
+      std::floor(static_cast<FloatingPoint>(global_voxel_idx.x()) *
+                 voxels_per_side_inv_),
+      std::floor(static_cast<FloatingPoint>(global_voxel_idx.y()) *
+                 voxels_per_side_inv_),
+      std::floor(static_cast<FloatingPoint>(global_voxel_idx.z()) *
+                 voxels_per_side_inv_));
 }
 
 inline VoxelIndex getLocalFromGlobalVoxelIndex(AnyIndex global_voxel_idx,
