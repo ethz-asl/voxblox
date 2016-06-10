@@ -127,7 +127,7 @@ class Block {
   }
 
   BlockIndex block_index() const {
-    return getGridIndexFromPoint(origin_, block_size_inv_);
+    return getGridIndexFromOriginPoint(origin_, block_size_inv_);
   }
 
   // Basic function accessors.
