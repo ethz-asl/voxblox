@@ -206,6 +206,8 @@ class MeshIntegrator {
     Eigen::Matrix<FloatingPoint, 3, 8> corner_coords;
     Eigen::Matrix<FloatingPoint, 8, 1> corner_sdf;
     bool all_neighbors_observed = true;
+    corner_coords.setZero();
+    corner_sdf.setZero();
 
     for (unsigned int i = 0; i < 8; ++i) {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
@@ -221,15 +223,15 @@ class MeshIntegrator {
         corner_sdf(i) = voxel.distance;
       } else {
         // We have to access a different block.
-        BlockIndex block_offset = Eigen::Vector3i::Zero();
+        BlockIndex block_offset = BlockIndex::Zero();
 
-        for (int j = 0u; j < 3u; j++) {
+        for (unsigned int j = 0u; j < 3u; j++) {
           if (corner_index(j) < 0) {
             block_offset(j) = -1;
-            corner_index(j) = voxels_per_side_ - 1;
+            corner_index(j) = corner_index(j) + voxels_per_side_;
           } else if (corner_index(j) >= voxels_per_side_) {
             block_offset(j) = 1;
-            corner_index(j) = 0;
+            corner_index(j) = corner_index(j) - voxels_per_side_;
           }
         }
 
@@ -239,6 +241,7 @@ class MeshIntegrator {
           const Block<TsdfVoxel>& neighbor_block =
               tsdf_layer_->getBlockByIndex(neighbor_index);
 
+          CHECK(neighbor_block.isValidVoxelIndex(corner_index));
           const TsdfVoxel& voxel =
               neighbor_block.getVoxelByVoxelIndex(corner_index);
 
