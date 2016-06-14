@@ -127,9 +127,9 @@ inline AnyIndex getGridIndexFromPoint(const Point& scaled_point) {
 
 inline AnyIndex getGridIndexFromOriginPoint(const Point& point,
                                             const FloatingPoint grid_size_inv) {
-  return AnyIndex(std::floor(point.x() * grid_size_inv + 0.5),
-                  std::floor(point.y() * grid_size_inv + 0.5),
-                  std::floor(point.z() * grid_size_inv + 0.5));
+  return AnyIndex(std::round(point.x() * grid_size_inv),
+                  std::round(point.y() * grid_size_inv),
+                  std::round(point.z() * grid_size_inv));
 }
 
 inline Point getCenterPointFromGridIndex(const AnyIndex& idx,
