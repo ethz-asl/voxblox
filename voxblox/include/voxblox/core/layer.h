@@ -157,7 +157,7 @@ class Layer {
   size_t getNumberOfAllocatedBlocks() const { return block_map_.size(); }
 
   bool hasBlock(const BlockIndex& block_index) const {
-    return block_map_.count(block_index);
+    return block_map_.count(block_index) > 0;
   }
 
   FloatingPoint block_size() const { return block_size_; }
