@@ -379,57 +379,10 @@ void VoxbloxNode::transformCallback(
 
 void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
   DCHECK(tsdf_map_) << "TSDF map not allocated.";
-
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
-  // Iterate over all voxels to create a pointcloud.
-  // TODO(helenol): move this to general IO, replace ply writer with writing
-  // this out.
-  size_t num_blocks = tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks();
-  // This function is block-specific:
-  size_t vps = tsdf_map_->getTsdfLayer().voxels_per_side();
-  size_t num_voxels_per_block = vps * vps * vps;
-
-  pointcloud.reserve(num_blocks * num_voxels_per_block);
-
-  BlockIndexList blocks;
-  tsdf_map_->getTsdfLayer().getAllAllocatedBlocks(&blocks);
-
-  // Iterate over all blocks.
-  for (const BlockIndex& index : blocks) {
-    // Iterate over all voxels in said blocks.
-    const Block<TsdfVoxel>& block =
-        tsdf_map_->getTsdfLayer().getBlockByIndex(index);
-
-    VoxelIndex voxel_index = VoxelIndex::Zero();
-    for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
-      for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
-        for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
-          const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(voxel_index);
-
-          float distance = voxel.distance;
-          float weight = voxel.weight;
-
-          // Get back the original coordinate of this voxel.
-          Point coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
-
-          if (weight > 1e-3 && distance > 0) {
-            pcl::PointXYZI point;
-            point.x = coord.x();
-            point.y = coord.y();
-            point.z = coord.z();
-            if (color_ptcloud_by_weight_) {
-              point.intensity = weight;
-            } else {
-              point.intensity = distance;
-            }
-            pointcloud.push_back(point);
-          }
-        }
-      }
-    }
-  }
+  createDistancePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(), &pointcloud);
 
   pointcloud.header.frame_id = world_frame_;
   tsdf_pointcloud_pub_.publish(pointcloud);
@@ -441,46 +394,7 @@ void VoxbloxNode::publishAllUpdatedEsdfVoxels() {
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
-  // Iterate over all voxels to create a pointcloud.
-  size_t num_blocks = esdf_map_->getEsdfLayer().getNumberOfAllocatedBlocks();
-  // This function is block-specific:
-  size_t vps = esdf_map_->getEsdfLayer().voxels_per_side();
-  size_t num_voxels_per_block = vps * vps * vps;
-
-  pointcloud.reserve(num_blocks * num_voxels_per_block);
-
-  BlockIndexList blocks;
-  esdf_map_->getEsdfLayer().getAllAllocatedBlocks(&blocks);
-
-  // Iterate over all blocks.
-  for (const BlockIndex& index : blocks) {
-    // Iterate over all voxels in said blocks.
-    const Block<EsdfVoxel>& block =
-        esdf_map_->getEsdfLayer().getBlockByIndex(index);
-
-    VoxelIndex voxel_index = VoxelIndex::Zero();
-    for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
-      for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
-        for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
-          const EsdfVoxel& voxel = block.getVoxelByVoxelIndex(voxel_index);
-
-          float distance = voxel.distance;
-
-          // Get back the original coordinate of this voxel.
-          Point coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
-
-          if (voxel.observed) {
-            pcl::PointXYZI point;
-            point.x = coord.x();
-            point.y = coord.y();
-            point.z = coord.z();
-            point.intensity = distance;
-            pointcloud.push_back(point);
-          }
-        }
-      }
-    }
-  }
+  createDistancePointcloudFromEsdfLayer(esdf_map_->getEsdfLayer(), &pointcloud);
 
   pointcloud.header.frame_id = world_frame_;
   esdf_pointcloud_pub_.publish(pointcloud);
@@ -491,54 +405,10 @@ void VoxbloxNode::publishTsdfSurfacePoints() {
 
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
-  // Iterate over all voxels to create a pointcloud.
-  // TODO(helenol): move this to general IO, replace ply writer with writing
-  // this out.
-  size_t num_blocks = tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks();
-  // This function is block-specific:
-  size_t vps = tsdf_map_->getTsdfLayer().voxels_per_side();
-  size_t num_voxels_per_block = vps * vps * vps;
-
-  pointcloud.reserve(num_blocks * num_voxels_per_block);
-
-  BlockIndexList blocks;
-  tsdf_map_->getTsdfLayer().getAllAllocatedBlocks(&blocks);
-
-  // Iterate over all blocks.
   const float surface_distance_thresh =
-      tsdf_map_->getTsdfLayer().voxel_size() * 0.5;
-  for (const BlockIndex& index : blocks) {
-    // Iterate over all voxels in said blocks.
-    const Block<TsdfVoxel>& block =
-        tsdf_map_->getTsdfLayer().getBlockByIndex(index);
-
-    VoxelIndex voxel_index = VoxelIndex::Zero();
-    for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
-      for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
-        for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
-          const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(voxel_index);
-
-          float distance = voxel.distance;
-          float weight = voxel.weight;
-          Color color = voxel.color;
-
-          // Get back the original coordinate of this voxel.
-          Point coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
-
-          if (std::abs(distance) < surface_distance_thresh && weight > 0) {
-            pcl::PointXYZRGB point;
-            point.x = coord.x();
-            point.y = coord.y();
-            point.z = coord.z();
-            point.r = color.r;
-            point.g = color.g;
-            point.b = color.b;
-            pointcloud.push_back(point);
-          }
-        }
-      }
-    }
-  }
+      tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
+  createSurfacePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(),
+                                       surface_distance_thresh, &pointcloud);
 
   pointcloud.header.frame_id = world_frame_;
   surface_pointcloud_pub_.publish(pointcloud);
