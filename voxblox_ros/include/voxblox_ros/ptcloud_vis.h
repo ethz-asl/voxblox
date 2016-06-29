@@ -129,6 +129,16 @@ bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
   return false;
 }
 
+bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
+                                          const Point& coord,
+                                          double* intensity) {
+  if (voxel.observed) {
+    *intensity = voxel.distance;
+    return true;
+  }
+  return false;
+}
+
 // All functions that can be used directly for TSDF voxels.
 void createSurfacePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
@@ -145,6 +155,14 @@ void createDistancePointcloudFromTsdfLayer(
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer, &visualizeDistanceIntensityTsdfVoxels, pointcloud);
 }
+
+void createDistancePointcloudFromEsdfLayer(
+    const Layer<EsdfVoxel>& layer,
+    pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  createColorPointcloudFromLayer<EsdfVoxel>(
+      layer, &visualizeDistanceIntensityEsdfVoxels, pointcloud);
+}
+
 
 }  // namespace voxblox
 
