@@ -356,7 +356,7 @@ void VoxbloxNode::insertPointcloudWithTf(
     }
     ros::WallTime start = ros::WallTime::now();
     tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
-    occupancy_integrator_->integratePointCloud(T_G_C, points_C);
+    // occupancy_integrator_->integratePointCloud(T_G_C, points_C);
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
       ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
@@ -414,7 +414,7 @@ void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
           // Get back the original coordinate of this voxel.
           Point coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
 
-          if (weight > 0.0) {
+          if (weight > 1e-3 && distance > 0) {
             pcl::PointXYZI point;
             point.x = coord.x();
             point.y = coord.y();
