@@ -38,8 +38,6 @@ namespace voxblox {
 
 enum ColorMode { kColor = 0, kHeight, kNormals, kGray, kLambert };
 
-std_msgs::ColorRGBA rainbowColorMap(double h);
-
 Point lambertShading(const Point& normal, const Point& light) {
   return std::max<FloatingPoint>(normal.dot(light), 0.0f) *
          Point(0.5, 0.5, 0.5);
@@ -79,7 +77,7 @@ void heightColorFromVertex(const Point& vertex,
   double mapped_height = std::min<FloatingPoint>(
       std::max<FloatingPoint>((vertex.z() - min_z) / (max_z - min_z), 0.0),
       1.0);
-  *color_msg = rainbowColorMap(mapped_height);
+  colorVoxbloxToMsg(rainbowColorMap(mapped_height), color_msg);
 }
 
 void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
@@ -142,68 +140,6 @@ void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
       marker->colors.push_back(color_msg);
     }
   }
-}
-
-std_msgs::ColorRGBA rainbowColorMap(double h) {
-  // Directly from OctomapProvider in octomap.
-  std_msgs::ColorRGBA color;
-  color.a = 1.0;
-  // blend over HSV-values (more colors)
-
-  double s = 1.0;
-  double v = 1.0;
-
-  h -= floor(h);
-  h *= 6;
-  int i;
-  double m, n, f;
-
-  i = floor(h);
-  f = h - i;
-  if (!(i & 1)) f = 1 - f;  // if i is even
-  m = v * (1 - s);
-  n = v * (1 - s * f);
-
-  switch (i) {
-    case 6:
-    case 0:
-      color.r = v;
-      color.g = n;
-      color.b = m;
-      break;
-    case 1:
-      color.r = n;
-      color.g = v;
-      color.b = m;
-      break;
-    case 2:
-      color.r = m;
-      color.g = v;
-      color.b = n;
-      break;
-    case 3:
-      color.r = m;
-      color.g = n;
-      color.b = v;
-      break;
-    case 4:
-      color.r = n;
-      color.g = m;
-      color.b = v;
-      break;
-    case 5:
-      color.r = v;
-      color.g = m;
-      color.b = n;
-      break;
-    default:
-      color.r = 1;
-      color.g = 0.5;
-      color.b = 0.5;
-      break;
-  }
-
-  return color;
 }
 
 }  // namespace voxblox
