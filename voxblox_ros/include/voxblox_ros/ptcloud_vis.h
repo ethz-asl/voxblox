@@ -38,7 +38,7 @@ using ShouldVisualizeVoxelIntensityFunctionType = std::function<bool(
 // This is used for occupancy bricks, for instance.
 template <typename VoxelType>
 using ShouldVisualizeVoxelFunctionType =
-    std::function<bool(const VoxelType& voxel, const Point& coord)> // NOLINT;
+    std::function<bool(const VoxelType& voxel, const Point& coord)>;  // NOLINT;
 
 // Template function to visualize a colored pointcloud.
 template <typename VoxelType>
@@ -193,6 +193,13 @@ bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
   return false;
 }
 
+bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel, const Point& coord) {
+  if (voxel.weight > 1e-3 && voxel.distance <= 0) {
+    return true;
+  }
+  return false;
+}
+
 // All functions that can be used directly for TSDF voxels.
 void createSurfacePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
@@ -215,6 +222,13 @@ void createDistancePointcloudFromEsdfLayer(
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer, &visualizeDistanceIntensityEsdfVoxels, pointcloud);
+}
+
+void createOccupancyBlocksFromTsdfLayer(
+    const Layer<TsdfVoxel>& layer, const std::string& frame_id,
+    visualization_msgs::MarkerArray* marker_array) {
+  createOccupancyBlocksFromLayer<TsdfVoxel>(layer, &visualizeOccupiedTsdfVoxels,
+                                            frame_id, marker_array);
 }
 
 }  // namespace voxblox
