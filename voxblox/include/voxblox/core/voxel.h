@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "voxblox/core/common.h"
+#include "voxblox/core/color.h"
 
 namespace voxblox {
 
