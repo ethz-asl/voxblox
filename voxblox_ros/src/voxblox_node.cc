@@ -47,6 +47,7 @@ class VoxbloxNode {
   void publishAllUpdatedTsdfVoxels();
   void publishAllUpdatedEsdfVoxels();
   void publishTsdfSurfacePoints();
+  void publishTsdfOccupiedNodes();
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
   bool generateMeshCallback(std_srvs::Empty::Request& request,     // NOLINT
@@ -95,6 +96,7 @@ class VoxbloxNode {
   ros::Publisher tsdf_pointcloud_pub_;
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
+  ros::Publisher occupancy_marker_pub_;
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
@@ -148,6 +150,9 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   esdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
                                                               1, true);
+  occupancy_marker_pub_ =
+      nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_ndoes",
+                                                             1, true);
 
   pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
                                   &VoxbloxNode::insertPointcloudWithTf, this);
@@ -302,7 +307,6 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   }
 
   ros::spinOnce();
-  publishTsdfSurfacePoints();
 }
 
 void VoxbloxNode::insertPointcloudWithTf(
@@ -365,6 +369,7 @@ void VoxbloxNode::insertPointcloudWithTf(
     }
     publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
+    publishTsdfOccupiedNodes();
 
     if (verbose_) {
       ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
@@ -412,6 +417,16 @@ void VoxbloxNode::publishTsdfSurfacePoints() {
 
   pointcloud.header.frame_id = world_frame_;
   surface_pointcloud_pub_.publish(pointcloud);
+}
+
+void VoxbloxNode::publishTsdfOccupiedNodes() {
+  DCHECK(tsdf_map_) << "TSDF map not allocated.";
+
+  // Create a pointcloud with distance = intensity.
+  visualization_msgs::MarkerArray marker_array;
+  createOccupancyBlocksFromTsdfLayer(tsdf_map_->getTsdfLayer(),
+                                       world_frame_, &marker_array);
+  occupancy_marker_pub_.publish(marker_array);
 }
 
 bool VoxbloxNode::lookupTransform(const std::string& from_frame,
