@@ -159,9 +159,18 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
 
 inline VoxelIndex getLocalFromGlobalVoxelIndex(AnyIndex global_voxel_idx,
                                                int voxels_per_side) {
-  return VoxelIndex(global_voxel_idx.x() % voxels_per_side,
+  VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side,
                     global_voxel_idx.y() % voxels_per_side,
                     global_voxel_idx.z() % voxels_per_side);
+
+  // Make sure we're within bounds.
+  for (unsigned int i = 0; i < 3; ++i) {
+    if (local_voxel_idx(i) < 0) {
+      local_voxel_idx(i) += voxels_per_side;
+    }
+  }
+
+  return local_voxel_idx;
 }
 
 // Math functions.

@@ -200,6 +200,15 @@ bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel, const Point& coord) {
   return false;
 }
 
+bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
+                                      const Point& coord) {
+  const bool kThresholdLogOccupancy = logOddsFromProbability(0.7);
+  if (voxel.probability_log > kThresholdLogOccupancy) {
+    return true;
+  }
+  return false;
+}
+
 // All functions that can be used directly for TSDF voxels.
 void createSurfacePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
@@ -229,6 +238,13 @@ void createOccupancyBlocksFromTsdfLayer(
     visualization_msgs::MarkerArray* marker_array) {
   createOccupancyBlocksFromLayer<TsdfVoxel>(layer, &visualizeOccupiedTsdfVoxels,
                                             frame_id, marker_array);
+}
+
+void createOccupancyBlocksFromOccupancyLayer(
+    const Layer<OccupancyVoxel>& layer, const std::string& frame_id,
+    visualization_msgs::MarkerArray* marker_array) {
+  createOccupancyBlocksFromLayer<OccupancyVoxel>(
+      layer, &visualizeOccupiedOccupancyVoxels, frame_id, marker_array);
 }
 
 }  // namespace voxblox
