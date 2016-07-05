@@ -49,6 +49,7 @@ class VoxbloxNode {
   void publishTsdfSurfacePoints();
   void publishTsdfOccupiedNodes();
   void publishOccupancy();
+  void publishSlices();
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
   bool generateMeshCallback(std_srvs::Empty::Request& request,     // NOLINT
@@ -99,6 +100,8 @@ class VoxbloxNode {
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher occupancy_marker_pub_;
   ros::Publisher occupancy_layer_pub_;
+  ros::Publisher tsdf_slice_pub_;
+  ros::Publisher esdf_slice_pub_;
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
@@ -152,6 +155,10 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   esdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
                                                               1, true);
+  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "tsdf_slice", 1, true);
+  esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "esdf_slice", 1, true);
   occupancy_marker_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
                                                              1, true);
@@ -379,6 +386,7 @@ void VoxbloxNode::insertPointcloudWithTf(
     publishTsdfSurfacePoints();
     publishTsdfOccupiedNodes();
     publishOccupancy();
+    publishSlices();
 
     if (verbose_) {
       ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
@@ -446,6 +454,27 @@ void VoxbloxNode::publishOccupancy() {
   createOccupancyBlocksFromOccupancyLayer(
       *occupancy_map_->getOccupancyLayerPtr(), world_frame_, &marker_array);
   occupancy_layer_pub_.publish(marker_array);
+}
+
+void VoxbloxNode::publishSlices() {
+  if (tsdf_map_) {
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+    createDistancePointcloudFromTsdfLayerSlice(tsdf_map_->getTsdfLayer(), 2,
+                                               0.5, &pointcloud);
+
+    pointcloud.header.frame_id = world_frame_;
+    tsdf_slice_pub_.publish(pointcloud);
+  }
+  if (esdf_map_) {
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+    createDistancePointcloudFromEsdfLayerSlice(esdf_map_->getEsdfLayer(), 2,
+                                               0.5, &pointcloud);
+
+    pointcloud.header.frame_id = world_frame_;
+    esdf_slice_pub_.publish(pointcloud);
+  }
 }
 
 bool VoxbloxNode::lookupTransform(const std::string& from_frame,
