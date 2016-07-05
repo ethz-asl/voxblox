@@ -183,12 +183,36 @@ bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
   return false;
 }
 
+bool visualizeDistanceIntensityTsdfVoxelsSlice(
+    const TsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
+    FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
+  if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size) {
+    if (voxel.weight > 1e-3) {
+      *intensity = voxel.distance;
+      return true;
+    }
+  }
+  return false;
+}
+
 bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
                                           const Point& coord,
                                           double* intensity) {
   if (voxel.observed) {
     *intensity = voxel.distance;
     return true;
+  }
+  return false;
+}
+
+bool visualizeDistanceIntensityEsdfVoxelsSlice(
+    const EsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
+    FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
+  if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size) {
+    if (voxel.observed) {
+      *intensity = voxel.distance;
+      return true;
+    }
   }
   return false;
 }
@@ -231,6 +255,26 @@ void createDistancePointcloudFromEsdfLayer(
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer, &visualizeDistanceIntensityEsdfVoxels, pointcloud);
+}
+
+void createDistancePointcloudFromTsdfLayerSlice(
+    const Layer<TsdfVoxel>& layer, unsigned int free_plane_index,
+    FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  createColorPointcloudFromLayer<TsdfVoxel>(
+      layer,
+      std::bind(&visualizeDistanceIntensityTsdfVoxelsSlice, ph::_1, ph::_2,
+                free_plane_index, free_plane_val, layer.voxel_size(), ph::_3),
+      pointcloud);
+}
+
+void createDistancePointcloudFromEsdfLayerSlice(
+    const Layer<EsdfVoxel>& layer, unsigned int free_plane_index,
+    FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  createColorPointcloudFromLayer<EsdfVoxel>(
+      layer,
+      std::bind(&visualizeDistanceIntensityEsdfVoxelsSlice, ph::_1, ph::_2,
+                free_plane_index, free_plane_val, layer.voxel_size(), ph::_3),
+      pointcloud);
 }
 
 void createOccupancyBlocksFromTsdfLayer(
