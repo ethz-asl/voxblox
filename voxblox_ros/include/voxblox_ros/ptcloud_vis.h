@@ -186,7 +186,7 @@ bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
 bool visualizeDistanceIntensityTsdfVoxelsSlice(
     const TsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
     FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
-  if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size) {
+  if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size / 2.0) {
     if (voxel.weight > 1e-3) {
       *intensity = voxel.distance;
       return true;
@@ -208,7 +208,7 @@ bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
 bool visualizeDistanceIntensityEsdfVoxelsSlice(
     const EsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
     FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
-  if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size) {
+  if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size / 2.0) {
     if (voxel.observed) {
       *intensity = voxel.distance;
       return true;
