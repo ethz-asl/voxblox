@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<launch>
+  <arg name="play_bag" value="true" />
+  <arg name="bag_file" value="/Users/helen/data/kitti/2011_09_26/2011_09_26_drive_0035_sync/drive35.bag"/>
+
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.2 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
+
+   <!-- Run stereo_dense_reconstruction_node-->
+  <node ns="stereo_gray" name="stereo_image_proc" pkg="stereo_image_proc" type="stereo_image_proc" clear_params="true" output="screen">
+    <remap from="left/image_raw" to="/cam02/image_raw" />
+    <remap from="left/camera_info" to="/cam02/camera_info" />
+    <remap from="right/image_raw" to="/cam03/image_raw" />
+    <remap from="right/camera_info" to="/cam03/camera_info" />
+    <param name="approximate_sync" value="true" />
+    <!-- <param name="queue_size" value="5" /> -->
+    <param name="disparity_range" value="256" />
+    <param name="speckle_size" value="100" />
+    <param name="texture_threshold" value="2" />
+    <param name="uniqueness_ratio" value="5" />
+    <param name="speckle_range" value="50" />
+  </node>
+
+  <!-- <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
+    <remap from="pointcloud" to="/stereo_gray/points2"/>
+    <param name="tsdf_voxel_size" value="0.2" />
+    <param name="tsdf_voxels_per_side" value="16" />
+    <param name="voxel_carving_enabled" value="true" />
+    <param name="color_mode" value="color" />
+    <param name="use_tf_transforms" value="true" />
+    <param name="verbose" value="true" />
+    <param name="update_mesh_every_n_sec" value="1.0" />
+    <param name="max_ray_length_m" value="20.0" />
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon kitti).ply" />
+  </node>-->
+</launch>

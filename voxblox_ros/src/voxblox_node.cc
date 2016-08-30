@@ -317,6 +317,12 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
                     << T_B_D_ << "\nT_B_C:" << T_B_C_);
   }
 
+  // HACK HACK HACK
+  // Transformation trans(
+  //    Eigen::Vector3d(-0.0316981, 0.0303474, -0.0558053),
+  //    Eigen::Quaterniond(-0.135559, 0.523541, -0.819119, 0.191239));
+  // ROS_INFO_STREAM("TRANSFORM: " << trans.getTransformationMatrix());
+
   ros::spinOnce();
 }
 
