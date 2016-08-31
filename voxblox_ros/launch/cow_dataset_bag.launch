@@ -1,6 +1,6 @@
 <launch>
-  <arg name="play_bag" value="true" />
-  <arg name="bag_file" value="/Users/helen/data/cow/small.bag"/>
+  <arg name="play_bag" default="true" />
+  <arg name="bag_file" default="/Users/helen/data/cow/small.bag"/>
 
   <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 

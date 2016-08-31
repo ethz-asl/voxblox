@@ -656,7 +656,7 @@ bool VoxbloxNode::loadMapCallback(
     voxblox_ros::FilePath::Response& response) {  // NOLINT
   // Will only load TSDF layer for now.
   return io::LoadBlocksFromFile(
-      request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit,
+      request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
       tsdf_map_->getTsdfLayerPtr());
 }
 
