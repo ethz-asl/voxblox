@@ -14,6 +14,11 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 ############
 # BINARIES #
 ############
+
+cs_add_executable(voxblox_eval
+  src/voxblox_eval.cc
+)
+
 cs_add_executable(voxblox_node
   src/voxblox_node.cc
 )
