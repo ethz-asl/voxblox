@@ -320,8 +320,6 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     transform_sub_ =
         nh_.subscribe("transform", 40, &VoxbloxNode::transformCallback, this);
     // Retrieve T_D_C from params.
-    Eigen::Matrix4d transform_mat;
-    transform_mat.setIdentity();
     XmlRpc::XmlRpcValue T_B_D_xml;
     // TODO(helenol): split out into a function to avoid duplication.
     if (nh_private_.getParam("T_B_D", T_B_D_xml)) {
@@ -335,7 +333,6 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
         T_B_D_ = T_B_D_.inverse();
       }
     }
-    transform_mat.setIdentity();
     XmlRpc::XmlRpcValue T_B_C_xml;
     if (nh_private_.getParam("T_B_C", T_B_C_xml)) {
       kindr::minimal::xmlRpcToKindr(T_B_C_xml, &T_B_C_);
@@ -651,6 +648,7 @@ bool VoxbloxNode::saveMapCallback(
   // Will only save TSDF layer for now.
   return io::SaveLayer(tsdf_map_->getTsdfLayer(), request.file_path);
 }
+
 bool VoxbloxNode::loadMapCallback(
     voxblox_ros::FilePath::Request& request,
     voxblox_ros::FilePath::Response& response) {  // NOLINT
