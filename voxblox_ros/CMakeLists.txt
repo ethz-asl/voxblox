@@ -17,6 +17,7 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 cs_add_executable(voxblox_node
   src/voxblox_node.cc
 )
+add_dependencies(voxblox_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ##########
 # EXPORT #

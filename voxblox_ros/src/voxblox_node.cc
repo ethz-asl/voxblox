@@ -1,3 +1,4 @@
+#include <deque>
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_xml.h>
@@ -11,7 +12,6 @@
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <deque>
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>
@@ -19,11 +19,13 @@
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
-#include "voxblox_ros/ptcloud_vis.h"
+#include "voxblox_ros/FilePath.h"
 #include "voxblox_ros/mesh_vis.h"
+#include "voxblox_ros/ptcloud_vis.h"
 
 namespace voxblox {
 
@@ -52,8 +54,13 @@ class VoxbloxNode {
   void publishSlices();
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
-  bool generateMeshCallback(std_srvs::Empty::Request& request,     // NOLINT
-                            std_srvs::Empty::Response& response);  // NOLINT
+  bool generateMeshCallback(std_srvs::Empty::Request& request,      // NOLINT
+                            std_srvs::Empty::Response& response);   // NOLINT
+  bool saveMapCallback(voxblox_ros::FilePath::Request& request,     // NOLINT
+                       voxblox_ros::FilePath::Response& response);  // NOLINT
+  bool loadMapCallback(voxblox_ros::FilePath::Request& request,     // NOLINT
+                       voxblox_ros::FilePath::Response& response);  // NOLINT
+
   void updateMeshEvent(const ros::TimerEvent& e);
 
  private:
@@ -61,7 +68,13 @@ class VoxbloxNode {
   ros::NodeHandle nh_private_;
 
   bool verbose_;
+
+  // This is a debug option, more or less...
   bool color_ptcloud_by_weight_;
+
+  // Which maps to generate.
+  bool generate_esdf_;
+  bool generate_occupancy_;
 
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
@@ -70,6 +83,9 @@ class VoxbloxNode {
   // parameters and transform topics (false).
   bool use_tf_transforms_;
   int64_t timestamp_tolerance_ns_;
+  // B is the body frame of the robot, C is the camera/sensor frame creating
+  // the pointclouds, and D is the 'dynamic' frame; i.e., incoming messages
+  // are assumed to be T_G_D.
   Transformation T_B_C_;
   Transformation T_B_D_;
 
@@ -105,6 +121,8 @@ class VoxbloxNode {
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
+  ros::ServiceServer save_map_srv_;
+  ros::ServiceServer load_map_srv_;
 
   // Timers.
   ros::Timer update_mesh_timer_;
@@ -132,6 +150,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       verbose_(true),
       color_ptcloud_by_weight_(false),
+      generate_esdf_(false),
+      generate_occupancy_(false),
       world_frame_("world"),
       use_tf_transforms_(true),
       // 10 ms here:
@@ -152,18 +172,26 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   tsdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
                                                               1, true);
-  esdf_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
-                                                              1, true);
+
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
-  esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-      "esdf_slice", 1, true);
-  occupancy_marker_pub_ =
-      nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
-                                                             1, true);
-  occupancy_layer_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
-      "occupancy_layer", 1, true);
+
+  if (generate_esdf_) {
+    esdf_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+            "esdf_pointcloud", 1, true);
+    esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+        "esdf_slice", 1, true);
+  }
+
+  if (generate_occupancy_) {
+    occupancy_marker_pub_ =
+        nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
+                                                               1, true);
+    occupancy_layer_pub_ =
+        nh_private_.advertise<visualization_msgs::MarkerArray>(
+            "occupancy_layer", 1, true);
+  }
 
   pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
                                   &VoxbloxNode::insertPointcloudWithTf, this);
@@ -209,27 +237,31 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       new TsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
 
   // ESDF settings.
-  EsdfMap::Config esdf_config;
-  // TODO(helenol): add possibility for different ESDF map sizes.
-  esdf_config.esdf_voxel_size = config.tsdf_voxel_size;
-  esdf_config.esdf_voxels_per_side = config.tsdf_voxels_per_side;
-  esdf_map_.reset(new EsdfMap(esdf_config));
+  if (generate_esdf_) {
+    EsdfMap::Config esdf_config;
+    // TODO(helenol): add possibility for different ESDF map sizes.
+    esdf_config.esdf_voxel_size = config.tsdf_voxel_size;
+    esdf_config.esdf_voxels_per_side = config.tsdf_voxels_per_side;
+    esdf_map_.reset(new EsdfMap(esdf_config));
 
-  EsdfIntegrator::Config esdf_integrator_config;
-  esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
-                                            tsdf_map_->getTsdfLayerPtr(),
-                                            esdf_map_->getEsdfLayerPtr()));
+    EsdfIntegrator::Config esdf_integrator_config;
+    esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
+                                              tsdf_map_->getTsdfLayerPtr(),
+                                              esdf_map_->getEsdfLayerPtr()));
+  }
 
   // Occupancy settings.
-  OccupancyMap::Config occupancy_config;
-  // TODO(helenol): add possibility for different ESDF map sizes.
-  occupancy_config.occupancy_voxel_size = config.tsdf_voxel_size;
-  occupancy_config.occupancy_voxels_per_side = config.tsdf_voxels_per_side;
-  occupancy_map_.reset(new OccupancyMap(occupancy_config));
+  if (generate_occupancy_) {
+    OccupancyMap::Config occupancy_config;
+    // TODO(helenol): add possibility for different ESDF map sizes.
+    occupancy_config.occupancy_voxel_size = config.tsdf_voxel_size;
+    occupancy_config.occupancy_voxels_per_side = config.tsdf_voxels_per_side;
+    occupancy_map_.reset(new OccupancyMap(occupancy_config));
 
-  OccupancyIntegrator::Config occupancy_integrator_config;
-  occupancy_integrator_.reset(new OccupancyIntegrator(
-      occupancy_integrator_config, occupancy_map_->getOccupancyLayerPtr()));
+    OccupancyIntegrator::Config occupancy_integrator_config;
+    occupancy_integrator_.reset(new OccupancyIntegrator(
+        occupancy_integrator_config, occupancy_map_->getOccupancyLayerPtr()));
+  }
 
   // Mesh settings.
   nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
@@ -259,6 +291,10 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Advertise services.
   generate_mesh_srv_ = nh_private_.advertiseService(
       "generate_mesh", &VoxbloxNode::generateMeshCallback, this);
+  save_map_srv_ = nh_private_.advertiseService(
+      "save_map", &VoxbloxNode::saveMapCallback, this);
+  load_map_srv_ = nh_private_.advertiseService(
+      "load_map", &VoxbloxNode::loadMapCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
   double update_mesh_every_n_sec = 0.0;
@@ -317,12 +353,6 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
                     << T_B_D_ << "\nT_B_C:" << T_B_C_);
   }
 
-  // HACK HACK HACK
-  // Transformation trans(
-  //    Eigen::Vector3d(-0.0316981, 0.0303474, -0.0558053),
-  //    Eigen::Quaterniond(-0.135559, 0.523541, -0.819119, 0.191239));
-  // ROS_INFO_STREAM("TRANSFORM: " << trans.getTransformationMatrix());
-
   ros::spinOnce();
 }
 
@@ -377,21 +407,27 @@ void VoxbloxNode::insertPointcloudWithTf(
     }
     ros::WallTime start = ros::WallTime::now();
     tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
-    occupancy_integrator_->integratePointCloud(T_G_C, points_C);
+    if (generate_occupancy_) {
+      occupancy_integrator_->integratePointCloud(T_G_C, points_C);
+    }
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
       ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
                (end - start).toSec(),
                tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
-
-      ROS_INFO(
-          "Occupancy: %lu blocks.",
-          occupancy_map_->getOccupancyLayerPtr()->getNumberOfAllocatedBlocks());
+      if (generate_occupancy_) {
+        ROS_INFO("Occupancy: %lu blocks.",
+                 occupancy_map_->getOccupancyLayerPtr()
+                     ->getNumberOfAllocatedBlocks());
+      }
     }
+
     publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
     publishTsdfOccupiedNodes();
-    publishOccupancy();
+    if (generate_occupancy_) {
+      publishOccupancy();
+    }
     publishSlices();
 
     if (verbose_) {
@@ -609,14 +645,31 @@ bool VoxbloxNode::generateMeshCallback(
   return true;
 }
 
+bool VoxbloxNode::saveMapCallback(
+    voxblox_ros::FilePath::Request& request,
+    voxblox_ros::FilePath::Response& response) {  // NOLINT
+  // Will only save TSDF layer for now.
+  return io::SaveLayer(tsdf_map_->getTsdfLayer(), request.file_path);
+}
+bool VoxbloxNode::loadMapCallback(
+    voxblox_ros::FilePath::Request& request,
+    voxblox_ros::FilePath::Response& response) {  // NOLINT
+  // Will only load TSDF layer for now.
+  return io::LoadBlocksFromFile(
+      request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit,
+      tsdf_map_->getTsdfLayerPtr());
+}
+
 void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
   if (verbose_) {
     ROS_INFO("Updating mesh.");
   }
   // TODO(helenol): also update the ESDF layer each time you update the mesh.
-  const bool clear_updated_flag_esdf = false;
-  esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
-  publishAllUpdatedEsdfVoxels();
+  if (generate_esdf_) {
+    const bool clear_updated_flag_esdf = false;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+    publishAllUpdatedEsdfVoxels();
+  }
 
   timing::Timer generate_mesh_timer("mesh/update");
   const bool clear_updated_flag = true;
