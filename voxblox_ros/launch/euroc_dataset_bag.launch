@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="ISO-8859-15"?>
 <launch>
 
-  <arg name="play_bag" value="true" />
-  <arg name="bag_file" value="/Users/helen/data/euroc_datasets/V1_01_easy.bag"/>
+  <arg name="play_bag" default="true" />
+  <arg name="bag_file" default="/Users/helen/data/euroc_datasets/V1_01_easy.bag"/>
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.2 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
 
    <!-- Run stereo_dense_reconstruction_node-->
@@ -43,7 +43,7 @@
     <param name="tsdf_voxel_size" value="0.05" />
     <param name="tsdf_voxels_per_side" value="16" />
     <param name="voxel_carving_enabled" value="true" />
-    <param name="color_mode" value="normals" />
+    <param name="color_mode" value="color" />
     <param name="use_tf_transforms" value="false" />
     <param name="verbose" value="true" />
     <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" />

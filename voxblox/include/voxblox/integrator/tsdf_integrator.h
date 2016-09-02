@@ -126,15 +126,18 @@ class TsdfIntegrator {
     bool occupied = false;
     size_t i = 0;
     for (const TsdfUpdate& update : updates) {
+      if (i > 1) {
+        break;
+      }
       // if (i > updates.size() / 2) {
       //  break;
       //}
-      if (sdf < truncation_distance) {
+      /* if (sdf < truncation_distance) {
         occupied = true;
       }
       if (occupied && sdf > truncation_distance) {
         break;
-      }
+      } */
       ++i;
       sdf = (sdf * weight + update.distance * update.weight) /
             (weight + update.weight);
