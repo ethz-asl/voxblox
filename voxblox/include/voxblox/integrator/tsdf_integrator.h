@@ -81,8 +81,7 @@ class TsdfIntegrator {
   }
 
   inline float computeDistance(const Point& origin, const Point& point_G,
-                               const Point& voxel_center,
-                               const float truncation_distance) {
+                               const Point& voxel_center) {
     Eigen::Vector3d voxel_direction = point_G - voxel_center;
     Eigen::Vector3d ray_direction = point_G - origin;
 
@@ -91,10 +90,6 @@ class TsdfIntegrator {
     if (voxel_direction.dot(ray_direction) < 0) {
       sdf = -sdf;
     }
-
-    // IMPORTANT NOTE: we truncate before averaging now.
-    sdf = (sdf > 0.0) ? std::min(truncation_distance, sdf)
-                      : std::max(-truncation_distance, sdf);
     return sdf;
   }
 
@@ -111,9 +106,27 @@ class TsdfIntegrator {
                 return a.distance < b.distance;
               });
 
-    float weight = updates.front().weight;
+    /* float weight = updates.front().weight;
     Color color = updates.front().color;
-    float sdf = updates.front().distance;
+    float sdf = updates.front().distance; */
+    float weight = 0.0;
+    Color color;
+    float sdf = 0.0;
+
+    // Iterate over the entire vector.
+    float truncation_distance = config_.default_truncation_distance;
+
+    size_t i = 0;
+    for (const TsdfUpdate& update : updates) {
+      if (i > updates.size() / 2) {
+        break;
+      }
+      ++i;
+      sdf = (sdf * weight + update.distance * update.weight) /
+            (weight + update.weight);
+      color = Color::blendTwoColors(color, weight, update.color, update.weight);
+      weight += update.weight;
+    }
 
     const float new_weight = tsdf_voxel->weight + weight;
     tsdf_voxel->color = Color::blendTwoColors(
@@ -121,10 +134,9 @@ class TsdfIntegrator {
     const float new_sdf =
         (sdf * weight + tsdf_voxel->distance * tsdf_voxel->weight) / new_weight;
 
-    tsdf_voxel->distance =
-        (new_sdf > 0.0)
-            ? std::min(config_.default_truncation_distance, new_sdf)
-            : std::max(-config_.default_truncation_distance, new_sdf);
+    tsdf_voxel->distance = (new_sdf > 0.0)
+                               ? std::min(truncation_distance, new_sdf)
+                               : std::max(-truncation_distance, new_sdf);
     tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
   }
 
@@ -413,15 +425,18 @@ class TsdfIntegrator {
         Point voxel_center_G =
             getOriginPointFromGridIndex(global_voxel_idx, voxel_size_);
 
-        float sdf = computeDistance(origin, point_G, voxel_center_G,
-                                    truncation_distance);
+        float sdf = computeDistance(origin, point_G, voxel_center_G);
 
         TsdfUpdate update;
         update.distance = sdf;
         update.weight = total_weight;
+        // Behind the surface, should down-weigh.
+        if (sdf < 0.0) {
+          update.weight = total_weight * std::abs(sdf) / truncation_distance;
+        }
         update.color = mean_color;
 
-        voxel_update_map[kv.first].push_back(update);
+        voxel_update_map[global_voxel_idx].push_back(update);
       }
     }
     prefilter_timer.Stop();

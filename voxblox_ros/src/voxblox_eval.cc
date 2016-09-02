@@ -206,12 +206,12 @@ void VoxbloxEvaluator::evaluate() {
     total_evaluated_voxels++;
   }
 
-  double rms = sqrt(mse / total_evaluated_voxels);
+  double rms = sqrt(mse / (total_evaluated_voxels - unknown_voxels));
 
   std::cout << "Finished evaluating.\n"
             << "\nRMS Error:           " << rms
             << "\nTotal evaluated:     " << total_evaluated_voxels
-            << "\nUnkown voxels:       " << unknown_voxels << " ("
+            << "\nUnknown voxels:       " << unknown_voxels << " ("
             << static_cast<double>(unknown_voxels) / total_evaluated_voxels
             << ")\nOutside truncation: " << outside_truncation_voxels << " ("
             << outside_truncation_voxels /

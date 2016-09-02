@@ -403,7 +403,7 @@ void VoxbloxNode::insertPointcloudWithTf(
       ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
     }
     ros::WallTime start = ros::WallTime::now();
-    tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors);
+    tsdf_integrator_->integratePointCloudPrefilter(T_G_C, points_C, colors);
     if (generate_occupancy_) {
       occupancy_integrator_->integratePointCloud(T_G_C, points_C);
     }
