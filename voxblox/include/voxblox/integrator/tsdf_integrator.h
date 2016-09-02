@@ -24,6 +24,14 @@ class TsdfIntegrator {
     FloatingPoint max_ray_length_m = 5.0;
   };
 
+  // Temporary structure for containing all the info needed to do a TSDF update
+  // for pre-filter update.
+  struct TsdfUpdate {
+    float distance;
+    Color color;
+    float weight;
+  };
+
   TsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : config_(config), layer_(layer) {
     DCHECK(layer_);
@@ -69,6 +77,54 @@ class TsdfIntegrator {
     tsdf_voxel->distance = (new_sdf > 0.0)
                                ? std::min(truncation_distance, new_sdf)
                                : std::max(-truncation_distance, new_sdf);
+    tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
+  }
+
+  inline float computeDistance(const Point& origin, const Point& point_G,
+                               const Point& voxel_center,
+                               const float truncation_distance) {
+    Eigen::Vector3d voxel_direction = point_G - voxel_center;
+    Eigen::Vector3d ray_direction = point_G - origin;
+
+    float sdf = static_cast<float>(voxel_direction.norm());
+    // Figure out if it's in front of the plane or behind.
+    if (voxel_direction.dot(ray_direction) < 0) {
+      sdf = -sdf;
+    }
+
+    // IMPORTANT NOTE: we truncate before averaging now.
+    sdf = (sdf > 0.0) ? std::min(truncation_distance, sdf)
+                      : std::max(-truncation_distance, sdf);
+    return sdf;
+  }
+
+  inline void updateVoxelFromVector(
+      const std::vector<TsdfUpdate>& updates_const, TsdfVoxel* tsdf_voxel) {
+    // Iterate over the vector of updates.
+    // Copy over data...
+    std::vector<TsdfUpdate> updates = updates_const;
+
+    // Selection strategy: minimum.
+    // TODO(helenol): look into other selection strategies.
+    std::sort(updates.begin(), updates.end(),
+              [](const TsdfUpdate& a, const TsdfUpdate& b) -> bool {
+                return a.distance < b.distance;
+              });
+
+    float weight = updates.front().weight;
+    Color color = updates.front().color;
+    float sdf = updates.front().distance;
+
+    const float new_weight = tsdf_voxel->weight + weight;
+    tsdf_voxel->color = Color::blendTwoColors(
+        tsdf_voxel->color, tsdf_voxel->weight, color, weight);
+    const float new_sdf =
+        (sdf * weight + tsdf_voxel->distance * tsdf_voxel->weight) / new_weight;
+
+    tsdf_voxel->distance =
+        (new_sdf > 0.0)
+            ? std::min(config_.default_truncation_distance, new_sdf)
+            : std::max(-config_.default_truncation_distance, new_sdf);
     tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
   }
 
@@ -178,8 +234,8 @@ class TsdfIntegrator {
       voxel_map[voxel_index].push_back(pt_idx);
     }
 
-    VLOG(5) << "Went from " << points_C.size() << " points to "
-            << voxel_map.size() << " raycasts.";
+    LOG(INFO) << "Went from " << points_C.size() << " points to "
+              << voxel_map.size() << " raycasts.";
 
     const Point voxel_center_offset(0.5, 0.5, 0.5);
 
@@ -263,6 +319,139 @@ class TsdfIntegrator {
       }
       update_voxels_timer.Stop();
     }
+    integrate_timer.Stop();
+  }
+
+  // ICRA 2017 research...
+  void integratePointCloudPrefilter(const Transformation& T_G_C,
+                                    const Pointcloud& points_C,
+                                    const Colors& colors) {
+    DCHECK_EQ(points_C.size(), colors.size());
+    timing::Timer integrate_timer("integrate");
+
+    const Point& origin = T_G_C.getPosition();
+
+    // Pre-compute a list of unique voxels to end on.
+    // Create a hashmap: VOXEL INDEX -> index in original cloud.
+    BlockHashMapType<std::vector<size_t>>::type voxel_map;
+    // This is a hash map (same as above) to all the indices that need to be
+    // cleared.
+    BlockHashMapType<std::vector<size_t>>::type clear_map;
+    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
+      const Point& point_C = points_C[pt_idx];
+      const Point point_G = T_G_C * point_C;
+
+      FloatingPoint ray_distance = (point_C).norm();
+      if (ray_distance < config_.min_ray_length_m) {
+        continue;
+      } else if (ray_distance > config_.max_ray_length_m) {
+        VoxelIndex voxel_index =
+            getGridIndexFromPoint(point_G, voxel_size_inv_);
+        clear_map[voxel_index].push_back(pt_idx);
+        continue;
+      }
+
+      // Figure out what the end voxel is here.
+      VoxelIndex voxel_index = getGridIndexFromPoint(point_G, voxel_size_inv_);
+      voxel_map[voxel_index].push_back(pt_idx);
+    }
+
+    LOG(INFO) << "Went from " << points_C.size() << " points to "
+              << voxel_map.size() << " raycasts and " << clear_map.size()
+              << " clear rays.";
+
+    const Point voxel_center_offset(0.5, 0.5, 0.5);
+
+    // Now re-sort the voxels by the updates.
+    // Type of the pair is {distance, color, weight}.
+    BlockHashMapType<std::vector<TsdfUpdate>>::type voxel_update_map;
+
+    timing::Timer prefilter_timer("integrate/prefilter");
+
+    FloatingPoint truncation_distance = config_.default_truncation_distance;
+    for (const BlockHashMapType<std::vector<size_t>>::type::value_type& kv :
+         voxel_map) {
+      if (kv.second.empty()) {
+        continue;
+      }
+      // Key actually doesn't matter at all.
+      Point mean_point_C = Point::Zero();
+      Color mean_color;
+      float total_weight = 0.0;
+
+      for (size_t pt_idx : kv.second) {
+        const Point& point_C = points_C[pt_idx];
+        const Color& color = colors[pt_idx];
+
+        float point_weight = getVoxelWeight(
+            point_C, T_G_C * point_C, origin,
+            (kv.first.cast<FloatingPoint>() + voxel_center_offset) *
+                voxel_size_);
+        mean_point_C = (mean_point_C * total_weight + point_C * point_weight) /
+                       (total_weight + point_weight);
+        mean_color = Color::blendTwoColors(mean_color, total_weight, color,
+                                           point_weight);
+        total_weight += point_weight;
+      }
+
+      const Point point_G = T_G_C * mean_point_C;
+      const Ray unit_ray = (point_G - origin).normalized();
+      const Point ray_end = point_G + unit_ray * truncation_distance;
+      const Point ray_start = config_.voxel_carving_enabled
+                                  ? origin
+                                  : (point_G - unit_ray * truncation_distance);
+
+      const Point start_scaled = ray_start * voxel_size_inv_;
+      const Point end_scaled = ray_end * voxel_size_inv_;
+
+      IndexVector global_voxel_index;
+      timing::Timer cast_ray_timer("integrate/cast_ray");
+      castRay(start_scaled, end_scaled, &global_voxel_index);
+      cast_ray_timer.Stop();
+
+      for (const AnyIndex& global_voxel_idx : global_voxel_index) {
+        Point voxel_center_G =
+            getOriginPointFromGridIndex(global_voxel_idx, voxel_size_);
+
+        float sdf = computeDistance(origin, point_G, voxel_center_G,
+                                    truncation_distance);
+
+        TsdfUpdate update;
+        update.distance = sdf;
+        update.weight = total_weight;
+        update.color = mean_color;
+
+        voxel_update_map[kv.first].push_back(update);
+      }
+    }
+    prefilter_timer.Stop();
+
+    timing::Timer update_voxels_timer("integrate/update_voxels");
+    BlockIndex last_block_idx = BlockIndex::Zero();
+    Block<TsdfVoxel>::Ptr block;
+    for (const BlockHashMapType<std::vector<TsdfUpdate>>::type::value_type& kv :
+         voxel_update_map) {
+      if (kv.second.empty()) {
+        continue;
+      }
+      VoxelIndex global_voxel_idx = kv.first;
+      BlockIndex block_idx = getGridIndexFromPoint(
+          global_voxel_idx.cast<FloatingPoint>(), voxels_per_side_inv_);
+
+      VoxelIndex local_voxel_idx =
+          getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
+
+      if (!block || block_idx != last_block_idx) {
+        block = layer_->allocateBlockPtrByIndex(block_idx);
+        block->updated() = true;
+        last_block_idx = block_idx;
+      }
+      TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
+
+      updateVoxelFromVector(kv.second, &tsdf_voxel);
+    }
+
+    update_voxels_timer.Stop();
     integrate_timer.Stop();
   }
 
