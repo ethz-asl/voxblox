@@ -374,9 +374,11 @@ class TsdfIntegrator {
       if (ray_distance < config_.min_ray_length_m) {
         continue;
       } else if (ray_distance > config_.max_ray_length_m) {
-        VoxelIndex voxel_index =
-            getGridIndexFromPoint(point_G, voxel_size_inv_);
-        clear_map[voxel_index].push_back(pt_idx);
+        if (config_.voxel_carving_enabled) {
+          VoxelIndex voxel_index =
+              getGridIndexFromPoint(point_G, voxel_size_inv_);
+          clear_map[voxel_index].push_back(pt_idx);
+        }
         continue;
       }
 
@@ -458,6 +460,55 @@ class TsdfIntegrator {
       }
     }
     prefilter_timer.Stop();
+
+    timing::Timer clear_timer("integrate/clear");
+    for (const BlockHashMapType<std::vector<size_t>>::type::value_type& kv :
+         clear_map) {
+      if (kv.second.empty()) {
+        continue;
+      }
+      // Key actually doesn't matter at all.
+      Point point_C = Point::Zero();
+      Color color;
+      float weight = 0.0;
+
+      for (size_t pt_idx : kv.second) {
+        // Just take first.
+        point_C = points_C[pt_idx];
+        color = colors[pt_idx];
+
+        weight = getVoxelWeight(
+            point_C, T_G_C * point_C, origin,
+            (kv.first.cast<FloatingPoint>() + voxel_center_offset) *
+                voxel_size_);
+        break;
+      }
+
+      const Point point_G = T_G_C * point_C;
+      const Ray unit_ray = (point_G - origin).normalized();
+      const Point ray_end = origin + unit_ray * config_.max_ray_length_m;
+      const Point ray_start = origin;
+
+      const Point start_scaled = ray_start * voxel_size_inv_;
+      const Point end_scaled = ray_end * voxel_size_inv_;
+
+      IndexVector global_voxel_index;
+      timing::Timer cast_ray_timer("integrate/cast_ray");
+      castRay(start_scaled, end_scaled, &global_voxel_index);
+      cast_ray_timer.Stop();
+
+      for (const AnyIndex& global_voxel_idx : global_voxel_index) {
+        float sdf = truncation_distance;
+
+        TsdfUpdate update;
+        update.distance = sdf;
+        update.weight = weight;
+        update.color = color;
+
+        voxel_update_map[global_voxel_idx].push_back(update);
+      }
+    }
+    clear_timer.Stop();
 
     timing::Timer update_voxels_timer("integrate/update_voxels");
     BlockIndex last_block_idx = BlockIndex::Zero();
