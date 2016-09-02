@@ -68,6 +68,13 @@ class TsdfIntegrator {
       sdf = -sdf;
     }
 
+    // This is for the linear drop-off in confidence behind the surface.
+    float updated_weight = weight;
+    if (sdf < 0.0) {
+      updated_weight =
+          weight * (truncation_distance + sdf) / truncation_distance;
+    }
+
     const float new_weight = tsdf_voxel->weight + weight;
     tsdf_voxel->color = Color::blendTwoColors(
         tsdf_voxel->color, tsdf_voxel->weight, color, weight);
@@ -116,9 +123,16 @@ class TsdfIntegrator {
     // Iterate over the entire vector.
     float truncation_distance = config_.default_truncation_distance;
 
+    bool occupied = false;
     size_t i = 0;
     for (const TsdfUpdate& update : updates) {
-      if (i > updates.size() / 2) {
+      // if (i > updates.size() / 2) {
+      //  break;
+      //}
+      if (sdf < truncation_distance) {
+        occupied = true;
+      }
+      if (occupied && sdf > truncation_distance) {
         break;
       }
       ++i;
@@ -432,7 +446,8 @@ class TsdfIntegrator {
         update.weight = total_weight;
         // Behind the surface, should down-weigh.
         if (sdf < 0.0) {
-          update.weight = total_weight * std::abs(sdf) / truncation_distance;
+          update.weight =
+              total_weight * (truncation_distance + sdf) / truncation_distance;
         }
         update.color = mean_color;
 

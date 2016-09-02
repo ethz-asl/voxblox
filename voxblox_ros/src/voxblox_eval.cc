@@ -174,7 +174,7 @@ void VoxbloxEvaluator::evaluate() {
     bool valid = false;
 
     const float min_weight = 0.01;
-    const bool interpolate = true;
+    const bool interpolate = false;
     // We will do multiple lookups -- the first is to determine whether the
     // voxel exists.
     if (!interpolator_->getNearestDistanceAndWeight(point, &distance,
