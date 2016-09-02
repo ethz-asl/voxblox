@@ -171,6 +171,7 @@ void VoxbloxEvaluator::evaluate() {
 
     double distance = 0.0;
     float weight = 0.0;
+    bool valid = false;
 
     const float min_weight = 0.01;
     const bool interpolate = true;
@@ -184,10 +185,22 @@ void VoxbloxEvaluator::evaluate() {
     } else if (distance >= truncation_distance) {
       outside_truncation_voxels++;
       mse += truncation_distance * truncation_distance;
+      valid = true;
     } else {
       // In case this fails, distance is still the nearest neighbor distance.
       interpolator_->getDistance(point, &distance, interpolate);
       mse += distance * distance;
+      valid = true;
+    }
+
+    if (valid && visualize_ && recolor_by_error_) {
+      Layer<TsdfVoxel>::BlockType::Ptr block_ptr =
+          tsdf_layer_->getBlockPtrByCoordinates(point);
+      if (block_ptr != nullptr) {
+        TsdfVoxel& voxel = block_ptr->getVoxelByCoordinates(point);
+        voxel.color =
+            grayColorMap(std::fabs(distance) / truncation_distance);
+      }
     }
 
     total_evaluated_voxels++;

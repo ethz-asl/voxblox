@@ -70,6 +70,17 @@ Color rainbowColorMap(double h) {
   return color;
 }
 
+Color grayColorMap(double h) {
+  Color color;
+  color.a = 255;
+
+  color.r = round(h * 255);
+  color.b = 128;
+  color.g = color.r;
+
+  return color;
+}
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_COLOR_H_

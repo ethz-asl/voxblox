@@ -190,11 +190,10 @@ bool Interpolator::getNearestDistance(const Point& pos,
 }
 
 bool Interpolator::getNearestDistanceAndWeight(const Point& pos,
-                                        FloatingPoint* distance,
-                                        float* weight) const {
+                                               FloatingPoint* distance,
+                                               float* weight) const {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(weight);
-
 
   Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr =
       tsdf_layer_->getBlockPtrByCoordinates(pos);
