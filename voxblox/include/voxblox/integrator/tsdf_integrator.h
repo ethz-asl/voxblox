@@ -247,6 +247,9 @@ class TsdfIntegrator {
     // Pre-compute a list of unique voxels to end on.
     // Create a hashmap: VOXEL INDEX -> index in original cloud.
     BlockHashMapType<std::vector<size_t>>::type voxel_map;
+    // This is a hash map (same as above) to all the indices that need to be
+    // cleared.
+    BlockHashMapType<std::vector<size_t>>::type clear_map;
     for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
@@ -255,7 +258,9 @@ class TsdfIntegrator {
       if (ray_distance < config_.min_ray_length_m) {
         continue;
       } else if (ray_distance > config_.max_ray_length_m) {
-        // TODO(helenol): clear until max ray length instead.
+        VoxelIndex voxel_index =
+            getGridIndexFromPoint(point_G, voxel_size_inv_);
+        clear_map[voxel_index].push_back(pt_idx);
         continue;
       }
 
@@ -265,7 +270,8 @@ class TsdfIntegrator {
     }
 
     LOG(INFO) << "Went from " << points_C.size() << " points to "
-              << voxel_map.size() << " raycasts.";
+              << voxel_map.size() << " raycasts  and " << clear_map.size()
+              << " clear rays.";
 
     const Point voxel_center_offset(0.5, 0.5, 0.5);
 
@@ -347,6 +353,76 @@ class TsdfIntegrator {
       }
       update_voxels_timer.Stop();
     }
+
+    timing::Timer clear_timer("integrate/clear");
+    BlockIndex last_block_idx = BlockIndex::Zero();
+    Block<TsdfVoxel>::Ptr block;
+    for (const BlockHashMapType<std::vector<size_t>>::type::value_type& kv :
+         clear_map) {
+      if (kv.second.empty()) {
+        continue;
+      }
+      // Key actually doesn't matter at all.
+      Point point_C = Point::Zero();
+      Color color;
+      float weight = 0.0;
+
+      for (size_t pt_idx : kv.second) {
+        // Just take first.
+        point_C = points_C[pt_idx];
+        color = colors[pt_idx];
+
+        weight = getVoxelWeight(
+            point_C, T_G_C * point_C, origin,
+            (kv.first.cast<FloatingPoint>() + voxel_center_offset) *
+                voxel_size_);
+        break;
+      }
+
+      const Point point_G = T_G_C * point_C;
+      const Ray unit_ray = (point_G - origin).normalized();
+      const Point ray_end = origin + unit_ray * config_.max_ray_length_m;
+      const Point ray_start = origin;
+
+      const Point start_scaled = ray_start * voxel_size_inv_;
+      const Point end_scaled = ray_end * voxel_size_inv_;
+
+      IndexVector global_voxel_index;
+      timing::Timer cast_ray_timer("integrate/cast_ray");
+      castRay(start_scaled, end_scaled, &global_voxel_index);
+      cast_ray_timer.Stop();
+
+      for (const AnyIndex& global_voxel_idx : global_voxel_index) {
+        if (discard) {
+          // Check if this one is already the the block hash map for this
+          // insertion. Skip this to avoid grazing.
+          if (voxel_map.find(global_voxel_idx) != voxel_map.end()) {
+            continue;
+          }
+        }
+
+        BlockIndex block_idx = getGridIndexFromPoint(
+            global_voxel_idx.cast<FloatingPoint>(), voxels_per_side_inv_);
+
+        VoxelIndex local_voxel_idx =
+            getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
+
+        if (!block || block_idx != last_block_idx) {
+          block = layer_->allocateBlockPtrByIndex(block_idx);
+          block->updated() = true;
+          last_block_idx = block_idx;
+        }
+
+        const Point voxel_center_G =
+            block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
+        TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
+
+        updateTsdfVoxel(origin, point_C, point_G, voxel_center_G, color,
+                        truncation_distance, weight, &tsdf_voxel);
+      }
+    }
+    clear_timer.Stop();
+
     integrate_timer.Stop();
   }
 
@@ -451,7 +527,8 @@ class TsdfIntegrator {
         // Behind the surface, should down-weigh.
         if (sdf < 0.0) {
           update.weight =
-              total_weight * (truncation_distance + sdf) / truncation_distance;
+              total_weight *
+              std::max((truncation_distance + sdf) / truncation_distance, 0.0);
         }
         update.color = mean_color;
 
