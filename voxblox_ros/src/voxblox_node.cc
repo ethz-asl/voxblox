@@ -32,7 +32,13 @@ namespace voxblox {
 class VoxbloxNode {
  public:
   // Merging method for new pointclouds.
-  enum Method { kSimple = 0, kMerged, kPrefilter, kMergedDiscard };
+  enum Method {
+    kSimple = 0,
+    kMerged,
+    kPrefilter,
+    kMergedDiscard,
+    kPrefilterFast
+  };
 
   VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
@@ -215,6 +221,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     method_ = kPrefilter;
   } else if (method.compare("merged_discard") == 0) {
     method_ = kMergedDiscard;
+  } else if (method.compare("prefilter_fast") == 0) {
+    method_ = kPrefilterFast;
   } else {
     method_ = kSimple;
   }
@@ -234,7 +242,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Determine integrator parameters.
   TsdfIntegrator::Config integrator_config;
   integrator_config.voxel_carving_enabled = true;
-  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 4;
+  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 2;
 
   double truncation_distance = integrator_config.default_truncation_distance;
   double max_weight = integrator_config.max_weight;
@@ -432,6 +440,9 @@ void VoxbloxNode::insertPointcloudWithTf(
       bool discard = true;
       tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
                                                   discard);
+    } else if (method_ == Method::kPrefilterFast) {
+      tsdf_integrator_->integratePointCloudPrefilterFast(T_G_C, points_C,
+                                                         colors);
     } else {
       tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
     }

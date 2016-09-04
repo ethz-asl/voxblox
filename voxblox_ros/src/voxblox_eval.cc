@@ -160,7 +160,7 @@ void VoxbloxEvaluator::evaluate() {
   uint64_t outside_truncation_voxels = 0;
 
   // TODO(helenol): make this dynamic.
-  double truncation_distance = 4 * tsdf_layer_->voxel_size();
+  double truncation_distance = 2 * tsdf_layer_->voxel_size();
 
   double mse = 0.0;
 
@@ -174,7 +174,7 @@ void VoxbloxEvaluator::evaluate() {
     bool valid = false;
 
     const float min_weight = 0.01;
-    const bool interpolate = false;
+    const bool interpolate = true;
     // We will do multiple lookups -- the first is to determine whether the
     // voxel exists.
     if (!interpolator_->getNearestDistanceAndWeight(point, &distance,
