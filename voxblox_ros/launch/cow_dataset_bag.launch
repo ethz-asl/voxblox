@@ -14,6 +14,7 @@
     <param name="use_tf_transforms" value="false" />
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="min_time_between_msgs_sec" value="0.2" />
+    <param name="method" value="merged_discard" />
     <!--<param name="truncation_distance" value="0.5" /> -->
     <param name="verbose" value="true" />
     <remap from="transform" to="vrpn_client_kinect/raw_transform" />
@@ -29,6 +30,5 @@
     <param name="visualize_min_z" value="-1.0" />
     <param name="visualize_max_z" value="1.5" />
     <remap from="pointcloud" to="points_processed" />
-
   </node> -->
 </launch>

@@ -72,7 +72,8 @@ class TsdfIntegrator {
     float updated_weight = weight;
     if (sdf < 0.0) {
       updated_weight =
-          weight * (truncation_distance + sdf) / truncation_distance;
+          weight *
+          std::max((truncation_distance + sdf) / truncation_distance, 0.0f);
     }
 
     const float new_weight = tsdf_voxel->weight + weight;
@@ -237,7 +238,7 @@ class TsdfIntegrator {
 
   void integratePointCloudMerged(const Transformation& T_G_C,
                                  const Pointcloud& points_C,
-                                 const Colors& colors) {
+                                 const Colors& colors, bool discard) {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
@@ -315,22 +316,20 @@ class TsdfIntegrator {
       Block<TsdfVoxel>::Ptr block;
 
       for (const AnyIndex& global_voxel_idx : global_voxel_index) {
+        if (discard) {
+          // Check if this one is already the the block hash map for this
+          // insertion. Skip this to avoid grazing.
+          if (global_voxel_idx != kv.first &&
+              voxel_map.find(global_voxel_idx) != voxel_map.end()) {
+            continue;
+          }
+        }
+
         BlockIndex block_idx = getGridIndexFromPoint(
             global_voxel_idx.cast<FloatingPoint>(), voxels_per_side_inv_);
 
-        VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side_,
-                                   global_voxel_idx.y() % voxels_per_side_,
-                                   global_voxel_idx.z() % voxels_per_side_);
-
-        if (local_voxel_idx.x() < 0) {
-          local_voxel_idx.x() += voxels_per_side_;
-        }
-        if (local_voxel_idx.y() < 0) {
-          local_voxel_idx.y() += voxels_per_side_;
-        }
-        if (local_voxel_idx.z() < 0) {
-          local_voxel_idx.z() += voxels_per_side_;
-        }
+        VoxelIndex local_voxel_idx =
+            getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
         if (!block || block_idx != last_block_idx) {
           block = layer_->allocateBlockPtrByIndex(block_idx);
