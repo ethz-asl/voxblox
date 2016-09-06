@@ -18,7 +18,7 @@ struct EsdfVoxel {
   float distance = 0.0;
   bool observed = false;
   bool in_queue = false;
-  bool in_raise_queue = false;
+  bool fixed = false;
   // Relative direction toward parent. If itself, then either uninitialized
   // or in the fixed frontier.
   Eigen::Vector3i parent = Eigen::Vector3i::Zero();
