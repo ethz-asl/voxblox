@@ -232,6 +232,7 @@ class EsdfIntegrator {
     std::vector<Eigen::Vector3i> directions;
     getNeighborsAndDistances(block_index, voxel_index, &neighbors, &distances,
                              &directions);
+
     for (const VoxelKey& neighbor : neighbors) {
       BlockIndex neighbor_block_index = neighbor.first;
       VoxelIndex neighbor_voxel_index = neighbor.second;
@@ -256,7 +257,6 @@ class EsdfIntegrator {
   }
 
   void processRaiseSet() {
-    return;
     size_t num_updates = 0;
     // For the raise set, get all the neighbors, then:
     // 1. if the neighbor's parent is the current voxel, add it to the raise
@@ -338,11 +338,13 @@ class EsdfIntegrator {
           esdf_layer_->getBlockPtrByIndex(kv.first);
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
       if (!esdf_voxel.observed) {
+        esdf_voxel.in_queue = false;
         continue;
       }
 
       // Don't bother propagating this -- can't make any active difference.
       if (esdf_voxel.distance >= config_.default_distance_m) {
+        esdf_voxel.in_queue = false;
         continue;
       }
       // See if you can update the neighbors.
