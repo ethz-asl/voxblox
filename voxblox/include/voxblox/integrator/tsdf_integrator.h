@@ -124,7 +124,7 @@ class TsdfIntegrator {
     // Iterate over the entire vector.
     float truncation_distance = config_.default_truncation_distance;
 
-    bool occupied = false;
+    //bool occupied = false;
     size_t i = 0;
     for (const TsdfUpdate& update : updates) {
       if (i > 1) {

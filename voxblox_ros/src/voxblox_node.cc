@@ -101,6 +101,9 @@ class VoxbloxNode {
   Transformation T_B_C_;
   Transformation T_B_D_;
 
+  // Pointcloud visualization settings.
+  double slice_level_;
+
   // Mesh output settings. Mesh is only written to file if mesh_filename_ is
   // not
   // empty.
@@ -167,13 +170,17 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       world_frame_("world"),
       use_tf_transforms_(true),
       // 10 ms here:
-      timestamp_tolerance_ns_(10000000) {
+      timestamp_tolerance_ns_(10000000),
+      slice_level_(0.5) {
   // Before subscribing, determine minimum time between messages.
   // 0 by default.
   double min_time_between_msgs_sec = 0.0;
   nh_private_.param("min_time_between_msgs_sec", min_time_between_msgs_sec,
                     min_time_between_msgs_sec);
   min_time_between_msgs_.fromSec(min_time_between_msgs_sec);
+
+  // Determine which parts to generate.
+  nh_private_.param("generate_esdf", generate_esdf_, generate_esdf_);
 
   // Advertise topics.
   mesh_pub_ =
@@ -269,9 +276,13 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     // TODO(helenol): add possibility for different ESDF map sizes.
     esdf_config.esdf_voxel_size = config.tsdf_voxel_size;
     esdf_config.esdf_voxels_per_side = config.tsdf_voxels_per_side;
+
     esdf_map_.reset(new EsdfMap(esdf_config));
 
     EsdfIntegrator::Config esdf_integrator_config;
+    // Make sure that this is the same as the truncation distance OR SMALLER!
+    esdf_integrator_config.min_distance_m =
+        integrator_config.default_truncation_distance;
     esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                               tsdf_map_->getTsdfLayerPtr(),
                                               esdf_map_->getEsdfLayerPtr()));
@@ -545,7 +556,7 @@ void VoxbloxNode::publishSlices() {
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
     createDistancePointcloudFromTsdfLayerSlice(tsdf_map_->getTsdfLayer(), 2,
-                                               0.5, &pointcloud);
+                                               slice_level_, &pointcloud);
 
     pointcloud.header.frame_id = world_frame_;
     tsdf_slice_pub_.publish(pointcloud);
@@ -554,7 +565,7 @@ void VoxbloxNode::publishSlices() {
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
     createDistancePointcloudFromEsdfLayerSlice(esdf_map_->getEsdfLayer(), 2,
-                                               0.5, &pointcloud);
+                                               slice_level_, &pointcloud);
 
     pointcloud.header.frame_id = world_frame_;
     esdf_slice_pub_.publish(pointcloud);
@@ -710,6 +721,7 @@ void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
   // TODO(helenol): also update the ESDF layer each time you update the mesh.
   if (generate_esdf_) {
     const bool clear_updated_flag_esdf = false;
+    //esdf_integrator_->updateFromTsdfLayerBatch();
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
     publishAllUpdatedEsdfVoxels();
   }
