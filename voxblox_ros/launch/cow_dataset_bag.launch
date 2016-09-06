@@ -1,7 +1,7 @@
 <launch>
   <arg name="play_bag" default="true" />
   <arg name="bag_file" default="/Users/helen/data/cow/small.bag"/>
-  <arg name="voxel_size" default="0.10"/>
+  <arg name="voxel_size" default="0.05"/>
   <arg name="generate_esdf" default="true" />
 
   <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>

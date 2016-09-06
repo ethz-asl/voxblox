@@ -24,7 +24,7 @@ class EsdfIntegrator {
     // integrator.
     FloatingPoint min_distance_m = 0.2;
     FloatingPoint default_distance_m = 2;
-    FloatingPoint min_raise_diff_m = 0.01;
+    FloatingPoint min_raise_diff_m = 0.0;//0.01;
     float min_weight = 1e-6;
   };
 
@@ -43,6 +43,10 @@ class EsdfIntegrator {
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_inv_ = 1.0 / block_size_;
     voxels_per_side_inv_ = 1.0 / voxels_per_side_; */
+  }
+
+  inline bool isFixed(FloatingPoint dist) const {
+    return dist > 0.0 && dist <= min_distance_m;
   }
 
   void updateFromTsdfLayerBatch() {
@@ -142,11 +146,14 @@ class EsdfIntegrator {
               signum(tsdf_voxel.distance) * config_.default_distance_m;
           esdf_voxel.parent.setZero();
           esdf_voxel.observed = true;
+          //raise_.push(std::make_pair(
+          //    block_index,
+          //    esdf_block->computeVoxelIndexFromLinearIndex(lin_index)));
 
           // Push all its neighbors in the queue so we can update its value.
-          pushNeighborsToOpen(
-              block_index,
-              esdf_block->computeVoxelIndexFromLinearIndex(lin_index));
+          //pushNeighborsToOpen(
+          //    block_index,
+          //    esdf_block->computeVoxelIndexFromLinearIndex(lin_index));
           num_new++;
         }
       }
