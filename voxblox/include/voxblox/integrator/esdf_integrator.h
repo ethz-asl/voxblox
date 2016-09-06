@@ -24,6 +24,7 @@ class EsdfIntegrator {
     // integrator.
     FloatingPoint min_distance_m = 0.2;
     FloatingPoint default_distance_m = 2;
+    FloatingPoint min_raise_diff_m = 0.01;
     float min_weight = 1e-6;
   };
 
@@ -42,6 +43,13 @@ class EsdfIntegrator {
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_inv_ = 1.0 / block_size_;
     voxels_per_side_inv_ = 1.0 / voxels_per_side_; */
+  }
+
+  void updateFromTsdfLayerBatch() {
+    esdf_layer_->removeAllBlocks();
+    BlockIndexList tsdf_blocks;
+    tsdf_layer_->getAllAllocatedBlocks(&tsdf_blocks);
+    updateFromTsdfBlocks(tsdf_blocks);
   }
 
   void updateFromTsdfLayer(bool clear_updated_flag) {
@@ -66,6 +74,9 @@ class EsdfIntegrator {
     // Get a specific list of voxels in the TSDF layer, and propagate out from
     // there.
     // Go through all blocks in TSDF and copy their values for relevant voxels.
+    size_t num_prop = 0;
+    size_t num_raise = 0;
+    size_t num_new = 0;
     timing::Timer propagate_timer("esdf/propagate_tsdf");
     LOG(INFO) << "[ESDF update]: Propagating " << tsdf_blocks.size()
               << " updated blocks from the TSDF.";
@@ -93,17 +104,35 @@ class EsdfIntegrator {
 
         EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
 
+        // Check for frontier voxels.
+        // This is the check for the lower frontier.
         if (std::abs(tsdf_voxel.distance) < config_.min_distance_m) {
           if (!esdf_voxel.observed ||
               tsdf_voxel.distance < esdf_voxel.distance) {
             esdf_voxel.distance = tsdf_voxel.distance;
             esdf_voxel.observed = true;
+            esdf_voxel.parent.setZero();
 
             esdf_voxel.in_queue = true;
             open_.push(std::make_pair(
                 block_index,
                 esdf_block->computeVoxelIndexFromLinearIndex(lin_index)));
+            num_prop++;
           }
+          // This checks for the raise conditions: if we hit this, then the
+          // value of the ESDF needs to be cleared and propagated.
+        } else if (esdf_voxel.observed &&
+                   std::abs(esdf_voxel.distance) < config_.min_distance_m &&
+                   (tsdf_voxel.distance > esdf_voxel.distance) &&
+                   tsdf_voxel.distance - esdf_voxel.distance >
+                       config_.min_raise_diff_m) {
+          esdf_voxel.distance = config_.default_distance_m;
+          esdf_voxel.parent.setZero();
+          // esdf_voxel.in_raise_queue = true;
+          raise_.push(std::make_pair(
+              block_index,
+              esdf_block->computeVoxelIndexFromLinearIndex(lin_index)));
+          num_raise++;
         } else if (!esdf_voxel.observed) {
           // Outside of truncation distance, but actually observed in the
           // original map.
@@ -111,11 +140,25 @@ class EsdfIntegrator {
           // Should we add it to open?
           esdf_voxel.distance =
               signum(tsdf_voxel.distance) * config_.default_distance_m;
+          esdf_voxel.parent.setZero();
           esdf_voxel.observed = true;
+
+          // Push all its neighbors in the queue so we can update its value.
+          pushNeighborsToOpen(
+              block_index,
+              esdf_block->computeVoxelIndexFromLinearIndex(lin_index));
+          num_new++;
         }
       }
     }
     propagate_timer.Stop();
+    LOG(INFO) << "[ESDF update]: Prop: " << num_prop << " Raise: " << num_raise
+              << " New: " << num_new;
+
+    timing::Timer raise_timer("esdf/raise_esdf");
+    // Process the open set now.
+    processRaiseSet();
+    raise_timer.Stop();
 
     timing::Timer update_timer("esdf/update_esdf");
     // Process the open set now.
@@ -123,6 +166,107 @@ class EsdfIntegrator {
     update_timer.Stop();
 
     esdf_timer.Stop();
+  }
+
+  void pushNeighborsToOpen(const BlockIndex& block_index,
+                           const VoxelIndex& voxel_index) {
+    std::vector<VoxelKey> neighbors;
+    std::vector<float> distances;
+    std::vector<Eigen::Vector3i> directions;
+    getNeighborsAndDistances(block_index, voxel_index, &neighbors, &distances,
+                             &directions);
+    for (const VoxelKey& neighbor : neighbors) {
+      if (esdf_layer_->hasBlock(neighbor.first)) {
+        BlockIndex neighbor_block_index = neighbor.first;
+        VoxelIndex neighbor_voxel_index = neighbor.second;
+
+        // Get the block for this voxel.
+        Block<EsdfVoxel>::Ptr neighbor_block =
+            esdf_layer_->getBlockPtrByIndex(neighbor_block_index);
+        if (!neighbor_block) {
+          continue;
+        }
+        EsdfVoxel& neighbor_voxel =
+            neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+
+        if (neighbor_voxel.observed && !neighbor_voxel.in_queue) {
+          open_.push(neighbor);
+          neighbor_voxel.in_queue = true;
+        }
+      }
+    }
+  }
+
+  void processRaiseSet() {
+    size_t num_updates = 0;
+    // For the raise set, get all the neighbors, then:
+    // 1. if the neighbor's parent is the current voxel, add it to the raise
+    //    queue.
+    // 2. if the neighbor's parent differs, add it to open (we will have to
+    //    update our current weights, of course).
+    while (!raise_.empty()) {
+      VoxelKey kv = raise_.front();
+      raise_.pop();
+
+      Block<EsdfVoxel>::Ptr esdf_block =
+          esdf_layer_->getBlockPtrByIndex(kv.first);
+      EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
+
+      // See if you can update the neighbors.
+      std::vector<VoxelKey> neighbors;
+      std::vector<float> distances;
+      std::vector<Eigen::Vector3i> directions;
+      getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
+                               &directions);
+
+      // Do NOT update unobserved distances.
+      CHECK_EQ(neighbors.size(), distances.size());
+      for (size_t i = 0; i < neighbors.size(); ++i) {
+        BlockIndex neighbor_block_index = neighbors[i].first;
+        VoxelIndex neighbor_voxel_index = neighbors[i].second;
+
+        // Get the block for this voxel.
+        Block<EsdfVoxel>::Ptr neighbor_block;
+        if (neighbor_block_index == kv.first) {
+          neighbor_block = esdf_block;
+        } else {
+          neighbor_block =
+              esdf_layer_->getBlockPtrByIndex(neighbor_block_index);
+        }
+        if (!neighbor_block) {
+          continue;
+        }
+        CHECK(neighbor_block->isValidVoxelIndex(neighbor_voxel_index))
+            << "Neigbor voxel index: " << neighbor_voxel_index.transpose();
+
+        EsdfVoxel& neighbor_voxel =
+            neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+
+        if (!neighbor_voxel.observed) {
+          continue;
+        }
+        if (neighbor_voxel.parent == -directions[i]) {
+          // This is the case where we are the parent of this one, so we should
+          // clear it and raise it.
+          // if (!neighbor_voxel.in_raise_queue) {
+          neighbor_voxel.distance = config_.default_distance_m;
+          neighbor_voxel.parent.setZero();
+          raise_.push(neighbors[i]);
+          //}
+        } else {
+          // If it's not in the queue, then add it to open so it can update
+          // our weights back.
+          if (!neighbor_voxel
+                   .in_queue /* && !neighbor_voxel.in_raise_queue */) {
+            open_.push(neighbors[i]);
+            neighbor_voxel.in_queue = true;
+          }
+        }
+      }
+      // esdf_voxel.in_raise_queue = false;
+      num_updates++;
+    }
+    LOG(INFO) << "[ESDF update]: raised " << num_updates << " voxels.";
   }
 
   void processOpenSet() {
@@ -135,10 +279,16 @@ class EsdfIntegrator {
           esdf_layer_->getBlockPtrByIndex(kv.first);
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
+      // Don't bother propagating this -- can't make any active difference.
+      if (esdf_voxel.distance >= config_.default_distance_m) {
+        continue;
+      }
       // See if you can update the neighbors.
       std::vector<VoxelKey> neighbors;
       std::vector<float> distances;
-      getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances);
+      std::vector<Eigen::Vector3i> directions;
+      getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
+                               &directions);
 
       // Do NOT update unobserved distances.
       CHECK_EQ(neighbors.size(), distances.size());
@@ -179,7 +329,11 @@ class EsdfIntegrator {
             esdf_voxel.distance + distance_to_neighbor <
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
-          if (!neighbor_voxel.in_queue) {
+          // Also update parent.
+          neighbor_voxel.parent = -directions[i];
+          // ONLY propagate this if we're below the max distance!
+          if (!neighbor_voxel.in_queue &&
+              neighbor_voxel.distance < config_.max_distance_m) {
             open_.push(neighbors[i]);
             neighbor_voxel.in_queue = true;
           }
@@ -188,6 +342,8 @@ class EsdfIntegrator {
             esdf_voxel.distance - distance_to_neighbor >
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
+          // Also update parent.
+          neighbor_voxel.parent = -directions[i];
           if (!neighbor_voxel.in_queue) {
             open_.push(neighbors[i]);
             neighbor_voxel.in_queue = true;
@@ -203,16 +359,21 @@ class EsdfIntegrator {
   }
 
   // Uses 26-connectivity and quasi-Euclidean distances.
+  // Directions is the direction that the neighbor voxel lives in. If you need
+  // the direction FROM the neighbor voxel TO the current voxel, take negative
+  // of the given direction.
   void getNeighborsAndDistances(const BlockIndex& block_index,
                                 const VoxelIndex& voxel_index,
                                 std::vector<VoxelKey>* neighbors,
-                                std::vector<float>* distances) {
+                                std::vector<float>* distances,
+                                std::vector<Eigen::Vector3i>* directions) {
     static const double kSqrt2 = std::sqrt(2);
     static const double kSqrt3 = std::sqrt(3);
     static const size_t kNumNeighbors = 26;
 
     neighbors->reserve(kNumNeighbors);
     distances->reserve(kNumNeighbors);
+    directions->reserve(kNumNeighbors);
 
     VoxelKey neighbor;
     Eigen::Vector3i direction;
@@ -225,6 +386,7 @@ class EsdfIntegrator {
                     &neighbor.second);
         neighbors->emplace_back(neighbor);
         distances->emplace_back(1.0);
+        directions->emplace_back(direction);
       }
       direction(i) = 0;
     }
@@ -240,6 +402,7 @@ class EsdfIntegrator {
                       &neighbor.second);
           neighbors->emplace_back(neighbor);
           distances->emplace_back(kSqrt2);
+          directions->emplace_back(direction);
         }
         direction(i) = 0;
         direction(next_i) = 0;
@@ -257,6 +420,7 @@ class EsdfIntegrator {
                       &neighbor.second);
           neighbors->emplace_back(neighbor);
           distances->emplace_back(kSqrt3);
+          directions->emplace_back(direction);
         }
       }
     }
@@ -292,6 +456,10 @@ class EsdfIntegrator {
   // Open Queue for incremental updates. Contains global voxel indices
   // for the ESDF layer.
   std::queue<VoxelKey> open_;
+
+  // Raise set for updates; these are values that used to be in the fixed
+  // frontier and now have a higher value.
+  std::queue<VoxelKey> raise_;
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;
