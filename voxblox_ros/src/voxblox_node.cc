@@ -722,8 +722,8 @@ void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
   // TODO(helenol): also update the ESDF layer each time you update the mesh.
   if (generate_esdf_) {
     const bool clear_updated_flag_esdf = false;
-    //esdf_integrator_->updateFromTsdfLayerBatch();
-    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+    esdf_integrator_->updateFromTsdfLayerBatch();
+    //esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
     publishAllUpdatedEsdfVoxels();
   }
 

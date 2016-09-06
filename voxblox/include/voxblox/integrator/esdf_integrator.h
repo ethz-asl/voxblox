@@ -125,6 +125,7 @@ class EsdfIntegrator {
             // esdf_voxel.in_raise_queue = true;
             raise_.push(std::make_pair(block_index, voxel_index));
             open_.push(std::make_pair(block_index, voxel_index));
+            esdf_voxel.in_queue = true;
             num_raise++;
           }
         } else {
@@ -142,7 +143,7 @@ class EsdfIntegrator {
           // Then there's the case where it's a completely new voxel.
           if (!esdf_voxel.observed) {
             esdf_voxel.distance =
-                signum(tsdf_voxel.distance) * 3.0;//config_.default_distance_m;
+                signum(tsdf_voxel.distance) * config_.default_distance_m;
             esdf_voxel.observed = true;
             esdf_voxel.parent.setZero();
 
@@ -305,8 +306,7 @@ class EsdfIntegrator {
         }
         if (neighbor_voxel.parent == -directions[i]) {
           // This is the case where we are the parent of this one, so we
-          // should
-          // clear it and raise it.
+          // should clear it and raise it.
           // if (!neighbor_voxel.in_raise_queue) {
           neighbor_voxel.distance =
               signum(neighbor_voxel.distance) * config_.default_distance_m;
@@ -488,6 +488,8 @@ class EsdfIntegrator {
         }
       }
     }
+
+    CHECK_EQ(neighbors->size(), kNumNeighbors);
   }
 
   void getNeighbor(const BlockIndex& block_index, const VoxelIndex& voxel_index,
