@@ -247,9 +247,6 @@ class EsdfIntegrator {
           neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
 
       if (!neighbor_voxel.in_queue) {
-        /*if (neighbor_voxel.observed &&
-            neighbor_voxel.distance < config_.default_distance_m &&
-            !neighbor_voxel.in_queue) { */
         open_.push(neighbor);
         neighbor_voxel.in_queue = true;
       }
