@@ -286,7 +286,8 @@ class EsdfIntegrator {
           esdf_layer_->getBlockPtrByIndex(kv.first);
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
-      // NOTE: for DOUBLETEST
+      // This is for double insertions, which speed the process up a bit
+      // (things are placed in the correct space in the priority queue).
       if (!esdf_voxel.in_queue) {
         continue;
       }
@@ -349,10 +350,8 @@ class EsdfIntegrator {
           neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
           // Also update parent.
           neighbor_voxel.parent = -directions[i];
-          // DOUBLETEST
           // ONLY propagate this if we're below the max distance!
-          if (/* !neighbor_voxel.in_queue */ true &&
-              neighbor_voxel.distance < config_.max_distance_m) {
+          if (neighbor_voxel.distance < config_.max_distance_m) {
             open_.push(neighbors[i], neighbor_voxel.distance);
             neighbor_voxel.in_queue = true;
           }
@@ -363,11 +362,8 @@ class EsdfIntegrator {
           neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
           // Also update parent.
           neighbor_voxel.parent = -directions[i];
-          //DOUBLETEST
-          if (true) { //(!neighbor_voxel.in_queue) {
-            open_.push(neighbors[i], neighbor_voxel.distance);
-            neighbor_voxel.in_queue = true;
-          }
+          open_.push(neighbors[i], neighbor_voxel.distance);
+          neighbor_voxel.in_queue = true;
         }
       }
 
