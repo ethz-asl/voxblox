@@ -2,8 +2,10 @@
 <launch>
 
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="/Users/helen/data/euroc_datasets/V1_01_easy.bag"/>
-  <arg name="voxel_size" default="0.20"/>
+  <!-- <arg name="bag_file" default="/Users/helen/data/euroc_datasets/V2_01_easy.bag"/> -->
+  <arg name="bag_file" default="/Users/helen/data/euroc_datasets/euroc_v1_01_easy.bag"/>
+
+  <arg name="voxel_size" default="0.10"/>
   <arg name="generate_esdf" default="true" />
 
   <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
@@ -48,10 +50,13 @@
     <param name="color_mode" value="color" />
     <param name="use_tf_transforms" value="false" />
     <param name="verbose" value="true" />
-    <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" />
+    <!--
+    <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" /> -->
+    <remap from="transform" to="/groundtruth_transform" />
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="generate_esdf" value="$(arg generate_esdf)" />
     <param name="slice_level" value="1.0" />
+    <param name="method" value="merged" />
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
 
