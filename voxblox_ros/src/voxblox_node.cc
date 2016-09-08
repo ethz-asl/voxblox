@@ -170,7 +170,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       world_frame_("world"),
       use_tf_transforms_(true),
       // 10 ms here:
-      timestamp_tolerance_ns_(10000000),
+      timestamp_tolerance_ns_(20000000),
       slice_level_(0.5) {
   // Before subscribing, determine minimum time between messages.
   // 0 by default.
