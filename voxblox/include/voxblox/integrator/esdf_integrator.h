@@ -288,9 +288,9 @@ class EsdfIntegrator {
 
       // This is for double insertions, which speed the process up a bit
       // (things are placed in the correct space in the priority queue).
-      if (!esdf_voxel.in_queue) {
-        continue;
-      }
+      //if (!esdf_voxel.in_queue) {
+      //  continue;
+      //}
 
       if (!esdf_voxel.observed) {
         esdf_voxel.in_queue = false;
@@ -352,8 +352,10 @@ class EsdfIntegrator {
           neighbor_voxel.parent = -directions[i];
           // ONLY propagate this if we're below the max distance!
           if (neighbor_voxel.distance < config_.max_distance_m) {
-            open_.push(neighbors[i], neighbor_voxel.distance);
-            neighbor_voxel.in_queue = true;
+            if (!neighbor_voxel.in_queue) {
+              open_.push(neighbors[i], neighbor_voxel.distance);
+              neighbor_voxel.in_queue = true;
+            }
           }
         }
         if (esdf_voxel.distance < 0 &&
@@ -362,8 +364,10 @@ class EsdfIntegrator {
           neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
           // Also update parent.
           neighbor_voxel.parent = -directions[i];
-          open_.push(neighbors[i], neighbor_voxel.distance);
-          neighbor_voxel.in_queue = true;
+          if (!neighbor_voxel.in_queue) {
+            open_.push(neighbors[i], neighbor_voxel.distance);
+            neighbor_voxel.in_queue = true;
+          }
         }
       }
 
