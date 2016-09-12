@@ -170,7 +170,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       world_frame_("world"),
       use_tf_transforms_(true),
       // 10 ms here:
-      timestamp_tolerance_ns_(20000000),
+      timestamp_tolerance_ns_(10000000),
       slice_level_(0.5) {
   // Before subscribing, determine minimum time between messages.
   // 0 by default.
@@ -284,6 +284,13 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     // Make sure that this is the same as the truncation distance OR SMALLER!
     esdf_integrator_config.min_distance_m =
         integrator_config.default_truncation_distance;
+    nh_private_.param("esdf_max_distance_m",
+                      esdf_integrator_config.max_distance_m,
+                      esdf_integrator_config.max_distance_m);
+    nh_private_.param("esdf_default_distance_m",
+                      esdf_integrator_config.default_distance_m,
+                      esdf_integrator_config.default_distance_m);
+
     esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                               tsdf_map_->getTsdfLayerPtr(),
                                               esdf_map_->getEsdfLayerPtr()));
@@ -722,7 +729,7 @@ void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
   // TODO(helenol): also update the ESDF layer each time you update the mesh.
   if (generate_esdf_) {
     const bool clear_updated_flag_esdf = false;
-    //esdf_integrator_->updateFromTsdfLayerBatch();
+    // esdf_integrator_->updateFromTsdfLayerBatch();
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
     publishAllUpdatedEsdfVoxels();
   }
