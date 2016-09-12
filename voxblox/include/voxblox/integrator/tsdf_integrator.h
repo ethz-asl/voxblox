@@ -22,6 +22,7 @@ class TsdfIntegrator {
     bool voxel_carving_enabled = true;
     FloatingPoint min_ray_length_m = 0.1;
     FloatingPoint max_ray_length_m = 5.0;
+    bool use_const_weight = false;
   };
 
   // Temporary structure for containing all the info needed to do a TSDF update
@@ -47,6 +48,9 @@ class TsdfIntegrator {
 
   float getVoxelWeight(const Point& point_C, const Point& point_G,
                        const Point& origin, const Point& voxel_center) const {
+    if (config_.use_const_weight) {
+      return 1.0;
+    }
     FloatingPoint dist_z = std::abs(point_C.z());
     if (dist_z > 1e-6) {
       return 1.0 / (dist_z * dist_z);
@@ -70,17 +74,18 @@ class TsdfIntegrator {
 
     // This is for the linear drop-off in confidence behind the surface.
     float updated_weight = weight;
-    if (sdf < 0.0) {
+    if (!config_.use_const_weight && sdf < 0.0) {
       updated_weight =
           weight *
           std::max((truncation_distance + sdf) / truncation_distance, 0.0f);
     }
 
-    const float new_weight = tsdf_voxel->weight + weight;
+    const float new_weight = tsdf_voxel->weight + updated_weight;
     tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, weight);
+        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
     const float new_sdf =
-        (sdf * weight + tsdf_voxel->distance * tsdf_voxel->weight) / new_weight;
+        (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
+        new_weight;
 
     tsdf_voxel->distance = (new_sdf > 0.0)
                                ? std::min(truncation_distance, new_sdf)
@@ -124,7 +129,7 @@ class TsdfIntegrator {
     // Iterate over the entire vector.
     float truncation_distance = config_.default_truncation_distance;
 
-    //bool occupied = false;
+    // bool occupied = false;
     size_t i = 0;
     for (const TsdfUpdate& update : updates) {
       if (i > 1) {
@@ -619,11 +624,10 @@ class TsdfIntegrator {
     integrate_timer.Stop();
   }
 
-
   // ICRA 2017 research, part 210582350
   void integratePointCloudPrefilterFast(const Transformation& T_G_C,
-                                    const Pointcloud& points_C,
-                                    const Colors& colors) {
+                                        const Pointcloud& points_C,
+                                        const Colors& colors) {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
@@ -658,7 +662,6 @@ class TsdfIntegrator {
       voxel_map[voxel_index].push_back(pt_idx);
     }
     sort_timer.Stop();
-
 
     LOG(INFO) << "Went from " << points_C.size() << " points to "
               << voxel_map.size() << " raycasts and " << clear_map.size()
@@ -724,7 +727,8 @@ class TsdfIntegrator {
         update.weight = getVoxelWeight(
             mean_point_C, T_G_C * mean_point_C, origin,
             (kv.first.cast<FloatingPoint>() + voxel_center_offset) *
-                voxel_size_);;
+                voxel_size_);
+        ;
         // Behind the surface, should down-weigh.
         if (sdf < 0.0) {
           update.weight =
@@ -819,9 +823,6 @@ class TsdfIntegrator {
     update_voxels_timer.Stop();
     integrate_timer.Stop();
   }
-
-
-
 
  protected:
   Config config_;

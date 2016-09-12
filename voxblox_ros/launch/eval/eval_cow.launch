@@ -1,5 +1,5 @@
 <launch>
-  <arg name="voxblox_file_path" default="/Users/helen/data/cow/voxblox/merged_fixed_0_10.vxblx" />
+  <arg name="voxblox_file_path" default="/Users/helen/data/cow/voxblox/discard_weight_0_10.vxblx" />
   <arg name="gt_file_path" default="/Users/helen/data/cow/gt_just_cow.ply"/>
 
   <node name="voxblox_eval" pkg="voxblox_ros" type="voxblox_eval" output="screen" args="-alsologtostderr" clear_params="true">
