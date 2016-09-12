@@ -23,6 +23,7 @@ class TsdfIntegrator {
     FloatingPoint min_ray_length_m = 0.1;
     FloatingPoint max_ray_length_m = 5.0;
     bool use_const_weight = false;
+    bool allow_clear = true;
   };
 
   // Temporary structure for containing all the info needed to do a TSDF update
@@ -74,11 +75,11 @@ class TsdfIntegrator {
 
     // This is for the linear drop-off in confidence behind the surface.
     float updated_weight = weight;
-    if (!config_.use_const_weight && sdf < 0.0) {
+    /*if (!config_.use_const_weight && sdf < 0.0) {
       updated_weight =
           weight *
           std::max((truncation_distance + sdf) / truncation_distance, 0.0f);
-    }
+    } */
 
     const float new_weight = tsdf_voxel->weight + updated_weight;
     tsdf_voxel->color = Color::blendTwoColors(
@@ -262,7 +263,7 @@ class TsdfIntegrator {
       FloatingPoint ray_distance = (point_C).norm();
       if (ray_distance < config_.min_ray_length_m) {
         continue;
-      } else if (ray_distance > config_.max_ray_length_m) {
+      } else if (config_.allow_clear && ray_distance > config_.max_ray_length_m) {
         VoxelIndex voxel_index =
             getGridIndexFromPoint(point_G, voxel_size_inv_);
         clear_map[voxel_index].push_back(pt_idx);
@@ -728,7 +729,7 @@ class TsdfIntegrator {
             mean_point_C, T_G_C * mean_point_C, origin,
             (kv.first.cast<FloatingPoint>() + voxel_center_offset) *
                 voxel_size_);
-        ;
+
         // Behind the surface, should down-weigh.
         if (sdf < 0.0) {
           update.weight =

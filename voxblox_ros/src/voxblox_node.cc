@@ -266,6 +266,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   nh_private_.param("max_weight", max_weight, max_weight);
   nh_private_.param("use_const_weight", integrator_config.use_const_weight,
                     integrator_config.use_const_weight);
+  nh_private_.param("allow_clear", integrator_config.allow_clear,
+                    integrator_config.allow_clear);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
