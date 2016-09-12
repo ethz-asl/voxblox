@@ -1,8 +1,8 @@
 <launch>
   <arg name="play_bag" default="true" />
   <arg name="bag_file" default="/Users/helen/data/cow/small.bag"/>
-  <arg name="voxel_size" default="0.05"/>
-  <arg name="generate_esdf" default="true" />
+  <arg name="voxel_size" default="0.10"/>
+  <arg name="generate_esdf" default="false" />
 
   <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
@@ -17,6 +17,7 @@
     <param name="min_time_between_msgs_sec" value="0.2" />
     <param name="method" value="merged_discard" />
     <param name="generate_esdf" value="$(arg generate_esdf)" />
+    <param name="use_const_weight" value="false" />
     <!--<param name="truncation_distance" value="0.5" /> -->
     <param name="verbose" value="true" />
     <remap from="transform" to="vrpn_client_kinect/raw_transform" />
