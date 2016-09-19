@@ -63,7 +63,10 @@ class VoxbloxNode {
   void publishSlices();
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
+
   bool generateMeshCallback(std_srvs::Empty::Request& request,      // NOLINT
+                            std_srvs::Empty::Response& response);   // NOLINT
+  bool generateEsdfCallback(std_srvs::Empty::Request& request,      // NOLINT
                             std_srvs::Empty::Response& response);   // NOLINT
   bool saveMapCallback(voxblox_ros::FilePath::Request& request,     // NOLINT
                        voxblox_ros::FilePath::Response& response);  // NOLINT
@@ -136,6 +139,7 @@ class VoxbloxNode {
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
+  ros::ServiceServer generate_esdf_srv_;
   ros::ServiceServer save_map_srv_;
   ros::ServiceServer load_map_srv_;
 
@@ -317,7 +321,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
   std::string color_mode("color");
   nh_private_.param("color_mode", color_mode, color_mode);
-  if (color_mode == "color") {
+  if (color_mode == "color" || color_mode == "colors") {
     color_mode_ = ColorMode::kColor;
   } else if (color_mode == "height") {
     color_mode_ = ColorMode::kHeight;
@@ -341,6 +345,10 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Advertise services.
   generate_mesh_srv_ = nh_private_.advertiseService(
       "generate_mesh", &VoxbloxNode::generateMeshCallback, this);
+  if (generate_esdf_) {
+    generate_esdf_srv_ = nh_private_.advertiseService(
+        "generate_esdf", &VoxbloxNode::generateEsdfCallback, this);
+  }
   save_map_srv_ = nh_private_.advertiseService(
       "save_map", &VoxbloxNode::saveMapCallback, this);
   load_map_srv_ = nh_private_.advertiseService(
@@ -707,6 +715,23 @@ bool VoxbloxNode::generateMeshCallback(
   }
 
   ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
+  return true;
+}
+
+bool VoxbloxNode::generateEsdfCallback(
+    std_srvs::Empty::Request& request,
+    std_srvs::Empty::Response& response) {  // NOLINT
+  if (!generate_esdf_) {
+    return false;
+  }
+  const bool clear_esdf = true;
+  if (clear_esdf) {
+    esdf_integrator_->updateFromTsdfLayerBatch();
+  } else {
+    const bool clear_updated_flag = true;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
+  }
+  publishAllUpdatedEsdfVoxels();
   return true;
 }
 
