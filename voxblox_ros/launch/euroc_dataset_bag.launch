@@ -5,10 +5,10 @@
   <!-- <arg name="bag_file" default="/Users/helen/data/euroc_datasets/V2_01_easy.bag"/> -->
   <arg name="bag_file" default="/Users/helen/data/euroc_datasets/euroc_v1_01_easy.bag"/>
 
-  <arg name="voxel_size" default="0.02"/>
-  <arg name="generate_esdf" default="true" />
+  <arg name="voxel_size" default="0.20"/>
+  <arg name="generate_esdf" default="false" />
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.25 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.5 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
 
    <!-- Run stereo_dense_reconstruction_node-->
@@ -53,10 +53,11 @@
     <!--
     <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" /> -->
     <remap from="transform" to="/groundtruth_transform" />
-    <param name="update_mesh_every_n_sec" value="0.2" />
+    <param name="update_mesh_every_n_sec" value="0.0" />
     <param name="generate_esdf" value="$(arg generate_esdf)" />
     <param name="slice_level" value="1.0" />
-    <param name="method" value="merged" />
+    <param name="method" value="simple" />
+    <param name="use_const_weight" value="false" />
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
 
