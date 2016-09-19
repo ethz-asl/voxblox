@@ -217,7 +217,6 @@ class EsdfIntegrator {
 
       Block<EsdfVoxel>::Ptr esdf_block =
           esdf_layer_->getBlockPtrByIndex(kv.first);
-      EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
       // See if you can update the neighbors.
       std::vector<VoxelKey> neighbors;
@@ -255,12 +254,10 @@ class EsdfIntegrator {
         if (neighbor_voxel.parent == -directions[i]) {
           // This is the case where we are the parent of this one, so we
           // should clear it and raise it.
-          // if (!neighbor_voxel.in_raise_queue) {
           neighbor_voxel.distance =
               signum(neighbor_voxel.distance) * config_.default_distance_m;
           neighbor_voxel.parent.setZero();
           raise_.push(neighbors[i]);
-          //}
         } else {
           // If it's not in the queue, then add it to open so it can update
           // our weights back.
@@ -270,7 +267,6 @@ class EsdfIntegrator {
           }
         }
       }
-      // esdf_voxel.in_raise_queue = false;
       num_updates++;
     }
     LOG(INFO) << "[ESDF update]: raised " << num_updates << " voxels.";
@@ -285,12 +281,6 @@ class EsdfIntegrator {
       Block<EsdfVoxel>::Ptr esdf_block =
           esdf_layer_->getBlockPtrByIndex(kv.first);
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
-
-      // This is for double insertions, which speed the process up a bit
-      // (things are placed in the correct space in the priority queue).
-      //if (!esdf_voxel.in_queue) {
-      //  continue;
-      //}
 
       if (!esdf_voxel.observed) {
         esdf_voxel.in_queue = false;
