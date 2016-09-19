@@ -1,0 +1,45 @@
+<launch>
+  <arg name="play_bag" default="true" />
+  <arg name="voxel_size" default="0.05"/>
+
+  <arg name="bag_file" default="/Users/helen/data/euroc_datasets/euroc_v1_01_easy.bag"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.5 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+
+
+   <!-- Run stereo_dense_reconstruction_node-->
+  <node name="stereo_dense_reconstruction_node" pkg="stereo_dense_reconstruction_nodes" type="stereo_dense_reconstruction_node" clear_params="true" output="screen">
+    <remap from="image_cam0"          to="cam0/image_raw" />
+    <remap from="image_cam1"          to="cam1/image_raw" />
+    <remap from="calib_cam0"          to="cam0/calibration" />
+    <remap from="calib_cam1"          to="cam1/calibration" />
+
+    <!-- Specify the tf-name of the stereo camera's reference frame. This is not mandatory if optimizer is turned off.-->
+    <remap from="/ref"                to="/imu0" />
+
+    <!-- Specify if images need to be undistorted -->
+    <param name="undistort_images" value="true"/>
+
+    <param name="calibration_from_topic" value="false"/>
+    <!-- Optional: Specify if default transform world->cam should be published if none has been found -->
+    <param name="publish_world_cam_default_tf" value="true"/>
+
+    <!-- Load parameters -->
+    <rosparam file="$(find stereo_dense_reconstruction_nodes)/cfg/ParamsHalfRes.yaml"/>
+
+    <!-- Load stereo camera calibration from yaml file (only used if visensor_msgs not found)-->
+    <rosparam file="$(find mav_startup)/parameters/mavs/ijrr_euroc_datasets/camchain_equidistant_new.yaml"/>
+  </node>
+
+  <node name="octomap_manager" pkg="octomap_world"
+      type="octomap_manager" output="screen" clear_params="true"
+      args="-alsologtostderr" >
+    <param name="resolution" value="$(arg voxel_size)" />
+    <param name="map_publish_frequency" value="5.0" />
+    <param name="visualize_min_z" value="-1.0" />
+    <param name="visualize_max_z" value="2.5" />
+    <remap from="pointcloud" to="stereo_dense_reconstruction/pcl" />
+    <param name="use_tf_transforms" value="false" />
+    <remap from="transform" to="/groundtruth_transform" />
+    <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
+  </node>
+</launch>
