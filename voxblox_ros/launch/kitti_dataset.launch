@@ -2,10 +2,10 @@
 <launch>
   <arg name="play_bag" value="true" />
   <arg name="bag_file" value="/Users/helen/data/kitti/2011_09_26/2011_09_26_drive_0035_sync/drive35.bag"/>
-  <arg name="voxel_size" default="0.5"/>
-  <arg name="generate_esdf" default="false" />
+  <arg name="voxel_size" default="0.25"/>
+  <arg name="generate_esdf" default="true" />
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.25 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.1 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
 
    <!-- Run stereo_dense_reconstruction_node-->
   <node ns="stereo_gray" name="stereo_image_proc" pkg="stereo_image_proc" type="stereo_image_proc" clear_params="true" output="screen">
@@ -28,13 +28,13 @@
     <param name="use_tf_transforms" value="true" />
     <param name="verbose" value="true" />
     <param name="generate_esdf" value="$(arg generate_esdf)" />
-    <param name="update_mesh_every_n_sec" value="0.0" />
+    <param name="update_mesh_every_n_sec" value="0.2" />
     <param name="max_ray_length_m" value="20.0" />
     <param name="esdf_max_distance_m" value="5.0" />
     <param name="esdf_default_distance_m" value="5.0" />
     <param name="min_time_between_msgs_sec" value="0.2" />
     <param name="slice_level" value="1.0" />
-    <param name="method" value="merged" />
+    <param name="method" value="merged_discard" />
     <param name="use_const_weight" value="true" />
     <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon kitti).ply" />
   </node>
