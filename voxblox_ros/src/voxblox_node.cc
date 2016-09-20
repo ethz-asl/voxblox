@@ -732,6 +732,7 @@ bool VoxbloxNode::generateEsdfCallback(
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
   }
   publishAllUpdatedEsdfVoxels();
+  publishSlices();
   return true;
 }
 
