@@ -32,13 +32,7 @@ namespace voxblox {
 class VoxbloxNode {
  public:
   // Merging method for new pointclouds.
-  enum Method {
-    kSimple = 0,
-    kMerged,
-    kPrefilter,
-    kMergedDiscard,
-    kPrefilterFast
-  };
+  enum Method { kSimple = 0, kMerged, kMergedDiscard };
 
   VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
@@ -229,12 +223,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     method_ = kSimple;
   } else if (method.compare("merged") == 0) {
     method_ = kMerged;
-  } else if (method.compare("prefilter") == 0) {
-    method_ = kPrefilter;
   } else if (method.compare("merged_discard") == 0) {
     method_ = kMergedDiscard;
-  } else if (method.compare("prefilter_fast") == 0) {
-    method_ = kPrefilterFast;
   } else {
     method_ = kSimple;
   }
@@ -461,9 +451,7 @@ void VoxbloxNode::insertPointcloudWithTf(
       ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
     }
     ros::WallTime start = ros::WallTime::now();
-    if (method_ == Method::kPrefilter) {
-      tsdf_integrator_->integratePointCloudPrefilter(T_G_C, points_C, colors);
-    } else if (method_ == Method::kMerged) {
+    if (method_ == Method::kMerged) {
       bool discard = false;
       tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
                                                   discard);
@@ -471,9 +459,6 @@ void VoxbloxNode::insertPointcloudWithTf(
       bool discard = true;
       tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
                                                   discard);
-    } else if (method_ == Method::kPrefilterFast) {
-      tsdf_integrator_->integratePointCloudPrefilterFast(T_G_C, points_C,
-                                                         colors);
     } else {
       tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
     }
@@ -759,7 +744,6 @@ void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
   // TODO(helenol): also update the ESDF layer each time you update the mesh.
   if (generate_esdf_) {
     const bool clear_updated_flag_esdf = false;
-    // esdf_integrator_->updateFromTsdfLayerBatch();
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
     publishAllUpdatedEsdfVoxels();
   }
