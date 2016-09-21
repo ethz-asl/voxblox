@@ -25,7 +25,7 @@ class EsdfIntegrator {
     // integrator.
     FloatingPoint min_distance_m = 0.2;
     FloatingPoint default_distance_m = 2;
-    FloatingPoint min_raise_diff_m = 0.0;  // 0.01;
+    FloatingPoint min_raise_diff_m = 0.0;
     float min_weight = 1e-6;
     int num_buckets = 20;
   };
@@ -38,13 +38,6 @@ class EsdfIntegrator {
 
     esdf_voxels_per_side_ = esdf_layer_->voxels_per_side();
     esdf_voxel_size_ = esdf_layer_->voxel_size();
-    /*voxel_size_ = layer_->voxel_size();
-    block_size_ = layer_->block_size();
-    voxels_per_side_ = layer_->voxels_per_side();
-
-    voxel_size_inv_ = 1.0 / voxel_size_;
-    block_size_inv_ = 1.0 / block_size_;
-    voxels_per_side_inv_ = 1.0 / voxels_per_side_; */
 
     open_.setNumBuckets(config_.num_buckets, config_.max_distance_m);
   }
@@ -57,7 +50,8 @@ class EsdfIntegrator {
     esdf_layer_->removeAllBlocks();
     BlockIndexList tsdf_blocks;
     tsdf_layer_->getAllAllocatedBlocks(&tsdf_blocks);
-    updateFromTsdfBlocks(tsdf_blocks);
+    const bool push_neighbors = false;
+    updateFromTsdfBlocks(tsdf_blocks, push_neighbors);
   }
 
   void updateFromTsdfLayer(bool clear_updated_flag) {
@@ -73,6 +67,12 @@ class EsdfIntegrator {
   }
 
   void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
+    // Default is push_neighbors = true.
+    updateFromTsdfBlocks(tsdf_blocks, true);
+  }
+
+  void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
+                            bool push_neighbors) {
     timing::Timer esdf_timer("esdf");
 
     // Get a specific list of voxels in the TSDF layer, and propagate out from
@@ -127,7 +127,6 @@ class EsdfIntegrator {
             esdf_voxel.distance = tsdf_voxel.distance;
             esdf_voxel.parent.setZero();
             esdf_voxel.fixed = true;
-            // esdf_voxel.in_raise_queue = true;
             raise_.push(std::make_pair(block_index, voxel_index));
             open_.push(std::make_pair(block_index, voxel_index),
                        esdf_voxel.distance);
@@ -142,7 +141,6 @@ class EsdfIntegrator {
                 signum(tsdf_voxel.distance) * config_.default_distance_m;
             esdf_voxel.parent.setZero();
             esdf_voxel.fixed = false;
-            // esdf_voxel.in_raise_queue = true;
             raise_.push(std::make_pair(block_index, voxel_index));
             num_raise++;
           }
@@ -152,8 +150,9 @@ class EsdfIntegrator {
                 signum(tsdf_voxel.distance) * config_.default_distance_m;
             esdf_voxel.observed = true;
             esdf_voxel.parent.setZero();
-
-            pushNeighborsToOpen(block_index, voxel_index);
+            if (push_neighbors) {
+              pushNeighborsToOpen(block_index, voxel_index);
+            }
             num_new++;
           }
         }
@@ -370,10 +369,8 @@ class EsdfIntegrator {
 
   // Uses 26-connectivity and quasi-Euclidean distances.
   // Directions is the direction that the neighbor voxel lives in. If you
-  // need
-  // the direction FROM the neighbor voxel TO the current voxel, take
-  // negative
-  // of the given direction.
+  // need the direction FROM the neighbor voxel TO the current voxel, take
+  // negative of the given direction.
   void getNeighborsAndDistances(const BlockIndex& block_index,
                                 const VoxelIndex& voxel_index,
                                 std::vector<VoxelKey>* neighbors,
@@ -477,16 +474,6 @@ class EsdfIntegrator {
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;
-
-  /*
-  // Cached map config.
-  FloatingPoint voxel_size_;
-  FloatingPoint block_size_;
-
-  // Derived types.
-  FloatingPoint voxel_size_inv_;
-  FloatingPoint voxels_per_side_inv_;
-  FloatingPoint block_size_inv_; */
 };
 
 }  // namespace voxblox
