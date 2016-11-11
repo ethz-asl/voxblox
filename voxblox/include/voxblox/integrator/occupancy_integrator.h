@@ -7,29 +7,32 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
+#include "voxblox/core/block_hash.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/timing.h"
-#include "voxblox/core/block_hash.h"
 
 namespace voxblox {
 
 class OccupancyIntegrator {
  public:
   struct Config {
-    float probability_hit = 0.65;
-    float probability_miss = 0.4;
-    float threshold_min = 0.12;
-    float threshold_max = 0.97;
-    float threshold_occupancy = 0.7;
+    float probability_hit = 0.65f;
+    float probability_miss = 0.4f;
+    float threshold_min = 0.12f;
+    float threshold_max = 0.97f;
+    float threshold_occupancy = 0.7f;
     FloatingPoint min_ray_length_m = 0.1;
     FloatingPoint max_ray_length_m = 5.0;
   };
 
   OccupancyIntegrator(const Config& config, Layer<OccupancyVoxel>* layer)
       : config_(config), layer_(layer) {
-    DCHECK(layer_);
+    DCHECK_NOTNULL(layer_);
+    DCHECK_GT(layer_->voxel_size(), 0.0);
+    DCHECK_GT(layer_->block_size(), 0.0);
+    DCHECK_GT(layer_->voxels_per_side(), 0);
 
     voxel_size_ = layer_->voxel_size();
     block_size_ = layer_->block_size();
@@ -48,6 +51,7 @@ class OccupancyIntegrator {
   }
 
   inline void updateOccupancyVoxel(bool occupied, OccupancyVoxel* occ_voxel) {
+    DCHECK_NOTNULL(occ_voxel);
     float log_odds_update = occupied ? prob_hit_log_ : prob_miss_log_;
     // Skip update if necessary.
     if ((log_odds_update >= 0 &&

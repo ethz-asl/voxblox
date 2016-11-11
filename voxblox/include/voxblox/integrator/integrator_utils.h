@@ -73,7 +73,6 @@ void castRay(const Point& start_scaled, const Point& end_scaled,
   }
 }
 
-
 // Takes start and end in WORLD COORDINATES, does all pre-scaling and
 // sorting into hierarhical index.
 void getHierarchicalIndexAlongRay(const Point& start, const Point& end,
@@ -105,8 +104,8 @@ void getHierarchicalIndexAlongRay(const Point& start, const Point& end,
   for (const AnyIndex& global_voxel_idx : global_voxel_index) {
     BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
         global_voxel_idx, voxels_per_side_inv);
-    VoxelIndex local_voxel_idx = getLocalFromGlobalVoxelIndex(
-        global_voxel_idx, voxels_per_side);
+    VoxelIndex local_voxel_idx =
+        getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side);
 
     if (local_voxel_idx.x() < 0) {
       local_voxel_idx.x() += voxels_per_side;

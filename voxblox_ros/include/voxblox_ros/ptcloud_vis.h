@@ -2,10 +2,11 @@
 #define VOXBLOX_ROS_PTCLOUD_VIS_H_
 
 #include <algorithm>
+#include <string>
+
+#include <eigen_conversions/eigen_msg.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <eigen_conversions/eigen_msg.h>
-#include <string>
 
 #include <voxblox/core/common.h>
 #include <voxblox/core/layer.h>
@@ -176,6 +177,7 @@ bool visualizeNearSurfaceTsdfVoxels(const TsdfVoxel& voxel, const Point& coord,
 bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
                                           const Point& coord,
                                           double* intensity) {
+  DCHECK_NOTNULL(intensity);
   if (voxel.weight > 1e-3) {
     *intensity = voxel.distance;
     return true;
@@ -186,6 +188,7 @@ bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
 bool visualizeDistanceIntensityTsdfVoxelsSlice(
     const TsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
     FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
+  DCHECK_NOTNULL(intensity);
   if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size / 2.0) {
     if (voxel.weight > 1e-3) {
       *intensity = voxel.distance;
@@ -198,6 +201,7 @@ bool visualizeDistanceIntensityTsdfVoxelsSlice(
 bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
                                           const Point& coord,
                                           double* intensity) {
+  DCHECK_NOTNULL(intensity);
   if (voxel.observed) {
     *intensity = voxel.distance;
     return true;
@@ -208,6 +212,8 @@ bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
 bool visualizeDistanceIntensityEsdfVoxelsSlice(
     const EsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
     FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
+  DCHECK_NOTNULL(intensity);
+
   if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size / 2.0) {
     if (voxel.observed) {
       *intensity = voxel.distance;

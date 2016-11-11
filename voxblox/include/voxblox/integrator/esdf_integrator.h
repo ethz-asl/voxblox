@@ -19,13 +19,20 @@ namespace voxblox {
 class EsdfIntegrator {
  public:
   struct Config {
+    // Maximum distance to calculate the actual distance to.
+    // Any values above this will be set to default_distance_m.
     FloatingPoint max_distance_m = 1.5;
     // Should mirror (or be smaller than) truncation distance in tsdf
     // integrator.
     FloatingPoint min_distance_m = 0.2;
+    // Default distance set for unknown values and values > max_distance_m.
     FloatingPoint default_distance_m = 2;
+    // For cheaper but less accurate map updates: the minimum difference in
+    // a voxel distance to require adding it to the raise queue.
     FloatingPoint min_raise_diff_m = 0.0;
+    // Minimum weight to consider a TSDF value seen at.
     float min_weight = 1e-6;
+    // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
   };
 
@@ -41,15 +48,15 @@ class EsdfIntegrator {
     open_.setNumBuckets(config_.num_buckets, config_.max_distance_m);
   }
 
-  inline bool isFixed(FloatingPoint dist) const {
-    return std::abs(dist) < config_.min_distance_m || dist < 0.0;
+  inline bool isFixed(FloatingPoint dist_m) const {
+    return std::abs(dist_m) < config_.min_distance_m || dist_m < 0.0;
   }
 
   void updateFromTsdfLayerBatch() {
     esdf_layer_->removeAllBlocks();
     BlockIndexList tsdf_blocks;
     tsdf_layer_->getAllAllocatedBlocks(&tsdf_blocks);
-    const bool push_neighbors = false;
+    constexpr bool push_neighbors = false;
     updateFromTsdfBlocks(tsdf_blocks, push_neighbors);
   }
 
@@ -65,21 +72,24 @@ class EsdfIntegrator {
     }
   }
 
+  // Short-cut for pushing neighbors (i.e., incremental update) by default.
+  // Not necessary in batch.
   void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
-    // Default is push_neighbors = true.
-    updateFromTsdfBlocks(tsdf_blocks, true);
+    constexpr bool push_neighbors = true;
+    updateFromTsdfBlocks(tsdf_blocks, push_neighbors);
   }
 
   void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
                             bool push_neighbors) {
+    DCHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
     timing::Timer esdf_timer("esdf");
 
     // Get a specific list of voxels in the TSDF layer, and propagate out from
     // there.
     // Go through all blocks in TSDF and copy their values for relevant voxels.
-    size_t num_lower = 0;
-    size_t num_raise = 0;
-    size_t num_new = 0;
+    size_t num_lower = 0u;
+    size_t num_raise = 0u;
+    size_t num_new = 0u;
     timing::Timer propagate_timer("esdf/propagate_tsdf");
     LOG(INFO) << "[ESDF update]: Propagating " << tsdf_blocks.size()
               << " updated blocks from the TSDF.";
@@ -96,7 +106,7 @@ class EsdfIntegrator {
       // This will not always be true...
       const size_t num_voxels_per_block = tsdf_block.num_voxels();
 
-      for (size_t lin_index = 0; lin_index < num_voxels_per_block;
+      for (size_t lin_index = 0u; lin_index < num_voxels_per_block;
            ++lin_index) {
         const TsdfVoxel& tsdf_voxel =
             tsdf_block.getVoxelByLinearIndex(lin_index);
@@ -203,7 +213,7 @@ class EsdfIntegrator {
   }
 
   void processRaiseSet() {
-    size_t num_updates = 0;
+    size_t num_updates = 0u;
     // For the raise set, get all the neighbors, then:
     // 1. if the neighbor's parent is the current voxel, add it to the raise
     //    queue.
@@ -224,7 +234,7 @@ class EsdfIntegrator {
                                &directions);
 
       CHECK_EQ(neighbors.size(), distances.size());
-      for (size_t i = 0; i < neighbors.size(); ++i) {
+      for (size_t i = 0u; i < neighbors.size(); ++i) {
         BlockIndex neighbor_block_index = neighbors[i].first;
         VoxelIndex neighbor_voxel_index = neighbors[i].second;
 
@@ -271,7 +281,7 @@ class EsdfIntegrator {
   }
 
   void processOpenSet() {
-    size_t num_updates = 0;
+    size_t num_updates = 0u;
     while (!open_.empty()) {
       VoxelKey kv = open_.front();
       open_.pop();
@@ -332,7 +342,7 @@ class EsdfIntegrator {
           continue;
         }
 
-        if (esdf_voxel.distance > 0 &&
+        if (esdf_voxel.distance > 0.0 &&
             esdf_voxel.distance + distance_to_neighbor <
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
@@ -346,7 +356,7 @@ class EsdfIntegrator {
             }
           }
         }
-        if (esdf_voxel.distance < 0 &&
+        if (esdf_voxel.distance < 0.0 &&
             esdf_voxel.distance - distance_to_neighbor >
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
@@ -375,6 +385,10 @@ class EsdfIntegrator {
                                 std::vector<VoxelKey>* neighbors,
                                 std::vector<float>* distances,
                                 std::vector<Eigen::Vector3i>* directions) {
+    CHECK_NOTNULL(neighbors);
+    CHECK_NOTNULL(distances);
+    CHECK_NOTNULL(directions);
+
     static const double kSqrt2 = std::sqrt(2);
     static const double kSqrt3 = std::sqrt(3);
     static const size_t kNumNeighbors = 26;
