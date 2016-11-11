@@ -2,12 +2,11 @@
 #define VOXBLOX_INTEGRATOR_ESDF_INTEGRATOR_H_
 
 #include <algorithm>
-#include <vector>
-#include <queue>
-#include <utility>
-
 #include <Eigen/Core>
 #include <glog/logging.h>
+#include <queue>
+#include <utility>
+#include <vector>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"

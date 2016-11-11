@@ -136,6 +136,7 @@ class Layer {
   }
 
   void getAllAllocatedBlocks(BlockIndexList* blocks) const {
+    CHECK_NOTNULL(blocks);
     blocks->clear();
     blocks->reserve(block_map_.size());
     for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
@@ -145,6 +146,7 @@ class Layer {
   }
 
   void getAllUpdatedBlocks(BlockIndexList* blocks) const {
+    CHECK_NOTNULL(blocks);
     blocks->clear();
     for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
          block_map_) {

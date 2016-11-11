@@ -2,11 +2,11 @@
 #define VOXBLOX_CORE_COMMON_H_
 
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <set>
 
 #include <Eigen/Core>
 #include <glog/logging.h>
@@ -160,11 +160,11 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
 inline VoxelIndex getLocalFromGlobalVoxelIndex(AnyIndex global_voxel_idx,
                                                int voxels_per_side) {
   VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side,
-                    global_voxel_idx.y() % voxels_per_side,
-                    global_voxel_idx.z() % voxels_per_side);
+                             global_voxel_idx.y() % voxels_per_side,
+                             global_voxel_idx.z() % voxels_per_side);
 
   // Make sure we're within bounds.
-  for (unsigned int i = 0; i < 3; ++i) {
+  for (unsigned int i = 0u; i < 3u; ++i) {
     if (local_voxel_idx(i) < 0) {
       local_voxel_idx(i) += voxels_per_side;
     }
@@ -178,7 +178,8 @@ inline int signum(FloatingPoint x) { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
 
 // For occupancy/octomap-style mapping.
 inline float logOddsFromProbability(float probability) {
-  return log(probability / (1 - probability));
+  DCHECK(probability >= 0.0f && probability <= 1.0f);
+  return log(probability / (1.0 - probability));
 }
 
 inline float probabilityFromLogOdds(float log_odds) {
