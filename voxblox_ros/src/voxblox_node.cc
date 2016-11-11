@@ -102,8 +102,7 @@ class VoxbloxNode {
   double slice_level_;
 
   // Mesh output settings. Mesh is only written to file if mesh_filename_ is
-  // not
-  // empty.
+  // not empty.
   std::string mesh_filename_;
   // How to color the mesh.
   ColorMode color_mode_;
@@ -244,6 +243,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Determine integrator parameters.
   TsdfIntegrator::Config integrator_config;
   integrator_config.voxel_carving_enabled = true;
+  // Used to be * 4 according to Marius's experience, now * 2.
+  // This should be made bigger again if behind-surface weighting is improved.
   integrator_config.default_truncation_distance = config.tsdf_voxel_size * 2;
 
   double truncation_distance = integrator_config.default_truncation_distance;
@@ -594,13 +595,11 @@ bool VoxbloxNode::lookupTransformTf(const std::string& from_frame,
                                     const ros::Time& timestamp,
                                     Transformation* transform) {
   tf::StampedTransform tf_transform;
-
   ros::Time time_to_lookup = timestamp;
 
   // If this transform isn't possible at the time, then try to just look up
   // the latest (this is to work with bag files and static transform
-  // publisher,
-  // etc).
+  // publisher, etc).
   if (!tf_listener_.canTransform(to_frame, from_frame, time_to_lookup)) {
     time_to_lookup = ros::Time(0);
     ROS_WARN("Using latest TF transform instead of timestamp match.");
