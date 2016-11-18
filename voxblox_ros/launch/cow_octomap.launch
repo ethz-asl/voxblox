@@ -1,0 +1,22 @@
+<launch>
+  <arg name="play_bag" default="true" />
+  <arg name="bag_file" default="/Users/helen/data/cow/small.bag"/>
+  <arg name="voxel_size" default="0.10"/>
+  <arg name="generate_esdf" default="true" />
+
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+
+
+  <node name="octomap_manager" pkg="octomap_world"
+      type="octomap_manager" output="screen" clear_params="true"
+      args="-alsologtostderr" >
+    <param name="resolution" value="$(arg voxel_size)" />
+    <param name="map_publish_frequency" value="5.0" />
+    <param name="visualize_min_z" value="-1.0" />
+    <param name="visualize_max_z" value="2.5" />
+    <remap from="pointcloud" to="points_processed" />
+    <param name="use_tf_transforms" value="false" />
+    <remap from="transform" to="vrpn_client_kinect/raw_transform" />
+    <rosparam file="$(find voxblox_ros)/cfg/cow_dataset.yaml"/>
+  </node>
+</launch>

@@ -24,8 +24,8 @@ int main(int argc, char* argv[]) {
   integrator_config.voxel_carving_enabled = true;
 
   TsdfMap::Ptr my_cool_map = std::make_shared<TsdfMap>(config);
-  TsdfIntegrator my_cool_integrator(my_cool_map->getTsdfLayerPtr(),
-                                    integrator_config);
+  TsdfIntegrator my_cool_integrator(integrator_config,
+                                    my_cool_map->getTsdfLayerPtr());
 
   Point sensor_origin(1, 0.4, 2.3);
   Transformation transform(sensor_origin, Eigen::Quaterniond::Identity());
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   // Now output the ply file.
   LOG(INFO) << "Output ply to test_tsdf.ply\n";
   voxblox::io::outputLayerAsPly(my_cool_map->getTsdfLayer(), "test_tsdf.ply",
-                              voxblox::io::kSdfDistanceColor);
+                                voxblox::io::kSdfDistanceColor);
 
   return 0;
 }

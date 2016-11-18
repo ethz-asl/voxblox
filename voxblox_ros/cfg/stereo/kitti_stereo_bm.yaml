@@ -1,0 +1,10 @@
+stereo_algorithm: 0
+correlation_window_size: 15
+pre_filter_cap: 41
+disparity_range: 128
+min_disparity: 2
+speckle_size: 100
+texture_threshold: 5
+uniqueness_ratio: 10
+speckle_range: 20
+# From OpenCV Block Matching [OCV-BM]

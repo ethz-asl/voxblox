@@ -1,0 +1,16 @@
+<launch>
+  <arg name="voxblox_file_path" default="/Users/helen/data/cow/voxblox/merged_weight_nc_0_02.vxblx" />
+  <arg name="gt_file_path" default="/Users/helen/data/cow/gt_just_cow.ply"/>
+
+  <node name="voxblox_eval" pkg="voxblox_ros" type="voxblox_eval" output="screen" args="-alsologtostderr" clear_params="true">
+    <param name="color_mode" value="normals" />
+    <param name="frame_id" value="world" />
+    <param name="verbose" value="true" />
+    <param name="visualize" value="true" />
+    <param name="recolor_by_error" value="false" />
+    <rosparam file="$(find voxblox_ros)/cfg/cow_dataset.yaml"/>
+    <param name="voxblox_file_path" value="$(arg voxblox_file_path)" />
+    <param name="gt_file_path" value="$(arg gt_file_path)" />
+  </node>
+
+</launch>

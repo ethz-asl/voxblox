@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="ISO-8859-15"?>
 <launch>
 
+  <arg name="play_bag" default="true" />
+  <!-- <arg name="bag_file" default="/Users/helen/data/euroc_datasets/V2_01_easy.bag"/> -->
+  <arg name="bag_file" default="/Users/helen/data/euroc_datasets/euroc_v1_01_easy.bag"/>
+
+  <arg name="voxel_size" default="0.20"/>
+  <arg name="generate_esdf" default="true" />
+
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+
+
    <!-- Run stereo_dense_reconstruction_node-->
   <node name="stereo_dense_reconstruction_node" pkg="stereo_dense_reconstruction_nodes" type="stereo_dense_reconstruction_node" clear_params="true" output="screen">
     <remap from="image_cam0"          to="cam0/image_raw" />
@@ -29,19 +39,25 @@
     <rosparam file="$(find stereo_dense_reconstruction_nodes)/cfg/ParamsHalfRes.yaml"/>
 
     <!-- Load stereo camera calibration from yaml file (only used if visensor_msgs not found)-->
-    <rosparam file="$(find mav_startup)/parameters/mavs/ijrr_euroc_datasets/camchain.yaml"/>
+    <rosparam file="$(find mav_startup)/parameters/mavs/ijrr_euroc_datasets/camchain_equidistant_new.yaml"/>
   </node>
 
-  <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="--alsologtostderr" clear_params="true">
+  <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="stereo_dense_reconstruction/pcl"/>
-    <param name="tsdf_voxel_size" value="0.20" />
+    <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
     <param name="tsdf_voxels_per_side" value="16" />
     <param name="voxel_carving_enabled" value="true" />
-    <param name="color_mode" value="normals" />
+    <param name="color_mode" value="colors" />
     <param name="use_tf_transforms" value="false" />
     <param name="verbose" value="true" />
-    <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" />
-    <param name="update_mesh_every_n_sec" value="1.0" />
+    <!--
+    <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" /> -->
+    <remap from="transform" to="/groundtruth_transform" />
+    <param name="update_mesh_every_n_sec" value="0.2" />
+    <param name="generate_esdf" value="$(arg generate_esdf)" />
+    <param name="slice_level" value="1.0" />
+    <param name="method" value="merged" />
+    <param name="use_const_weight" value="false" />
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
 

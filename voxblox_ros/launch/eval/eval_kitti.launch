@@ -1,0 +1,16 @@
+<launch>
+  <arg name="voxblox_file_path" default="/Users/helen/data/kitti/voxblox/const_0_50.vxblx" />
+  <arg name="gt_file_path" default="/Users/helen/data/kitti/voxblox/velodyne_ptcloud_0_10_subsampled.ply"/>
+
+  <node name="voxblox_eval" pkg="voxblox_ros" type="voxblox_eval" output="screen" args="-alsologtostderr" clear_params="true">
+    <param name="color_mode" value="colors" />
+    <param name="frame_id" value="world" />
+    <param name="verbose" value="true" />
+    <param name="visualize" value="false" />
+    <param name="recolor_by_error" value="false" />
+    <!-- <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/> -->
+    <param name="voxblox_file_path" value="$(arg voxblox_file_path)" />
+    <param name="gt_file_path" value="$(arg gt_file_path)" />
+  </node>
+
+</launch>
