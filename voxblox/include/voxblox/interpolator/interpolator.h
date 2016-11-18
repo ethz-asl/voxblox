@@ -5,7 +5,9 @@ namespace voxblox {
 
 class Interpolator {
  public:
-  Interpolator(Layer<TsdfVoxel>* tsdf_layer);
+  typedef std::shared_ptr<Interpolator> Ptr;
+
+  explicit Interpolator(Layer<TsdfVoxel>* tsdf_layer);
 
   bool getGradient(const Point& pos, Point* grad,
                    const bool interpolate = false) const;
@@ -13,8 +15,11 @@ class Interpolator {
   bool getDistance(const Point& pos, FloatingPoint* distance,
                    bool interpolate = false) const;
 
- private:
+  // Without interpolation.
+  bool getNearestDistanceAndWeight(const Point& pos, FloatingPoint* distance,
+                                   float* weight) const;
 
+ private:
   bool setIndexes(const Point& pos, BlockIndex* block_index,
                   InterpIndexes* voxel_indexes) const;
 
@@ -32,7 +37,7 @@ class Interpolator {
 
   Layer<TsdfVoxel>* tsdf_layer_;
 };
-}
+}  // namespace voxblox
 
 #include "voxblox/interpolator/interpolator_inl.h"
 

@@ -2,7 +2,10 @@
 #define VOXBLOX_CORE_COMMON_H_
 
 #include <memory>
+#include <set>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -11,6 +14,7 @@
 
 namespace voxblox {
 
+// Types.
 typedef double FloatingPoint;
 typedef int IndexElement;
 
@@ -21,9 +25,17 @@ typedef Eigen::Matrix<IndexElement, 3, 1> AnyIndex;
 typedef AnyIndex VoxelIndex;
 typedef AnyIndex BlockIndex;
 
+typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
+
 typedef std::vector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
+
+struct Color;
+
+// Pointcloud types for external interface.
+typedef std::vector<Point> Pointcloud;
+typedef std::vector<Color> Colors;
 
 // For triangle meshing/vertex access.
 typedef size_t VertexIndex;
@@ -43,8 +55,8 @@ typedef Eigen::Matrix<FloatingPoint, 3, 3> Matrix3;
 // Interpolation structure
 typedef Eigen::Matrix<FloatingPoint, 8, 8> InterpTable;
 typedef Eigen::Matrix<FloatingPoint, 1, 8> InterpVector;
-typedef Eigen::Array<IndexElement, 3, 8>
-    InterpIndexes;  // type must allow negatives
+// Type must allow negatives:
+typedef Eigen::Array<IndexElement, 3, 8> InterpIndexes;
 
 struct Color {
   Color() : r(0), g(0), b(0), a(0) {}
@@ -93,9 +105,7 @@ struct Color {
   static const Color Pink() { return Color(255, 0, 127); }
 };
 
-// Pointcloud types for external interface.
-typedef std::vector<Point> Pointcloud;
-typedef std::vector<Color> Colors;
+// Grid <-> point conversion functions.
 
 // IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
 // function doesn't always compute the correct grid index for coordinates
@@ -149,12 +159,32 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
 
 inline VoxelIndex getLocalFromGlobalVoxelIndex(AnyIndex global_voxel_idx,
                                                int voxels_per_side) {
-  return VoxelIndex(global_voxel_idx.x() % voxels_per_side,
-                    global_voxel_idx.y() % voxels_per_side,
-                    global_voxel_idx.z() % voxels_per_side);
+  VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side,
+                             global_voxel_idx.y() % voxels_per_side,
+                             global_voxel_idx.z() % voxels_per_side);
+
+  // Make sure we're within bounds.
+  for (unsigned int i = 0u; i < 3u; ++i) {
+    if (local_voxel_idx(i) < 0) {
+      local_voxel_idx(i) += voxels_per_side;
+    }
+  }
+
+  return local_voxel_idx;
 }
 
+// Math functions.
 inline int signum(FloatingPoint x) { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
+
+// For occupancy/octomap-style mapping.
+inline float logOddsFromProbability(float probability) {
+  DCHECK(probability >= 0.0f && probability <= 1.0f);
+  return log(probability / (1.0 - probability));
+}
+
+inline float probabilityFromLogOdds(float log_odds) {
+  return 1.0 - (1.0 / (1.0 + exp(log_odds)));
+}
 
 template <typename Type, typename... Arguments>
 inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {

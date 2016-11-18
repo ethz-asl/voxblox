@@ -1,0 +1,25 @@
+<launch>
+   <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
+    <remap from="pointcloud" to="points_processed"/>
+    <param name="tsdf_voxel_size" value="0.10" />
+    <param name="tsdf_voxels_per_side" value="16" />
+    <param name="voxel_carving_enabled" value="true" />
+    <param name="color_mode" value="normals" />
+    <param name="use_tf_transforms" value="true" />
+    <param name="update_mesh_every_n_sec" value="2.0" />
+    <param name="min_time_between_msgs_sec" value="0.2" />
+    <param name="truncation_distance" value="0.5" />
+    <param name="verbose" value="true" />
+  </node>
+
+  <!-- <node name="octomap_manager" pkg="octomap_world"
+      type="octomap_manager" output="screen" clear_params="true"
+      args="-alsologtostderr" >
+    <param name="resolution" value="0.1" />
+    <param name="map_publish_frequency" value="5.0" />
+    <param name="visualize_min_z" value="-1.0" />
+    <param name="visualize_max_z" value="1.5" />
+    <remap from="pointcloud" to="points_processed" />
+
+  </node> -->
+</launch>

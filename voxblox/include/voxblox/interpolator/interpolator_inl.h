@@ -74,7 +74,7 @@ bool Interpolator::setIndexes(const Point& pos, BlockIndex* block_index,
   }
 
   // get indexes of neighbors
-  (*voxel_indexes) << 0, 1, 0, 1, 0, 1, 0, 1, 
+  (*voxel_indexes) << 0, 1, 0, 1, 0, 1, 0, 1,
                       0, 0, 1, 1, 0, 0, 1, 1,
                       0, 0, 0, 0, 1, 1, 1, 1;
 
@@ -88,13 +88,13 @@ void Interpolator::getWeightsVector(const Point& voxel_pos, const Point& pos,
 
   Point voxel_offset = pos - voxel_pos;
 
-  CHECK((voxel_offset.array() >= 0).all());
+  CHECK((voxel_offset.array() >= 0).all());  // NOLINT
 
-  *weights_vector << 1, 
-                     voxel_offset[0], 
-                     voxel_offset[1], 
+  *weights_vector << 1,
+                     voxel_offset[0],
+                     voxel_offset[1],
                      voxel_offset[2],
-                     voxel_offset[0] * voxel_offset[1], 
+                     voxel_offset[0] * voxel_offset[1],
                      voxel_offset[1] * voxel_offset[2],
                      voxel_offset[2] * voxel_offset[0],
                      voxel_offset[0] * voxel_offset[1] * voxel_offset[2];
@@ -165,10 +165,10 @@ bool Interpolator::getInterpDistance(const Point& pos,
                  -1, 0, 0, 0, 1, 0, 0, 0,
                  -1, 0, 1, 0, 0, 0, 0, 0,
                  -1, 1, 0, 0, 0, 0, 0, 0,
-                  1, 0,-1, 0,-1, 0, 1, 0,
-                  1,-1,-1, 1, 0, 0, 0, 0,
-                  1,-1, 0, 0,-1, 1, 0, 0,
-                 -1, 1, 1,-1, 1,-1,-1, 1;
+                  1, 0,-1, 0,-1, 0, 1, 0,  // NOLINT
+                  1,-1,-1, 1, 0, 0, 0, 0,  // NOLINT
+                  1,-1, 0, 0,-1, 1, 0, 0,  // NOLINT
+                 -1, 1, 1,-1, 1,-1,-1, 1;  // NOLINT
 
   // interpolate
   *distance = weights_vector * (interp_table * distances.transpose());
@@ -186,6 +186,23 @@ bool Interpolator::getNearestDistance(const Point& pos,
   }
   *distance = block_ptr->getVoxelByCoordinates(pos).distance;
 
+  return true;
+}
+
+bool Interpolator::getNearestDistanceAndWeight(const Point& pos,
+                                               FloatingPoint* distance,
+                                               float* weight) const {
+  CHECK_NOTNULL(distance);
+  CHECK_NOTNULL(weight);
+
+  Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr =
+      tsdf_layer_->getBlockPtrByCoordinates(pos);
+  if (block_ptr == nullptr) {
+    return false;
+  }
+  const TsdfVoxel& voxel = block_ptr->getVoxelByCoordinates(pos);
+  *distance = voxel.distance;
+  *weight = voxel.weight;
   return true;
 }
 

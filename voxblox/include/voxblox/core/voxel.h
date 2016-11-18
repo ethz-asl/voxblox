@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "voxblox/core/common.h"
+#include "voxblox/core/color.h"
 
 namespace voxblox {
 
@@ -16,10 +17,15 @@ struct TsdfVoxel {
 struct EsdfVoxel {
   float distance = 0.0;
   bool observed = false;
+  bool in_queue = false;
+  bool fixed = false;
+  // Relative direction toward parent. If itself, then either uninitialized
+  // or in the fixed frontier.
+  Eigen::Vector3i parent = Eigen::Vector3i::Zero();
 };
 
 struct OccupancyVoxel {
-  float occupancy_probability = 0.5;
+  float probability_log = 0.0;
   bool observed = false;
 };
 

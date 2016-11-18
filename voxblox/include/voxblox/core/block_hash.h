@@ -27,6 +27,9 @@ struct BlockHashMapType {
                              std::equal_to<BlockIndex> > type;
 };
 
+typedef std::unordered_set<AnyIndex, BlockIndexHash, std::equal_to<AnyIndex> >
+    IndexSet;
+
 typedef typename BlockHashMapType<IndexVector>::type HierarchicalIndexMap;
 
 typedef typename HierarchicalIndexMap::value_type HierarchicalIndex;
