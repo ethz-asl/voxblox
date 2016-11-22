@@ -179,6 +179,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Determine which parts to generate.
   nh_private_.param("generate_esdf", generate_esdf_, generate_esdf_);
   nh_private_.param("slice_level", slice_level_, slice_level_);
+  nh_private_.param("world_frame", world_frame_, world_frame_);
 
   // Advertise topics.
   mesh_pub_ =
