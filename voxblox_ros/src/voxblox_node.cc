@@ -88,6 +88,8 @@ class VoxbloxNode {
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
+  // If set, overwrite sensor frame with this value. If empty, unused.
+  std::string sensor_frame_;
   // Whether to use TF transform resolution (true) or fixed transforms from
   // parameters and transform topics (false).
   bool use_tf_transforms_;
@@ -165,6 +167,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       generate_esdf_(false),
       generate_occupancy_(false),
       world_frame_("world"),
+      sensor_frame_(""),
       use_tf_transforms_(true),
       // 10 ms here:
       timestamp_tolerance_ns_(10000000),
@@ -180,6 +183,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   nh_private_.param("generate_esdf", generate_esdf_, generate_esdf_);
   nh_private_.param("slice_level", slice_level_, slice_level_);
   nh_private_.param("world_frame", world_frame_, world_frame_);
+  nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
 
   // Advertise topics.
   mesh_pub_ =
@@ -598,16 +602,22 @@ bool VoxbloxNode::lookupTransformTf(const std::string& from_frame,
   tf::StampedTransform tf_transform;
   ros::Time time_to_lookup = timestamp;
 
+  // Allow overwriting the TF frame for the sensor.
+  std::string from_frame_modified = from_frame;
+  if (!sensor_frame_.empty()) {
+    from_frame_modified = sensor_frame_;
+  }
+
   // If this transform isn't possible at the time, then try to just look up
   // the latest (this is to work with bag files and static transform
   // publisher, etc).
-  if (!tf_listener_.canTransform(to_frame, from_frame, time_to_lookup)) {
+  if (!tf_listener_.canTransform(to_frame, from_frame_modified, time_to_lookup)) {
     time_to_lookup = ros::Time(0);
     ROS_WARN("Using latest TF transform instead of timestamp match.");
   }
 
   try {
-    tf_listener_.lookupTransform(to_frame, from_frame, time_to_lookup,
+    tf_listener_.lookupTransform(to_frame, from_frame_modified, time_to_lookup,
                                  tf_transform);
   } catch (tf::TransformException& ex) {  // NOLINT
     ROS_ERROR_STREAM(
