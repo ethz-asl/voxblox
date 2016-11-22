@@ -695,6 +695,7 @@ bool VoxbloxNode::generateMeshCallback(
   visualization_msgs::MarkerArray marker_array;
   marker_array.markers.resize(1);
   fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
+  marker_array.markers[0].header.frame_id = world_frame_;
   mesh_pub_.publish(marker_array);
   publish_mesh_timer.Stop();
 
@@ -768,6 +769,7 @@ void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
   visualization_msgs::MarkerArray marker_array;
   marker_array.markers.resize(1);
   fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
+  marker_array.markers[0].header.frame_id = world_frame_;
   mesh_pub_.publish(marker_array);
   publish_mesh_timer.Stop();
 }

@@ -85,8 +85,6 @@ void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
                         visualization_msgs::Marker* marker) {
   CHECK_NOTNULL(marker);
   marker->header.stamp = ros::Time::now();
-  // TODO(helenol): fix coordinate frame.
-  marker->header.frame_id = "world";
   marker->ns = "mesh";
   marker->scale.x = 1;
   marker->scale.y = 1;
