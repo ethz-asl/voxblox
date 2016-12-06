@@ -32,10 +32,12 @@ typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
 struct Color;
+typedef size_t Label;
 
 // Pointcloud types for external interface.
 typedef std::vector<Point> Pointcloud;
 typedef std::vector<Color> Colors;
+typedef std::vector<Label> Labels;
 
 // For triangle meshing/vertex access.
 typedef size_t VertexIndex;

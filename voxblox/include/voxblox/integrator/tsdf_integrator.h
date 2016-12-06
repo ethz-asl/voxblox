@@ -26,8 +26,8 @@ class TsdfIntegrator {
     bool allow_clear = true;
   };
 
-  TsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
-      : config_(config), layer_(layer) {
+  TsdfIntegrator(const Config& config, TsdfMap* map)
+      : config_(config), map_(map), layer_(map_->getTsdfLayerPtr()) {
     DCHECK(layer_);
 
     voxel_size_ = layer_->voxel_size();
@@ -366,6 +366,7 @@ class TsdfIntegrator {
  protected:
   Config config_;
 
+  TsdfMap* map_;
   Layer<TsdfVoxel>* layer_;
 
   // Cached map config.

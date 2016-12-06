@@ -27,8 +27,8 @@ class OccupancyIntegrator {
     FloatingPoint max_ray_length_m = 5.0;
   };
 
-  OccupancyIntegrator(const Config& config, Layer<OccupancyVoxel>* layer)
-      : config_(config), layer_(layer) {
+  OccupancyIntegrator(const Config& config, OccupancyMap* map)
+      : config_(config), map_(map), layer_(map->getOccupancyLayerPtr()) {
     DCHECK_NOTNULL(layer_);
     DCHECK_GT(layer_->voxel_size(), 0.0);
     DCHECK_GT(layer_->block_size(), 0.0);
@@ -171,6 +171,7 @@ class OccupancyIntegrator {
  protected:
   Config config_;
 
+  OccupancyMap* map_;
   Layer<OccupancyVoxel>* layer_;
 
   // Cached map config.
