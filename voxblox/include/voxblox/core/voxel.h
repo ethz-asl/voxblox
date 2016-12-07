@@ -9,13 +9,13 @@
 namespace voxblox {
 
 struct TsdfVoxel {
-  float distance = 0.0;
-  float weight = 0.0;
+  float distance = 0.0f;
+  float weight = 0.0f;
   Color color;
 };
 
 struct EsdfVoxel {
-  float distance = 0.0;
+  float distance = 0.0f;
   bool observed = false;
   bool in_queue = false;
   bool fixed = false;
@@ -25,15 +25,15 @@ struct EsdfVoxel {
 };
 
 struct OccupancyVoxel {
-  float probability_log = 0.0;
+  float probability_log = 0.0f;
   bool observed = false;
 };
 
 struct LabelTsdfVoxel {
-  float distance = 0.0;
-  float weight = 0.0;
-  float label_confidence = 0.0;
-  Label label = 0.0;
+  float distance = 0.0f;
+  float weight = 0.0f;
+  float label_confidence = 0.0f;
+  Label label = 0u;
   Color color;
 };
 

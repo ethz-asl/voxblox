@@ -18,9 +18,9 @@
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/core/labeltsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/labeltsdf_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
-#include <voxblox/integrator/labeltsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>

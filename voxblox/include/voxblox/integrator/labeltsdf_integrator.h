@@ -18,8 +18,8 @@ namespace voxblox {
 class LabelTsdfIntegrator {
  public:
   struct Config {
-    float default_truncation_distance = 0.1;
-    float max_weight = 10000.0;
+    float default_truncation_distance = 0.1f;
+    float max_weight = 10000.0f;
     bool voxel_carving_enabled = true;
     FloatingPoint min_ray_length_m = 0.1;
     FloatingPoint max_ray_length_m = 5.0;
@@ -29,7 +29,7 @@ class LabelTsdfIntegrator {
 
   LabelTsdfIntegrator(const Config& config, LabelTsdfMap* map)
       : config_(config), map_(map), layer_(map_->getLabelTsdfLayerPtr()) {
-    DCHECK(map_);
+    CHECK(map_);
 
     voxel_size_ = layer_->voxel_size();
     block_size_ = layer_->block_size();
@@ -49,42 +49,41 @@ class LabelTsdfIntegrator {
     if (dist_z > 1e-6) {
       return 1.0 / (dist_z * dist_z);
     }
-    return 0.0;
+    return 0.0f;
   }
 
   inline void readLabelPointCloud(const Transformation& T_G_C,
                                   const Pointcloud& points_C,
-                                  Labels& labels) {
-    // TODO(grinvalm) caller allocates labels, does it set its vector size too?
-    DCHECK_EQ(points_C.size(), labels.size());
+                                  Labels* labels) {
+    CHECK_NOTNULL(labels);
+    CHECK_EQ(points_C.size(), labels->size());
 
-    std::map<Label, int> label_count;
+    std::map<Label, size_t> label_count;
     int unlabeled_count = 0;
 
-    // Determine predominant label for segment
-    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
-      const Point& point_C = points_C[pt_idx];
+    // Determine predominant label for segment.
+    for (const auto& point_C : points_C) {
       const Point point_G = T_G_C * point_C;
 
-      // Get the corresponding voxel by 3D position in world frame
+      // Get the corresponding voxel by 3D position in world frame.
       Layer<LabelTsdfVoxel>::BlockType::ConstPtr block_ptr =
           layer_->getBlockPtrByCoordinates(point_G);
 
       if (block_ptr != nullptr) {
         const LabelTsdfVoxel& voxel = block_ptr->getVoxelByCoordinates(point_G);
-        label_count[voxel.label]++;
+        ++label_count[voxel.label];
       } else {
-        unlabeled_count++;
+        ++unlabeled_count;
       }
     }
 
-    // Find label with highest frequency
-    unsigned current_max = 0;
+    // Find label with highest frequency.
+    size_t current_max = 0u;
     Label label_max;
-    for (auto it = label_count.cbegin(); it != label_count.cend(); ++it) {
-      if (it->second > current_max) {
-        label_max = it->first;
-        current_max = it->second;
+    for (const std::pair<Label, size_t>& label_count_pair : label_count) {
+      if (label_count_pair.second > current_max) {
+        label_max = label_count_pair.first;
+        current_max = label_count_pair.second;
       }
     }
 
@@ -92,10 +91,11 @@ class LabelTsdfIntegrator {
       label_max = map_->get_new_label();
     }
 
-    // Assign the dominant label to all points of segment
-    // TODO(grinvalm) can use only one label instead of vector, they're all same
-    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
-      labels[pt_idx] = label_max;
+    // Assign the dominant label to all points of segment.
+    // TODO(grinvalm) can use only one label instead of vector,
+    // they're all same for now
+    for (size_t pt_idx = 0u; pt_idx < points_C.size(); ++pt_idx) {
+      labels->at(pt_idx) = label_max;
     }
   }
 
@@ -113,7 +113,7 @@ class LabelTsdfIntegrator {
 
     float sdf = static_cast<float>(voxel_direction.norm());
     // Figure out if it's in front of the plane or behind.
-    if (voxel_direction.dot(ray_direction) < 0) {
+    if (voxel_direction.dot(ray_direction) < 0.0) {
       sdf = -sdf;
     }
 
@@ -137,9 +137,9 @@ class LabelTsdfIntegrator {
   }
 
   void updateLabel(const Label& new_label, LabelTsdfVoxel* labeltsdf_voxel) {
-    // TODO(grinvalm) add cap confidence value as in paper and consider noise
+    // TODO(grinvalm) add cap confidence value as in paper and consider noise.
     if (labeltsdf_voxel->label == new_label) {
-      labeltsdf_voxel->label_confidence++;
+      ++labeltsdf_voxel->label_confidence;
     } else {
       if (labeltsdf_voxel->label_confidence == 0.0) {
         labeltsdf_voxel->label = new_label;
@@ -156,7 +156,7 @@ class LabelTsdfIntegrator {
 
     float sdf = static_cast<float>(voxel_direction.norm());
     // Figure out if it's in front of the plane or behind.
-    if (voxel_direction.dot(ray_direction) < 0) {
+    if (voxel_direction.dot(ray_direction) < 0.0) {
       sdf = -sdf;
     }
     return sdf;
@@ -166,7 +166,7 @@ class LabelTsdfIntegrator {
                            const Pointcloud& points_C,
                            const Labels& labels,
                            const Colors& colors) {
-    DCHECK_EQ(points_C.size(), colors.size());
+    CHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
     const Point& origin = T_G_C.getPosition();
