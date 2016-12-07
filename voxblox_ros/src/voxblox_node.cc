@@ -274,9 +274,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
 
-  // TODO(grinvalm) is it safe to pass the ptr from a shared_ptr?
   tsdf_integrator_.reset(
-      new TsdfIntegrator(integrator_config, tsdf_map_.get()));
+      new TsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
 
   // ESDF settings.
   if (generate_esdf_) {
@@ -299,8 +298,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
                       esdf_integrator_config.default_distance_m);
 
     esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
-                                              tsdf_map_.get(),
-                                              esdf_map_.get()));
+                                              tsdf_map_->getTsdfLayerPtr(),
+                                              esdf_map_->getEsdfLayerPtr()));
   }
 
   // Occupancy settings.
@@ -313,7 +312,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
 
     OccupancyIntegrator::Config occupancy_integrator_config;
     occupancy_integrator_.reset(new OccupancyIntegrator(
-        occupancy_integrator_config, occupancy_map_.get()));
+        occupancy_integrator_config, occupancy_map_->getOccupancyLayerPtr()));
   }
 
   // Mesh settings.

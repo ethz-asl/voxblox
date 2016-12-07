@@ -36,10 +36,9 @@ class EsdfIntegrator {
     int num_buckets = 20;
   };
 
-  EsdfIntegrator(const Config& config, TsdfMap* tsdf_map, EsdfMap* esdf_map)
-      : config_(config), tsdf_map_(tsdf_map), esdf_map_(esdf_map),
-        tsdf_layer_(tsdf_map->getTsdfLayerPtr()),
-        esdf_layer_(esdf_map->getEsdfLayerPtr()) {
+  EsdfIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
+                 Layer<EsdfVoxel>* esdf_layer)
+      : config_(config), tsdf_layer_(tsdf_layer), esdf_layer_(esdf_layer) {
     CHECK(tsdf_layer_);
     CHECK(esdf_layer_);
 
@@ -474,9 +473,6 @@ class EsdfIntegrator {
 
  protected:
   Config config_;
-
-  TsdfMap* tsdf_map_;
-  EsdfMap* esdf_map_;
 
   Layer<TsdfVoxel>* tsdf_layer_;
   Layer<EsdfVoxel>* esdf_layer_;
