@@ -2,6 +2,7 @@
 #define VOXBLOX_INTEGRATOR_LABELTSDF_INTEGRATOR_H_
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <vector>
 
@@ -9,6 +10,7 @@
 #include <glog/logging.h>
 
 #include "voxblox/core/layer.h"
+#include "voxblox/core/labeltsdf_map.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/timing.h"
@@ -25,6 +27,7 @@ class LabelTsdfIntegrator {
     FloatingPoint max_ray_length_m = 5.0;
     bool use_const_weight = false;
     bool allow_clear = true;
+    float max_confidence = std::numeric_limits<float>::max();
   };
 
   LabelTsdfIntegrator(const Config& config, LabelTsdfMap* map)
@@ -59,10 +62,10 @@ class LabelTsdfIntegrator {
     CHECK_EQ(points_C.size(), labels->size());
 
     std::map<Label, size_t> label_count;
-    int unlabeled_count = 0;
+    size_t unlabeled_count = 0u;
 
     // Determine predominant label for segment.
-    for (const auto& point_C : points_C) {
+    for (const Point& point_C : points_C) {
       const Point point_G = T_G_C * point_C;
 
       // Get the corresponding voxel by 3D position in world frame.
@@ -94,8 +97,8 @@ class LabelTsdfIntegrator {
     // Assign the dominant label to all points of segment.
     // TODO(grinvalm) can use only one label instead of vector,
     // they're all same for now
-    for (size_t pt_idx = 0u; pt_idx < points_C.size(); ++pt_idx) {
-      labels->at(pt_idx) = label_max;
+    for (size_t point_idx = 0u; point_idx < points_C.size(); ++point_idx) {
+      labels->at(point_idx) = label_max;
     }
   }
 
@@ -108,6 +111,7 @@ class LabelTsdfIntegrator {
                                    const float truncation_distance,
                                    const float weight,
                                    LabelTsdfVoxel* labeltsdf_voxel) {
+    CHECK_NOTNULL(labeltsdf_voxel);
     Eigen::Vector3d voxel_direction = point_G - voxel_center;
     Eigen::Vector3d ray_direction = point_G - origin;
 
@@ -117,17 +121,14 @@ class LabelTsdfIntegrator {
       sdf = -sdf;
     }
 
-    // This is for the linear drop-off in confidence behind the surface.
-    float updated_weight = weight;
-
-    const float new_weight = labeltsdf_voxel->weight + updated_weight;
+    const float new_weight = labeltsdf_voxel->weight + weight;
 
     updateLabel(label, labeltsdf_voxel);
 
     labeltsdf_voxel->color = Color::blendTwoColors(
-        labeltsdf_voxel->color, labeltsdf_voxel->weight, color, updated_weight);
+        labeltsdf_voxel->color, labeltsdf_voxel->weight, color, weight);
     const float new_sdf =
-        (sdf * updated_weight
+        (sdf * weight
          + labeltsdf_voxel->distance * labeltsdf_voxel->weight) / new_weight;
 
     labeltsdf_voxel->distance = (new_sdf > 0.0)
@@ -141,7 +142,7 @@ class LabelTsdfIntegrator {
     if (labeltsdf_voxel->label == new_label) {
       ++labeltsdf_voxel->label_confidence;
     } else {
-      if (labeltsdf_voxel->label_confidence == 0.0) {
+      if (labeltsdf_voxel->label_confidence == 0.0f) {
         labeltsdf_voxel->label = new_label;
       } else {
         labeltsdf_voxel->label_confidence--;
@@ -156,7 +157,7 @@ class LabelTsdfIntegrator {
 
     float sdf = static_cast<float>(voxel_direction.norm());
     // Figure out if it's in front of the plane or behind.
-    if (voxel_direction.dot(ray_direction) < 0.0) {
+    if (voxel_direction.dot(ray_direction) < 0.0f) {
       sdf = -sdf;
     }
     return sdf;
@@ -171,11 +172,11 @@ class LabelTsdfIntegrator {
 
     const Point& origin = T_G_C.getPosition();
 
-    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
-      const Point& point_C = points_C[pt_idx];
+    for (size_t point_idx = 0u; point_idx < points_C.size(); ++point_idx) {
+      const Point& point_C = points_C[point_idx];
       const Point point_G = T_G_C * point_C;
-      const Label& label = labels[pt_idx];
-      const Color& color = colors[pt_idx];
+      const Label& label = labels[point_idx];
+      const Color& color = colors[point_idx];
 
       FloatingPoint ray_distance = (point_G - origin).norm();
       if (ray_distance < config_.min_ray_length_m) {

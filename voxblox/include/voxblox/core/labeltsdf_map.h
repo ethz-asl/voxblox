@@ -23,10 +23,7 @@ class LabelTsdfMap {
   explicit LabelTsdfMap(Config config)
       : labeltsdf_layer_(new Layer<LabelTsdfVoxel>(
           config.labeltsdf_voxel_size, config.labeltsdf_voxels_per_side)),
-        highest_label_(0) {
-    block_size_ =
-        config.labeltsdf_voxel_size * config.labeltsdf_voxels_per_side;
-  }
+        highest_label_(0u) {}
 
   virtual ~LabelTsdfMap() {}
 
@@ -38,13 +35,11 @@ class LabelTsdfMap {
     return *labeltsdf_layer_;
   }
 
-  FloatingPoint block_size() const { return block_size_; }
+  FloatingPoint block_size() const { return labeltsdf_layer_->block_size(); }
 
   Label get_new_label() { return ++highest_label_; }
 
  protected:
-  FloatingPoint block_size_;
-
   // The layers.
   Layer<LabelTsdfVoxel>::Ptr labeltsdf_layer_;
 
