@@ -13,6 +13,7 @@ cs_add_library(${PROJECT_NAME}
   src/transformer.cc
   src/tsdf_server.cc
 )
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ############
 # BINARIES #

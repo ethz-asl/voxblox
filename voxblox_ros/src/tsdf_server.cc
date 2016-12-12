@@ -7,14 +7,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       verbose_(true),
-      color_ptcloud_by_weight_(false),
-      generate_esdf_(false),
-      generate_occupancy_(false),
       world_frame_("world"),
-      sensor_frame_(""),
-      use_tf_transforms_(true),
-      // 10 ms here:
-      timestamp_tolerance_ns_(10000000),
       slice_level_(0.5) {
   // Before subscribing, determine minimum time between messages.
   // 0 by default.
@@ -41,7 +34,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "tsdf_slice", 1, true);
 
   pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
-                                  &TsdfServer::insertPointcloudWithTf, this);
+                                  &TsdfServer::insertPointcloud, this);
 
   nh_private_.param("verbose", verbose_, verbose_);
   nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
