@@ -210,7 +210,11 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
             "occupancy_layer", 1, true);
   }
 
-  pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
+  int pointcloud_queue_size = 1;
+  nh_private_.param("pointcloud_queue_size", pointcloud_queue_size,
+                    pointcloud_queue_size);
+
+  pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size,
                                   &VoxbloxNode::insertPointcloudWithTf, this);
 
   nh_private_.param("verbose", verbose_, verbose_);
