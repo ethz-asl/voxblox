@@ -52,8 +52,10 @@ class OccupancyIntegrator {
 
   inline void updateOccupancyVoxel(bool occupied, OccupancyVoxel* occ_voxel) {
     DCHECK_NOTNULL(occ_voxel);
-    float log_odds_update = occupied ? prob_hit_log_ : prob_miss_log_;
+    // Set voxel to observed.
+    occ_voxel->observed = true;
     // Skip update if necessary.
+    float log_odds_update = occupied ? prob_hit_log_ : prob_miss_log_;
     if ((log_odds_update >= 0 &&
          occ_voxel->probability_log >= clamp_max_log_) ||
         (log_odds_update <= 0 &&
