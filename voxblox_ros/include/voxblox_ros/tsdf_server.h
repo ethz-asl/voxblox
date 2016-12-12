@@ -19,6 +19,9 @@
 #include <voxblox/mesh/mesh_integrator.h>
 
 #include "voxblox_ros/transformer.h"
+#include "voxblox_ros/FilePath.h"
+#include "voxblox_ros/mesh_vis.h"
+#include "voxblox_ros/ptcloud_vis.h"
 
 namespace voxblox {
 
@@ -77,6 +80,7 @@ class TsdfServer {
   ros::Publisher mesh_pub_;
   ros::Publisher tsdf_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
+  ros::Publisher tsdf_slice_pub_;
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;

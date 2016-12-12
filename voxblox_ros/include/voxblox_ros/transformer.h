@@ -32,6 +32,9 @@ class Transformer {
                             const ros::Time& timestamp,
                             Transformation* transform);
 
+  ros::NodeHandle nh_;
+  ros::NodeHandle nh_private_;
+
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
@@ -46,6 +49,10 @@ class Transformer {
   // are assumed to be T_G_D.
   Transformation T_B_C_;
   Transformation T_B_D_;
+
+  // To be replaced (at least optionally) with odometry + static transform
+  // from IMU to visual frame.
+  tf::TransformListener tf_listener_;
 
   // Only used if use_tf_transforms_ set to false.
   ros::Subscriber transform_sub_;
