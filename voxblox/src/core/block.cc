@@ -11,7 +11,7 @@ void Block<TsdfVoxel>::DeserializeVoxelData(const BlockProto& proto,
   DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
   for (size_t voxel_idx = 0u, data_idx = 0u;
        voxel_idx < num_voxels_ && data_idx < num_data_packets;
-       ++voxel_idx, data_idx += 3u) {
+       ++voxel_idx, data_idx += kNumDataPacketsPerVoxel) {
     const uint32_t bytes_1 = proto.voxel_data(data_idx);
     const uint32_t bytes_2 = proto.voxel_data(data_idx + 1u);
     const uint32_t bytes_3 = proto.voxel_data(data_idx + 2u);
