@@ -72,7 +72,7 @@ void Block<OccupancyVoxel>::DeserializeVoxelData(const BlockProto& proto,
     OccupancyVoxel& voxel = voxels[voxel_idx];
 
     memcpy(&(voxel.probability_log), &bytes_1, sizeof(bytes_1));
-    memcpy(&(voxel.observed), &bytes_2, sizeof(bytes_2));
+    voxel.observed = static_cast<bool>(bytes_2 & 0x000000FF);
   }
 }
 
@@ -87,9 +87,7 @@ void Block<OccupancyVoxel>::SerializeVoxelData(const OccupancyVoxel* voxels,
         reinterpret_cast<const uint32_t*>(&voxel.probability_log);
     proto->add_voxel_data(*bytes_1_ptr);
 
-    const uint32_t* bytes_2_ptr =
-        reinterpret_cast<const uint32_t*>(&voxel.observed);
-    proto->add_voxel_data(*bytes_2_ptr);
+    proto->add_voxel_data(static_cast<uint32_t>(voxel.observed));
   }
   DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, proto->voxel_data_size());
 }
