@@ -75,11 +75,12 @@ bool EsdfServer::generateEsdfCallback(
 }
 
 void EsdfServer::updateMeshEvent(const ros::TimerEvent& e) {
-  TsdfServer::updateMeshEvent(e);
-
+  // Also update the ESDF now.
   const bool clear_updated_flag_esdf = false;
   esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   publishAllUpdatedEsdfVoxels();
+
+  TsdfServer::updateMeshEvent(e);
 }
 
 }  // namespace voxblox
