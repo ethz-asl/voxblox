@@ -9,7 +9,10 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 #############
 # LIBRARIES #
 #############
-# TODO(mfehr, helenol): Add a library as soon as we have source files.
+cs_add_library(${PROJECT_NAME}
+  src/transformer.cc
+  src/tsdf_server.cc
+)
 
 ############
 # BINARIES #
