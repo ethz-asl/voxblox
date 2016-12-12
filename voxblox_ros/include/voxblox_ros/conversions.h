@@ -8,7 +8,8 @@
 
 namespace voxblox {
 
-void colorVoxbloxToMsg(const Color& color, std_msgs::ColorRGBA* color_msg) {
+inline void colorVoxbloxToMsg(const Color& color,
+                              std_msgs::ColorRGBA* color_msg) {
   CHECK_NOTNULL(color_msg);
   color_msg->r = color.r / 255.0;
   color_msg->g = color.g / 255.0;
@@ -16,7 +17,8 @@ void colorVoxbloxToMsg(const Color& color, std_msgs::ColorRGBA* color_msg) {
   color_msg->a = color.a / 255.0;
 }
 
-void colorMsgToVoxblox(const std_msgs::ColorRGBA& color_msg, Color* color) {
+inline void colorMsgToVoxblox(const std_msgs::ColorRGBA& color_msg,
+                              Color* color) {
   color->r = static_cast<uint8_t>(color_msg.r * 255.0);
   color->g = static_cast<uint8_t>(color_msg.g * 255.0);
   color->b = static_cast<uint8_t>(color_msg.b * 255.0);
