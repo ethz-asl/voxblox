@@ -44,6 +44,8 @@ class TsdfServer {
                        voxblox_ros::FilePath::Response& response);  // NOLINT
   bool loadMapCallback(voxblox_ros::FilePath::Request& request,     // NOLINT
                        voxblox_ros::FilePath::Response& response);  // NOLINT
+  bool generateMeshCallback(std_srvs::Empty::Request& request,      // NOLINT
+                            std_srvs::Empty::Response& response);   // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& e);
 
@@ -53,14 +55,14 @@ class TsdfServer {
 
   bool verbose_;
 
-    // Merging method for new pointclouds, chosen from enum above.
+  // Merging method for new pointclouds, chosen from enum above.
   Method method_;
 
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
 
-    // Pointcloud visualization settings.
+  // Pointcloud visualization settings.
   double slice_level_;
 
   // Mesh output settings. Mesh is only written to file if mesh_filename_ is
@@ -81,6 +83,7 @@ class TsdfServer {
   ros::Publisher tsdf_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher tsdf_slice_pub_;
+  ros::Publisher occupancy_marker_pub_;
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
@@ -89,6 +92,14 @@ class TsdfServer {
 
   // Timers.
   ros::Timer update_mesh_timer_;
+
+  // Maps and integrators.
+  std::shared_ptr<TsdfMap> tsdf_map_;
+  std::shared_ptr<TsdfIntegrator> tsdf_integrator_;
+
+  // Mesh accessories.
+  std::shared_ptr<MeshLayer> mesh_layer_;
+  std::shared_ptr<MeshIntegrator> mesh_integrator_;
 
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.

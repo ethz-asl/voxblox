@@ -8,7 +8,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       verbose_(true),
       world_frame_("world"),
-      slice_level_(0.5) {
+      slice_level_(0.5),
+      transformer_(nh, nh_private) {
   // Before subscribing, determine minimum time between messages.
   // 0 by default.
   double min_time_between_msgs_sec = 0.0;
@@ -18,7 +19,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   nh_private_.param("slice_level", slice_level_, slice_level_);
   nh_private_.param("world_frame", world_frame_, world_frame_);
-  nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
 
   // Advertise topics.
   mesh_pub_ =
@@ -33,12 +33,13 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
 
-  pointcloud_sub_ = nh_.subscribe("pointcloud", 40,
+  int pointcloud_queue_size = 1;
+  nh_private_.param("pointcloud_queue_size", pointcloud_queue_size,
+                    pointcloud_queue_size);
+  pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size,
                                   &TsdfServer::insertPointcloud, this);
 
   nh_private_.param("verbose", verbose_, verbose_);
-  nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
-                    color_ptcloud_by_weight_);
   std::string method("merged");
   nh_private_.param("method", method, method);
   if (method.compare("simple") == 0) {
@@ -138,7 +139,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   }
 }
 
-void TsdfServer::insertPointcloudWithTf(
+void TsdfServer::insertPointcloud(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
   // Figure out if we should insert this.
   if (pointcloud_msg->header.stamp - last_msg_time_ < min_time_between_msgs_) {
@@ -148,8 +149,9 @@ void TsdfServer::insertPointcloudWithTf(
 
   // Look up transform from sensor frame to world frame.
   Transformation T_G_C;
-  if (lookupTransform(pointcloud_msg->header.frame_id, world_frame_,
-                      pointcloud_msg->header.stamp, &T_G_C)) {
+  if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
+                                   world_frame_, pointcloud_msg->header.stamp,
+                                   &T_G_C)) {
     // Convert the PCL pointcloud into our awesome format.
     // TODO(helenol): improve...
     // Horrible hack fix to fix color parsing colors in PCL.
@@ -312,12 +314,6 @@ bool TsdfServer::loadMapCallback(
 void TsdfServer::updateMeshEvent(const ros::TimerEvent& e) {
   if (verbose_) {
     ROS_INFO("Updating mesh.");
-  }
-  // TODO(helenol): also update the ESDF layer each time you update the mesh.
-  if (generate_esdf_) {
-    const bool clear_updated_flag_esdf = false;
-    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
-    publishAllUpdatedEsdfVoxels();
   }
 
   timing::Timer generate_mesh_timer("mesh/update");
