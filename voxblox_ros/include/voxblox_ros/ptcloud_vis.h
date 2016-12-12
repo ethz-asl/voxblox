@@ -232,7 +232,7 @@ bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel, const Point& coord) {
 
 bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
                                       const Point& coord) {
-  const bool kThresholdLogOccupancy = logOddsFromProbability(0.7);
+  const float kThresholdLogOccupancy = logOddsFromProbability(0.7);
   if (voxel.probability_log > kThresholdLogOccupancy) {
     return true;
   }
