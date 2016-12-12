@@ -6,7 +6,7 @@ namespace voxblox {
 template <>
 void Block<TsdfVoxel>::DeserializeVoxelData(const BlockProto& proto,
                                             TsdfVoxel* voxels) {
-  constexpr size_t kNumDataPacketsPerVoxel = 3;
+  constexpr size_t kNumDataPacketsPerVoxel = 3u;
   const size_t num_data_packets = proto.voxel_data_size();
   DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
   for (size_t voxel_idx = 0u, data_idx = 0u;
@@ -33,7 +33,7 @@ void Block<TsdfVoxel>::DeserializeVoxelData(const BlockProto& proto,
 template <>
 void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
                                           BlockProto* proto) const {
-  constexpr size_t kNumDataPacketsPerVoxel = 3;
+  constexpr size_t kNumDataPacketsPerVoxel = 3u;
   for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
     const TsdfVoxel& voxel = voxels[voxel_idx];
 
@@ -60,7 +60,7 @@ void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
 template <>
 void Block<OccupancyVoxel>::DeserializeVoxelData(const BlockProto& proto,
                                                  OccupancyVoxel* voxels) {
-  constexpr size_t kNumDataPacketsPerVoxel = 2;
+  constexpr size_t kNumDataPacketsPerVoxel = 2u;
   const size_t num_data_packets = proto.voxel_data_size();
   DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
   for (size_t voxel_idx = 0u, data_idx = 0u;
@@ -79,7 +79,7 @@ void Block<OccupancyVoxel>::DeserializeVoxelData(const BlockProto& proto,
 template <>
 void Block<OccupancyVoxel>::SerializeVoxelData(const OccupancyVoxel* voxels,
                                                BlockProto* proto) const {
-  constexpr size_t kNumDataPacketsPerVoxel = 2;
+  constexpr size_t kNumDataPacketsPerVoxel = 2u;
   for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
     const OccupancyVoxel& voxel = voxels[voxel_idx];
 
