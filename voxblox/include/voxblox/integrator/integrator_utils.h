@@ -15,8 +15,8 @@ namespace voxblox {
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
 // should map to Local/Voxel indices.
-void castRay(const Point& start_scaled, const Point& end_scaled,
-             std::vector<AnyIndex>* indices) {
+inline void castRay(const Point& start_scaled, const Point& end_scaled,
+                    std::vector<AnyIndex>* indices) {
   CHECK_NOTNULL(indices);
 
   constexpr FloatingPoint kTolerance = 1e-6;
@@ -75,12 +75,10 @@ void castRay(const Point& start_scaled, const Point& end_scaled,
 
 // Takes start and end in WORLD COORDINATES, does all pre-scaling and
 // sorting into hierarhical index.
-void getHierarchicalIndexAlongRay(const Point& start, const Point& end,
-                                  size_t voxels_per_side,
-                                  FloatingPoint voxel_size,
-                                  FloatingPoint truncation_distance,
-                                  bool voxel_carving_enabled,
-                                  HierarchicalIndexMap* hierarchical_idx_map) {
+inline void getHierarchicalIndexAlongRay(
+    const Point& start, const Point& end, size_t voxels_per_side,
+    FloatingPoint voxel_size, FloatingPoint truncation_distance,
+    bool voxel_carving_enabled, HierarchicalIndexMap* hierarchical_idx_map) {
   DCHECK_NOTNULL(hierarchical_idx_map->clear());
 
   FloatingPoint voxels_per_side_inv = 1.0 / voxels_per_side;

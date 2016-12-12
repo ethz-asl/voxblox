@@ -363,6 +363,9 @@ class TsdfIntegrator {
     integrate_timer.Stop();
   }
 
+  // Returns a COPY of the config.
+  Config getConfig() const { return config_; }
+
  protected:
   Config config_;
 

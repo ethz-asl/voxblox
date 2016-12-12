@@ -38,7 +38,7 @@ class TsdfServer {
   void publishAllUpdatedTsdfVoxels();
   void publishTsdfSurfacePoints();
   void publishTsdfOccupiedNodes();
-  void publishSlices();
+  virtual void publishSlices();
 
   bool saveMapCallback(voxblox_ros::FilePath::Request& request,     // NOLINT
                        voxblox_ros::FilePath::Response& response);  // NOLINT
@@ -47,7 +47,7 @@ class TsdfServer {
   bool generateMeshCallback(std_srvs::Empty::Request& request,      // NOLINT
                             std_srvs::Empty::Response& response);   // NOLINT
 
-  void updateMeshEvent(const ros::TimerEvent& e);
+  virtual void updateMeshEvent(const ros::TimerEvent& e);
 
  protected:
   ros::NodeHandle nh_;

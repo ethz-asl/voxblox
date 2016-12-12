@@ -1,6 +1,12 @@
 #ifndef VOXBLOX_INTERPOLATOR_H_
 #define VOXBLOX_INTERPOLATOR_H_
 
+#include <memory>
+
+#include "voxblox/core/common.h"
+#include "voxblox/core/voxel.h"
+#include "voxblox/core/layer.h"
+
 namespace voxblox {
 
 class Interpolator {
@@ -38,7 +44,5 @@ class Interpolator {
   Layer<TsdfVoxel>* tsdf_layer_;
 };
 }  // namespace voxblox
-
-#include "voxblox/interpolator/interpolator_inl.h"
 
 #endif  // VOXBLOX_INTERPOLATOR_H_
