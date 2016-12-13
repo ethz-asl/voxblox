@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
+#include "voxblox/integrator/tsdf_integrator.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/labeltsdf_map.h"
 #include "voxblox/core/voxel.h"
@@ -17,42 +18,20 @@
 
 namespace voxblox {
 
-class LabelTsdfIntegrator {
+class LabelTsdfIntegrator : TsdfIntegrator {
  public:
-  struct Config {
-    float default_truncation_distance = 0.1f;
-    float max_weight = 10000.0f;
-    bool voxel_carving_enabled = true;
-    FloatingPoint min_ray_length_m = 0.1;
-    FloatingPoint max_ray_length_m = 5.0;
-    bool use_const_weight = false;
-    bool allow_clear = true;
-    float max_confidence = std::numeric_limits<float>::max();
-  };
-
-  LabelTsdfIntegrator(const Config& config, LabelTsdfMap* map)
-      : config_(config), map_(map), layer_(map_->getLabelTsdfLayerPtr()) {
-    CHECK(map_);
-
-    voxel_size_ = layer_->voxel_size();
-    block_size_ = layer_->block_size();
-    voxels_per_side_ = layer_->voxels_per_side();
-
-    voxel_size_inv_ = 1.0 / voxel_size_;
-    block_size_inv_ = 1.0 / block_size_;
-    voxels_per_side_inv_ = 1.0 / voxels_per_side_;
+  LabelTsdfIntegrator(const Config& config,
+                      Layer<TsdfVoxel>* tsdf_layer,
+                      Layer<LabelVoxel>* label_layer,
+                      Label* highest_label)
+      : TsdfIntegrator(config, tsdf_layer),
+        label_layer_(label_layer),
+        highest_label_(highest_label) {
+    CHECK(label_layer_);
   }
 
-  float getVoxelWeight(const Point& point_C, const Point& point_G,
-                       const Point& origin, const Point& voxel_center) const {
-    if (config_.use_const_weight) {
-      return 1.0;
-    }
-    FloatingPoint dist_z = std::abs(point_C.z());
-    if (dist_z > 1e-6) {
-      return 1.0 / (dist_z * dist_z);
-    }
-    return 0.0f;
+  Label get_fresh_label() {
+    return ++(*highest_label_);
   }
 
   inline void readLabelPointCloud(const Transformation& T_G_C,
@@ -69,11 +48,11 @@ class LabelTsdfIntegrator {
       const Point point_G = T_G_C * point_C;
 
       // Get the corresponding voxel by 3D position in world frame.
-      Layer<LabelTsdfVoxel>::BlockType::ConstPtr block_ptr =
-          layer_->getBlockPtrByCoordinates(point_G);
+      Layer<LabelVoxel>::BlockType::ConstPtr block_ptr =
+          label_layer_->getBlockPtrByCoordinates(point_G);
 
       if (block_ptr != nullptr) {
-        const LabelTsdfVoxel& voxel = block_ptr->getVoxelByCoordinates(point_G);
+        const LabelVoxel& voxel = block_ptr->getVoxelByCoordinates(point_G);
         ++label_count[voxel.label];
       } else {
         ++unlabeled_count;
@@ -91,7 +70,7 @@ class LabelTsdfIntegrator {
     }
 
     if (current_max < unlabeled_count) {
-      label_max = map_->get_new_label();
+      label_max = get_fresh_label();
     }
 
     // Assign the dominant label to all points of segment.
@@ -102,65 +81,20 @@ class LabelTsdfIntegrator {
     }
   }
 
-  inline void updateLabelTsdfVoxel(const Point& origin,
-                                   const Point& point_C,
-                                   const Point& point_G,
-                                   const Point& voxel_center,
-                                   const Label& label,
-                                   const Color& color,
-                                   const float truncation_distance,
-                                   const float weight,
-                                   LabelTsdfVoxel* labeltsdf_voxel) {
-    CHECK_NOTNULL(labeltsdf_voxel);
-    Eigen::Vector3d voxel_direction = point_G - voxel_center;
-    Eigen::Vector3d ray_direction = point_G - origin;
+  inline void updateLabelVoxel(const Label& label,
+                               LabelVoxel* label_voxel) {
+    CHECK_NOTNULL(label_voxel);
 
-    float sdf = static_cast<float>(voxel_direction.norm());
-    // Figure out if it's in front of the plane or behind.
-    if (voxel_direction.dot(ray_direction) < 0.0) {
-      sdf = -sdf;
-    }
-
-    const float new_weight = labeltsdf_voxel->weight + weight;
-
-    updateLabel(label, labeltsdf_voxel);
-
-    labeltsdf_voxel->color = Color::blendTwoColors(
-        labeltsdf_voxel->color, labeltsdf_voxel->weight, color, weight);
-    const float new_sdf =
-        (sdf * weight
-         + labeltsdf_voxel->distance * labeltsdf_voxel->weight) / new_weight;
-
-    labeltsdf_voxel->distance = (new_sdf > 0.0)
-                               ? std::min(truncation_distance, new_sdf)
-                               : std::max(-truncation_distance, new_sdf);
-    labeltsdf_voxel->weight = std::min(config_.max_weight, new_weight);
-  }
-
-  void updateLabel(const Label& new_label, LabelTsdfVoxel* labeltsdf_voxel) {
     // TODO(grinvalm) add cap confidence value as in paper and consider noise.
-    if (labeltsdf_voxel->label == new_label) {
-      ++labeltsdf_voxel->label_confidence;
+    if (label_voxel->label == label) {
+      ++label_voxel->label_confidence;
     } else {
-      if (labeltsdf_voxel->label_confidence == 0.0f) {
-        labeltsdf_voxel->label = new_label;
+      if (label_voxel->label_confidence == 0.0f) {
+        label_voxel->label = label;
       } else {
-        labeltsdf_voxel->label_confidence--;
+        label_voxel->label_confidence--;
       }
     }
-  }
-
-  inline float computeDistance(const Point& origin, const Point& point_G,
-                               const Point& voxel_center) {
-    Eigen::Vector3d voxel_direction = point_G - voxel_center;
-    Eigen::Vector3d ray_direction = point_G - origin;
-
-    float sdf = static_cast<float>(voxel_direction.norm());
-    // Figure out if it's in front of the plane or behind.
-    if (voxel_direction.dot(ray_direction) < 0.0f) {
-      sdf = -sdf;
-    }
-    return sdf;
   }
 
   void integratePointCloud(const Transformation& T_G_C,
@@ -200,13 +134,14 @@ class LabelTsdfIntegrator {
 
       IndexVector global_voxel_indices;
       timing::Timer cast_ray_timer("integrate/cast_ray");
-      (start_scaled, end_scaled, &global_voxel_indices);
+      castRay(start_scaled, end_scaled, &global_voxel_indices);
       cast_ray_timer.Stop();
 
       timing::Timer update_voxels_timer("integrate/update_voxels");
 
       BlockIndex last_block_idx = BlockIndex::Zero();
-      Block<LabelTsdfVoxel>::Ptr block;
+      Block<TsdfVoxel>::Ptr tsdf_block;
+      Block<LabelVoxel>::Ptr label_block;
 
       for (const AnyIndex& global_voxel_idx : global_voxel_indices) {
         BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
@@ -224,22 +159,31 @@ class LabelTsdfIntegrator {
           local_voxel_idx.z() += voxels_per_side_;
         }
 
-        if (!block || block_idx != last_block_idx) {
-          block = layer_->allocateBlockPtrByIndex(block_idx);
-          block->updated() = true;
+        // TODO(grinvalm) is it safe to assume identical block
+        // allocation and indexes in both layers?
+        if (!tsdf_block || block_idx != last_block_idx) {
+          tsdf_block = layer_->allocateBlockPtrByIndex(block_idx);
+          label_block = label_layer_->allocateBlockPtrByIndex(block_idx);
+
+          tsdf_block->updated() = true;
+          label_block->updated() = true;
+
           last_block_idx = block_idx;
         }
 
         const Point voxel_center_G =
-            block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
-        LabelTsdfVoxel& labeltsdf_voxel =
-            block->getVoxelByVoxelIndex(local_voxel_idx);
+            tsdf_block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
+        TsdfVoxel& tsdf_voxel =
+            tsdf_block->getVoxelByVoxelIndex(local_voxel_idx);
+        LabelVoxel& label_voxel =
+            label_block->getVoxelByVoxelIndex(local_voxel_idx);
 
         const float weight =
             getVoxelWeight(point_C, point_G, origin, voxel_center_G);
-        updateLabelTsdfVoxel(origin, point_C, point_G, voxel_center_G,
-                             label, color, truncation_distance, weight,
-                             &labeltsdf_voxel);
+        updateTsdfVoxel(origin, point_C, point_G, voxel_center_G, color,
+                        truncation_distance, weight, &tsdf_voxel);
+
+        updateLabelVoxel(label, &label_voxel);
       }
       update_voxels_timer.Stop();
     }
@@ -249,8 +193,9 @@ class LabelTsdfIntegrator {
  protected:
   Config config_;
 
-  LabelTsdfMap* map_;
-  Layer<LabelTsdfVoxel>* layer_;
+  Layer<LabelVoxel>* label_layer_;
+
+  Label* highest_label_;
 
   // Cached map config.
   FloatingPoint voxel_size_;

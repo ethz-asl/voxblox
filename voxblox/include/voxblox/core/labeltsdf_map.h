@@ -16,32 +16,33 @@ class LabelTsdfMap {
   typedef std::shared_ptr<LabelTsdfMap> Ptr;
 
   struct Config {
-    float labeltsdf_voxel_size = 0.2;
-    float labeltsdf_voxels_per_side = 16;
+    float voxel_size = 0.2f;
+    float voxels_per_side = 16.0f;
   };
 
   explicit LabelTsdfMap(Config config)
-      : labeltsdf_layer_(new Layer<LabelTsdfVoxel>(
-          config.labeltsdf_voxel_size, config.labeltsdf_voxels_per_side)),
+      : tsdf_layer_(new Layer<TsdfVoxel>(
+          config.voxel_size, config.voxels_per_side)),
+        label_layer_(new Layer<LabelVoxel>(
+          config.voxel_size, config.voxels_per_side)),
         highest_label_(0u) {}
 
   virtual ~LabelTsdfMap() {}
 
-  Layer<LabelTsdfVoxel>* getLabelTsdfLayerPtr() {
-    return labeltsdf_layer_.get();
+  Layer<TsdfVoxel>* getTsdfLayerPtr() {
+    return tsdf_layer_.get();
   }
 
-  const Layer<LabelTsdfVoxel>& getLabelTsdfLayer() const {
-    return *labeltsdf_layer_;
+  const Layer<TsdfVoxel>& getTsdfLayer() const {
+    return *tsdf_layer_;
   }
 
-  FloatingPoint block_size() const { return labeltsdf_layer_->block_size(); }
-
-  Label get_new_label() { return ++highest_label_; }
+  FloatingPoint block_size() const { return tsdf_layer_->block_size(); }
 
  protected:
   // The layers.
-  Layer<LabelTsdfVoxel>::Ptr labeltsdf_layer_;
+  Layer<TsdfVoxel>::Ptr tsdf_layer_;
+  Layer<LabelVoxel>::Ptr label_layer_;
 
   Label highest_label_;
 };
