@@ -95,7 +95,7 @@ class MeshIntegrator {
     }
   }
 
-  void updateMeshForBlock(const BlockIndex& block_index) {
+  virtual void updateMeshForBlock(const BlockIndex& block_index) {
     Mesh::Ptr mesh = mesh_layer_->allocateMeshPtrByIndex(block_index);
     mesh->clear();
     // This block should already exist, otherwise it makes no sense to update

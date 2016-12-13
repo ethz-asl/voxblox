@@ -50,6 +50,13 @@ catkin_add_gtest(test_protobuf
 )
 target_link_libraries(test_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
+catkin_add_gtest(test_labeltsdf_integrator
+  test/test_labeltsdf_integrator.cc
+)
+target_link_libraries(test_labeltsdf_integrator 
+  ${PROJECT_NAME} ${catkin_LIBRARIES}
+)
+
 ##########
 # EXPORT #
 ##########
