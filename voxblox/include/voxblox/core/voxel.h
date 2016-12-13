@@ -29,12 +29,9 @@ struct OccupancyVoxel {
   bool observed = false;
 };
 
-struct LabelTsdfVoxel {
-  float distance = 0.0f;
-  float weight = 0.0f;
+struct LabelVoxel {
   float label_confidence = 0.0f;
   Label label = 0u;
-  Color color;
 };
 
 // Used for serialization only.
@@ -43,7 +40,7 @@ enum class VoxelTypes {
   kTsdf = 1,
   kEsdf = 2,
   kOccupancy = 3,
-  kLabelTsdf = 4
+  kLabel = 4
 };
 
 template <typename Type>
@@ -67,8 +64,8 @@ inline VoxelTypes getVoxelType<OccupancyVoxel>() {
 }
 
 template <>
-inline VoxelTypes getVoxelType<LabelTsdfVoxel>() {
-  return VoxelTypes::kLabelTsdf;
+inline VoxelTypes getVoxelType<LabelVoxel>() {
+  return VoxelTypes::kLabel;
 }
 
 }  // namespace voxblox
