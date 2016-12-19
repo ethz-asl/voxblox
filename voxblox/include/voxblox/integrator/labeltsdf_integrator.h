@@ -9,11 +9,11 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
-#include "voxblox/integrator/tsdf_integrator.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/labeltsdf_map.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
+#include "voxblox/integrator/tsdf_integrator.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -24,9 +24,9 @@ class LabelTsdfIntegrator : TsdfIntegrator {
                       Layer<TsdfVoxel>* tsdf_layer,
                       Layer<LabelVoxel>* label_layer,
                       Label* highest_label)
-      : TsdfIntegrator(config, tsdf_layer),
-        label_layer_(label_layer),
-        highest_label_(highest_label) {
+      : TsdfIntegrator(config, CHECK_NOTNULL(tsdf_layer)),
+        label_layer_(CHECK_NOTNULL(label_layer)),
+        highest_label_(CHECK_NOTNULL(highest_label)) {
     CHECK(label_layer_);
   }
 
@@ -34,9 +34,9 @@ class LabelTsdfIntegrator : TsdfIntegrator {
     return ++(*highest_label_);
   }
 
-  inline void readLabelPointCloud(const Transformation& T_G_C,
-                                  const Pointcloud& points_C,
-                                  Labels* labels) {
+  inline void computePointCloudLabel(const Transformation& T_G_C,
+                                     const Pointcloud& points_C,
+                                     Labels* labels) {
     CHECK_NOTNULL(labels);
     CHECK_EQ(points_C.size(), labels->size());
 
@@ -85,11 +85,11 @@ class LabelTsdfIntegrator : TsdfIntegrator {
                                LabelVoxel* label_voxel) {
     CHECK_NOTNULL(label_voxel);
 
-    // TODO(grinvalm) add cap confidence value as in paper and consider noise.
+    // TODO(grinvalm) use cap confidence value as in paper and consider noise.
     if (label_voxel->label == label) {
       ++label_voxel->label_confidence;
     } else {
-      if (label_voxel->label_confidence == 0.0f) {
+      if (label_voxel->label_confidence <= 0.0f) {
         label_voxel->label = label;
       } else {
         label_voxel->label_confidence--;
@@ -159,9 +159,10 @@ class LabelTsdfIntegrator : TsdfIntegrator {
           local_voxel_idx.z() += voxels_per_side_;
         }
 
-        // TODO(grinvalm) is it safe to assume identical block
-        // allocation and indexes in both layers?
         if (!tsdf_block || block_idx != last_block_idx) {
+          if (!tsdf_block) {
+            CHECK(!label_block);
+          }
           tsdf_block = layer_->allocateBlockPtrByIndex(block_idx);
           label_block = label_layer_->allocateBlockPtrByIndex(block_idx);
 
@@ -170,6 +171,9 @@ class LabelTsdfIntegrator : TsdfIntegrator {
 
           last_block_idx = block_idx;
         }
+
+        CHECK(tsdf_block);
+        CHECK(label_block);
 
         const Point voxel_center_G =
             tsdf_block->computeCoordinatesFromVoxelIndex(local_voxel_idx);

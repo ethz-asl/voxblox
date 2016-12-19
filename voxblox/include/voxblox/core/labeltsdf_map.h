@@ -17,7 +17,7 @@ class LabelTsdfMap {
 
   struct Config {
     float voxel_size = 0.2f;
-    float voxels_per_side = 16.0f;
+    size_t voxels_per_side = 16.0f;
   };
 
   explicit LabelTsdfMap(Config config)
