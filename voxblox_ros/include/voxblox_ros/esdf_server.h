@@ -29,7 +29,7 @@ class EsdfServer : public TsdfServer {
   // Services.
   ros::ServiceServer generate_esdf_srv_;
 
-  // ESDF maps (optional).
+  // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
   std::shared_ptr<EsdfIntegrator> esdf_integrator_;
 };
