@@ -65,14 +65,11 @@ class TsdfIntegrator {
       sdf = -sdf;
     }
 
-    // This is for the linear drop-off in confidence behind the surface.
-    float updated_weight = weight;
-
-    const float new_weight = tsdf_voxel->weight + updated_weight;
+    const float new_weight = tsdf_voxel->weight + weight;
     tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+        tsdf_voxel->color, tsdf_voxel->weight, color, weight);
     const float new_sdf =
-        (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
+        (sdf * weight + tsdf_voxel->distance * tsdf_voxel->weight) /
         new_weight;
 
     tsdf_voxel->distance = (new_sdf > 0.0)

@@ -17,7 +17,7 @@ class OccupancyMap {
 
   struct Config {
     float occupancy_voxel_size = 0.2;
-    float occupancy_voxels_per_side = 16;
+    size_t occupancy_voxels_per_side = 16u;
   };
 
   explicit OccupancyMap(Config config)
