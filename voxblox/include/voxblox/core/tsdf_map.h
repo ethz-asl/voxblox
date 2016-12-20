@@ -17,7 +17,7 @@ class TsdfMap {
 
   struct Config {
     float tsdf_voxel_size = 0.2;
-    float tsdf_voxels_per_side = 16;
+    size_t tsdf_voxels_per_side = 16u;
   };
 
   explicit TsdfMap(Config config)
