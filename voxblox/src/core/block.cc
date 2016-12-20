@@ -6,12 +6,12 @@ namespace voxblox {
 template <>
 void Block<TsdfVoxel>::DeserializeVoxelData(const BlockProto& proto,
                                             TsdfVoxel* voxels) {
-  constexpr size_t kNumDataPacketsPerVoxel = 3;
+  constexpr size_t kNumDataPacketsPerVoxel = 3u;
   const size_t num_data_packets = proto.voxel_data_size();
   DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
   for (size_t voxel_idx = 0u, data_idx = 0u;
        voxel_idx < num_voxels_ && data_idx < num_data_packets;
-       ++voxel_idx, data_idx += 3u) {
+       ++voxel_idx, data_idx += kNumDataPacketsPerVoxel) {
     const uint32_t bytes_1 = proto.voxel_data(data_idx);
     const uint32_t bytes_2 = proto.voxel_data(data_idx + 1u);
     const uint32_t bytes_3 = proto.voxel_data(data_idx + 2u);
@@ -33,7 +33,7 @@ void Block<TsdfVoxel>::DeserializeVoxelData(const BlockProto& proto,
 template <>
 void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
                                           BlockProto* proto) const {
-  constexpr size_t kNumDataPacketsPerVoxel = 3;
+  constexpr size_t kNumDataPacketsPerVoxel = 3u;
   for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
     const TsdfVoxel& voxel = voxels[voxel_idx];
 
@@ -57,6 +57,39 @@ void Block<TsdfVoxel>::SerializeVoxelData(const TsdfVoxel* voxels,
 
 // TODO(mfehr): Add serialization for EsdfVoxel
 
-// TODO(mfehr): Add serialization for OccupancyVoxel
+template <>
+void Block<OccupancyVoxel>::DeserializeVoxelData(const BlockProto& proto,
+                                                 OccupancyVoxel* voxels) {
+  constexpr size_t kNumDataPacketsPerVoxel = 2u;
+  const size_t num_data_packets = proto.voxel_data_size();
+  DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
+  for (size_t voxel_idx = 0u, data_idx = 0u;
+       voxel_idx < num_voxels_ && data_idx < num_data_packets;
+       ++voxel_idx, data_idx += kNumDataPacketsPerVoxel) {
+    const uint32_t bytes_1 = proto.voxel_data(data_idx);
+    const uint32_t bytes_2 = proto.voxel_data(data_idx + 1u);
+
+    OccupancyVoxel& voxel = voxels[voxel_idx];
+
+    memcpy(&(voxel.probability_log), &bytes_1, sizeof(bytes_1));
+    voxel.observed = static_cast<bool>(bytes_2 & 0x000000FF);
+  }
+}
+
+template <>
+void Block<OccupancyVoxel>::SerializeVoxelData(const OccupancyVoxel* voxels,
+                                               BlockProto* proto) const {
+  constexpr size_t kNumDataPacketsPerVoxel = 2u;
+  for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
+    const OccupancyVoxel& voxel = voxels[voxel_idx];
+
+    const uint32_t* bytes_1_ptr =
+        reinterpret_cast<const uint32_t*>(&voxel.probability_log);
+    proto->add_voxel_data(*bytes_1_ptr);
+
+    proto->add_voxel_data(static_cast<uint32_t>(voxel.observed));
+  }
+  DCHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, proto->voxel_data_size());
+}
 
 }  // namespace voxblox

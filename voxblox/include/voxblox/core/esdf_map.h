@@ -17,7 +17,7 @@ class EsdfMap {
 
   struct Config {
     float esdf_voxel_size = 0.2;
-    float esdf_voxels_per_side = 16;
+    size_t esdf_voxels_per_side = 16u;
   };
 
   explicit EsdfMap(Config config)
