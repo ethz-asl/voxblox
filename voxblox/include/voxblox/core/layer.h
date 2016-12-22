@@ -170,7 +170,8 @@ class Layer {
     BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_inv_);
     if (!hasBlock(block_index)) {
-      return std::make_pair(std::reference_wrapper<VoxelType>(empty_voxel_), false);
+      return std::make_pair(std::reference_wrapper<VoxelType>(empty_voxel_),
+          false);
     }
     VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_);
@@ -184,7 +185,8 @@ class Layer {
     BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_inv_);
     if (!hasBlock(block_index)) {
-      return std::make_pair(std::reference_wrapper<VoxelType>(empty_voxel_), false);
+      return std::make_pair(std::reference_wrapper<VoxelType>(empty_voxel_),
+          false);
     }
     VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_);
