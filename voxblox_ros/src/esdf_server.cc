@@ -16,8 +16,12 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   // TODO(helenol): in the future allow different ESDF and TSDF voxel sizes...
   nh_private_.param("tsdf_voxel_size", esdf_config.esdf_voxel_size,
                     esdf_config.esdf_voxel_size);
-  nh_private_.param("tsdf_voxels_per_side", esdf_config.esdf_voxels_per_side,
-                    esdf_config.esdf_voxels_per_side);
+  // No specialization for ros param for size_t, so have to do this annoying
+  // workaround.
+  int voxels_per_side = esdf_config.esdf_voxels_per_side;
+  nh_private_.param("tsdf_voxels_per_side", voxels_per_side,
+                    voxels_per_side);
+  esdf_config.esdf_voxels_per_side = voxels_per_side;
 
   esdf_map_.reset(new EsdfMap(esdf_config));
 
