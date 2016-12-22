@@ -25,7 +25,10 @@ class Layer {
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
     block_size_ = voxel_size_ * voxels_per_side_;
+    CHECK_GT(block_size_, 0.0f);
     block_size_inv_ = 1.0 / block_size_;
+    CHECK_GT(voxels_per_side_, 0u);
+    voxels_per_side_inv_ = 1.0f / static_cast<FloatingPoint>(voxels_per_side_);
   }
 
   // Create the layer from protobuf layer header.
@@ -162,6 +165,34 @@ class Layer {
     return block_map_.count(block_index) > 0;
   }
 
+  inline std::pair<const VoxelType&, bool> getVoxelByGlobalIndex(
+      const VoxelIndex& global_voxel_index) const {
+    BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
+        global_voxel_index, voxels_per_side_inv_);
+    if (!hasBlock(block_index)) {
+      return std::make_pair(std::reference_wrapper<VoxelType>(empty_voxel_), false);
+    }
+    VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
+        global_voxel_index, voxels_per_side_);
+    const Block<VoxelType>& block = getBlockByIndex(block_index);
+    const VoxelType& voxel = block.getVoxelByVoxelIndex(local_voxel_index);
+    return std::make_pair(std::reference_wrapper<VoxelType>(voxel), true);
+  }
+
+  inline std::pair<VoxelType&, bool> getVoxelByGlobalIndex(
+      const VoxelIndex& global_voxel_index) {
+    BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
+        global_voxel_index, voxels_per_side_inv_);
+    if (!hasBlock(block_index)) {
+      return std::make_pair(std::reference_wrapper<VoxelType>(empty_voxel_), false);
+    }
+    VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
+        global_voxel_index, voxels_per_side_);
+    Block<VoxelType>& block = getBlockByIndex(block_index);
+    VoxelType& voxel = block.getVoxelByVoxelIndex(local_voxel_index);
+    return std::make_pair(std::reference_wrapper<VoxelType>(voxel), true);
+  }
+
   FloatingPoint block_size() const { return block_size_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
@@ -188,8 +219,11 @@ class Layer {
 
   // Derived types.
   FloatingPoint block_size_inv_;
+  FloatingPoint voxels_per_side_inv_;
 
   BlockHashMap block_map_;
+
+  static VoxelType empty_voxel_;
 };
 
 }  // namespace voxblox
