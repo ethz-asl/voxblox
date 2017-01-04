@@ -177,8 +177,7 @@ class Layer {
     const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_);
     Block<VoxelType>& block = getBlockByIndex(block_index);
-    VoxelType& voxel = block.getVoxelByVoxelIndex(local_voxel_index);
-    return &voxel;
+    return &block.getVoxelByVoxelIndex(local_voxel_index);
   }
 
   inline const VoxelType* getVoxelPtrByGlobalIndex(
@@ -191,8 +190,7 @@ class Layer {
     const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_);
     const Block<VoxelType>& block = getBlockByIndex(block_index);
-    const VoxelType& voxel = block.getVoxelByVoxelIndex(local_voxel_index);
-    return &voxel;
+    return &block.getVoxelByVoxelIndex(local_voxel_index);
   }
 
   FloatingPoint block_size() const { return block_size_; }
