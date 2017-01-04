@@ -165,34 +165,18 @@ class Layer {
     return block_map_.count(block_index) > 0;
   }
 
-  inline std::pair<const VoxelType&, bool> getVoxelByGlobalIndex(
-      const VoxelIndex& global_voxel_index) const {
-    const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
-        global_voxel_index, voxels_per_side_inv_);
-    if (!hasBlock(block_index)) {
-      return std::make_pair(std::reference_wrapper<VoxelType>(empty_voxel_),
-          false);
-    }
-    const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
-        global_voxel_index, voxels_per_side_);
-    const Block<VoxelType>& block = getBlockByIndex(block_index);
-    const VoxelType& voxel = block.getVoxelByVoxelIndex(local_voxel_index);
-    return std::make_pair(std::reference_wrapper<VoxelType>(voxel), true);
-  }
-
-  inline std::pair<VoxelType&, bool> getVoxelByGlobalIndex(
+  inline VoxelType* getVoxelPtrByGlobalIndex(
       const VoxelIndex& global_voxel_index) {
     const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_inv_);
     if (!hasBlock(block_index)) {
-      return std::make_pair(std::reference_wrapper<VoxelType>(empty_voxel_),
-          false);
+      return nullptr;
     }
     const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_);
     Block<VoxelType>& block = getBlockByIndex(block_index);
     VoxelType& voxel = block.getVoxelByVoxelIndex(local_voxel_index);
-    return std::make_pair(std::reference_wrapper<VoxelType>(voxel), true);
+    return &voxel;
   }
 
   FloatingPoint block_size() const { return block_size_; }
@@ -224,8 +208,6 @@ class Layer {
   FloatingPoint voxels_per_side_inv_;
 
   BlockHashMap block_map_;
-
-  static VoxelType empty_voxel_;
 };
 
 }  // namespace voxblox
