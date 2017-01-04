@@ -165,6 +165,8 @@ class Layer {
     return block_map_.count(block_index) > 0;
   }
 
+  // Get a pointer to the voxel if its corresponding block is allocated and a
+  // nullptr otherwise.
   inline VoxelType* getVoxelPtrByGlobalIndex(
       const VoxelIndex& global_voxel_index) {
     const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
