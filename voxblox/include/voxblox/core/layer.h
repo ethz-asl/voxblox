@@ -167,19 +167,6 @@ class Layer {
 
   // Get a pointer to the voxel if its corresponding block is allocated and a
   // nullptr otherwise.
-  inline VoxelType* getVoxelPtrByGlobalIndex(
-      const VoxelIndex& global_voxel_index) {
-    const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
-        global_voxel_index, voxels_per_side_inv_);
-    if (!hasBlock(block_index)) {
-      return nullptr;
-    }
-    const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
-        global_voxel_index, voxels_per_side_);
-    Block<VoxelType>& block = getBlockByIndex(block_index);
-    return &block.getVoxelByVoxelIndex(local_voxel_index);
-  }
-
   inline const VoxelType* getVoxelPtrByGlobalIndex(
       const VoxelIndex& global_voxel_index) const {
     const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
@@ -190,6 +177,19 @@ class Layer {
     const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_);
     const Block<VoxelType>& block = getBlockByIndex(block_index);
+    return &block.getVoxelByVoxelIndex(local_voxel_index);
+  }
+
+  inline VoxelType* getVoxelPtrByGlobalIndex(
+      const VoxelIndex& global_voxel_index) {
+    const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
+        global_voxel_index, voxels_per_side_inv_);
+    if (!hasBlock(block_index)) {
+      return nullptr;
+    }
+    const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
+        global_voxel_index, voxels_per_side_);
+    Block<VoxelType>& block = getBlockByIndex(block_index);
     return &block.getVoxelByVoxelIndex(local_voxel_index);
   }
 
