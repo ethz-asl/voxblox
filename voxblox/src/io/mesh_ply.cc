@@ -25,15 +25,14 @@
 namespace voxblox {
 
 bool outputMeshLayerAsPly(const std::string& filename,
-                          const MeshLayer::ConstPtr& mesh_layer) {
-  DCHECK(mesh_layer);
-  Mesh::Ptr combined_mesh(new Mesh(mesh_layer->block_size(), Point::Zero()));
+                          const MeshLayer& mesh_layer) {
+  Mesh::Ptr combined_mesh(new Mesh(mesh_layer.block_size(), Point::Zero()));
   // Combine everything in the layer into one giant combined mesh.
   size_t v = 0;
   BlockIndexList mesh_indices;
-  mesh_layer->getAllAllocatedMeshes(&mesh_indices);
+  mesh_layer.getAllAllocatedMeshes(&mesh_indices);
   for (const BlockIndex& block_index : mesh_indices) {
-    Mesh::ConstPtr mesh = mesh_layer->getMeshPtrByIndex(block_index);
+    Mesh::ConstPtr mesh = mesh_layer.getMeshPtrByIndex(block_index);
     for (const Point& vert : mesh->vertices) {
       combined_mesh->vertices.push_back(vert);
       combined_mesh->indices.push_back(v);
@@ -50,7 +49,7 @@ bool outputMeshLayerAsPly(const std::string& filename,
   }
 
   LOG(INFO) << "Full mesh has " << v << " verts";
-  bool success = outputMeshAsPly(filename, combined_mesh);
+  bool success = outputMeshAsPly(filename, *combined_mesh);
 
   if (!success) {
     LOG(WARNING) << "Saving to PLY failed!";
@@ -58,22 +57,21 @@ bool outputMeshLayerAsPly(const std::string& filename,
   return success;
 }
 
-bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh) {
-  DCHECK(mesh);
+bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
   std::ofstream stream(filename.c_str());
 
   if (!stream) {
     return false;
   }
 
-  size_t num_points = mesh->vertices.size();
+  size_t num_points = mesh.vertices.size();
   stream << "ply" << std::endl;
   stream << "format ascii 1.0" << std::endl;
   stream << "element vertex " << num_points << std::endl;
   stream << "property float x" << std::endl;
   stream << "property float y" << std::endl;
   stream << "property float z" << std::endl;
-  if (mesh->hasColors()) {
+  if (mesh.hasColors()) {
     stream << "property uchar red" << std::endl;
     stream << "property uchar green" << std::endl;
     stream << "property uchar blue" << std::endl;
@@ -83,11 +81,11 @@ bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh) {
   stream << "end_header" << std::endl;
 
   size_t vert_idx = 0;
-  for (const Point& vert : mesh->vertices) {
+  for (const Point& vert : mesh.vertices) {
     stream << vert(0) << " " << vert(1) << " " << vert(2);
 
-    if (mesh->hasColors()) {
-      const Color& color = mesh->colors[vert_idx];
+    if (mesh.hasColors()) {
+      const Color& color = mesh.colors[vert_idx];
       int r = static_cast<int>(color.r);
       int g = static_cast<int>(color.g);
       int b = static_cast<int>(color.b);
@@ -99,11 +97,11 @@ bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh) {
     vert_idx++;
   }
 
-  for (size_t i = 0; i < mesh->indices.size(); i += 3) {
+  for (size_t i = 0; i < mesh.indices.size(); i += 3) {
     stream << "3 ";
 
     for (int j = 0; j < 3; j++) {
-      stream << mesh->indices.at(i + j) << " ";
+      stream << mesh.indices.at(i + j) << " ";
     }
 
     stream << std::endl;
