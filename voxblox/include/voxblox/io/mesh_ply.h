@@ -32,9 +32,9 @@
 namespace voxblox {
 
 bool outputMeshLayerAsPly(const std::string& filename,
-                          const MeshLayer::ConstPtr& mesh_layer);
+                          const MeshLayer& mesh_layer);
 
-bool outputMeshAsPly(const std::string& filename, const Mesh::ConstPtr& mesh);
+bool outputMeshAsPly(const std::string& filename, const Mesh& mesh);
 
 }  // namespace voxblox
 

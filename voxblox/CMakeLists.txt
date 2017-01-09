@@ -22,7 +22,7 @@ cs_add_library(${PROJECT_NAME}
   src/core/block.cc
   src/interpolator/interpolator.cc
   src/mesh/marching_cubes.cc
-  src/mesh/mesh_ply.cc
+  src/io/mesh_ply.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
   ${PROTO_SRCS}
