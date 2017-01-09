@@ -25,7 +25,7 @@ Transformer::Transformer(const ros::NodeHandle& nh,
   // Static transform should be T_G_D (where D is whatever sensor the
   // dynamic coordinate frame is in) and the static should be T_D_C (where
   // C is the sensor frame that produces the depth data). It is possible to
-  // specific T_C_D and set invert_static_tranform to true.
+  // specify T_C_D and set invert_static_tranform to true.
   if (!use_tf_transforms_) {
     transform_sub_ =
         nh_.subscribe("transform", 40, &Transformer::transformCallback, this);
@@ -67,6 +67,7 @@ bool Transformer::lookupTransform(const std::string& from_frame,
                                   const std::string& to_frame,
                                   const ros::Time& timestamp,
                                   Transformation* transform) {
+  CHECK_NOTNULL(transform);
   if (use_tf_transforms_) {
     return lookupTransformTf(from_frame, to_frame, timestamp, transform);
   } else {
@@ -79,6 +80,7 @@ bool Transformer::lookupTransformTf(const std::string& from_frame,
                                     const std::string& to_frame,
                                     const ros::Time& timestamp,
                                     Transformation* transform) {
+  CHECK_NOTNULL(transform);
   tf::StampedTransform tf_transform;
   ros::Time time_to_lookup = timestamp;
 
@@ -114,6 +116,7 @@ bool Transformer::lookupTransformQueue(const std::string& from_frame,
                                        const std::string& to_frame,
                                        const ros::Time& timestamp,
                                        Transformation* transform) {
+  CHECK_NOTNULL(transform);
   // Try to match the transforms in the queue.
   bool match_found = false;
   std::deque<geometry_msgs::TransformStamped>::iterator it =

@@ -19,6 +19,7 @@ inline void colorVoxbloxToMsg(const Color& color,
 
 inline void colorMsgToVoxblox(const std_msgs::ColorRGBA& color_msg,
                               Color* color) {
+  CHECK_NOTNULL(color);
   color->r = static_cast<uint8_t>(color_msg.r * 255.0);
   color->g = static_cast<uint8_t>(color_msg.g * 255.0);
   color->b = static_cast<uint8_t>(color_msg.b * 255.0);

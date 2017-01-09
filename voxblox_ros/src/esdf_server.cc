@@ -19,8 +19,7 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   // No specialization for ros param for size_t, so have to do this annoying
   // workaround.
   int voxels_per_side = esdf_config.esdf_voxels_per_side;
-  nh_private_.param("tsdf_voxels_per_side", voxels_per_side,
-                    voxels_per_side);
+  nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
   esdf_config.esdf_voxels_per_side = voxels_per_side;
 
   esdf_map_.reset(new EsdfMap(esdf_config));
@@ -56,8 +55,9 @@ void EsdfServer::publishSlices() {
 
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
-  createDistancePointcloudFromEsdfLayerSlice(esdf_map_->getEsdfLayer(), 2,
-                                             slice_level_, &pointcloud);
+  constexpr int kZAxisIndex = 2;
+  createDistancePointcloudFromEsdfLayerSlice(
+      esdf_map_->getEsdfLayer(), kZAxisIndex, slice_level_, &pointcloud);
 
   pointcloud.header.frame_id = world_frame_;
   esdf_slice_pub_.publish(pointcloud);
@@ -78,13 +78,13 @@ bool EsdfServer::generateEsdfCallback(
   return true;
 }
 
-void EsdfServer::updateMeshEvent(const ros::TimerEvent& e) {
+void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
   // Also update the ESDF now.
   const bool clear_updated_flag_esdf = false;
   esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   publishAllUpdatedEsdfVoxels();
 
-  TsdfServer::updateMeshEvent(e);
+  TsdfServer::updateMeshEvent(event);
 }
 
 }  // namespace voxblox
