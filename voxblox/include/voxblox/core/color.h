@@ -8,7 +8,7 @@ namespace voxblox {
 // Color maps.
 
 // The input h is on a scale between 0.0 and 1.0.
-Color rainbowColorMap(double h) {
+inline Color rainbowColorMap(double h) {
   // Directly from OctomapProvider in octomap.
   Color color;
   color.a = 255;
@@ -70,7 +70,7 @@ Color rainbowColorMap(double h) {
   return color;
 }
 
-Color grayColorMap(double h) {
+inline Color grayColorMap(double h) {
   Color color;
   color.a = 255;
 

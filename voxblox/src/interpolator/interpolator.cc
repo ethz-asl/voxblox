@@ -1,5 +1,4 @@
-#ifndef VOXBLOX_INTERPOLATOR_INL_H_
-#define VOXBLOX_INTERPOLATOR_INL_H_
+#include "voxblox/interpolator/interpolator.h"
 
 namespace voxblox {
 
@@ -207,5 +206,3 @@ bool Interpolator::getNearestDistanceAndWeight(const Point& pos,
 }
 
 }  // namespace voxblox
-
-#endif  // VOXBLOX_INTERPOLATOR_INL_H_

@@ -360,6 +360,9 @@ class TsdfIntegrator {
     integrate_timer.Stop();
   }
 
+  // Returns a CONST ref of the config.
+  const Config& getConfig() const { return config_; }
+
  protected:
   Config config_;
 
