@@ -9,7 +9,12 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 #############
 # LIBRARIES #
 #############
-# TODO(mfehr, helenol): Add a library as soon as we have source files.
+cs_add_library(${PROJECT_NAME}
+  src/transformer.cc
+  src/tsdf_server.cc
+  src/esdf_server.cc
+)
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ############
 # BINARIES #
@@ -18,11 +23,23 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 cs_add_executable(voxblox_eval
   src/voxblox_eval.cc
 )
+target_link_libraries(voxblox_eval ${PROJECT_NAME})
 
 cs_add_executable(voxblox_node
   src/voxblox_node.cc
 )
-add_dependencies(voxblox_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(voxblox_node ${PROJECT_NAME})
+
+cs_add_executable(tsdf_server
+  src/tsdf_server_node.cc
+)
+target_link_libraries(tsdf_server ${PROJECT_NAME})
+
+cs_add_executable(esdf_server
+  src/esdf_server_node.cc
+)
+target_link_libraries(esdf_server ${PROJECT_NAME})
+
 
 ##########
 # EXPORT #

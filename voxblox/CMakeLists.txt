@@ -20,8 +20,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 #############
 cs_add_library(${PROJECT_NAME}
   src/core/block.cc
-  src/utils/timing.cc
+  src/interpolator/interpolator.cc
   src/mesh/marching_cubes.cc
+  src/io/mesh_ply.cc
+  src/utils/protobuf_utils.cc
+  src/utils/timing.cc
   ${PROTO_SRCS}
 )
 

@@ -38,12 +38,12 @@ namespace voxblox {
 
 enum ColorMode { kColor = 0, kHeight, kNormals, kGray, kLambert };
 
-Point lambertShading(const Point& normal, const Point& light) {
+inline Point lambertShading(const Point& normal, const Point& light) {
   return std::max<FloatingPoint>(normal.dot(light), 0.0f) *
          Point(0.5, 0.5, 0.5);
 }
 
-void lambertColorFromNormal(const Point& normal,
+inline void lambertColorFromNormal(const Point& normal,
                             std_msgs::ColorRGBA* color_msg) {
   static const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
   static const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
@@ -58,7 +58,7 @@ void lambertColorFromNormal(const Point& normal,
   color_msg->a = 1.0;
 }
 
-void normalColorFromNormal(const Point& normal,
+inline void normalColorFromNormal(const Point& normal,
                            std_msgs::ColorRGBA* color_msg) {
   // Normals should be in the scale -1 to 1, so we need to shift them to
   // 0 -> 1 range.
@@ -68,7 +68,7 @@ void normalColorFromNormal(const Point& normal,
   color_msg->a = 1.0;
 }
 
-void heightColorFromVertex(const Point& vertex,
+inline void heightColorFromVertex(const Point& vertex,
                            std_msgs::ColorRGBA* color_msg) {
   // TODO(helenol): figure out a nicer way to do this without hard-coded
   // constants.
@@ -80,7 +80,7 @@ void heightColorFromVertex(const Point& vertex,
   colorVoxbloxToMsg(rainbowColorMap(mapped_height), color_msg);
 }
 
-void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
+inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
                         ColorMode color_mode,
                         visualization_msgs::Marker* marker) {
   CHECK_NOTNULL(marker);
