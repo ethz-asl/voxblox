@@ -19,7 +19,7 @@ class EsdfServer : public TsdfServer {
   bool generateEsdfCallback(std_srvs::Empty::Request& request,      // NOLINT
                             std_srvs::Empty::Response& response);   // NOLINT
 
-  virtual void updateMeshEvent(const ros::TimerEvent& e);
+  virtual void updateMeshEvent(const ros::TimerEvent& event);
 
  protected:
   // Publish markers for visualization.
@@ -31,7 +31,7 @@ class EsdfServer : public TsdfServer {
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
-  std::shared_ptr<EsdfIntegrator> esdf_integrator_;
+  std::unique_ptr<EsdfIntegrator> esdf_integrator_;
 };
 
 }  // namespace voxblox

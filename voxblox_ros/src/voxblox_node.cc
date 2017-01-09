@@ -707,7 +707,7 @@ bool VoxbloxNode::generateMeshCallback(
 
   if (!mesh_filename_.empty()) {
     timing::Timer output_mesh_timer("mesh/output");
-    bool success = outputMeshLayerAsPly(mesh_filename_, mesh_layer_);
+    bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
     output_mesh_timer.Stop();
     if (success) {
       ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());

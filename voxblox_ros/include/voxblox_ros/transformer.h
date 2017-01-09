@@ -49,6 +49,12 @@ class Transformer {
   // are assumed to be T_G_D.
   Transformation T_B_C_;
   Transformation T_B_D_;
+  // If we use topic transforms, we have 2 parts: a dynamic transform from a
+  // topic and a static transform from parameters.
+  // Static transform should be T_G_D (where D is whatever sensor the
+  // dynamic coordinate frame is in) and the static should be T_D_C (where
+  // C is the sensor frame that produces the depth data). It is possible to
+  // specify T_C_D and set invert_static_transform to true.
 
   // To be replaced (at least optionally) with odometry + static transform
   // from IMU to visual frame.

@@ -9,8 +9,8 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
-#include <visualization_msgs/MarkerArray.h>
 #include <string>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/tsdf_integrator.h>
@@ -18,10 +18,10 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
-#include "voxblox_ros/transformer.h"
 #include "voxblox_ros/FilePath.h"
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
+#include "voxblox_ros/transformer.h"
 
 namespace voxblox {
 
@@ -47,7 +47,7 @@ class TsdfServer {
   bool generateMeshCallback(std_srvs::Empty::Request& request,      // NOLINT
                             std_srvs::Empty::Response& response);   // NOLINT
 
-  virtual void updateMeshEvent(const ros::TimerEvent& e);
+  virtual void updateMeshEvent(const ros::TimerEvent& event);
 
  protected:
   ros::NodeHandle nh_;
@@ -95,11 +95,11 @@ class TsdfServer {
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
-  std::shared_ptr<TsdfIntegrator> tsdf_integrator_;
+  std::unique_ptr<TsdfIntegrator> tsdf_integrator_;
 
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;
-  std::shared_ptr<MeshIntegrator> mesh_integrator_;
+  std::unique_ptr<MeshIntegrator> mesh_integrator_;
 
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.
