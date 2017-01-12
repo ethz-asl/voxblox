@@ -1,4 +1,3 @@
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "voxblox/core/labeltsdf_map.h"
@@ -6,14 +5,14 @@
 #include "voxblox/io/mesh_ply.h"
 #include "voxblox/mesh/mesh_label_integrator.h"
 
-using namespace voxblox;
+namespace voxblox {
 
 class LabelTsdfIntegratorTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     LabelTsdfMap::Config map_config;
-    map_config.voxel_size = 0.1;
-    map_config.voxels_per_side = 8;
+    map_config.voxel_size = 0.1f;
+    map_config.voxels_per_side = 8u;
     map_.reset(new LabelTsdfMap(map_config));
 
     LabelTsdfIntegrator::Config integrator_config;
@@ -38,8 +37,8 @@ TEST_F(LabelTsdfIntegratorTest, ReadLabelPointCloud) {
 
   size_t label = 1u;
   // Build two 2x2m regular grid pointclouds.
-  for (float x = 0; x < 2; x = x + 0.05) {
-    for (float z = 0; z < 2; z = z + 0.05) {
+  for (float x = 0.0f; x < 2.0f; x = x + 0.05f) {
+    for (float z = 0.0f; z < 2.0f; z = z + 0.05f) {
       frame_to_integrate.push_back(transform.inverse() * Point(x, 1, z));
       frame_to_compute_labels.push_back(transform.inverse() * Point(x, 1, z));
 
@@ -62,7 +61,8 @@ TEST_F(LabelTsdfIntegratorTest, ReadLabelPointCloud) {
                                       &computed_labels);
 
   // The computed labels match exactly the ones integrated
-  EXPECT_THAT(labels_to_integrate, ::testing::ContainerEq(computed_labels));
+  EXPECT_TRUE(std::equal(computed_labels.begin(), computed_labels.end(),
+                         labels_to_integrate.begin()));
 }
 
 TEST_F(LabelTsdfIntegratorTest, ComputeLabelPointCloud) {
@@ -77,8 +77,8 @@ TEST_F(LabelTsdfIntegratorTest, ComputeLabelPointCloud) {
 
   size_t label = 1u;
   // Build two 2x2m regular grid pointclouds.
-  for (float x = 0; x < 2; x = x + 0.05) {
-    for (float z = 0; z < 2; z = z + 0.05) {
+  for (float x = 0.0f; x < 2.0f; x = x + 0.05f) {
+    for (float z = 0.0f; z < 2.0f; z = z + 0.05f) {
       frame_to_integrate.push_back(transform.inverse() * Point(x, 1, z));
       frame_to_compute_labels.push_back(transform.inverse() * Point(x, 1, z));
 
@@ -87,7 +87,7 @@ TEST_F(LabelTsdfIntegratorTest, ComputeLabelPointCloud) {
       // Assign two different labels to different.
       // parts of the pointcloud to integrate.
       if (x > 1.5f) {
-        label = 2u;
+        label = 200u;
       }
       labels_to_integrate.push_back(label);
     }
@@ -103,22 +103,23 @@ TEST_F(LabelTsdfIntegratorTest, ComputeLabelPointCloud) {
                                       frame_to_compute_labels,
                                       &computed_labels);
 
-  // The computed labels are all 1 since it's the dominant integrated label
-  EXPECT_THAT(computed_labels, ::testing::Each(1));
+  Labels expected_labels(computed_labels.size(), 1);
 
-  std::shared_ptr<MeshLayer> mesh_layer_;
-  std::shared_ptr<MeshLabelIntegrator> mesh_integrator_;
+  // The computed labels are all 1 since it's the dominant integrated label
+  EXPECT_TRUE(std::equal(computed_labels.begin(), computed_labels.end(),
+                         expected_labels.begin()));
 
   // Generate the mesh.
+  MeshLayer mesh_layer(map_->block_size());
   MeshLabelIntegrator::Config mesh_config;
-  mesh_layer_.reset(new MeshLayer(map_->block_size()));
-  mesh_integrator_.reset(new MeshLabelIntegrator(mesh_config,
-                                                 map_->getTsdfLayerPtr(),
-                                                 map_->getLabelLayerPtr(),
-                                                 mesh_layer_.get()));
-  mesh_integrator_->generateWholeMesh();
+  MeshLabelIntegrator mesh_integrator(mesh_config,
+                                       map_->getTsdfLayerPtr(),
+                                       map_->getLabelLayerPtr(),
+                                       &mesh_layer);
 
-  voxblox::outputMeshLayerAsPly("test_tsdf.ply", mesh_layer_);
+  mesh_integrator.generateWholeMesh();
+
+  voxblox::outputMeshLayerAsPly("test_tsdf.ply", mesh_layer);
 }
 
 TEST_F(LabelTsdfIntegratorTest, ComputeNewLabelPointCloud) {
@@ -133,8 +134,8 @@ TEST_F(LabelTsdfIntegratorTest, ComputeNewLabelPointCloud) {
 
   size_t label = 1u;
   // Build two 2x2m regular grid pointclouds.
-  for (float x = 0; x < 2; x = x + 0.05) {
-    for (float z = 0; z < 2; z = z + 0.05) {
+  for (float x = 0.0f; x < 2.0f; x = x + 0.05f) {
+    for (float z = 0.0f; z < 2.0f; z = z + 0.05f) {
       frame_to_integrate.push_back(
           transform.inverse() * Point(x, 1, z));
       // Read labels for a pointcloud for an unobserved area
@@ -159,9 +160,14 @@ TEST_F(LabelTsdfIntegratorTest, ComputeNewLabelPointCloud) {
                                       &computed_labels);
 
   // The computed labels are all the unseen label 2.
-  EXPECT_THAT(computed_labels, ::testing::Each(2));
+  Labels expected_labels(computed_labels.size(), 2);
+
+  // The computed labels are all 1 since it's the dominant integrated label
+  EXPECT_TRUE(std::equal(computed_labels.begin(), computed_labels.end(),
+                         expected_labels.begin()));
 }
 
+}  // namespace voxblox
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

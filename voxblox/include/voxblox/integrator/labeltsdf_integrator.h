@@ -165,8 +165,8 @@ class LabelTsdfIntegrator : public TsdfIntegrator {
         }
 
         if (!tsdf_block || block_idx != last_block_idx) {
-          if (!tsdf_block) {
-            CHECK(!label_block);
+          if ((!tsdf_block && label_block) || (tsdf_block && !label_block)) {
+            LOG(ERROR) << "Block allocation differs between the two layers.";
           }
           tsdf_block = layer_->allocateBlockPtrByIndex(block_idx);
           label_block = label_layer_->allocateBlockPtrByIndex(block_idx);
