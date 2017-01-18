@@ -18,7 +18,7 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
-#include "voxblox_ros/FilePath.h"
+#include <voxblox_msgs/FilePath.h>
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/transformer.h"
@@ -40,10 +40,10 @@ class TsdfServer {
   void publishTsdfOccupiedNodes();
   virtual void publishSlices();
 
-  bool saveMapCallback(voxblox_ros::FilePath::Request& request,     // NOLINT
-                       voxblox_ros::FilePath::Response& response);  // NOLINT
-  bool loadMapCallback(voxblox_ros::FilePath::Request& request,     // NOLINT
-                       voxblox_ros::FilePath::Response& response);  // NOLINT
+  bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
+                       voxblox_msgs::FilePath::Response& response);  // NOLINT
+  bool loadMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
+                       voxblox_msgs::FilePath::Response& response);  // NOLINT
   bool generateMeshCallback(std_srvs::Empty::Request& request,      // NOLINT
                             std_srvs::Empty::Response& response);   // NOLINT
 

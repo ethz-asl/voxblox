@@ -147,9 +147,9 @@ class Block {
   // Serialization.
   void getProto(BlockProto* proto) const;
   void serializeToIntegers(const VoxelType* voxels,
-                           std::vector<uint32_t>* proto) const;
-  void deserializeFromIntegers(const std::vector<uint32_t>& proto,
-                               const VoxelType* voxels);
+                           std::vector<uint32_t>* data) const;
+  void deserializeFromIntegers(const std::vector<uint32_t>& data,
+                               VoxelType* voxels);
 
   bool mergeBlock(const Block<VoxelType>& other_block);
 

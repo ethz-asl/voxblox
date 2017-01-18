@@ -14,7 +14,6 @@ cs_add_library(${PROJECT_NAME}
   src/tsdf_server.cc
   src/esdf_server.cc
 )
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ############
 # BINARIES #
