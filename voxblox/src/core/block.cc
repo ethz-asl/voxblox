@@ -33,7 +33,7 @@ Eigen::Vector3i deserializeDirection(uint8_t data) {
 // Deserialization functions:
 template <>
 void Block<TsdfVoxel>::deserializeFromIntegers(
-    const std::vector<uint32_t>& data, TsdfVoxel* voxels) {
+    const std::vector<uint32_t>& data) {
   constexpr size_t kNumDataPacketsPerVoxel = 3u;
   const size_t num_data_packets = data.size();
   CHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
@@ -44,7 +44,7 @@ void Block<TsdfVoxel>::deserializeFromIntegers(
     const uint32_t bytes_2 = data[data_idx + 1u];
     const uint32_t bytes_3 = data[data_idx + 2u];
 
-    TsdfVoxel& voxel = voxels[voxel_idx];
+    TsdfVoxel& voxel = voxels_[voxel_idx];
 
     // TODO(mfehr, helenol): find a better way to do this!
 
@@ -60,7 +60,7 @@ void Block<TsdfVoxel>::deserializeFromIntegers(
 
 template <>
 void Block<OccupancyVoxel>::deserializeFromIntegers(
-    const std::vector<uint32_t>& data, OccupancyVoxel* voxels) {
+    const std::vector<uint32_t>& data) {
   constexpr size_t kNumDataPacketsPerVoxel = 2u;
   const size_t num_data_packets = data.size();
   CHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
@@ -70,7 +70,7 @@ void Block<OccupancyVoxel>::deserializeFromIntegers(
     const uint32_t bytes_1 = data[data_idx];
     const uint32_t bytes_2 = data[data_idx + 1u];
 
-    OccupancyVoxel& voxel = voxels[voxel_idx];
+    OccupancyVoxel& voxel = voxels_[voxel_idx];
 
     memcpy(&(voxel.probability_log), &bytes_1, sizeof(bytes_1));
     voxel.observed = static_cast<bool>(bytes_2 & 0x000000FF);
@@ -79,7 +79,7 @@ void Block<OccupancyVoxel>::deserializeFromIntegers(
 
 template <>
 void Block<EsdfVoxel>::deserializeFromIntegers(
-    const std::vector<uint32_t>& data, EsdfVoxel* voxels) {
+    const std::vector<uint32_t>& data) {
   constexpr size_t kNumDataPacketsPerVoxel = 2u;
   const size_t num_data_packets = data.size();
   CHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
@@ -89,7 +89,7 @@ void Block<EsdfVoxel>::deserializeFromIntegers(
     const uint32_t bytes_1 = data[data_idx];
     const uint32_t bytes_2 = data[data_idx + 1u];
 
-    EsdfVoxel& voxel = voxels[voxel_idx];
+    EsdfVoxel& voxel = voxels_[voxel_idx];
 
     memcpy(&(voxel.distance), &bytes_1, sizeof(bytes_1));
 
@@ -103,13 +103,12 @@ void Block<EsdfVoxel>::deserializeFromIntegers(
 
 // Serialization functions:
 template <>
-void Block<TsdfVoxel>::serializeToIntegers(const TsdfVoxel* voxels,
-                                           std::vector<uint32_t>* data) const {
+void Block<TsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
   constexpr size_t kNumDataPacketsPerVoxel = 3u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);
   for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
-    const TsdfVoxel& voxel = voxels[voxel_idx];
+    const TsdfVoxel& voxel = voxels_[voxel_idx];
 
     // TODO(mfehr, helenol): find a better way to do this!
 
@@ -131,12 +130,12 @@ void Block<TsdfVoxel>::serializeToIntegers(const TsdfVoxel* voxels,
 
 template <>
 void Block<OccupancyVoxel>::serializeToIntegers(
-    const OccupancyVoxel* voxels, std::vector<uint32_t>* data) const {
+    std::vector<uint32_t>* data) const {
   constexpr size_t kNumDataPacketsPerVoxel = 2u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);
   for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
-    const OccupancyVoxel& voxel = voxels[voxel_idx];
+    const OccupancyVoxel& voxel = voxels_[voxel_idx];
 
     const uint32_t* bytes_1_ptr =
         reinterpret_cast<const uint32_t*>(&voxel.probability_log);
@@ -147,13 +146,12 @@ void Block<OccupancyVoxel>::serializeToIntegers(
 }
 
 template <>
-void Block<EsdfVoxel>::serializeToIntegers(const EsdfVoxel* voxels,
-                                           std::vector<uint32_t>* data) const {
+void Block<EsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
   constexpr size_t kNumDataPacketsPerVoxel = 2u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);
   for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
-    const EsdfVoxel& voxel = voxels[voxel_idx];
+    const EsdfVoxel& voxel = voxels_[voxel_idx];
 
     const uint32_t* bytes_1_ptr =
         reinterpret_cast<const uint32_t*>(&voxel.distance);

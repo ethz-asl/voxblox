@@ -6,7 +6,7 @@ uint8 layer_type  # See type enums below
 # Whether to send a full map or an incremental update.
 uint8 action   # See action defines below
 
-voxblox_msgs/Block[] block
+voxblox_msgs/Block[] blocks
 
 # Type definitions (should match VoxelTypes enum in voxblox/common/voxel.h)
 uint8 TYPE_NOT_SERIALIZABLE = 0

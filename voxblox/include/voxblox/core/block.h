@@ -146,18 +146,16 @@ class Block {
 
   // Serialization.
   void getProto(BlockProto* proto) const;
-  void serializeToIntegers(const VoxelType* voxels,
-                           std::vector<uint32_t>* data) const;
-  void deserializeFromIntegers(const std::vector<uint32_t>& data,
-                               VoxelType* voxels);
+  void serializeToIntegers(std::vector<uint32_t>* data) const;
+  void deserializeFromIntegers(const std::vector<uint32_t>& data);
 
   bool mergeBlock(const Block<VoxelType>& other_block);
 
   size_t getMemorySize() const;
 
  private:
-  void deserializeProto(const BlockProto& proto, VoxelType* voxels);
-  void serializeProto(const VoxelType* voxels, BlockProto* proto) const;
+  void deserializeProto(const BlockProto& proto);
+  void serializeProto(BlockProto* proto) const;
 
   // Base parameters.
   const size_t voxels_per_side_;
