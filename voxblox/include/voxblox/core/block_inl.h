@@ -21,7 +21,7 @@ Block<VoxelType>::Block(const BlockProto& proto)
     data.push_back(word);
   }
 
-  deserializeFromIntegers(data, voxels_.get());
+  deserializeFromIntegers(data);
 }
 
 template <typename VoxelType>
@@ -38,7 +38,7 @@ void Block<VoxelType>::getProto(BlockProto* proto) const {
   proto->set_has_data(has_data_);
 
   std::vector<uint32_t> data;
-  serializeToIntegers(voxels_.get(), &data);
+  serializeToIntegers(&data);
   // Not quite actually a word since we're in a 64-bit age now, but whatever.
   for (uint32_t word : data) {
     proto->add_voxel_data(word);

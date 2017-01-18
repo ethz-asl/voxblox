@@ -1,7 +1,9 @@
 #ifndef VOXBLOX_ROS_CONVERSIONS_H_
 #define VOXBLOX_ROS_CONVERSIONS_H_
 
+#include <algorithm>
 #include <std_msgs/ColorRGBA.h>
+#include <vector>
 #include <voxblox_msgs/Layer.h>
 
 #include <voxblox/core/common.h>
@@ -32,8 +34,10 @@ template <typename VoxelType>
 void serializeLayerAsMsg(const Layer<VoxelType>& layer,
                          voxblox_msgs::Layer* msg);
 
+// Returns true if could parse the data into the existing layer (all parameters
+// are compatible), false otherwise.
 template <typename VoxelType>
-void deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
+bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
                            Layer<VoxelType>* layer);
 
 // Definitions, maybe move to impl file.
@@ -47,8 +51,35 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
 }
 
 template <typename VoxelType>
-void deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
-                           Layer<VoxelType>* layer) {}
+bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
+                           Layer<VoxelType>* layer) {
+  if (msg.layer_type != getVoxelType<VoxelType>()) {
+    return false;
+  }
+
+  // So we also need to check if the sizes match. If they don't, we can't
+  // parse this at all.
+  constexpr double kVoxelSizeEpsilon = 1e-5;
+  if (msg.voxels_per_side != layer->voxels_per_side()
+      || std::abs(msg.voxel_size - layer->voxel_size()) > kVoxelSizeEpsilon) {
+    return false;
+  }
+
+  // TODO(helenol): For now treat both actions the same. In the future should
+  // clear the map for ACTION_FULL_MAP.
+  for (const voxblox_msgs::Block& block_msg : msg.blocks) {
+    // Create a new block if it doesn't exist yet, or get the existing one
+    // at the correct block index.
+    BlockIndex index(block_msg.x_index, block_msg.y_index, block_msg.z_index);
+    typename Block<VoxelType>::Ptr block_ptr = layer->allocateBlockPtrByIndex(index);
+
+    std::vector<uint32_t> data;
+    std::copy(block_msg.data.begin(), block_msg.data.end(), data.begin());
+    block_ptr->deserializeFromIntegers(data);
+  }
+
+  return true;
+}
 
 }  // namespace voxblox
 
