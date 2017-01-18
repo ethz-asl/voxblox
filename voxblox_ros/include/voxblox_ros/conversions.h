@@ -48,6 +48,29 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
   msg->voxel_size = layer.voxel_size();
 
   msg->layer_type = getVoxelType<VoxelType>();
+
+  BlockIndexList block_list;
+  if (only_updated) {
+    layer->getAllUpdatedBlocks(&block_list);
+    msg->action = voxblox_msgs::Layer::ACTION_UPDATE;
+  } else {
+    layer->getAllAllocatedBlocks(&block_list);
+    msg->action = voxblox_msgs::Layer::ACTION_FULL_MAP;
+  }
+
+  voxblox_msgs::Block block_msg;
+  for (const BlockIndex& index : block_list) {
+    block_msg.x_index = index.x();
+    block_msg.y_index = index.y();
+    block_msg.z_index = index.z();
+
+    std::vector<uint64_t> data;
+    layer->getBlockByIndex(index).serializeToIntegers(&data);
+
+    std::copy(data.begin(), data.end(), block_msg.data.begin());
+    // TODO(helenol): is this super slow???
+    msg->blocks.push_back(block_msg);
+  }
 }
 
 template <typename VoxelType>
@@ -60,8 +83,8 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
   // So we also need to check if the sizes match. If they don't, we can't
   // parse this at all.
   constexpr double kVoxelSizeEpsilon = 1e-5;
-  if (msg.voxels_per_side != layer->voxels_per_side()
-      || std::abs(msg.voxel_size - layer->voxel_size()) > kVoxelSizeEpsilon) {
+  if (msg.voxels_per_side != layer->voxels_per_side() ||
+      std::abs(msg.voxel_size - layer->voxel_size()) > kVoxelSizeEpsilon) {
     return false;
   }
 
@@ -71,7 +94,8 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
     // Create a new block if it doesn't exist yet, or get the existing one
     // at the correct block index.
     BlockIndex index(block_msg.x_index, block_msg.y_index, block_msg.z_index);
-    typename Block<VoxelType>::Ptr block_ptr = layer->allocateBlockPtrByIndex(index);
+    typename Block<VoxelType>::Ptr block_ptr =
+        layer->allocateBlockPtrByIndex(index);
 
     std::vector<uint32_t> data;
     std::copy(block_msg.data.begin(), block_msg.data.end(), data.begin());
