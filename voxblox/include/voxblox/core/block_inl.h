@@ -3,14 +3,25 @@
 
 #include "./Block.pb.h"
 
+#include <vector>
+
 namespace voxblox {
 
-template<typename VoxelType>
+template <typename VoxelType>
 Block<VoxelType>::Block(const BlockProto& proto)
     : Block(proto.voxels_per_side(), proto.voxel_size(),
             Point(proto.origin_x(), proto.origin_y(), proto.origin_z())) {
   has_data_ = proto.has_data();
-  DeserializeVoxelData(proto, voxels_.get());
+
+  // Convert the data into a vector of integers.
+  std::vector<uint32_t> data;
+  data.reserve(proto.voxel_data_size());
+
+  for (uint32_t word : proto.voxel_data()) {
+    data.push_back(word);
+  }
+
+  deserializeFromIntegers(data, voxels_.get());
 }
 
 template <typename VoxelType>
@@ -26,10 +37,12 @@ void Block<VoxelType>::getProto(BlockProto* proto) const {
 
   proto->set_has_data(has_data_);
 
-
-  proto->
-
-  SerializeVoxelData(voxels_.get(), proto);
+  std::vector<uint32_t> data;
+  serializeToIntegers(voxels_.get(), &data);
+  // Not quite actually a word since we're in a 64-bit age now, but whatever.
+  for (uint32_t word : data) {
+    proto->add_voxel_data(word);
+  }
 }
 
 template <typename VoxelType>

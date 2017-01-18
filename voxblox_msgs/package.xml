@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>voxblox_ros</name>
+  <name>voxblox_msgs</name>
   <version>0.0.0</version>
-  <description>Voxblox ROS interface</description>
+  <description>Message definitions for Voxblox ROS interface.</description>
 
   <author email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</author>
   <author email="marius.fehr@mavt.ethz.ch">Marius Fehr</author>
