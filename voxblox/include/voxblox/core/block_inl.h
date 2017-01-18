@@ -26,6 +26,9 @@ void Block<VoxelType>::getProto(BlockProto* proto) const {
 
   proto->set_has_data(has_data_);
 
+
+  proto->
+
   SerializeVoxelData(voxels_.get(), proto);
 }
 
