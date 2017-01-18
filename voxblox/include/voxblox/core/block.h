@@ -2,6 +2,7 @@
 #define VOXBLOX_CORE_BLOCK_H_
 
 #include <memory>
+#include <vector>
 
 #include "./Block.pb.h"
 #include "voxblox/core/common.h"
