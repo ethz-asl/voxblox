@@ -143,15 +143,20 @@ class Block {
   bool& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
+  // Serialization.
   void getProto(BlockProto* proto) const;
+  void serializeToIntegers(const VoxelType* voxels,
+                           std::vector<uint32_t>* proto) const;
+  void deserializeFromIntegers(const std::vector<uint32_t>& proto,
+                               const VoxelType* voxels);
 
   bool mergeBlock(const Block<VoxelType>& other_block);
 
   size_t getMemorySize() const;
 
  private:
-  void DeserializeVoxelData(const BlockProto& proto, VoxelType* voxels);
-  void SerializeVoxelData(const VoxelType* voxels, BlockProto* proto) const;
+  void deserializeProto(const BlockProto& proto, VoxelType* voxels);
+  void serializeProto(const VoxelType* voxels, BlockProto* proto) const;
 
   // Base parameters.
   const size_t voxels_per_side_;
