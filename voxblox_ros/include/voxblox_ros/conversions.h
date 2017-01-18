@@ -2,6 +2,7 @@
 #define VOXBLOX_ROS_CONVERSIONS_H_
 
 #include <std_msgs/ColorRGBA.h>
+#include <voxblox_msgs/Layer.h>
 
 #include <voxblox/core/common.h>
 #include <voxblox/mesh/mesh.h>
