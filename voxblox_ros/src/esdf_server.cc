@@ -92,6 +92,15 @@ void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
   esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   publishAllUpdatedEsdfVoxels();
 
+  if (esdf_map_pub_.getNumSubscribers() > 0) {
+    // TODO(helenol): make param!
+    const bool only_updated = true;
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<EsdfVoxel>(esdf_map_->getEsdfLayer(), only_updated,
+                                   &layer_msg);
+    esdf_map_pub_.publish(layer_msg);
+  }
+
   TsdfServer::updateMeshEvent(event);
 }
 

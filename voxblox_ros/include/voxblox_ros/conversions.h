@@ -48,14 +48,14 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
   msg->voxels_per_side = layer.voxels_per_side();
   msg->voxel_size = layer.voxel_size();
 
-  msg->layer_type = getVoxelType<VoxelType>();
+  msg->layer_type = static_cast<uint8_t>(getVoxelType<VoxelType>());
 
   BlockIndexList block_list;
   if (only_updated) {
-    layer->getAllUpdatedBlocks(&block_list);
+    layer.getAllUpdatedBlocks(&block_list);
     msg->action = voxblox_msgs::Layer::ACTION_UPDATE;
   } else {
-    layer->getAllAllocatedBlocks(&block_list);
+    layer.getAllAllocatedBlocks(&block_list);
     msg->action = voxblox_msgs::Layer::ACTION_FULL_MAP;
   }
 
@@ -65,8 +65,8 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
     block_msg.y_index = index.y();
     block_msg.z_index = index.z();
 
-    std::vector<uint64_t> data;
-    layer->getBlockByIndex(index).serializeToIntegers(&data);
+    std::vector<uint32_t> data;
+    layer.getBlockByIndex(index).serializeToIntegers(&data);
 
     std::copy(data.begin(), data.end(), block_msg.data.begin());
     // TODO(helenol): is this super slow???
@@ -77,7 +77,7 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
 template <typename VoxelType>
 bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
                            Layer<VoxelType>* layer) {
-  if (msg.layer_type != static_cast<int>(getVoxelType<VoxelType>())) {
+  if (msg.layer_type != static_cast<uint8_t>(getVoxelType<VoxelType>())) {
     return false;
   }
 
