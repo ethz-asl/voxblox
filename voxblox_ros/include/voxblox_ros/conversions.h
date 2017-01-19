@@ -68,7 +68,7 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
     std::vector<uint32_t> data;
     layer.getBlockByIndex(index).serializeToIntegers(&data);
 
-    std::copy(data.begin(), data.end(), block_msg.data.begin());
+    block_msg.data = data;
     // TODO(helenol): is this super slow???
     msg->blocks.push_back(block_msg);
   }
@@ -98,8 +98,7 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
     typename Block<VoxelType>::Ptr block_ptr =
         layer->allocateBlockPtrByIndex(index);
 
-    std::vector<uint32_t> data;
-    std::copy(block_msg.data.begin(), block_msg.data.end(), data.begin());
+    std::vector<uint32_t> data = block_msg.data;
     block_ptr->deserializeFromIntegers(data);
   }
 
