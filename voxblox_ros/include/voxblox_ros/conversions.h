@@ -8,6 +8,7 @@
 
 #include <voxblox/core/common.h>
 #include <voxblox/mesh/mesh.h>
+#include <voxblox/core/layer.h>
 
 namespace voxblox {
 
@@ -76,7 +77,7 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
 template <typename VoxelType>
 bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
                            Layer<VoxelType>* layer) {
-  if (msg.layer_type != getVoxelType<VoxelType>()) {
+  if (msg.layer_type != static_cast<int>(getVoxelType<VoxelType>())) {
     return false;
   }
 

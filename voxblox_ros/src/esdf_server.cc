@@ -1,3 +1,5 @@
+#include <voxblox_ros/conversions.h>
+
 #include "voxblox_ros/esdf_server.h"
 
 namespace voxblox {
@@ -10,6 +12,12 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                                                               1, true);
   esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "esdf_slice", 1, true);
+
+  esdf_map_pub_ =
+      nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
+
+  esdf_map_sub_ = nh_private_.subscribe("esdf_map_in", 1,
+                                        &EsdfServer::esdfMapCallback, this);
 
   EsdfMap::Config esdf_config;
 
@@ -85,6 +93,15 @@ void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
   publishAllUpdatedEsdfVoxels();
 
   TsdfServer::updateMeshEvent(event);
+}
+
+void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  bool success =
+      deserializeMsgToLayer<EsdfVoxel>(layer_msg, esdf_map_->getEsdfLayerPtr());
+
+  if (!success) {
+    ROS_WARN_THROTTLE(10, "Got an invalid ESDF map message!");
+  }
 }
 
 }  // namespace voxblox
