@@ -87,14 +87,16 @@ bool EsdfServer::generateEsdfCallback(
 }
 
 void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
-  // Also update the ESDF now.
-  const bool clear_updated_flag_esdf = false;
-  esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+  // Also update the ESDF now, if there's any blocks in the TSDF.
+  if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+    const bool clear_updated_flag_esdf = false;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+  }
   publishAllUpdatedEsdfVoxels();
 
   if (esdf_map_pub_.getNumSubscribers() > 0) {
     // TODO(helenol): make param!
-    const bool only_updated = true;
+    const bool only_updated = false;
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<EsdfVoxel>(esdf_map_->getEsdfLayer(), only_updated,
                                    &layer_msg);
@@ -110,6 +112,9 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
 
   if (!success) {
     ROS_WARN_THROTTLE(10, "Got an invalid ESDF map message!");
+  } else {
+    publishAllUpdatedEsdfVoxels();
+    publishSlices();
   }
 }
 
