@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INTERPOLATOR_H_
-#define VOXBLOX_INTERPOLATOR_H_
+#ifndef VOXBLOX_INTERPOLATOR_INTERPOLATOR_H_
+#define VOXBLOX_INTERPOLATOR_INTERPOLATOR_H_
 
 #include <memory>
 
@@ -9,11 +9,12 @@
 
 namespace voxblox {
 
+template <typename VoxelType>
 class Interpolator {
  public:
   typedef std::shared_ptr<Interpolator> Ptr;
 
-  explicit Interpolator(Layer<TsdfVoxel>* tsdf_layer);
+  explicit Interpolator(Layer<VoxelType>* layer);
 
   bool getGradient(const Point& pos, Point* grad,
                    const bool interpolate = false) const;
@@ -41,8 +42,15 @@ class Interpolator {
 
   bool getNearestDistance(const Point& pos, FloatingPoint* distance) const;
 
-  Layer<TsdfVoxel>* tsdf_layer_;
+  // Allow this class to be templated on all kinds of voxels.
+  FloatingPoint getVoxelDistance(const VoxelType& voxel) const;
+  float getVoxelWeight(const VoxelType& voxel) const;
+
+  Layer<VoxelType>* layer_;
 };
+
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTERPOLATOR_H_
+#endif  // VOXBLOX_INTERPOLATOR_INTERPOLATOR_H_
+
+#include "voxblox/interpolator/interpolator_inl.h"
