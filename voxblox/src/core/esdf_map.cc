@@ -6,7 +6,7 @@ bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
                                     double* distance) const {
   constexpr bool interpolate = true;
   FloatingPoint distance_fp;
-  bool success = interpolator_.getDistance(position, distance, interpolate);
+  bool success = interpolator_.getDistance(position, &distance_fp, interpolate);
   if (success) {
     *distance = static_cast<double>(distance_fp);
   }
@@ -20,13 +20,13 @@ bool EsdfMap::getDistanceAndGradientAtPosition(
 
   FloatingPoint distance_fp;
   constexpr bool interpolate = true;
-  success = getDistance(position, &distance_fp, interpolate);
+  success = interpolator_.getDistance(position, &distance_fp, interpolate);
   if (!success) {
     return false;
   }
 
   Point gradient_fp;
-  success = getGradient(position, &gradient_fp, interpolate);
+  success = interpolator_.getGradient(position, &gradient_fp, interpolate);
 
   if (!success) {
     return false;
