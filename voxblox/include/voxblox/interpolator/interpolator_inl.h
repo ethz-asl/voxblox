@@ -111,6 +111,7 @@ bool Interpolator<VoxelType>::getDistancesAndWeights(
   CHECK_NOTNULL(distances);
 
   // for each voxel index
+  bool success = true;
   for (size_t i = 0; i < voxel_indexes.cols(); ++i) {
     typename Layer<VoxelType>::BlockType::Ptr block_ptr =
         layer_->getBlockPtrByIndex(block_index);
@@ -138,9 +139,13 @@ bool Interpolator<VoxelType>::getDistancesAndWeights(
       getWeightsVector(block_ptr->computeCoordinatesFromVoxelIndex(voxel_index),
                        pos, weights_vector);
     }
-    (*distances)[i] = block_ptr->getVoxelByVoxelIndex(voxel_index).distance;
+
+    const VoxelType& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+
+    (*distances)[i] = getVoxelDistance(voxel);
+    success = success && isVoxelValid(voxel);
   }
-  return true;
+  return success;
 }
 
 template <typename VoxelType>
@@ -186,9 +191,12 @@ bool Interpolator<VoxelType>::getNearestDistance(
   if (block_ptr == nullptr) {
     return false;
   }
-  *distance = getVoxelDistance(block_ptr->getVoxelByCoordinates(pos));
 
-  return true;
+  const VoxelType& voxel = block_ptr->getVoxelByCoordinates(pos);
+
+  *distance = getVoxelDistance(voxel);
+
+  return isVoxelValid(voxel);
 }
 
 template <typename VoxelType>
@@ -222,15 +230,28 @@ inline FloatingPoint Interpolator<EsdfVoxel>::getVoxelDistance(
 }
 
 template <>
-inline float Interpolator<TsdfVoxel>::getVoxelWeight(const TsdfVoxel& voxel) const {
+inline float Interpolator<TsdfVoxel>::getVoxelWeight(
+    const TsdfVoxel& voxel) const {
   return voxel.weight;
 }
 
 template <>
-inline float Interpolator<EsdfVoxel>::getVoxelWeight(const EsdfVoxel& voxel) const {
+inline float Interpolator<EsdfVoxel>::getVoxelWeight(
+    const EsdfVoxel& voxel) const {
   return voxel.observed ? 1.0f : 0.0f;
 }
 
+template <>
+inline bool Interpolator<TsdfVoxel>::isVoxelValid(
+    const TsdfVoxel& voxel) const {
+  return voxel.weight > 0.0;
+}
+
+template <>
+inline bool Interpolator<EsdfVoxel>::isVoxelValid(
+    const EsdfVoxel& voxel) const {
+  return voxel.observed;
+}
 
 }  // namespace voxblox
 

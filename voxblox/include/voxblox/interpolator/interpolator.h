@@ -45,6 +45,9 @@ class Interpolator {
   // Allow this class to be templated on all kinds of voxels.
   FloatingPoint getVoxelDistance(const VoxelType& voxel) const;
   float getVoxelWeight(const VoxelType& voxel) const;
+  // Returns true if the voxel should be used in interpolation/gradient
+  // calculation. False otherwise.
+  bool isVoxelValid(const VoxelType& voxel) const;
 
   Layer<VoxelType>* layer_;
 };
