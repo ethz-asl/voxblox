@@ -18,17 +18,16 @@ class LabelTsdfIntegratorTest : public ::testing::Test {
     map_.reset(new LabelTsdfMap(map_config));
 
     LabelTsdfIntegrator::Config integrator_config;
-    integrator_.reset(new LabelTsdfIntegrator(integrator_config,
-                                              map_->getTsdfLayerPtr(),
-                                              map_->getLabelLayerPtr(),
-                                              map_->getHighestLabelPtr()));
-   }
+    integrator_.reset(new LabelTsdfIntegrator(
+        integrator_config, map_->getTsdfLayerPtr(), map_->getLabelLayerPtr(),
+        map_->getHighestLabelPtr()));
+  }
 
-   std::shared_ptr<LabelTsdfMap> map_;
-   std::shared_ptr<LabelTsdfIntegrator> integrator_;
+  std::shared_ptr<LabelTsdfMap> map_;
+  std::shared_ptr<LabelTsdfIntegrator> integrator_;
 
-   voxblox::test::LabelLayerTest label_layer_test_;
-   voxblox::test::TsdfLayerTest tsdf_layer_test_;
+  voxblox::test::LayerTest<LabelVoxel> label_layer_test_;
+  voxblox::test::LayerTest<TsdfVoxel> tsdf_layer_test_;
 };
 
 TEST_F(LabelTsdfIntegratorTest, IntegratePointCloud) {
@@ -44,8 +43,7 @@ TEST_F(LabelTsdfIntegratorTest, IntegratePointCloud) {
   // Build a 2x2m regular grid pointcloud.
   for (float x = 0.0f; x < 2.0f; x = x + 0.05f) {
     for (float z = 0.0f; z < 2.0f; z = z + 0.05f) {
-      frame_to_integrate.push_back(
-          transform.inverse() * Point(x, 1, z));
+      frame_to_integrate.push_back(transform.inverse() * Point(x, 1, z));
       // Assign a dummy color to the pointcloud to integrate.
       colors_to_integrate.push_back(Color());
       // Assign the same label to the whole pointcloud to integrate.
@@ -53,10 +51,8 @@ TEST_F(LabelTsdfIntegratorTest, IntegratePointCloud) {
     }
   }
 
-  integrator_->integratePointCloud(transform,
-                                   frame_to_integrate,
-                                   colors_to_integrate,
-                                   labels_to_integrate);
+  integrator_->integratePointCloud(transform, frame_to_integrate,
+                                   colors_to_integrate, labels_to_integrate);
 
   // Read tsdf and label layers ground truth from file
   const std::string tsdf_file =
@@ -99,15 +95,11 @@ TEST_F(LabelTsdfIntegratorTest, ReadLabelPointCloud) {
     }
   }
 
-  integrator_->integratePointCloud(transform,
-                                   frame_to_integrate,
-                                   colors_to_integrate,
-                                   labels_to_integrate);
-
+  integrator_->integratePointCloud(transform, frame_to_integrate,
+                                   colors_to_integrate, labels_to_integrate);
 
   Labels computed_labels;
-  integrator_->computePointCloudLabel(transform,
-                                      frame_to_compute_labels,
+  integrator_->computePointCloudLabel(transform, frame_to_compute_labels,
                                       &computed_labels);
 
   // The computed labels match exactly the ones integrated
@@ -143,14 +135,11 @@ TEST_F(LabelTsdfIntegratorTest, ComputeDominantLabelPointCloud) {
     }
   }
 
-  integrator_->integratePointCloud(transform,
-                                   frame_to_integrate,
-                                   colors_to_integrate,
-                                   labels_to_integrate);
+  integrator_->integratePointCloud(transform, frame_to_integrate,
+                                   colors_to_integrate, labels_to_integrate);
 
   Labels computed_labels;
-  integrator_->computePointCloudLabel(transform,
-                                      frame_to_compute_labels,
+  integrator_->computePointCloudLabel(transform, frame_to_compute_labels,
                                       &computed_labels);
 
   // The computed labels are all 1 since it's the dominant integrated label
@@ -163,10 +152,8 @@ TEST_F(LabelTsdfIntegratorTest, ComputeDominantLabelPointCloud) {
   // Generate the mesh.
   MeshLayer mesh_layer(map_->block_size());
   MeshLabelIntegrator::Config mesh_config;
-  MeshLabelIntegrator mesh_integrator(mesh_config,
-                                      map_->getTsdfLayerPtr(),
-                                      map_->getLabelLayerPtr(),
-                                      &mesh_layer);
+  MeshLabelIntegrator mesh_integrator(mesh_config, map_->getTsdfLayerPtr(),
+                                      map_->getLabelLayerPtr(), &mesh_layer);
 
   mesh_integrator.generateWholeMesh();
 
@@ -187,11 +174,10 @@ TEST_F(LabelTsdfIntegratorTest, ComputeUnseenLabelPointCloud) {
   // Build two 2x2m regular grid pointclouds.
   for (float x = 0.0f; x < 2.0f; x = x + 0.05f) {
     for (float z = 0.0f; z < 2.0f; z = z + 0.05f) {
-      frame_to_integrate.push_back(
-          transform.inverse() * Point(x, 1, z));
+      frame_to_integrate.push_back(transform.inverse() * Point(x, 1, z));
       // Read labels for a pointcloud for an unobserved area
-      frame_to_compute_labels.push_back(
-          transform.inverse() * Point(x + 2.5, 1, z));
+      frame_to_compute_labels.push_back(transform.inverse() *
+                                        Point(x + 2.5, 1, z));
 
       // Assign a dummy color to the pointcloud to integrate.
       colors_to_integrate.push_back(Color());
@@ -200,14 +186,11 @@ TEST_F(LabelTsdfIntegratorTest, ComputeUnseenLabelPointCloud) {
     }
   }
 
-  integrator_->integratePointCloud(transform,
-                                   frame_to_integrate,
-                                   colors_to_integrate,
-                                   labels_to_integrate);
+  integrator_->integratePointCloud(transform, frame_to_integrate,
+                                   colors_to_integrate, labels_to_integrate);
 
   Labels computed_labels;
-  integrator_->computePointCloudLabel(transform,
-                                      frame_to_compute_labels,
+  integrator_->computePointCloudLabel(transform, frame_to_compute_labels,
                                       &computed_labels);
 
   // The computed labels are all the unseen label 2.

@@ -46,7 +46,8 @@ class LayerTest {
         CompareBlocks(block_B, block_A);
       } else {
         ADD_FAILURE();
-        std::cout << std::endl << "Block at index [" << index_B.transpose()
+        std::cout << std::endl
+                  << "Block at index [" << index_B.transpose()
                   << "] in layer_B does not exists in layer_A" << std::endl;
       }
     }
@@ -71,31 +72,28 @@ class LayerTest {
     }
   }
 
-  virtual void CompareVoxel(const VoxelType& voxel_A,
-                            const VoxelType& voxel_B) const;
+  void CompareVoxel(const VoxelType& voxel_A, const VoxelType& voxel_B) const;
 
   static constexpr double kTolerance = 1e-10;
 };
 
-class LabelLayerTest : public LayerTest<LabelVoxel> {
-  virtual void CompareVoxel(const LabelVoxel& voxel_A,
-                            const LabelVoxel& voxel_B) const {
-    CHECK_EQ(voxel_A.label, voxel_B.label);
-    CHECK_EQ(voxel_A.label_confidence, voxel_B.label_confidence);
-  }
-};
+template <>
+void LayerTest<LabelVoxel>::CompareVoxel(const LabelVoxel& voxel_A,
+                                         const LabelVoxel& voxel_B) const {
+  CHECK_EQ(voxel_A.label, voxel_B.label);
+  CHECK_EQ(voxel_A.label_confidence, voxel_B.label_confidence);
+}
 
-class TsdfLayerTest : public LayerTest<TsdfVoxel> {
-  virtual void CompareVoxel(const TsdfVoxel& voxel_A,
-                            const TsdfVoxel& voxel_B) const {
-    CHECK_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
-    CHECK_NEAR(voxel_A.weight, voxel_B.weight, kTolerance);
-    CHECK_EQ(voxel_A.color.r, voxel_B.color.r);
-    CHECK_EQ(voxel_A.color.g, voxel_B.color.g);
-    CHECK_EQ(voxel_A.color.b, voxel_B.color.b);
-    CHECK_EQ(voxel_A.color.a, voxel_B.color.a);
-  }
-};
+template <>
+void LayerTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
+                                        const TsdfVoxel& voxel_B) const {
+  CHECK_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
+  CHECK_NEAR(voxel_A.weight, voxel_B.weight, kTolerance);
+  CHECK_EQ(voxel_A.color.r, voxel_B.color.r);
+  CHECK_EQ(voxel_A.color.g, voxel_B.color.g);
+  CHECK_EQ(voxel_A.color.b, voxel_B.color.b);
+  CHECK_EQ(voxel_A.color.a, voxel_B.color.a);
+}
 
 }  // namespace test
 }  // namespace voxblox
