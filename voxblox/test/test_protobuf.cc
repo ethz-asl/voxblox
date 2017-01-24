@@ -13,7 +13,7 @@
 using namespace voxblox;  // NOLINT
 
 template <typename VoxelType>
-class ProtobufTest : public testing::Test,
+class ProtobufTest : public ::testing::Test,
                      public voxblox::test::LayerTest<VoxelType> {
  protected:
   virtual void SetUp() {

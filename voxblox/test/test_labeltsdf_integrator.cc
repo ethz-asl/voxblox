@@ -9,7 +9,7 @@
 
 namespace voxblox {
 
-class LabelTsdfIntegratorTest : public testing::Test {
+class LabelTsdfIntegratorTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     LabelTsdfMap::Config map_config;
@@ -59,17 +59,20 @@ TEST_F(LabelTsdfIntegratorTest, IntegratePointCloud) {
                                    labels_to_integrate);
 
   // Read tsdf and label layers ground truth from file
-  const std::string tsdf_file = "test_data/labeltsdf_integrator_test_1.tsdf.voxblox";
+  const std::string tsdf_file =
+      "test_data/labeltsdf_integrator_test_1.tsdf.voxblox";
   Layer<TsdfVoxel>::Ptr tsdf_layer_from_file;
   io::LoadLayer<TsdfVoxel>(tsdf_file, &tsdf_layer_from_file);
 
   tsdf_layer_test_.CompareLayers(map_->getTsdfLayer(), *tsdf_layer_from_file);
 
-  const std::string label_file = "test_data/labeltsdf_integrator_test_1.label.voxblox";
+  const std::string label_file =
+      "test_data/labeltsdf_integrator_test_1.label.voxblox";
   Layer<LabelVoxel>::Ptr label_layer_from_file;
   io::LoadLayer<LabelVoxel>(label_file, &label_layer_from_file);
 
-  label_layer_test_.CompareLayers(map_->getLabelLayer(), *label_layer_from_file);
+  label_layer_test_.CompareLayers(map_->getLabelLayer(),
+                                  *label_layer_from_file);
 }
 
 TEST_F(LabelTsdfIntegratorTest, ReadLabelPointCloud) {
@@ -149,6 +152,7 @@ TEST_F(LabelTsdfIntegratorTest, ComputeDominantLabelPointCloud) {
   integrator_->computePointCloudLabel(transform,
                                       frame_to_compute_labels,
                                       &computed_labels);
+
   // The computed labels are all 1 since it's the dominant integrated label
   Labels expected_labels(computed_labels.size(), 1);
 
