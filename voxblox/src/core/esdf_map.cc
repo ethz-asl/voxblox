@@ -4,7 +4,7 @@ namespace voxblox {
 
 bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
                                     double* distance) const {
-  constexpr bool interpolate = false;
+  constexpr bool interpolate = true;
   FloatingPoint distance_fp;
   bool success = interpolator_.getDistance(position, &distance_fp, interpolate);
   if (success) {
@@ -16,26 +16,16 @@ bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
 bool EsdfMap::getDistanceAndGradientAtPosition(
     const Eigen::Vector3d& position, double* distance,
     Eigen::Vector3d* gradient) const {
-  bool success = false;
-
   FloatingPoint distance_fp;
-  constexpr bool interpolate = false;
-  success = interpolator_.getDistance(position, &distance_fp, interpolate);
-  if (!success) {
-    return false;
-  }
-
   Point gradient_fp = Point::Zero();
-  success = interpolator_.getGradient(position, &gradient_fp, interpolate);
 
-  // if (!success) {
-  //   return false;
-  // }
+  bool success = interpolator_.getAdaptiveDistanceAndGradient(
+      position, &distance_fp, &gradient_fp);
 
   *distance = static_cast<double>(distance_fp);
   *gradient = gradient_fp.cast<double>();
 
-  return true;
+  return success;
 }
 
 }  // namespace voxblox

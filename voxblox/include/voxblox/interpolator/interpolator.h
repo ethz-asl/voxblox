@@ -22,6 +22,13 @@ class Interpolator {
   bool getDistance(const Point& pos, FloatingPoint* distance,
                    bool interpolate = false) const;
 
+  // This tries to use whatever information is available to interpolate the
+  // distance and gradient -- if only one side is available, for instance,
+  // this will still estimate a 1-sided gradient. Should give the same results
+  // as getGradient() and getDistance() if all neighbors are filled.
+  bool getAdaptiveDistanceAndGradient(const Point& pos, FloatingPoint* distance,
+                                      Point* grad) const;
+
   // Without interpolation.
   bool getNearestDistanceAndWeight(const Point& pos, FloatingPoint* distance,
                                    float* weight) const;
@@ -34,7 +41,7 @@ class Interpolator {
   // Relates the interpolation distance of any arbitrary point inside a voxel
   // to the values of the voxel corners.
   void getQVector(const Point& voxel_pos, const Point& pos,
-                        InterpVector* q_vector) const;
+                  InterpVector* q_vector) const;
 
   bool getDistancesAndQVector(const BlockIndex& block_index,
                               const InterpIndexes& voxel_indexes,
