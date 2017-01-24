@@ -16,8 +16,8 @@ class LabelTsdfMap {
   typedef std::shared_ptr<LabelTsdfMap> Ptr;
 
   struct Config {
-    float voxel_size = 0.2f;
-    size_t voxels_per_side = 16.0f;
+    FloatingPoint voxel_size = 0.2;
+    size_t voxels_per_side = 16u;
   };
 
   explicit LabelTsdfMap(Config config)
