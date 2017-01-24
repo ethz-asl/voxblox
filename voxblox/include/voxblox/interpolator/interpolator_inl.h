@@ -88,27 +88,27 @@ bool Interpolator<VoxelType>::setIndexes(const Point& pos,
 }
 
 template <typename VoxelType>
-void Interpolator<VoxelType>::getWeightsVector(
-    const Point& voxel_pos, const Point& pos,
-    InterpVector* weights_vector) const {
-  CHECK_NOTNULL(weights_vector);
+void Interpolator<VoxelType>::getQVector(const Point& voxel_pos,
+                                         const Point& pos,
+                                         InterpVector* q_vector) const {
+  CHECK_NOTNULL(q_vector);
 
   Point voxel_offset = pos - voxel_pos;
 
   CHECK((voxel_offset.array() >= 0).all());  // NOLINT
 
-  *weights_vector << 1, voxel_offset[0], voxel_offset[1], voxel_offset[2],
+  *q_vector << 1, voxel_offset[0], voxel_offset[1], voxel_offset[2],
       voxel_offset[0] * voxel_offset[1], voxel_offset[1] * voxel_offset[2],
       voxel_offset[2] * voxel_offset[0],
       voxel_offset[0] * voxel_offset[1] * voxel_offset[2];
 }
 
 template <typename VoxelType>
-bool Interpolator<VoxelType>::getDistancesAndWeights(
+bool Interpolator<VoxelType>::getDistancesAndQVector(
     const BlockIndex& block_index, const InterpIndexes& voxel_indexes,
-    const Point& pos, InterpVector* distances,
-    InterpVector* weights_vector) const {
+    const Point& pos, InterpVector* distances, InterpVector* q_vector) const {
   CHECK_NOTNULL(distances);
+  CHECK_NOTNULL(q_vector);
 
   // for each voxel index
   bool success = true;
@@ -136,8 +136,8 @@ bool Interpolator<VoxelType>::getDistancesAndWeights(
     }
     // use bottom left corner voxel to compute weights vector
     if (i == 0) {
-      getWeightsVector(block_ptr->computeCoordinatesFromVoxelIndex(voxel_index),
-                       pos, weights_vector);
+      getQVector(block_ptr->computeCoordinatesFromVoxelIndex(voxel_index), pos,
+                 q_vector);
     }
 
     const VoxelType& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
@@ -162,22 +162,25 @@ bool Interpolator<VoxelType>::getInterpDistance(const Point& pos,
 
   // get distances of 8 surrounding voxels and weights vector
   InterpVector distances;
-  InterpVector weights_vector;
-  if (!getDistancesAndWeights(block_index, voxel_indexes, pos, &distances,
-                              &weights_vector)) {
+  InterpVector q_vector;
+  if (!getDistancesAndQVector(block_index, voxel_indexes, pos, &distances,
+                              &q_vector)) {
     return false;
   }
 
   // table for tri-linear interpolation (http://spie.org/samples/PM159.pdf)
   InterpTable interp_table;
-  interp_table << 1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 1, 0,
-      0, 0, 0, 0, -1, 1, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0, -1, 0, 1, 0,  // NOLINT
-      1, -1, -1, 1, 0, 0, 0, 0,                                       // NOLINT
-      1, -1, 0, 0, -1, 1, 0, 0,                                       // NOLINT
-      -1, 1, 1, -1, 1, -1, -1, 1;                                     // NOLINT
+  interp_table << 1, 0, 0, 0, 0, 0, 0, 0,  // NOLINT
+      -1, 0, 0, 0, 1, 0, 0, 0,             // NOLINT
+      -1, 0, 1, 0, 0, 0, 0, 0,             // NOLINT
+      -1, 1, 0, 0, 0, 0, 0, 0,             // NOLINT
+      1, 0, -1, 0, -1, 0, 1, 0,            // NOLINT
+      1, -1, -1, 1, 0, 0, 0, 0,            // NOLINT
+      1, -1, 0, 0, -1, 1, 0, 0,            // NOLINT
+      -1, 1, 1, -1, 1, -1, -1, 1;          // NOLINT
 
   // interpolate
-  *distance = weights_vector * (interp_table * distances.transpose());
+  *distance = q_vector * (interp_table * distances.transpose());
   return true;
 }
 

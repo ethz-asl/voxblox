@@ -30,13 +30,16 @@ class Interpolator {
   bool setIndexes(const Point& pos, BlockIndex* block_index,
                   InterpIndexes* voxel_indexes) const;
 
-  void getWeightsVector(const Point& voxel_pos, const Point& pos,
-                        InterpVector* weights_vector) const;
+  // Q vector from http://spie.org/samples/PM159.pdf
+  // Relates the interpolation distance of any arbitrary point inside a voxel
+  // to the values of the voxel corners.
+  void getQVector(const Point& voxel_pos, const Point& pos,
+                        InterpVector* q_vector) const;
 
-  bool getDistancesAndWeights(const BlockIndex& block_index,
+  bool getDistancesAndQVector(const BlockIndex& block_index,
                               const InterpIndexes& voxel_indexes,
                               const Point& pos, InterpVector* distances,
-                              InterpVector* weights_vector) const;
+                              InterpVector* q_vector) const;
 
   bool getInterpDistance(const Point& pos, FloatingPoint* distance) const;
 
