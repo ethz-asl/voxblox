@@ -16,7 +16,7 @@ class EsdfMap {
   typedef std::shared_ptr<EsdfMap> Ptr;
 
   struct Config {
-    float esdf_voxel_size = 0.2;
+    FloatingPoint esdf_voxel_size = 0.2;
     size_t esdf_voxels_per_side = 16u;
   };
 
