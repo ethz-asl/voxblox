@@ -104,6 +104,7 @@ void Block<EsdfVoxel>::deserializeFromIntegers(
 // Serialization functions:
 template <>
 void Block<TsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
+  CHECK_NOTNULL(data);
   constexpr size_t kNumDataPacketsPerVoxel = 3u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);
@@ -111,7 +112,6 @@ void Block<TsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
     const TsdfVoxel& voxel = voxels_[voxel_idx];
 
     // TODO(mfehr, helenol): find a better way to do this!
-
     const uint32_t* bytes_1_ptr =
         reinterpret_cast<const uint32_t*>(&voxel.distance);
     data->push_back(*bytes_1_ptr);
@@ -131,6 +131,7 @@ void Block<TsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
 template <>
 void Block<OccupancyVoxel>::serializeToIntegers(
     std::vector<uint32_t>* data) const {
+  CHECK_NOTNULL(data);
   constexpr size_t kNumDataPacketsPerVoxel = 2u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);
@@ -147,6 +148,7 @@ void Block<OccupancyVoxel>::serializeToIntegers(
 
 template <>
 void Block<EsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
+  CHECK_NOTNULL(data);
   constexpr size_t kNumDataPacketsPerVoxel = 2u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);

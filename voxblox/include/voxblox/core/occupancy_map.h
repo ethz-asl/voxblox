@@ -16,7 +16,7 @@ class OccupancyMap {
   typedef std::shared_ptr<OccupancyMap> Ptr;
 
   struct Config {
-    float occupancy_voxel_size = 0.2;
+    FloatingPoint occupancy_voxel_size = 0.2;
     size_t occupancy_voxels_per_side = 16u;
   };
 
