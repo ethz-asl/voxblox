@@ -59,13 +59,13 @@ TEST_F(LabelTsdfIntegratorTest, IntegratePointCloud) {
                                    labels_to_integrate);
 
   // Read tsdf and label layers ground truth from file
-  const std::string tsdf_file = "labeltsdf_integrator_test_1.tsdf.voxblox";
+  const std::string tsdf_file = "test_data/labeltsdf_integrator_test_1.tsdf.voxblox";
   Layer<TsdfVoxel>::Ptr tsdf_layer_from_file;
   io::LoadLayer<TsdfVoxel>(tsdf_file, &tsdf_layer_from_file);
 
   tsdf_layer_test_.CompareLayers(map_->getTsdfLayer(), *tsdf_layer_from_file);
 
-  const std::string label_file = "labeltsdf_integrator_test_1.label.voxblox";
+  const std::string label_file = "test_data/labeltsdf_integrator_test_1.label.voxblox";
   Layer<LabelVoxel>::Ptr label_layer_from_file;
   io::LoadLayer<LabelVoxel>(label_file, &label_layer_from_file);
 
