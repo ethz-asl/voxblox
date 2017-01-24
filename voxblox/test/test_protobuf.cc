@@ -21,9 +21,6 @@ class ProtobufTest : public ::testing::Test,
     SetUpLayer();
   }
 
-  virtual void CompareVoxel(const VoxelType& voxel_A,
-                            const VoxelType& voxel_B) const;
-
   void SetUpLayer() const;
 
   typename Layer<VoxelType>::Ptr layer_;
@@ -33,17 +30,6 @@ class ProtobufTest : public ::testing::Test,
 
   static constexpr size_t kBlockVolumeDiameter = 10u;
 };
-
-template <>
-void ProtobufTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
-                                           const TsdfVoxel& voxel_B) const {
-  CHECK_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
-  CHECK_NEAR(voxel_A.weight, voxel_B.weight, kTolerance);
-  CHECK_EQ(voxel_A.color.r, voxel_B.color.r);
-  CHECK_EQ(voxel_A.color.g, voxel_B.color.g);
-  CHECK_EQ(voxel_A.color.b, voxel_B.color.b);
-  CHECK_EQ(voxel_A.color.a, voxel_B.color.a);
-}
 
 template <>
 void ProtobufTest<TsdfVoxel>::SetUpLayer() const {
