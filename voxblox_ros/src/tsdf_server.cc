@@ -60,7 +60,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   int voxels_per_side = config.tsdf_voxels_per_side;
   nh_private_.param("tsdf_voxel_size", voxel_size, voxel_size);
   nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
-  config.tsdf_voxel_size = static_cast<float>(voxel_size);
+  config.tsdf_voxel_size = static_cast<FloatingPoint>(voxel_size);
   config.tsdf_voxels_per_side = voxels_per_side;
   tsdf_map_.reset(new TsdfMap(config));
 
