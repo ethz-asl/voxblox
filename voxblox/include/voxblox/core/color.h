@@ -84,7 +84,7 @@ inline Color grayColorMap(double h) {
 inline Color randomColor() {
   Color color;
 
-  color.a = 2;
+  color.a = 255;
 
   color.r = rand() % 256;
   color.b = rand() % 256;
