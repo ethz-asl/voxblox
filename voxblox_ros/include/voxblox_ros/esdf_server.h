@@ -3,6 +3,7 @@
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox_msgs/Layer.h>
 
 #include "voxblox_ros/tsdf_server.h"
 
@@ -21,10 +22,18 @@ class EsdfServer : public TsdfServer {
 
   virtual void updateMeshEvent(const ros::TimerEvent& event);
 
+  void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
+
  protected:
   // Publish markers for visualization.
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher esdf_slice_pub_;
+
+  // Publish the complete map for other nodes to consume.
+  ros::Publisher esdf_map_pub_;
+
+  // Subscriber to subscribe to another node generating the map.
+  ros::Subscriber esdf_map_sub_;
 
   // Services.
   ros::ServiceServer generate_esdf_srv_;

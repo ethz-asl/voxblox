@@ -1,3 +1,5 @@
+#include <voxblox_ros/conversions.h>
+
 #include "voxblox_ros/esdf_server.h"
 
 namespace voxblox {
@@ -10,6 +12,12 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                                                               1, true);
   esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "esdf_slice", 1, true);
+
+  esdf_map_pub_ =
+      nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
+
+  esdf_map_sub_ = nh_private_.subscribe("esdf_map_in", 1,
+                                        &EsdfServer::esdfMapCallback, this);
 
   EsdfMap::Config esdf_config;
 
@@ -79,12 +87,35 @@ bool EsdfServer::generateEsdfCallback(
 }
 
 void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
-  // Also update the ESDF now.
-  const bool clear_updated_flag_esdf = false;
-  esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+  // Also update the ESDF now, if there's any blocks in the TSDF.
+  if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+    const bool clear_updated_flag_esdf = false;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+  }
   publishAllUpdatedEsdfVoxels();
 
+  if (esdf_map_pub_.getNumSubscribers() > 0) {
+    // TODO(helenol): make param!
+    const bool only_updated = false;
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<EsdfVoxel>(esdf_map_->getEsdfLayer(), only_updated,
+                                   &layer_msg);
+    esdf_map_pub_.publish(layer_msg);
+  }
+
   TsdfServer::updateMeshEvent(event);
+}
+
+void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  bool success =
+      deserializeMsgToLayer<EsdfVoxel>(layer_msg, esdf_map_->getEsdfLayerPtr());
+
+  if (!success) {
+    ROS_ERROR_THROTTLE(10, "Got an invalid ESDF map message!");
+  } else {
+    publishAllUpdatedEsdfVoxels();
+    publishSlices();
+  }
 }
 
 }  // namespace voxblox
