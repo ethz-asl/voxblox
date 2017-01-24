@@ -111,7 +111,7 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
       deserializeMsgToLayer<EsdfVoxel>(layer_msg, esdf_map_->getEsdfLayerPtr());
 
   if (!success) {
-    ROS_WARN_THROTTLE(10, "Got an invalid ESDF map message!");
+    ROS_ERROR_THROTTLE(10, "Got an invalid ESDF map message!");
   } else {
     publishAllUpdatedEsdfVoxels();
     publishSlices();
