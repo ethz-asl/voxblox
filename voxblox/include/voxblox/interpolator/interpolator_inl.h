@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_INTERPOLATOR_INTERPOLATOR_INL_H_
 #define VOXBLOX_INTERPOLATOR_INTERPOLATOR_INL_H_
 
+#include <iostream>
+
 namespace voxblox {
 
 template <typename VoxelType>
@@ -47,6 +49,73 @@ bool Interpolator<VoxelType>::getGradient(const Point& pos, Point* grad,
   // This is central difference, so it's 2x voxel size between
   // measurements.
   *grad /= (2 * block_ptr->voxel_size());
+  return true;
+}
+
+template <typename VoxelType>
+bool Interpolator<VoxelType>::getAdaptiveDistanceAndGradient(
+    const Point& pos, FloatingPoint* distance, Point* grad) const {
+  // TODO(helenol): try to see how to minimize number of lookups for the
+  // gradient and interpolation calculations...
+
+  // Get the nearest neighbor distance first, we need this for the gradient
+  // calculations anyway.
+  FloatingPoint nearest_neighbor_distance = 0.0f;
+  bool interpolate = false;
+  if (!getDistance(pos, &nearest_neighbor_distance, interpolate)) {
+    // Then there is no data here at all.
+    return false;
+  }
+
+  // Then try to get the interpolated distance.
+  interpolate = true;
+  bool has_interpolated_distance = getDistance(pos, distance, interpolate);
+
+  // Now try to estimate the gradient. Same general procedure as getGradient()
+  // above, but also allow finite difference methods other than central
+  // difference (left difference, right difference).
+  typename Layer<VoxelType>::BlockType::ConstPtr block_ptr =
+      layer_->getBlockPtrByCoordinates(pos);
+  if (block_ptr == nullptr) {
+    return false;
+  }
+
+  Point gradient = Point::Zero();
+  interpolate = false;
+  for (unsigned int i = 0u; i < 3u; ++i) {
+    // First check if we can get both sides for central difference.
+    Point offset = Point::Zero();
+    offset(i) = block_ptr->voxel_size();
+    FloatingPoint left_distance = 0.0f, right_distance = 0.0f;
+    bool left_valid = getDistance(pos - offset, &left_distance, interpolate);
+    bool right_valid = getDistance(pos + offset, &right_distance, interpolate);
+
+    if (left_valid && right_valid) {
+      gradient(i) =
+          (right_distance - left_distance) / (2.0f * block_ptr->voxel_size());
+    } else if (left_valid) {
+      gradient(i) =
+          (nearest_neighbor_distance - left_distance) / block_ptr->voxel_size();
+    } else if (right_valid) {
+      gradient(i) = (right_distance - nearest_neighbor_distance) /
+                    block_ptr->voxel_size();
+    } else {
+      // This has no neighbors on any side in this dimension :(
+      return false;
+    }
+  }
+
+  // If we weren't able to get the original interpolated distance value, then
+  // use the computed gradient to estimate what the value should be.
+  if (!has_interpolated_distance) {
+    VoxelIndex voxel_index = block_ptr->computeVoxelIndexFromCoordinates(pos);
+    Point voxel_pos = block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
+
+    Point voxel_offset = pos - voxel_pos;
+    *distance = nearest_neighbor_distance + voxel_offset.dot(gradient);
+  }
+
+  *grad = gradient;
   return true;
 }
 
