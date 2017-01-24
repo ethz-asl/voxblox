@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <vector>
 
 #include <Eigen/Core>
@@ -55,7 +56,16 @@ class MeshLabelIntegrator : public MeshIntegrator {
   Color getColorFromLabel(const Label& label) {
     // TODO(grinvalm) use a color palette that
     // sequentially gives distant colors.
-    return rainbowColorMap(label / 1000.0);
+    Color color;
+    auto label_color_map_it = label_color_map_.find(label);
+
+    if (label_color_map_it != label_color_map_.end()) {
+      color = label_color_map_it->second;
+    } else {
+      color = randomColor();
+      label_color_map_.insert(std::pair<Label, Color>(label, color));
+    }
+    return color;
   }
 
 
@@ -99,6 +109,8 @@ class MeshLabelIntegrator : public MeshIntegrator {
 
  protected:
   Layer<LabelVoxel>* label_layer_;
+
+  std::map<Label, Color> label_color_map_;
 };
 
 }  // namespace voxblox
