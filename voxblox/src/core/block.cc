@@ -104,6 +104,7 @@ void Block<EsdfVoxel>::deserializeFromIntegers(
 // Serialization functions:
 template <>
 void Block<TsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
+  CHECK_NOTNULL(data);
   constexpr size_t kNumDataPacketsPerVoxel = 3u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);
@@ -131,6 +132,7 @@ void Block<TsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
 template <>
 void Block<OccupancyVoxel>::serializeToIntegers(
     std::vector<uint32_t>* data) const {
+  CHECK_NOTNULL(data);
   constexpr size_t kNumDataPacketsPerVoxel = 2u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);
