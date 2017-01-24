@@ -16,7 +16,7 @@ class TsdfMap {
   typedef std::shared_ptr<TsdfMap> Ptr;
 
   struct Config {
-    float tsdf_voxel_size = 0.2;
+    FloatingPoint tsdf_voxel_size = 0.2;
     size_t tsdf_voxels_per_side = 16u;
   };
 
