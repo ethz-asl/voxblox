@@ -296,15 +296,15 @@ bool TsdfServer::generateMeshCallback(
 }
 
 bool TsdfServer::saveMapCallback(
-    voxblox_ros::FilePath::Request& request,
-    voxblox_ros::FilePath::Response& response) {  // NOLINT
+    voxblox_msgs::FilePath::Request& request,
+    voxblox_msgs::FilePath::Response& response) {  // NOLINT
   // Will only save TSDF layer for now.
   return io::SaveLayer(tsdf_map_->getTsdfLayer(), request.file_path);
 }
 
 bool TsdfServer::loadMapCallback(
-    voxblox_ros::FilePath::Request& request,
-    voxblox_ros::FilePath::Response& response) {  // NOLINT
+    voxblox_msgs::FilePath::Request& request,
+    voxblox_msgs::FilePath::Response& response) {  // NOLINT
   // Will only load TSDF layer for now.
   return io::LoadBlocksFromFile(
       request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
