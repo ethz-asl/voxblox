@@ -32,7 +32,7 @@ typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
 struct Color;
-typedef size_t Label;
+typedef uint32_t Label;
 
 // Pointcloud types for external interface.
 typedef std::vector<Point> Pointcloud;
