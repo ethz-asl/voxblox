@@ -10,6 +10,8 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 ############
 # PROTOBUF #
 ############
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
