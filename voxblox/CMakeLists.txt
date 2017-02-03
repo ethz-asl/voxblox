@@ -56,4 +56,5 @@ target_link_libraries(test_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
 ##########
 cs_install()
 cs_export(INCLUDE_DIRS include ${CMAKE_CURRENT_BINARY_DIR}
-          CFG_EXTRAS voxblox-extras.cmake)
+          CFG_EXTRAS voxblox-extras.cmake
+          LIBRARIES ${PROTOBUF_LIBRARIES})
