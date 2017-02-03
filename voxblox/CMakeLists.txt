@@ -7,14 +7,6 @@ catkin_simple(ALL_DEPS_REQUIRED)
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
-message("-- Protobuf libraries = " ${PROTOBUF_LIBRARIES})
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARIES})
-else()
-  set(ADDITIONAL_LIBRARIES "")
-endif()
-
-
 ############
 # PROTOBUF #
 ############
@@ -24,6 +16,14 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
+
+message("-- Protobuf libraries = " ${PROTOBUF_LIBRARIES})
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARIES})
+else()
+  set(ADDITIONAL_LIBRARIES "")
+endif()
+
 
 #############
 # LIBRARIES #
