@@ -17,7 +17,7 @@ set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
 
-message("-- Protobuf libraries = " ${PROTOBUF_LIBRARIES})
+# Horrible hack to fix mac mini build.
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARIES})
 else()
@@ -66,4 +66,5 @@ target_link_libraries(test_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
 ##########
 cs_install()
 cs_export(INCLUDE_DIRS include ${CMAKE_CURRENT_BINARY_DIR}
-          CFG_EXTRAS voxblox-extras.cmake)
+          CFG_EXTRAS voxblox-extras.cmake
+          LIBRARIES ${ADDITIONAL_LIBRARIES})
