@@ -10,10 +10,10 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 ############
 # PROTOBUF #
 ############
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
-PROTOBUF_CATKIN_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
 
 #############
 # LIBRARIES #
@@ -27,6 +27,7 @@ cs_add_library(${PROJECT_NAME}
   src/utils/timing.cc
   ${PROTO_SRCS}
 )
+target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 
 ############
 # BINARIES #
