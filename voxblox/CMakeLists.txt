@@ -18,6 +18,8 @@ endif()
 ############
 # PROTOBUF #
 ############
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
@@ -64,5 +66,4 @@ target_link_libraries(test_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
 ##########
 cs_install()
 cs_export(INCLUDE_DIRS include ${CMAKE_CURRENT_BINARY_DIR}
-          CFG_EXTRAS voxblox-extras.cmake
-          LIBRARIES ${PROTOBUF_LIBRARIES})
+          CFG_EXTRAS voxblox-extras.cmake)
