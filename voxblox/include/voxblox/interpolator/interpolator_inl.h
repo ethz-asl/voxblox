@@ -81,27 +81,37 @@ bool Interpolator<VoxelType>::getAdaptiveDistanceAndGradient(
   }
 
   Point gradient = Point::Zero();
-  interpolate = false;
-  for (unsigned int i = 0u; i < 3u; ++i) {
-    // First check if we can get both sides for central difference.
-    Point offset = Point::Zero();
-    offset(i) = block_ptr->voxel_size();
-    FloatingPoint left_distance = 0.0f, right_distance = 0.0f;
-    bool left_valid = getDistance(pos - offset, &left_distance, interpolate);
-    bool right_valid = getDistance(pos + offset, &right_distance, interpolate);
 
-    if (left_valid && right_valid) {
-      gradient(i) =
-          (right_distance - left_distance) / (2.0f * block_ptr->voxel_size());
-    } else if (left_valid) {
-      gradient(i) =
-          (nearest_neighbor_distance - left_distance) / block_ptr->voxel_size();
-    } else if (right_valid) {
-      gradient(i) = (right_distance - nearest_neighbor_distance) /
-                    block_ptr->voxel_size();
-    } else {
-      // This has no neighbors on any side in this dimension :(
-      return false;
+  // Try to get the full gradient if possible.
+  bool has_interpolated_gradient = false;
+  if (has_interpolated_distance) {
+    has_interpolated_gradient = getGradient(pos, &gradient, interpolate);
+  }
+
+  if (!has_interpolated_gradient) {
+    // Otherwise fall back to this...
+    interpolate = false;
+    for (unsigned int i = 0u; i < 3u; ++i) {
+      // First check if we can get both sides for central difference.
+      Point offset = Point::Zero();
+      offset(i) = block_ptr->voxel_size();
+      FloatingPoint left_distance = 0.0f, right_distance = 0.0f;
+      bool left_valid = getDistance(pos - offset, &left_distance, interpolate);
+      bool right_valid = getDistance(pos + offset, &right_distance, interpolate);
+
+      if (left_valid && right_valid) {
+        gradient(i) =
+            (right_distance - left_distance) / (2.0f * block_ptr->voxel_size());
+      } else if (left_valid) {
+        gradient(i) =
+            (nearest_neighbor_distance - left_distance) / block_ptr->voxel_size();
+      } else if (right_valid) {
+        gradient(i) = (right_distance - nearest_neighbor_distance) /
+                      block_ptr->voxel_size();
+      } else {
+        // This has no neighbors on any side in this dimension :(
+        return false;
+      }
     }
   }
 

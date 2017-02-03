@@ -28,4 +28,15 @@ bool EsdfMap::getDistanceAndGradientAtPosition(
   return success;
 }
 
+bool EsdfMap::isObserved(const Eigen::Vector3d& position) const {
+  // Get the block.
+  Block<EsdfVoxel>::Ptr block_ptr =
+      esdf_layer_->getBlockPtrByCoordinates(position);
+  if (block_ptr) {
+    const EsdfVoxel& voxel = block_ptr->getVoxelByCoordinates(position);
+    return voxel.observed;
+  }
+  return false;
+}
+
 }  // namespace voxblox
