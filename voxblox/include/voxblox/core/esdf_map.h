@@ -34,6 +34,7 @@ class EsdfMap {
   const Layer<EsdfVoxel>& getEsdfLayer() const { return *esdf_layer_; }
 
   FloatingPoint block_size() const { return block_size_; }
+  FloatingPoint voxel_size() const { return esdf_layer_->voxel_size(); }
 
   // Specific accessor functions for esdf maps.
   // Returns true if the point exists in the map AND is observed.
@@ -43,6 +44,8 @@ class EsdfMap {
   bool getDistanceAndGradientAtPosition(const Eigen::Vector3d& position,
                                         double* distance,
                                         Eigen::Vector3d* gradient) const;
+
+  bool isObserved(const Eigen::Vector3d& position) const;
 
  protected:
   FloatingPoint block_size_;
