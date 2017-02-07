@@ -22,6 +22,8 @@ class Interpolator {
   bool getDistance(const Point& pos, FloatingPoint* distance,
                    bool interpolate = false) const;
 
+  bool getVoxel(const Point& pos, VoxelType* voxel, bool interpolate = false) const;
+
   // This tries to use whatever information is available to interpolate the
   // distance and gradient -- if only one side is available, for instance,
   // this will still estimate a 1-sided gradient. Should give the same results
@@ -51,6 +53,10 @@ class Interpolator {
   bool getInterpDistance(const Point& pos, FloatingPoint* distance) const;
 
   bool getNearestDistance(const Point& pos, FloatingPoint* distance) const;
+
+  bool getInterpVoxel(const Point& pos, VoxelType* voxel) const;
+
+  bool getNearestVoxel(const Point& pos, VoxelType* voxel) const;
 
   // Allow this class to be templated on all kinds of voxels.
   FloatingPoint getVoxelDistance(const VoxelType& voxel) const;
