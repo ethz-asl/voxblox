@@ -299,7 +299,7 @@ class MeshIntegrator {
     mesh->normals.clear();
     mesh->normals.resize(mesh->indices.size(), Point::Zero());
 
-    Interpolator interpolator(tsdf_layer_);
+    Interpolator<TsdfVoxel> interpolator(tsdf_layer_);
 
     Point grad;
     for (size_t i = 0; i < mesh->vertices.size(); i++) {

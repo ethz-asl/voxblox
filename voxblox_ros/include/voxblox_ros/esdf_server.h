@@ -24,6 +24,8 @@ class EsdfServer : public TsdfServer {
 
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
+  std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
+
  protected:
   // Publish markers for visualization.
   ros::Publisher esdf_pointcloud_pub_;

@@ -70,7 +70,7 @@ class VoxbloxEvaluator {
   pcl::PointCloud<pcl::PointXYZRGB> gt_ptcloud_;
 
   // Interpolator to get the distance at the exact point in the GT.
-  Interpolator::Ptr interpolator_;
+  Interpolator<TsdfVoxel>::Ptr interpolator_;
 
   // Mesh visualization.
   std::shared_ptr<MeshLayer> mesh_layer_;
@@ -120,7 +120,7 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
       << "Could not load pointcloud ground truth.";
 
   // Initialize the interpolator.
-  interpolator_.reset(new Interpolator(tsdf_layer_.get()));
+  interpolator_.reset(new Interpolator<TsdfVoxel>(tsdf_layer_.get()));
 
   // If doing visualizations, initialize the publishers.
   if (visualize_) {
