@@ -5,19 +5,17 @@
 #include <vector>
 
 #include <glog/logging.h>
-#include <Eigen/Core>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
-#include "voxblox/integrator/integrator_utils.h"
-#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
 class MergeIntegrator {
  public:
-  MergeIntegrator() {}
+  // all methods are static so the class does not need a constructor
+  MergeIntegrator() = delete;
 
   template <typename VoxelType>
   static void mergeVoxelAIntoVoxelB(const VoxelType& voxel_A,
@@ -25,43 +23,12 @@ class MergeIntegrator {
     LOG(FATAL) << "VOXEL MERGING NOT IMPLEMENTED FOR CURRENT VOXEL TYPE";
   }
 
-  static void mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A,
-                                    TsdfVoxel* voxel_B) {
-    voxel_B->distance = (voxel_A.distance * voxel_A.weight +
-                         voxel_B->distance * voxel_B->weight) /
-                        (voxel_A.weight + voxel_B->weight);
-
-    voxel_B->color = Color::blendTwoColors(voxel_A.color, voxel_A.weight,
-                                           voxel_B->color, voxel_B->weight);
-
-    voxel_B->weight += voxel_A.weight;
-  }
-
-  static void mergeVoxelAIntoVoxelB(const OccupancyVoxel& voxel_A,
-                                    OccupancyVoxel* voxel_B) {
-    voxel_B->probability_log += voxel_A.probability_log;
-    voxel_B->observed = voxel_B->observed || voxel_A.observed;
-  }
-
-  static void mergeVoxelAIntoVoxelB(const LabelVoxel& voxel_A,
-                                    LabelVoxel* voxel_B) {
-    if (voxel_A.label == voxel_B->label) {
-      voxel_B->label_confidence += voxel_A.label_confidence;
-    } else if (voxel_A.label_confidence > voxel_B->label_confidence) {
-      voxel_B->label = voxel_A.label;
-      voxel_B->label_confidence =
-          voxel_A.label_confidence - voxel_B->label_confidence;
-    } else {
-      voxel_B->label_confidence -= voxel_A.label_confidence;
-    }
-  }
-
   template <typename VoxelType>
   static void MergeBlockAIntoBlockB(const Block<VoxelType>& block_A,
                                     Block<VoxelType>* block_B) {
-    DCHECK_EQ(block_A.voxel_size(), block_B->voxel_size());
-    DCHECK_EQ(block_A.voxels_per_side(), block_B->voxels_per_side());
-    DCHECK_NOTNULL(block_B);
+    CHECK_EQ(block_A.voxel_size(), block_B->voxel_size());
+    CHECK_EQ(block_A.voxels_per_side(), block_B->voxels_per_side());
+    CHECK_NOTNULL(block_B);
 
     if (!block_A.has_data()) {
       return;
@@ -71,13 +38,14 @@ class MergeIntegrator {
 
       for (IndexElement voxel_idx = 0; voxel_idx < block_B->num_voxels();
            ++voxel_idx) {
-        mergeVoxelAIntoVoxelB(block_A.getVoxelByLinearIndex(voxel_idx),
-                              &(block_B->getVoxelByLinearIndex(voxel_idx)));
+        mergeVoxelAIntoVoxelB<VoxelType>(
+            block_A.getVoxelByLinearIndex(voxel_idx),
+            &(block_B->getVoxelByLinearIndex(voxel_idx)));
       }
     }
   }
 
-  //Merges layers, when the voxel or block size differs resampling occurs.
+  // Merges layers, when the voxel or block size differs resampling occurs.
   template <typename VoxelType>
   static void MergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
                                     Layer<VoxelType>* layer_B) {
@@ -106,7 +74,7 @@ class MergeIntegrator {
         block_B_ptr = layer_B->allocateBlockPtrByIndex(block_idx);
       }
 
-      MergeBlockAIntoBlockB(*block_A_ptr, &(*block_B_ptr));
+      MergeBlockAIntoBlockB(*block_A_ptr, block_B_ptr.get());
     }
   }
 
@@ -128,7 +96,7 @@ class MergeIntegrator {
   template <typename VoxelType>
   static void resampleLayer(const Layer<VoxelType>& layer_in,
                             Layer<VoxelType>* layer_out) {
-    DCHECK_NOTNULL(layer_out);
+    CHECK_NOTNULL(layer_out);
     transformLayer(layer_in, Transformation(), layer_out);
   }
 
@@ -139,12 +107,12 @@ class MergeIntegrator {
   static void transformLayer(const Layer<VoxelType>& layer_in,
                              const Transformation& T_in_out,
                              Layer<VoxelType>* layer_out) {
-    DCHECK_NOTNULL(layer_out);
+    CHECK_NOTNULL(layer_out);
 
     // first mark all the blocks in the output layer that may be filled by the
     // input layer (we are conservative here approximating the input blocks as
     // spheres of diameter sqrt(3)*block_size)
-    std::set<BlockIndex, indexLess> block_idx_set;
+    IndexSet block_idx_set;
 
     BlockIndexList block_idx_list_in;
     layer_in.getAllAllocatedBlocks(&block_idx_list_in);
@@ -156,9 +124,8 @@ class MergeIntegrator {
       // forwards transform of center
       center = T_in_out * center;
 
-      // furtherest point that could possibly be inside a rotated input
-      // block
-      FloatingPoint offset = 1.73205080757 * layer_in.block_size();
+      // furthest point that could possibly be inside a rotated input block
+      FloatingPoint offset = kUnitCubeDiagonalLength * layer_in.block_size();
 
       // add index of all blocks in range to set
       for (FloatingPoint x = center.x() - offset; x < center.x() + offset;
@@ -211,14 +178,45 @@ class MergeIntegrator {
   }
 
  private:
-  // allows placing BlockIndexs into a map/set
-  struct indexLess {
-    bool operator()(const BlockIndex& a, const BlockIndex& b) const {
-      return std::lexicographical_compare(a.data(), a.data() + a.size(),
-                                          b.data(), b.data() + b.size());
-    }
-  };
+  static constexpr FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
 };
+
+template <>
+void MergeIntegrator::mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A,
+                                            TsdfVoxel* voxel_B) {
+  float combined_weight = voxel_A.weight + voxel_B->weight;
+  if (combined_weight > 0) {
+    voxel_B->distance = (voxel_A.distance * voxel_A.weight +
+                         voxel_B->distance * voxel_B->weight) /
+                        combined_weight;
+
+    voxel_B->color = Color::blendTwoColors(voxel_A.color, voxel_A.weight,
+                                           voxel_B->color, voxel_B->weight);
+
+    voxel_B->weight = combined_weight;
+  }
+}
+
+template <>
+void MergeIntegrator::mergeVoxelAIntoVoxelB(const OccupancyVoxel& voxel_A,
+                                            OccupancyVoxel* voxel_B) {
+  voxel_B->probability_log += voxel_A.probability_log;
+  voxel_B->observed = voxel_B->observed || voxel_A.observed;
+}
+
+template <>
+void MergeIntegrator::mergeVoxelAIntoVoxelB(const LabelVoxel& voxel_A,
+                                            LabelVoxel* voxel_B) {
+  if (voxel_A.label == voxel_B->label) {
+    voxel_B->label_confidence += voxel_A.label_confidence;
+  } else if (voxel_A.label_confidence > voxel_B->label_confidence) {
+    voxel_B->label = voxel_A.label;
+    voxel_B->label_confidence =
+        voxel_A.label_confidence - voxel_B->label_confidence;
+  } else {
+    voxel_B->label_confidence -= voxel_A.label_confidence;
+  }
+}
 }  // namespace voxblox
 
 #endif  // VOXBLOX_INTEGRATOR_MERGE_INTEGRATOR_H_
