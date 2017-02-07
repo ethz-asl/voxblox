@@ -86,7 +86,7 @@ class MergeIntegrator {
                                        layer_B->voxels_per_side());
     if ((layer_A.voxel_size() != layer_B->voxel_size()) ||
         (layer_A.voxels_per_side() != layer_B->voxels_per_side())) {
-      transformAndResampleLayer(layer_A, Transformation(), &layer_A_resampled);
+      resampleLayer(layer_A, &layer_A_resampled);
       layer_A_ptr = &layer_A_resampled;
     } else {
       layer_A_ptr = &layer_A;
@@ -113,17 +113,24 @@ class MergeIntegrator {
   static void MergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
                                     const Transformation& T_A_B,
                                     Layer<VoxelType>* layer_B) {
-    Layer<VoxelType> layer_A_resampled(layer_B->voxel_size(),
-                                       layer_B->voxels_per_side());
-    transformAndResampleLayer(layer_A, T_A_B, &layer_A_resampled);
+    Layer<VoxelType> layer_A_transformed(layer_B->voxel_size(),
+                                         layer_B->voxels_per_side());
+    transformLayer(layer_A, T_A_B, &layer_A_transformed);
 
-    MergeLayerAintoLayerB(layer_A_resampled, layer_B);
+    MergeLayerAintoLayerB(layer_A_transformed, layer_B);
   }
 
   template <typename VoxelType>
-  static void transformAndResampleLayer(const Layer<VoxelType>& layer_in,
-                                        const Transformation& T_in_out,
-                                        Layer<VoxelType>* layer_out) {
+  static void resampleLayer(const Layer<VoxelType>& layer_in,
+                            Layer<VoxelType>* layer_out) {
+    DCHECK_NOTNULL(layer_out);
+    transformLayer(layer_in, Transformation(), layer_out);
+  }
+
+  template <typename VoxelType>
+  static void transformLayer(const Layer<VoxelType>& layer_in,
+                             const Transformation& T_in_out,
+                             Layer<VoxelType>* layer_out) {
     DCHECK_NOTNULL(layer_out);
 
     // first mark all the blocks in the output layer that may be filled by the
@@ -141,7 +148,7 @@ class MergeIntegrator {
       // forwards transform of center
       center = T_in_out * center;
 
-      // furtherest point that could considerably be inside a rotated input
+      // furtherest point that could possibly be inside a rotated input
       // block
       FloatingPoint offset = 1.73205080757 * layer_in.block_size();
 
