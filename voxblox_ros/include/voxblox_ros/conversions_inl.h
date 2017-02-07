@@ -24,7 +24,7 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
   }
 
   voxblox_msgs::Block block_msg;
-  msg->blocks.resize(block_list.size());
+  msg->blocks.reserve(block_list.size());
   for (const BlockIndex& index : block_list) {
     block_msg.x_index = index.x();
     block_msg.y_index = index.y();

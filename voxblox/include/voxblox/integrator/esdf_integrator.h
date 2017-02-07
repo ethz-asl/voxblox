@@ -21,12 +21,12 @@ class EsdfIntegrator {
   struct Config {
     // Maximum distance to calculate the actual distance to.
     // Any values above this will be set to default_distance_m.
-    FloatingPoint max_distance_m = 1.5;
+    FloatingPoint max_distance_m = 2.0;
     // Should mirror (or be smaller than) truncation distance in tsdf
     // integrator.
     FloatingPoint min_distance_m = 0.2;
     // Default distance set for unknown values and values > max_distance_m.
-    FloatingPoint default_distance_m = 2;
+    FloatingPoint default_distance_m = 2.0;
     // For cheaper but less accurate map updates: the minimum difference in
     // a voxel distance to require adding it to the raise queue.
     FloatingPoint min_raise_diff_m = 0.0;
