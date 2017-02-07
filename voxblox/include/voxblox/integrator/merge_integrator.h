@@ -77,6 +77,7 @@ class MergeIntegrator {
     }
   }
 
+  //Merges layers, when the voxel or block size differs resampling occurs.
   template <typename VoxelType>
   static void MergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
                                     Layer<VoxelType>* layer_B) {
@@ -109,6 +110,8 @@ class MergeIntegrator {
     }
   }
 
+  // Performs a 3D transformation on layer A before merging it. See
+  // transformLayer for details
   template <typename VoxelType>
   static void MergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
                                     const Transformation& T_A_B,
@@ -120,6 +123,8 @@ class MergeIntegrator {
     MergeLayerAintoLayerB(layer_A_transformed, layer_B);
   }
 
+  // copies the information stored in layer_in into layer_out resampling the
+  // data so that it fits the voxel and block size of the output layer
   template <typename VoxelType>
   static void resampleLayer(const Layer<VoxelType>& layer_in,
                             Layer<VoxelType>* layer_out) {
@@ -127,6 +132,9 @@ class MergeIntegrator {
     transformLayer(layer_in, Transformation(), layer_out);
   }
 
+  // Performs a 3D transform on the input layer and writes the results to the
+  // output layer. During the transformation resampling occurs so that the voxel
+  // and block size of the input and output layer can differ.
   template <typename VoxelType>
   static void transformLayer(const Layer<VoxelType>& layer_in,
                              const Transformation& T_in_out,
