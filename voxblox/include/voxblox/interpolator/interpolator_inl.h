@@ -97,14 +97,15 @@ bool Interpolator<VoxelType>::getAdaptiveDistanceAndGradient(
       offset(i) = block_ptr->voxel_size();
       FloatingPoint left_distance = 0.0f, right_distance = 0.0f;
       bool left_valid = getDistance(pos - offset, &left_distance, interpolate);
-      bool right_valid = getDistance(pos + offset, &right_distance, interpolate);
+      bool right_valid =
+          getDistance(pos + offset, &right_distance, interpolate);
 
       if (left_valid && right_valid) {
         gradient(i) =
             (right_distance - left_distance) / (2.0f * block_ptr->voxel_size());
       } else if (left_valid) {
-        gradient(i) =
-            (nearest_neighbor_distance - left_distance) / block_ptr->voxel_size();
+        gradient(i) = (nearest_neighbor_distance - left_distance) /
+                      block_ptr->voxel_size();
       } else if (right_valid) {
         gradient(i) = (right_distance - nearest_neighbor_distance) /
                       block_ptr->voxel_size();
@@ -176,10 +177,14 @@ void Interpolator<VoxelType>::getQVector(const Point& voxel_pos,
 
   CHECK((voxel_offset.array() >= 0).all());  // NOLINT
 
-  *q_vector << 1, voxel_offset[0], voxel_offset[1], voxel_offset[2],
-      voxel_offset[0] * voxel_offset[1], voxel_offset[1] * voxel_offset[2],
-      voxel_offset[2] * voxel_offset[0],
-      voxel_offset[0] * voxel_offset[1] * voxel_offset[2];
+  *q_vector << 1,                                           // NOLINT
+      voxel_offset[0],                                      // NOLINT
+      voxel_offset[1],                                      // NOLINT
+      voxel_offset[2],                                      // NOLINT
+      voxel_offset[0] * voxel_offset[1],                    // NOLINT
+      voxel_offset[1] * voxel_offset[2],                    // NOLINT
+      voxel_offset[2] * voxel_offset[0],                    // NOLINT
+      voxel_offset[0] * voxel_offset[1] * voxel_offset[2];  // NOLINT
 }
 
 template <typename VoxelType>
