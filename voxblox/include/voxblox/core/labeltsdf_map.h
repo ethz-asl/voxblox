@@ -25,7 +25,7 @@ class LabelTsdfMap {
           config.voxel_size, config.voxels_per_side)),
         label_layer_(new Layer<LabelVoxel>(
           config.voxel_size, config.voxels_per_side)),
-        highest_label_(new Label(0u)) {}
+        highest_label_(0u) {}
 
   virtual ~LabelTsdfMap() {}
 
@@ -45,8 +45,8 @@ class LabelTsdfMap {
     return *label_layer_;
   }
 
-  Label* getHighestLabelPtr() const {
-    return highest_label_.get();
+  Label* getHighestLabelPtr() {
+    return &highest_label_;
   }
 
   FloatingPoint block_size() const { return tsdf_layer_->block_size(); }
@@ -56,7 +56,7 @@ class LabelTsdfMap {
   Layer<TsdfVoxel>::Ptr tsdf_layer_;
   Layer<LabelVoxel>::Ptr label_layer_;
 
-  std::shared_ptr<Label> highest_label_;
+  Label highest_label_;
 };
 
 }  // namespace voxblox

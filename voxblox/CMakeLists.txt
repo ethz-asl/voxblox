@@ -36,7 +36,6 @@ cs_add_executable(voxblox_rox
 )
 target_link_libraries(voxblox_rox ${PROJECT_NAME})
 
-
 #########
 # TESTS #
 #########

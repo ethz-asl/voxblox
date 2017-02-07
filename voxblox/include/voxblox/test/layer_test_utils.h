@@ -33,8 +33,8 @@ class LayerTest {
         CompareBlocks(block_A, block_B);
       } else {
         ADD_FAILURE();
-        std::cout << "Block at index [" << index_A.transpose()
-                  << "] in layer_A does not exists in layer_B";
+        LOG(ERROR) << "Block at index [" << index_A.transpose()
+                   << "] in layer_A does not exists in layer_B";
       }
     }
     for (const BlockIndex& index_B : blocks_B) {
@@ -46,9 +46,8 @@ class LayerTest {
         CompareBlocks(block_B, block_A);
       } else {
         ADD_FAILURE();
-        std::cout << std::endl
-                  << "Block at index [" << index_B.transpose()
-                  << "] in layer_B does not exists in layer_A" << std::endl;
+        LOG(ERROR) << "Block at index [" << index_B.transpose()
+                   << "] in layer_B does not exists in layer_A";
       }
     }
 

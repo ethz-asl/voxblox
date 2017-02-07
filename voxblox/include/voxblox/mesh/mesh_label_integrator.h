@@ -38,7 +38,7 @@ class MeshLabelIntegrator : public MeshIntegrator {
                  << block_index.transpose();
       return;
     } else if (!(tsdf_block && label_block)) {
-      LOG(ERROR) << "Block allocation differs between the two layers.";
+      LOG(FATAL) << "Block allocation differs between the two layers.";
     }
 
     extractBlockMesh(tsdf_block, mesh);
@@ -86,7 +86,7 @@ class MeshLabelIntegrator : public MeshIntegrator {
       // Should be within half a voxel of the voxel center in all dimensions, or
       // it belongs in the other one.
       const Point dist_from_center = vertex - voxel_center;
-      for (unsigned int j = 0; j < 3; ++j) {
+      for (unsigned int j = 0u; j < 3u; ++j) {
         if (std::abs(dist_from_center(j)) > voxel_size_ / 2.0) {
           voxel_index(j) += signum(dist_from_center(j));
         }
