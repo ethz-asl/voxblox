@@ -14,7 +14,7 @@ class Interpolator {
  public:
   typedef std::shared_ptr<Interpolator> Ptr;
 
-  explicit Interpolator(Layer<VoxelType>* layer);
+  explicit Interpolator(const Layer<VoxelType>* layer);
 
   bool getGradient(const Point& pos, Point* grad,
                    const bool interpolate = false) const;
@@ -65,7 +65,7 @@ class Interpolator {
   // calculation. False otherwise.
   bool isVoxelValid(const VoxelType& voxel) const;
 
-  Layer<VoxelType>* layer_;
+  const Layer<VoxelType>* layer_;
 };
 
 }  // namespace voxblox
