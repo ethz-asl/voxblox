@@ -200,8 +200,7 @@ void Interpolator<VoxelType>::getQVector(const Point& voxel_pos,
 template <typename VoxelType>
 bool Interpolator<VoxelType>::getVoxelsAndQVector(
     const BlockIndex& block_index, const InterpIndexes& voxel_indexes,
-    const Point& pos, const VoxelType** voxels,
-    InterpVector* q_vector) const {
+    const Point& pos, const VoxelType** voxels, InterpVector* q_vector) const {
   CHECK_NOTNULL(q_vector);
 
   // for each voxel index
@@ -244,10 +243,8 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
 }
 
 template <typename VoxelType>
-bool Interpolator<VoxelType>::getVoxelsAndQVector(const Point& pos, 
-    const VoxelType** voxels,
-    InterpVector* q_vector) const{
-
+bool Interpolator<VoxelType>::getVoxelsAndQVector(
+    const Point& pos, const VoxelType** voxels, InterpVector* q_vector) const {
   // get block and voxels indexes (some voxels may have negative indexes)
   BlockIndex block_index;
   InterpIndexes voxel_indexes;
@@ -256,15 +253,12 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(const Point& pos,
   }
 
   // get distances of 8 surrounding voxels and weights vector
-  if (!getVoxelsAndQVector(block_index, voxel_indexes, pos, voxels,
-                              q_vector)) {
+  if (!getVoxelsAndQVector(block_index, voxel_indexes, pos, voxels, q_vector)) {
     return false;
-  }
-  else{
+  } else {
     return true;
   }
 }
-
 
 template <typename VoxelType>
 bool Interpolator<VoxelType>::getInterpDistance(const Point& pos,
@@ -276,9 +270,8 @@ bool Interpolator<VoxelType>::getInterpDistance(const Point& pos,
   InterpVector q_vector;
   if (!getVoxelsAndQVector(pos, voxels, &q_vector)) {
     return false;
-  }
-  else{
-    *distance = interpMember(q_vector, voxels, &getVoxelDistance); 
+  } else {
+    *distance = interpMember(q_vector, voxels, &getVoxelDistance);
     return true;
   }
 }
@@ -303,7 +296,7 @@ bool Interpolator<VoxelType>::getNearestDistance(
 
 template <typename VoxelType>
 bool Interpolator<VoxelType>::getInterpVoxel(const Point& pos,
-                                                VoxelType* voxel) const {
+                                             VoxelType* voxel) const {
   CHECK_NOTNULL(voxel);
 
   // get voxels of 8 surrounding voxels and weights vector
@@ -311,9 +304,8 @@ bool Interpolator<VoxelType>::getInterpVoxel(const Point& pos,
   InterpVector q_vector;
   if (!getVoxelsAndQVector(pos, voxels, &q_vector)) {
     return false;
-  }
-  else{
-    *voxel = interpVoxel(q_vector, voxels); 
+  } else {
+    *voxel = interpVoxel(q_vector, voxels);
     return true;
   }
 }
@@ -365,60 +357,52 @@ inline FloatingPoint Interpolator<EsdfVoxel>::getVoxelDistance(
 }
 
 template <>
-inline float Interpolator<TsdfVoxel>::getVoxelWeight(
-    const TsdfVoxel& voxel)  {
+inline float Interpolator<TsdfVoxel>::getVoxelWeight(const TsdfVoxel& voxel) {
   return voxel.weight;
 }
 
 template <>
-inline float Interpolator<EsdfVoxel>::getVoxelWeight(
-    const EsdfVoxel& voxel)  {
+inline float Interpolator<EsdfVoxel>::getVoxelWeight(const EsdfVoxel& voxel) {
   return voxel.observed ? 1.0f : 0.0f;
 }
 
 template <>
-inline bool Interpolator<TsdfVoxel>::isVoxelValid(
-    const TsdfVoxel& voxel)  {
+inline bool Interpolator<TsdfVoxel>::isVoxelValid(const TsdfVoxel& voxel) {
   return voxel.weight > 0.0;
 }
 
 template <>
-inline bool Interpolator<EsdfVoxel>::isVoxelValid(
-    const EsdfVoxel& voxel)  {
+inline bool Interpolator<EsdfVoxel>::isVoxelValid(const EsdfVoxel& voxel) {
   return voxel.observed;
 }
 
 template <>
-inline uint8_t Interpolator<TsdfVoxel>::getRed(
-    const TsdfVoxel& voxel)  {
+inline uint8_t Interpolator<TsdfVoxel>::getRed(const TsdfVoxel& voxel) {
   return voxel.color.r;
 }
 
 template <>
-inline uint8_t Interpolator<TsdfVoxel>::getGreen(
-    const TsdfVoxel& voxel)  {
+inline uint8_t Interpolator<TsdfVoxel>::getGreen(const TsdfVoxel& voxel) {
   return voxel.color.g;
 }
 
 template <>
-inline uint8_t Interpolator<TsdfVoxel>::getBlue(
-    const TsdfVoxel& voxel)  {
+inline uint8_t Interpolator<TsdfVoxel>::getBlue(const TsdfVoxel& voxel) {
   return voxel.color.b;
 }
 
 template <>
-inline uint8_t Interpolator<TsdfVoxel>::getAlpha(
-    const TsdfVoxel& voxel)  {
+inline uint8_t Interpolator<TsdfVoxel>::getAlpha(const TsdfVoxel& voxel) {
   return voxel.color.a;
 }
 
 template <typename VoxelType>
 template <typename TGetter>
-inline FloatingPoint Interpolator<VoxelType>::interpMember(const InterpVector& q_vector,
-                                              const VoxelType** voxels,
-                                              TGetter(*getter)(const VoxelType&)){
+inline FloatingPoint Interpolator<VoxelType>::interpMember(
+    const InterpVector& q_vector, const VoxelType** voxels,
+    TGetter (*getter)(const VoxelType&)) {
   InterpVector data;
-  for (size_t i = 0; i < data.size(); ++i){
+  for (size_t i = 0; i < data.size(); ++i) {
     data[i] = static_cast<FloatingPoint>((*getter)(*voxels[i]));
   }
 
@@ -430,7 +414,7 @@ inline FloatingPoint Interpolator<VoxelType>::interpMember(const InterpVector& q
        1, 0, -1, 0, -1, 0, 1, 0,                 // NOLINT
        1, -1, -1, 1, 0, 0, 0, 0,                 // NOLINT
        1, -1, 0, 0, -1, 1, 0, 0,                 // NOLINT
-       -1, 1, 1, -1, 1, -1, -1, 1               // NOLINT
+       -1, 1, 1, -1, 1, -1, -1, 1                // NOLINT
        ).finished();
 
   // interpolate
@@ -438,18 +422,18 @@ inline FloatingPoint Interpolator<VoxelType>::interpMember(const InterpVector& q
 }
 
 template <>
-inline TsdfVoxel Interpolator<TsdfVoxel>::interpVoxel(const InterpVector& q_vector,
-                                              const TsdfVoxel** voxels){
-   TsdfVoxel voxel;
-   voxel.distance = interpMember(q_vector, voxels, &getVoxelDistance);
-   voxel.weight = interpMember(q_vector, voxels, &getVoxelWeight);
+inline TsdfVoxel Interpolator<TsdfVoxel>::interpVoxel(
+    const InterpVector& q_vector, const TsdfVoxel** voxels) {
+  TsdfVoxel voxel;
+  voxel.distance = interpMember(q_vector, voxels, &getVoxelDistance);
+  voxel.weight = interpMember(q_vector, voxels, &getVoxelWeight);
 
-   voxel.color.r = interpMember(q_vector, voxels, &getRed);
-   voxel.color.g = interpMember(q_vector, voxels, &getGreen);
-   voxel.color.b = interpMember(q_vector, voxels, &getBlue);
-   voxel.color.a = interpMember(q_vector, voxels, &getAlpha);
+  voxel.color.r = interpMember(q_vector, voxels, &getRed);
+  voxel.color.g = interpMember(q_vector, voxels, &getGreen);
+  voxel.color.b = interpMember(q_vector, voxels, &getBlue);
+  voxel.color.a = interpMember(q_vector, voxels, &getAlpha);
 
-   return voxel;
+  return voxel;
 }
 
 }  // namespace voxblox
