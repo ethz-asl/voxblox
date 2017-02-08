@@ -29,11 +29,6 @@ cs_add_executable(voxblox_node
 )
 target_link_libraries(voxblox_node ${PROJECT_NAME})
 
-cs_add_executable(voxblox_merge_test
-  src/voxblox_merge_test.cc
-)
-target_link_libraries(voxblox_node ${PROJECT_NAME})
-
 cs_add_executable(tsdf_server
   src/tsdf_server_node.cc
 )
