@@ -21,6 +21,16 @@ bool Interpolator<VoxelType>::getDistance(const Point& pos,
 }
 
 template <typename VoxelType>
+bool Interpolator<VoxelType>::getVoxel(const Point& pos, Voxel* voxel,
+                                       bool interpolate) const {
+  if (interpolate) {
+    return getInterpVoxel(pos, distance);
+  } else {
+    return getNearestVoxel(pos, distance);
+  }
+}
+
+template <typename VoxelType>
 bool Interpolator<VoxelType>::getGradient(const Point& pos, Point* grad,
                                           const bool interpolate) const {
   CHECK_NOTNULL(grad);
@@ -188,10 +198,10 @@ void Interpolator<VoxelType>::getQVector(const Point& voxel_pos,
 }
 
 template <typename VoxelType>
-bool Interpolator<VoxelType>::getDistancesAndQVector(
+bool Interpolator<VoxelType>::getVoxelsAndQVector(
     const BlockIndex& block_index, const InterpIndexes& voxel_indexes,
-    const Point& pos, InterpVector* distances, InterpVector* q_vector) const {
-  CHECK_NOTNULL(distances);
+    const Point& pos, VoxelType* voxels,
+    InterpVector* q_vector) const {
   CHECK_NOTNULL(q_vector);
 
   // for each voxel index
@@ -226,16 +236,18 @@ bool Interpolator<VoxelType>::getDistancesAndQVector(
 
     const VoxelType& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
 
-    (*distances)[i] = getVoxelDistance(voxel);
-    success = success && isVoxelValid(voxel);
+    voxels[i] = voxel;
+    if (!isVoxelValid(voxel)) {
+      return false;
+    }
   }
-  return success;
+  return true;
 }
 
 template <typename VoxelType>
-bool Interpolator<VoxelType>::getInterpDistance(const Point& pos,
-                                                FloatingPoint* distance) const {
-  CHECK_NOTNULL(distance);
+bool Interpolator<VoxelType>::getVoxelsAndQVector(const Point& pos, 
+    VoxelType* voxels,
+    InterpVector* q_vector) const{
 
   // get block and voxels indexes (some voxels may have negative indexes)
   BlockIndex block_index;
@@ -245,27 +257,56 @@ bool Interpolator<VoxelType>::getInterpDistance(const Point& pos,
   }
 
   // get distances of 8 surrounding voxels and weights vector
-  InterpVector distances;
+  VoxelType voxels[9];
   InterpVector q_vector;
-  if (!getDistancesAndQVector(block_index, voxel_indexes, pos, &distances,
+  if (!getVoxelsAndQVector(block_index, voxel_indexes, pos, voxels,
                               &q_vector)) {
     return false;
   }
+  else{
+    return true;
+  }
+}
 
-  // table for tri-linear interpolation (http://spie.org/samples/PM159.pdf)
-  InterpTable interp_table;
-  interp_table << 1, 0, 0, 0, 0, 0, 0, 0,  // NOLINT
-      -1, 0, 0, 0, 1, 0, 0, 0,             // NOLINT
-      -1, 0, 1, 0, 0, 0, 0, 0,             // NOLINT
-      -1, 1, 0, 0, 0, 0, 0, 0,             // NOLINT
-      1, 0, -1, 0, -1, 0, 1, 0,            // NOLINT
-      1, -1, -1, 1, 0, 0, 0, 0,            // NOLINT
-      1, -1, 0, 0, -1, 1, 0, 0,            // NOLINT
-      -1, 1, 1, -1, 1, -1, -1, 1;          // NOLINT
+template <typename VoxelType, typename TMember>
+FloatingPoint Interpolator<VoxelType>::interpMember(const InterpVector& q_vector,
+                                              const VoxelType & [9] voxels,
+                                              TMember member) {
+  InterpVector data;
+  for (const VoxelType& voxel : voxels) {
+    data[i] = static_cast<FloatingPoint>(voxel.(*member))
+  }
+
+  static InterpTable interp_table =
+      (InterpTable() << 1, 0, 0, 0, 0, 0, 0, 0,  // NOLINT
+       -1, 0, 0, 0, 1, 0, 0, 0,                  // NOLINT
+       -1, 0, 1, 0, 0, 0, 0, 0,                  // NOLINT
+       -1, 1, 0, 0, 0, 0, 0, 0,                  // NOLINT
+       1, 0, -1, 0, -1, 0, 1, 0,                 // NOLINT
+       1, -1, -1, 1, 0, 0, 0, 0,                 // NOLINT
+       1, -1, 0, 0, -1, 1, 0, 0,                 // NOLINT
+       -1, 1, 1, -1, 1, -1, -1, 1;               // NOLINT
+       ).finished();
 
   // interpolate
-  *distance = q_vector * (interp_table * distances.transpose());
-  return true;
+  return q_vector * (interp_table * data.transpose());
+}
+
+template <typename VoxelType>
+bool Interpolator<VoxelType>::getInterpDistance(const Point& pos,
+                                                FloatingPoint* distance) const {
+  CHECK_NOTNULL(distance);
+
+  // get distances of 8 surrounding voxels and weights vector
+  VoxelType voxels[9];
+  InterpVector q_vector;
+  if (!getVoxelsAndQVector(pos, voxels, &q_vector)) {
+    return false;
+  }
+  else{
+    *distance = interpMember(q_vector, voxels, VoxelType::distance); 
+    return true;
+  }
 }
 
 template <typename VoxelType>
@@ -284,6 +325,22 @@ bool Interpolator<VoxelType>::getNearestDistance(
   *distance = getVoxelDistance(voxel);
 
   return isVoxelValid(voxel);
+}
+
+template <typename VoxelType>
+bool Interpolator<VoxelType>::getNearestVoxel(const Point& pos,
+                                              const VoxelType* voxel) const {
+  CHECK_NOTNULL(voxel);
+
+  typename Layer<VoxelType>::BlockType::ConstPtr block_ptr =
+      layer_->getBlockPtrByCoordinates(pos);
+  if (block_ptr == nullptr) {
+    return false;
+  }
+
+  *voxel = block_ptr->getVoxelByCoordinates(pos);
+
+  return isVoxelValid(*voxel);
 }
 
 template <typename VoxelType>
