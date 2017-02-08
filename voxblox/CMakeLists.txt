@@ -36,10 +36,16 @@ cs_add_executable(voxblox_rox
 )
 target_link_libraries(voxblox_rox ${PROJECT_NAME})
 
-
 #########
 # TESTS #
 #########
+add_custom_target(test_data)
+add_custom_command(TARGET test_data
+                  COMMAND rm -rf test_data
+                  COMMAND mkdir -p test_data
+                  COMMAND cp -r ${CMAKE_SOURCE_DIR}/test/test_data/*
+                                test_data/ || :)
+
 catkin_add_gtest(test_tsdf_map
   test/test_tsdf_map.cc
 )
@@ -49,6 +55,15 @@ catkin_add_gtest(test_protobuf
   test/test_protobuf.cc
 )
 target_link_libraries(test_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+catkin_add_gtest(test_labeltsdf_integrator
+  test/test_labeltsdf_integrator.cc
+)
+target_link_libraries(test_labeltsdf_integrator 
+  ${PROJECT_NAME} ${catkin_LIBRARIES}
+)
+
+add_dependencies(test_labeltsdf_integrator test_data)
 
 ##########
 # EXPORT #
