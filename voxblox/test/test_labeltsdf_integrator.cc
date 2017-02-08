@@ -18,7 +18,6 @@ class LabelTsdfIntegratorTest : public ::testing::Test {
     map_.reset(new LabelTsdfMap(map_config));
 
     LabelTsdfIntegrator::Config integrator_config;
-
     integrator_.reset(new LabelTsdfIntegrator(
         integrator_config, map_->getTsdfLayerPtr(), map_->getLabelLayerPtr(),
         map_->getHighestLabelPtr()));
@@ -93,7 +92,7 @@ TEST_F(LabelTsdfIntegratorTest, IntegratePointCloud) {
     io::LoadLayer<LabelVoxel>(label_file, &label_layer_from_file);
 
     label_layer_test_.CompareLayers(map_->getLabelLayer(),
-                                  *label_layer_from_file);
+                                    *label_layer_from_file);
 
     #ifdef VISUALIZE_UNIT_TEST_RESULTS
       visualizeTestResult("labeltsdf_integrator_test_mesh_1.ply");
