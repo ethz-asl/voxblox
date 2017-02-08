@@ -203,7 +203,7 @@ class TsdfIntegrator {
       voxel_map[voxel_index].push_back(pt_idx);
     }
 
-    LOG(INFO) << "Went from " << points_C.size() << " points to "
+    VLOG(3) << "Went from " << points_C.size() << " points to "
               << voxel_map.size() << " raycasts  and " << clear_map.size()
               << " clear rays.";
 

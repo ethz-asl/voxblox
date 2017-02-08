@@ -91,7 +91,7 @@ class EsdfIntegrator {
     size_t num_raise = 0u;
     size_t num_new = 0u;
     timing::Timer propagate_timer("esdf/propagate_tsdf");
-    LOG(INFO) << "[ESDF update]: Propagating " << tsdf_blocks.size()
+    VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
               << " updated blocks from the TSDF.";
     for (const BlockIndex& block_index : tsdf_blocks) {
       const Block<TsdfVoxel>& tsdf_block =
@@ -168,7 +168,7 @@ class EsdfIntegrator {
       }
     }
     propagate_timer.Stop();
-    LOG(INFO) << "[ESDF update]: Lower: " << num_lower
+    VLOG(3) << "[ESDF update]: Lower: " << num_lower
               << " Raise: " << num_raise << " New: " << num_new;
 
     timing::Timer raise_timer("esdf/raise_esdf");
@@ -277,7 +277,7 @@ class EsdfIntegrator {
       }
       num_updates++;
     }
-    LOG(INFO) << "[ESDF update]: raised " << num_updates << " voxels.";
+    VLOG(3) << "[ESDF update]: raised " << num_updates << " voxels.";
   }
 
   void processOpenSet() {
@@ -373,7 +373,7 @@ class EsdfIntegrator {
       esdf_voxel.in_queue = false;
     }
 
-    LOG(INFO) << "[ESDF update]: made " << num_updates << " voxel updates.";
+    VLOG(3) << "[ESDF update]: made " << num_updates << " voxel updates.";
   }
 
   // Uses 26-connectivity and quasi-Euclidean distances.
