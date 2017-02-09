@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
                                     my_cool_map->getTsdfLayerPtr());
 
   Point sensor_origin(1, 0.4, 2.3);
-  Transformation transform(sensor_origin, Eigen::Quaterniond::Identity());
+  Transformation transform(sensor_origin, Rotation::Implementation::Identity());
 
   Pointcloud measurements;
   measurements.push_back(transform.inverse() * Point(4.4, 6.8, 1.11));

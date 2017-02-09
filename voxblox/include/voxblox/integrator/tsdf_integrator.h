@@ -56,8 +56,8 @@ class TsdfIntegrator {
                               const Color& color,
                               const float truncation_distance,
                               const float weight, TsdfVoxel* tsdf_voxel) {
-    Eigen::Vector3d voxel_direction = point_G - voxel_center;
-    Eigen::Vector3d ray_direction = point_G - origin;
+    Point voxel_direction = point_G - voxel_center;
+    Point ray_direction = point_G - origin;
 
     float sdf = static_cast<float>(voxel_direction.norm());
     // Figure out if it's in front of the plane or behind.
@@ -80,8 +80,8 @@ class TsdfIntegrator {
 
   inline float computeDistance(const Point& origin, const Point& point_G,
                                const Point& voxel_center) {
-    Eigen::Vector3d voxel_direction = point_G - voxel_center;
-    Eigen::Vector3d ray_direction = point_G - origin;
+    Point voxel_direction = point_G - voxel_center;
+    Point ray_direction = point_G - origin;
 
     float sdf = static_cast<float>(voxel_direction.norm());
     // Figure out if it's in front of the plane or behind.
