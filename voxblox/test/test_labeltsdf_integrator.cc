@@ -25,6 +25,19 @@ class LabelTsdfIntegratorTest : public ::testing::Test {
     //save_layers_ = true;
   }
 
+  void visualizeTestResult(const std::string output_file) {
+    MeshLayer mesh_layer(map_->block_size());
+    MeshLabelIntegrator::Config mesh_config;
+    MeshLabelIntegrator mesh_integrator(mesh_config,
+                                        map_->getTsdfLayerPtr(),
+                                        map_->getLabelLayerPtr(),
+                                        &mesh_layer);
+
+    mesh_integrator.generateWholeMesh();
+
+    voxblox::outputMeshLayerAsPly(output_file, mesh_layer);
+  }
+
   std::shared_ptr<LabelTsdfMap> map_;
   std::shared_ptr<LabelTsdfIntegrator> integrator_;
 
@@ -80,6 +93,10 @@ TEST_F(LabelTsdfIntegratorTest, IntegratePointCloud) {
 
     label_layer_test_.CompareLayers(map_->getLabelLayer(),
                                     *label_layer_from_file);
+
+    #ifdef VISUALIZE_UNIT_TEST_RESULTS
+      visualizeTestResult("labeltsdf_integrator_test_mesh_1.ply");
+    #endif
   }
 }
 
@@ -117,6 +134,10 @@ TEST_F(LabelTsdfIntegratorTest, ReadLabelPointCloud) {
   // The computed labels match exactly the ones integrated
   EXPECT_TRUE(std::equal(computed_labels.begin(), computed_labels.end(),
                          labels_to_integrate.begin()));
+
+  #ifdef VISUALIZE_UNIT_TEST_RESULTS
+    visualizeTestResult("labeltsdf_integrator_test_mesh_2.ply");
+  #endif
 }
 
 TEST_F(LabelTsdfIntegratorTest, ComputeDominantLabelPointCloud) {
@@ -164,16 +185,10 @@ TEST_F(LabelTsdfIntegratorTest, ComputeDominantLabelPointCloud) {
   EXPECT_TRUE(std::equal(computed_labels.begin(), computed_labels.end(),
                          expected_labels.begin()));
 
-  // TODO(grinvalm) trigger test results visualization based on a flag
-  // Generate the mesh.
-  MeshLayer mesh_layer(map_->block_size());
-  MeshLabelIntegrator::Config mesh_config;
-  MeshLabelIntegrator mesh_integrator(mesh_config, map_->getTsdfLayerPtr(),
-                                      map_->getLabelLayerPtr(), &mesh_layer);
 
-  mesh_integrator.generateWholeMesh();
-
-  voxblox::outputMeshLayerAsPly("test_tsdf.ply", mesh_layer);
+  #ifdef VISUALIZE_UNIT_TEST_RESULTS
+    visualizeTestResult("labeltsdf_integrator_test_mesh_3.ply");
+  #endif
 }
 
 TEST_F(LabelTsdfIntegratorTest, ComputeUnseenLabelPointCloud) {
@@ -216,6 +231,10 @@ TEST_F(LabelTsdfIntegratorTest, ComputeUnseenLabelPointCloud) {
 
   EXPECT_TRUE(std::equal(computed_labels.begin(), computed_labels.end(),
                          expected_labels.begin()));
+
+  #ifdef VISUALIZE_UNIT_TEST_RESULTS
+    visualizeTestResult("labeltsdf_integrator_test_mesh_4.ply");
+  #endif
 }
 }  // namespace voxblox
 
