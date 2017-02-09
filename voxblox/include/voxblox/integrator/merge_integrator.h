@@ -6,6 +6,8 @@
 
 #include <glog/logging.h>
 
+#include "voxblox/interpolator/interpolator.h"
+
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -146,6 +148,8 @@ class MergeIntegrator {
     // get inverse transform
     Transformation T_out_in = T_in_out.inverse();
 
+    Interpolator<VoxelType> interpolator(&layer_in);
+
     // we now go through all the blocks in the output layer and interpolate the
     // input layer at the center of each output voxel position
     for (BlockIndex block_idx : block_idx_set) {
@@ -160,13 +164,12 @@ class MergeIntegrator {
         const Point voxel_center =
             T_out_in * block->computeCoordinatesFromLinearIndex(voxel_idx);
 
-        // interpolate voxel (currently just using nearest neighbor)
-        Layer<TsdfVoxel>::BlockType::ConstPtr block_ptr =
-            layer_in.getBlockPtrByCoordinates(voxel_center);
-        if (block_ptr != nullptr) {
-          const TsdfVoxel& input_voxel =
-              block_ptr->getVoxelByCoordinates(voxel_center);
-          voxel = input_voxel;
+        // interpolate voxel
+        if(interpolator.getVoxel(voxel_center, &voxel, true)){
+          block->has_data() = true;
+        }
+        // if interpolated value fails use nearest
+        else if(interpolator.getVoxel(voxel_center, &voxel, false)){
           block->has_data() = true;
         }
       }
