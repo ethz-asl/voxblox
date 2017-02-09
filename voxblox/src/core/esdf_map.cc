@@ -6,7 +6,8 @@ bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
                                     double* distance) const {
   constexpr bool interpolate = true;
   FloatingPoint distance_fp;
-  bool success = interpolator_.getDistance(position, &distance_fp, interpolate);
+  bool success = interpolator_.getDistance(position.cast<FloatingPoint>(),
+                                           &distance_fp, interpolate);
   if (success) {
     *distance = static_cast<double>(distance_fp);
   }
@@ -20,7 +21,7 @@ bool EsdfMap::getDistanceAndGradientAtPosition(
   Point gradient_fp = Point::Zero();
 
   bool success = interpolator_.getAdaptiveDistanceAndGradient(
-      position, &distance_fp, &gradient_fp);
+      position.cast<FloatingPoint>(), &distance_fp, &gradient_fp);
 
   *distance = static_cast<double>(distance_fp);
   *gradient = gradient_fp.cast<double>();
@@ -31,9 +32,10 @@ bool EsdfMap::getDistanceAndGradientAtPosition(
 bool EsdfMap::isObserved(const Eigen::Vector3d& position) const {
   // Get the block.
   Block<EsdfVoxel>::Ptr block_ptr =
-      esdf_layer_->getBlockPtrByCoordinates(position);
+      esdf_layer_->getBlockPtrByCoordinates(position.cast<FloatingPoint>());
   if (block_ptr) {
-    const EsdfVoxel& voxel = block_ptr->getVoxelByCoordinates(position);
+    const EsdfVoxel& voxel =
+        block_ptr->getVoxelByCoordinates(position.cast<FloatingPoint>());
     return voxel.observed;
   }
   return false;
