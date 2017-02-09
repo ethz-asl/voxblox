@@ -45,6 +45,8 @@ add_custom_command(TARGET test_data
                   COMMAND mkdir -p test_data
                   COMMAND cp -r ${CMAKE_SOURCE_DIR}/test/test_data/*
                                 test_data/ || :)
+                                
+#add_definitions(-DVISUALIZE_UNIT_TEST_RESULTS)
 
 catkin_add_gtest(test_tsdf_map
   test/test_tsdf_map.cc
