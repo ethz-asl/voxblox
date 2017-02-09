@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
 
 #include "voxblox/core/common.h"
 #include "voxblox/utils/timing.h"
@@ -15,8 +15,9 @@ namespace voxblox {
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
 // should map to Local/Voxel indices.
-inline void castRay(const Point& start_scaled, const Point& end_scaled,
-                    std::vector<AnyIndex>* indices) {
+inline void castRay(
+    const Point& start_scaled, const Point& end_scaled,
+    std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex> >* indices) {
   CHECK_NOTNULL(indices);
 
   constexpr FloatingPoint kTolerance = 1e-6;

@@ -12,6 +12,8 @@ namespace voxblox {
 template <typename VoxelType>
 class Block {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<Block<VoxelType> > Ptr;
   typedef std::shared_ptr<const Block<VoxelType> > ConstPtr;
 
