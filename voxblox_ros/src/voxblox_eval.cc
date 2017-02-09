@@ -171,7 +171,7 @@ void VoxbloxEvaluator::evaluate() {
        it != gt_ptcloud_.end(); ++it) {
     Point point(it->x, it->y, it->z);
 
-    double distance = 0.0;
+    FloatingPoint distance = 0.0;
     float weight = 0.0;
     bool valid = false;
 
