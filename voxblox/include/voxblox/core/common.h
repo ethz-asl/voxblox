@@ -8,9 +8,9 @@
 #include <utility>
 #include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
 #include <kindr/minimal/quat-transformation.h>
+#include <Eigen/Core>
 
 namespace voxblox {
 
@@ -47,8 +47,9 @@ typedef std::vector<Triangle, Eigen::aligned_allocator<Triangle> >
     TriangleVector;
 
 // Transformation type for defining sensor orientation.
-typedef kindr::minimal::QuatTransformation Transformation;
-typedef kindr::minimal::RotationQuaternion Rotation;
+typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
+    Transformation;
+typedef kindr::minimal::RotationQuaternionTemplate<FloatingPoint> Rotation;
 
 // For alignment of layers / point clouds
 typedef Eigen::Matrix<FloatingPoint, 3, Eigen::Dynamic> PointsMatrix;

@@ -114,7 +114,7 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
 
     for (size_t i = 0u; i < mesh->vertices.size(); i++) {
       geometry_msgs::Point point_msg;
-      tf::pointEigenToMsg(mesh->vertices[i], point_msg);
+      tf::pointEigenToMsg(mesh->vertices[i].cast<double>(), point_msg);
       marker->points.push_back(point_msg);
       std_msgs::ColorRGBA color_msg;
       switch (color_mode) {
