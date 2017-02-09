@@ -27,7 +27,7 @@ typedef AnyIndex BlockIndex;
 
 typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 
-typedef std::vector<AnyIndex> IndexVector;
+typedef std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex> > IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
