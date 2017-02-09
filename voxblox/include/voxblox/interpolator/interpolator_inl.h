@@ -253,11 +253,7 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
   }
 
   // get distances of 8 surrounding voxels and weights vector
-  if (!getVoxelsAndQVector(block_index, voxel_indexes, pos, voxels, q_vector)) {
-    return false;
-  } else {
-    return true;
-  }
+  return getVoxelsAndQVector(block_index, voxel_indexes, pos, voxels, q_vector);
 }
 
 template <typename VoxelType>
