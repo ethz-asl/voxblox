@@ -15,6 +15,8 @@ struct TsdfVoxel {
 };
 
 struct EsdfVoxel {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  
   float distance = 0.0f;
   bool observed = false;
   bool in_queue = false;
