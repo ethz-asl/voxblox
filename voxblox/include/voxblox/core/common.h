@@ -35,7 +35,7 @@ struct Color;
 typedef uint32_t Label;
 
 // Pointcloud types for external interface.
-typedef std::vector<Point> Pointcloud;
+typedef std::vector<Point, Eigen::aligned_allocator<Point>> Pointcloud;
 typedef std::vector<Color> Colors;
 typedef std::vector<Label> Labels;
 
