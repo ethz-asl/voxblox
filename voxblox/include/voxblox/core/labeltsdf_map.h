@@ -20,7 +20,7 @@ class LabelTsdfMap {
     size_t voxels_per_side = 16u;
   };
 
-  explicit LabelTsdfMap(Config config)
+  explicit LabelTsdfMap(const Config& config)
       : tsdf_layer_(new Layer<TsdfVoxel>(
           config.voxel_size, config.voxels_per_side)),
         label_layer_(new Layer<LabelVoxel>(
