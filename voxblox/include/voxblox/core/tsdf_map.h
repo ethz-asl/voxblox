@@ -20,7 +20,7 @@ class TsdfMap {
     size_t tsdf_voxels_per_side = 16u;
   };
 
-  explicit TsdfMap(Config config)
+  explicit TsdfMap(const Config& config)
       : tsdf_layer_(new Layer<TsdfVoxel>(config.tsdf_voxel_size,
                                          config.tsdf_voxels_per_side)) {
     block_size_ = config.tsdf_voxel_size * config.tsdf_voxels_per_side;
