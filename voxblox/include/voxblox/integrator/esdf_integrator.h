@@ -385,8 +385,7 @@ class EsdfIntegrator {
   // negative of the given direction.
   void getNeighborsAndDistances(
       const BlockIndex& block_index, const VoxelIndex& voxel_index,
-      std::vector<VoxelKey>* neighbors,
-      std::vector<float>* distances,
+      std::vector<VoxelKey>* neighbors, std::vector<float>* distances,
       std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>*
           directions) {
     CHECK_NOTNULL(neighbors);
@@ -487,8 +486,7 @@ class EsdfIntegrator {
 
   // Raise set for updates; these are values that used to be in the fixed
   // frontier and now have a higher value.
-  std::queue<VoxelKey>
-      raise_;
+  std::queue<VoxelKey> raise_;
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;
