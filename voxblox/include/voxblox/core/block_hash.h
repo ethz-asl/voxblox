@@ -4,7 +4,7 @@
 #include <functional>
 #include <unordered_map>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 #include "voxblox/core/common.h"
 
