@@ -186,7 +186,7 @@ class EsdfIntegrator {
 
   void pushNeighborsToOpen(const BlockIndex& block_index,
                            const VoxelIndex& voxel_index) {
-    std::vector<VoxelKey, VoxelKey> neighbors;
+    std::vector<VoxelKey> neighbors;
     std::vector<float> distances;
     std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
         directions;
@@ -228,7 +228,7 @@ class EsdfIntegrator {
           esdf_layer_->getBlockPtrByIndex(kv.first);
 
       // See if you can update the neighbors.
-      std::vector<VoxelKey, VoxelKey> neighbors;
+      std::vector<VoxelKey> neighbors;
       std::vector<float> distances;
       std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
           directions;
@@ -303,7 +303,7 @@ class EsdfIntegrator {
         continue;
       }
       // See if you can update the neighbors.
-      std::vector<VoxelKey, VoxelKey> neighbors;
+      std::vector<VoxelKey> neighbors;
       std::vector<float> distances;
       std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
           directions;
