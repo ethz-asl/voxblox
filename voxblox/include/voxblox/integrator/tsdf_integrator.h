@@ -24,6 +24,7 @@ class TsdfIntegrator {
     FloatingPoint max_ray_length_m = 5.0;
     bool use_const_weight = false;
     bool allow_clear = true;
+    bool use_weight_dropoff = true;
   };
 
   TsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
@@ -65,11 +66,21 @@ class TsdfIntegrator {
       sdf = -sdf;
     }
 
-    const float new_weight = tsdf_voxel->weight + weight;
+    float updated_weight = weight;
+    // Compute updated weight in case we use weight dropoff. It's easier here
+    // that in getVoxelWeight as here we have the actual SDF for the voxel
+    // already computed.
+    const FloatingPoint dropoff_epsilon = voxel_size_;
+    if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
+      updated_weight = weight * (truncation_distance + sdf) /
+                       (truncation_distance - dropoff_epsilon);
+    }
+
+    const float new_weight = tsdf_voxel->weight + updated_weight;
     tsdf_voxel->color = Color::blendTwoColors(
         tsdf_voxel->color, tsdf_voxel->weight, color, weight);
     const float new_sdf =
-        (sdf * weight + tsdf_voxel->distance * tsdf_voxel->weight) /
+        (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
         new_weight;
 
     tsdf_voxel->distance = (new_sdf > 0.0)
@@ -204,8 +215,8 @@ class TsdfIntegrator {
     }
 
     VLOG(3) << "Went from " << points_C.size() << " points to "
-              << voxel_map.size() << " raycasts  and " << clear_map.size()
-              << " clear rays.";
+            << voxel_map.size() << " raycasts  and " << clear_map.size()
+            << " clear rays.";
 
     const Point voxel_center_offset(0.5, 0.5, 0.5);
 
