@@ -186,7 +186,7 @@ class EsdfIntegrator {
 
   void pushNeighborsToOpen(const BlockIndex& block_index,
                            const VoxelIndex& voxel_index) {
-    std::vector<VoxelKey, Eigen::aligned_allocator<VoxelKey>> neighbors;
+    std::vector<VoxelKey, VoxelKey> neighbors;
     std::vector<float> distances;
     std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
         directions;
@@ -228,7 +228,7 @@ class EsdfIntegrator {
           esdf_layer_->getBlockPtrByIndex(kv.first);
 
       // See if you can update the neighbors.
-      std::vector<VoxelKey, Eigen::aligned_allocator<VoxelKey>> neighbors;
+      std::vector<VoxelKey, VoxelKey> neighbors;
       std::vector<float> distances;
       std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
           directions;
@@ -303,7 +303,7 @@ class EsdfIntegrator {
         continue;
       }
       // See if you can update the neighbors.
-      std::vector<VoxelKey, Eigen::aligned_allocator<VoxelKey>> neighbors;
+      std::vector<VoxelKey, VoxelKey> neighbors;
       std::vector<float> distances;
       std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
           directions;
@@ -385,7 +385,7 @@ class EsdfIntegrator {
   // negative of the given direction.
   void getNeighborsAndDistances(
       const BlockIndex& block_index, const VoxelIndex& voxel_index,
-      std::vector<VoxelKey, Eigen::aligned_allocator<VoxelKey>>* neighbors,
+      std::vector<VoxelKey>* neighbors,
       std::vector<float>* distances,
       std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>*
           directions) {
@@ -487,7 +487,7 @@ class EsdfIntegrator {
 
   // Raise set for updates; these are values that used to be in the fixed
   // frontier and now have a higher value.
-  std::queue<VoxelKey, std::deque<VoxelKey, Eigen::aligned_allocator<VoxelKey>>>
+  std::queue<VoxelKey>
       raise_;
 
   size_t esdf_voxels_per_side_;
