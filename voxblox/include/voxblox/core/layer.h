@@ -111,7 +111,6 @@ class Layer {
     return getGridIndexFromPoint(coords, block_size_inv_);
   }
 
-  // Pure virtual function -- inheriting class MUST overwrite.
   typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) {
     auto insert_status = block_map_.insert(std::make_pair(
         index, std::shared_ptr<BlockType>(new BlockType(
