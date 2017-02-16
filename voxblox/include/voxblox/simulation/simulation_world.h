@@ -24,8 +24,8 @@ class SimulationWorld {
   // Add 4 walls (infinite planes) bounding the space. In case this is not the
   // desired behavior, can use addObject to add walls manually one by one.
   // If infinite walls are undesirable, then use cubes.
-  void addWallBoundaries(FloatingPoint x_min, FloatingPoint x_max,
-                         FloatingPoint y_min, FloatingPoint y_max);
+  void addPlaneBoundaries(FloatingPoint x_min, FloatingPoint x_max,
+                          FloatingPoint y_min, FloatingPoint y_max);
 
   // Deletes all objects!
   void clear();

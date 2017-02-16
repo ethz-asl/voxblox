@@ -45,6 +45,10 @@ void SimulationServer::prepareWorld() {
   std::unique_ptr<Layer<TsdfVoxel> > tsdf_gt(
       new Layer<TsdfVoxel>(voxel_size, voxels_per_side));
   world_.generateSdfFromWorld(0.5, tsdf_gt.get());
+
+  std::unique_ptr<Layer<EsdfVoxel> > esdf_gt(
+      new Layer<EsdfVoxel>(voxel_size, voxels_per_side));
+  world_.generateSdfFromWorld(2.0, esdf_gt.get());
 }
 
 void SimulationServer::run() {
@@ -68,6 +72,7 @@ int main(int argc, char** argv) {
 
   sim_eval.run();
 
+  ROS_INFO("Done.");
   ros::spin();
   return 0;
 }
