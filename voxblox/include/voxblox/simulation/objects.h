@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_SIMULATION_OBJECTS_H_
 #define VOXBLOX_SIMULATION_OBJECTS_H_
 
+#include <algorithm>
+
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -48,10 +50,37 @@ class Sphere : public Object {
   FloatingPoint radius_;
 };
 
+class Cube : public Object {
+ public:
+  Cube(const Point& center, const Point& size)
+      : Object(center, Type::kCube), size_(size) {}
+  Cube(const Point& center, const Point& size, const Color& color)
+      : Object(center, Type::kCube, color), size_(size) {}
 
+  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
+    // Solution from http://stackoverflow.com/questions/5254838/
+    // calculating-distance-between-a-point-and-a-rectangular-box-nearest-point
 
-class Cube : public Object {};
+    Point distance_vector = Point::Zero();
+    distance_vector.x() =
+        std::max(std::max(center_.x() - size_.x() - point.x(), 0.0),
+                 point.x() - center_.x() - size_.x());
+    distance_vector.y() =
+        std::max(std::max(center_.y() - size_.y() - point.y(), 0.0),
+                 point.y() - center_.y() - size_.y());
+    distance_vector.z() =
+        std::max(std::max(center_.z() - size_.z() - point.z(), 0.0),
+                 point.z() - center_.z() - size_.z());
 
+    // TODO(helenol): check if inside, and see if the 0s there are necessary.
+
+    FloatingPoint distance = distance_vector.norm();
+    return distance;
+  }
+
+ protected:
+  Point size_;
+};
 
 // Requires normal being passed in to ALREADY BE NORMALIZED!!!!
 class Plane : public Object {
@@ -65,7 +94,7 @@ class Plane : public Object {
     // Compute the 'd' in ax + by + cz + d = 0:
     // This is actually the scalar product I guess.
     FloatingPoint d = -normal_.dot(center_);
-    FloatingPoint p = d/normal_.norm();
+    FloatingPoint p = d / normal_.norm();
 
     FloatingPoint distance = normal_.dot(point) + p;
     return distance;
@@ -74,7 +103,6 @@ class Plane : public Object {
  protected:
   Point normal_;
 };
-
 
 }  // namespace voxblox
 
