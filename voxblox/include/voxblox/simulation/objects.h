@@ -75,6 +75,21 @@ class Cube : public Object {
     // TODO(helenol): check if inside, and see if the 0s there are necessary.
 
     FloatingPoint distance = distance_vector.norm();
+
+    // Basically 0... Means it's inside!
+    if (distance < 1e-6) {
+    distance_vector.x() =
+        std::max(center_.x() - size_.x() - point.x(),
+                 point.x() - center_.x() - size_.x());
+    distance_vector.y() =
+        std::max(center_.y() - size_.y() - point.y(),
+                 point.y() - center_.y() - size_.y());
+    distance_vector.z() =
+        std::max(center_.z() - size_.z() - point.z(),
+                 point.z() - center_.z() - size_.z());
+      distance = distance_vector.maxCoeff();
+    }
+
     return distance;
   }
 

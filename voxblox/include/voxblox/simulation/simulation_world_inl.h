@@ -2,6 +2,7 @@
 #define VOXBLOX_SIMULATION_SIMULATION_WORLD_INL_H_
 
 #include <algorithm>
+#include <iostream>
 
 #include "voxblox/core/block.h"
 
@@ -42,7 +43,7 @@ void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
       FloatingPoint voxel_dist = max_dist;
       for (size_t j = 0; j < objects_.size(); ++j) {
         voxel_dist =
-            std::min(max_dist, objects_[j]->getDistanceToPoint(coords));
+            std::min(voxel_dist, objects_[j]->getDistanceToPoint(coords));
       }
 
       // Then update the thing.
