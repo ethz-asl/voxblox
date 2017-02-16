@@ -33,6 +33,8 @@ cs_add_library(${PROJECT_NAME}
   src/core/esdf_map.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
+  src/simulation/objects.cc
+  src/simulation/simulation_world.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
   ${PROTO_SRCS}
