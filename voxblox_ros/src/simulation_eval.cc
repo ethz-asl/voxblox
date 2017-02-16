@@ -48,7 +48,7 @@ class SimulationServer {
 SimulationServer::SimulationServer(const ros::NodeHandle& nh,
                                    const ros::NodeHandle& nh_private)
     : nh_(nh), nh_private_(nh_private), world_frame_("world") {
-  FloatingPoint voxel_size = 0.05;
+  FloatingPoint voxel_size = 0.20;
   int voxels_per_side = 16;
 
   tsdf_gt.reset(new Layer<TsdfVoxel>(voxel_size, voxels_per_side));
@@ -66,7 +66,13 @@ void SimulationServer::prepareWorld() {
   world_.addObject(
       std::unique_ptr<Object>(new Sphere(Point(2.0, 5.0, 2.0), 2.0)));
 
-  world_.generateSdfFromWorld(0.5, tsdf_gt.get());
+  world_.addObject(std::unique_ptr<Object>(
+      new Plane(Point(-2.0, -3.0, 2.0), Point(0, 1, 0))));
+
+  world_.addObject(
+      std::unique_ptr<Object>(new Cube(Point(-2.0, 5.0, 3.0), Point(2, 2, 2))));
+
+  // world_.generateSdfFromWorld(0.5, tsdf_gt.get());
   world_.generateSdfFromWorld(2.0, esdf_gt.get());
 }
 
@@ -75,8 +81,8 @@ void SimulationServer::visualize() {
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
   pointcloud.header.frame_id = world_frame_;
 
-  createDistancePointcloudFromTsdfLayer(*tsdf_gt, &pointcloud);
-  tsdf_gt_pub_.publish(pointcloud);
+  // createDistancePointcloudFromTsdfLayer(*tsdf_gt, &pointcloud);
+  // tsdf_gt_pub_.publish(pointcloud);
 
   pointcloud.clear();
   createDistancePointcloudFromEsdfLayer(*esdf_gt, &pointcloud);
