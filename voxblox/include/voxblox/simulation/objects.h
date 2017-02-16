@@ -22,6 +22,9 @@ class Object {
   virtual ~Object() {}
 
   // .... here go useful functions ...
+  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
+    return 0.0;
+  }
 
  protected:
   Point center_;
@@ -41,7 +44,6 @@ class Sphere : public Object {
 };
 
 class Cube : public Object {};
-
 
 class Wall : public Object {};
 
