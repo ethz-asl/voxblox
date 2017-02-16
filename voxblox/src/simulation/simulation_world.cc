@@ -10,10 +10,10 @@ void SimulationWorld::addObject(std::unique_ptr<Object> object) {
 
 void SimulationWorld::addGroundLevel(FloatingPoint height) {}
 
-void SimulationWorld::addWallBoundaries(FloatingPoint x_min,
-                                        FloatingPoint x_max,
-                                        FloatingPoint y_min,
-                                        FloatingPoint y_max) {}
+void SimulationWorld::addPlaneBoundaries(FloatingPoint x_min,
+                                         FloatingPoint x_max,
+                                         FloatingPoint y_min,
+                                         FloatingPoint y_max) {}
 
 void SimulationWorld::clear() { objects_.clear(); }
 

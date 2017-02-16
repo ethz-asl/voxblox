@@ -13,7 +13,7 @@ namespace voxblox {
 class Object {
  public:
   // A wall is an infinite plane.
-  enum Type { kSphere = 0, kCube, kWall };
+  enum Type { kSphere = 0, kCube, kPlane };
 
   Object(const Point& center, Type type)
       : Object(center, type, Color::White()) {}
@@ -39,13 +39,42 @@ class Sphere : public Object {
   Sphere(const Point& center, FloatingPoint radius, const Color& color)
       : Object(center, Type::kSphere, color), radius_(radius) {}
 
+  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
+    FloatingPoint distance = (center_ - point).norm() - radius_;
+    return distance;
+  }
+
  protected:
   FloatingPoint radius_;
 };
 
+
+
 class Cube : public Object {};
 
-class Wall : public Object {};
+
+// Requires normal being passed in to ALREADY BE NORMALIZED!!!!
+class Plane : public Object {
+ public:
+  Plane(const Point& center, const Point& normal)
+      : Object(center, Type::kPlane), normal_(normal) {}
+  Plane(const Point& center, const Point& normal, const Color& color)
+      : Object(center, Type::kPlane, color), normal_(normal) {}
+
+  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
+    // Compute the 'd' in ax + by + cz + d = 0:
+    // This is actually the scalar product I guess.
+    FloatingPoint d = -normal_.dot(center_);
+    FloatingPoint p = d/normal_.norm();
+
+    FloatingPoint distance = normal_.dot(point) + p;
+    return distance;
+  }
+
+ protected:
+  Point normal_;
+};
+
 
 }  // namespace voxblox
 
