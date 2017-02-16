@@ -1,13 +1,15 @@
 #include <ros/ros.h>
 
 #include <voxblox/simulation/simulation_world.h>
+#include "voxblox_ros/ptcloud_vis.h"
+#include "voxblox_ros/conversions.h"
 
 namespace voxblox {
 
 class SimulationServer {
  public:
-  SimulationServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private)
-      : nh_(nh), nh_private_(nh_private) {}
+  SimulationServer(const ros::NodeHandle& nh,
+                   const ros::NodeHandle& nh_private);
 
   // Runs all of the below functions in the correct order:
   void run();
@@ -22,33 +24,63 @@ class SimulationServer {
   void evaluate() {}
 
   // Visualize results. :)
-  void visualize() {}
+  void visualize();
 
  private:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
+  // A bunch of publishers :)
   ros::Publisher sim_pub_;
+  ros::Publisher tsdf_gt_pub_;
+  ros::Publisher esdf_gt_pub_;
+
+  std::string world_frame_;
 
   // Actual simulation server.
   SimulationWorld world_;
 
   // Maps (GT and generates from sensors) generated here.
+  std::unique_ptr<Layer<TsdfVoxel> > tsdf_gt;
+  std::unique_ptr<Layer<EsdfVoxel> > esdf_gt;
 };
+
+SimulationServer::SimulationServer(const ros::NodeHandle& nh,
+                                   const ros::NodeHandle& nh_private)
+    : nh_(nh), nh_private_(nh_private), world_frame_("world") {
+  FloatingPoint voxel_size = 0.05;
+  int voxels_per_side = 16;
+
+  tsdf_gt.reset(new Layer<TsdfVoxel>(voxel_size, voxels_per_side));
+  esdf_gt.reset(new Layer<EsdfVoxel>(voxel_size, voxels_per_side));
+
+  // ROS stuff.
+  tsdf_gt_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "tsdf_gt", 1, true);
+
+  esdf_gt_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "esdf_gt", 1, true);
+}
 
 void SimulationServer::prepareWorld() {
   world_.addObject(
       std::unique_ptr<Object>(new Sphere(Point(2.0, 5.0, 2.0), 2.0)));
 
-  FloatingPoint voxel_size = 0.05;
-  int voxels_per_side = 16;
-  std::unique_ptr<Layer<TsdfVoxel> > tsdf_gt(
-      new Layer<TsdfVoxel>(voxel_size, voxels_per_side));
   world_.generateSdfFromWorld(0.5, tsdf_gt.get());
-
-  std::unique_ptr<Layer<EsdfVoxel> > esdf_gt(
-      new Layer<EsdfVoxel>(voxel_size, voxels_per_side));
   world_.generateSdfFromWorld(2.0, esdf_gt.get());
+}
+
+void SimulationServer::visualize() {
+  // Create a pointcloud with distance = intensity.
+  pcl::PointCloud<pcl::PointXYZI> pointcloud;
+  pointcloud.header.frame_id = world_frame_;
+
+  createDistancePointcloudFromTsdfLayer(*tsdf_gt, &pointcloud);
+  tsdf_gt_pub_.publish(pointcloud);
+
+  pointcloud.clear();
+  createDistancePointcloudFromEsdfLayer(*esdf_gt, &pointcloud);
+  esdf_gt_pub_.publish(pointcloud);
 }
 
 void SimulationServer::run() {
