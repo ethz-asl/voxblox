@@ -41,25 +41,33 @@ void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
 
       // Iterate over all objects and get distances to this thing.
       FloatingPoint voxel_dist = max_dist;
+      Color color;
       for (size_t j = 0; j < objects_.size(); ++j) {
-        voxel_dist =
-            std::min(voxel_dist, objects_[j]->getDistanceToPoint(coords));
+        FloatingPoint object_dist = objects_[j]->getDistanceToPoint(coords);
+        if (object_dist < voxel_dist) {
+          voxel_dist = object_dist;
+          color = objects_[j]->getColor();
+        }
       }
 
       // Then update the thing.
-      setVoxel(voxel_dist, &voxel);
+      setVoxel(voxel_dist, color, &voxel);
     }
   }
 }
 
 template <>
-void SimulationWorld::setVoxel(FloatingPoint dist, TsdfVoxel* voxel) const {
+void SimulationWorld::setVoxel(FloatingPoint dist, const Color& color,
+                               TsdfVoxel* voxel) const {
   voxel->distance = static_cast<float>(dist);
+  voxel->color = color;
   voxel->weight = 1.0f;  // Just to make sure it gets visualized/meshed/etc.
 }
 
+// Color ignored.
 template <>
-void SimulationWorld::setVoxel(FloatingPoint dist, EsdfVoxel* voxel) const {
+void SimulationWorld::setVoxel(FloatingPoint dist, const Color& color,
+                               EsdfVoxel* voxel) const {
   voxel->distance = static_cast<float>(dist);
   voxel->observed = true;
 }
