@@ -2,6 +2,7 @@
 #define VOXBLOX_SIMULATION_OBJECTS_H_
 
 #include <algorithm>
+#include <iostream>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
@@ -167,11 +168,12 @@ class Plane : public Object {
     // x = o + dl is the ray equation
     // n = normal, c = plane 'origin'
     FloatingPoint denominator = ray_direction.dot(normal_);
-    if (denominator < 1e-6) {
+    if (std::abs(denominator) < 1e-6) {
       // Lines are parallel, no intersection.
       return false;
     }
     FloatingPoint d = (center_ - ray_origin).dot(normal_) / denominator;
+    std::cout << "d: " << d << std::endl;
     if (d < 0.0) {
       return false;
     }

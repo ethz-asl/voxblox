@@ -96,9 +96,11 @@ void SimulationServer::prepareWorld() {
 
 void SimulationServer::generateSDF() {
   Point view_origin(0.0, 0.0, 2.0);
-  Point view_direction(1.0, 0.0, 0.0);
+  Point view_direction(0.0, 0.0, -1.0);
+  view_direction.normalize();
 
   Eigen::Vector2i res(320, 240);
+  res /= 4;
   FloatingPoint fov_h_rad = 1.5708;  // 90 degrees.
   FloatingPoint max_dist = 10.0;
 
@@ -111,6 +113,7 @@ void SimulationServer::generateSDF() {
   // Convert to a XYZRGB pointcloud.
   pcl::PointCloud<pcl::PointXYZRGB> ptcloud_pcl;
   ptcloud_pcl.reserve(ptcloud.size());
+  ptcloud_pcl.header.frame_id = world_frame_;
   for (size_t i = 0; i < ptcloud.size(); ++i) {
     pcl::PointXYZRGB point;
     point.x = ptcloud[i].x();
@@ -123,6 +126,11 @@ void SimulationServer::generateSDF() {
 
     ptcloud_pcl.push_back(point);
   }
+  pcl::PointXYZRGB point;
+  point.x = view_origin.x();
+  point.y = view_origin.y();
+  point.z = view_origin.z();
+  ptcloud_pcl.push_back(point);
 
   view_ptcloud_pub_.publish(ptcloud_pcl);
 }
