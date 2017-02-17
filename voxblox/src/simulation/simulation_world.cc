@@ -9,7 +9,10 @@ void SimulationWorld::addObject(std::unique_ptr<Object> object) {
   objects_.push_back(std::move(object));
 }
 
-void SimulationWorld::addGroundLevel(FloatingPoint height) {}
+void SimulationWorld::addGroundLevel(FloatingPoint height) {
+  objects_.emplace_back(
+      new Plane(Point(0.0, 0.0, height), Point(0.0, 0.0, 1.0)));
+}
 
 void SimulationWorld::addPlaneBoundaries(FloatingPoint x_min,
                                          FloatingPoint x_max,
