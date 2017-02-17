@@ -33,10 +33,12 @@ class SimulationWorld {
   // === Generating synthetic data from environment ===
   // Generates a synthetic view
   // Assumes square pixels for ease... Takes in FoV in radians.
-  void getPointcloudFromViewpoint(const Eigen::Vector2i& camera_res,
+  void getPointcloudFromViewpoint(const Point& view_origin,
+                                  const Point& view_direction,
+                                  const Eigen::Vector2i& camera_res,
                                   FloatingPoint fov_h_rad,
-                                  FloatingPoint max_dist,
-                                  Pointcloud* ptcloud) const;
+                                  FloatingPoint max_dist, Pointcloud* ptcloud,
+                                  Colors* colors) const;
 
   // === Computing ground truth SDFs ===
   //// ??? How to do this for both ESDF and TSDF and whatever?
