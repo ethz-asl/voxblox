@@ -449,9 +449,9 @@ void VoxbloxNode::insertPointcloudWithTf(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-      if (isnan(pointcloud_pcl.points[i].x) ||
-          isnan(pointcloud_pcl.points[i].y) ||
-          isnan(pointcloud_pcl.points[i].z)) {
+      if (std::isnan(pointcloud_pcl.points[i].x) ||
+          std::isnan(pointcloud_pcl.points[i].y) ||
+          std::isnan(pointcloud_pcl.points[i].z)) {
         continue;
       }
 
