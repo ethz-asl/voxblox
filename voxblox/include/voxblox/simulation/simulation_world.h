@@ -46,7 +46,7 @@ class SimulationWorld {
 
  private:
   template <typename VoxelType>
-  void setVoxel(FloatingPoint dist, VoxelType* voxel) const;
+  void setVoxel(FloatingPoint dist, const Color& color, VoxelType* voxel) const;
 
   // Vector storing pointers to all the objects in this world.
   std::vector<std::unique_ptr<Object> > objects_;

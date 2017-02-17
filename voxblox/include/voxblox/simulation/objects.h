@@ -28,6 +28,8 @@ class Object {
     return 0.0;
   }
 
+  Color getColor() const { return color_; }
+
  protected:
   Point center_;
   Type type_;
@@ -78,15 +80,12 @@ class Cube : public Object {
 
     // Basically 0... Means it's inside!
     if (distance < 1e-6) {
-    distance_vector.x() =
-        std::max(center_.x() - size_.x() - point.x(),
-                 point.x() - center_.x() - size_.x());
-    distance_vector.y() =
-        std::max(center_.y() - size_.y() - point.y(),
-                 point.y() - center_.y() - size_.y());
-    distance_vector.z() =
-        std::max(center_.z() - size_.z() - point.z(),
-                 point.z() - center_.z() - size_.z());
+      distance_vector.x() = std::max(center_.x() - size_.x() - point.x(),
+                                     point.x() - center_.x() - size_.x());
+      distance_vector.y() = std::max(center_.y() - size_.y() - point.y(),
+                                     point.y() - center_.y() - size_.y());
+      distance_vector.z() = std::max(center_.z() - size_.z() - point.z(),
+                                     point.z() - center_.z() - size_.z());
       distance = distance_vector.maxCoeff();
     }
 

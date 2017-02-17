@@ -75,14 +75,14 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
 }
 
 void SimulationServer::prepareWorld() {
-  world_.addObject(
-      std::unique_ptr<Object>(new Sphere(Point(2.0, 5.0, 2.0), 2.0)));
+  world_.addObject(std::unique_ptr<Object>(
+      new Sphere(Point(2.0, 5.0, 2.0), 2.0, Color::Red())));
 
   world_.addObject(std::unique_ptr<Object>(
-      new Plane(Point(-2.0, -3.0, 2.0), Point(0, 1, 0))));
+      new Plane(Point(-2.0, -3.0, 2.0), Point(0, 1, 0), Color::White())));
 
-  world_.addObject(
-      std::unique_ptr<Object>(new Cube(Point(-2.0, 5.0, 3.0), Point(2, 2, 2))));
+  world_.addObject(std::unique_ptr<Object>(
+      new Cube(Point(-2.0, 5.0, 3.0), Point(2, 2, 2), Color::Green())));
 
   world_.addGroundLevel(0.0);
 
@@ -114,7 +114,7 @@ void SimulationServer::visualize() {
     mesh_integrator.generateWholeMesh();
     visualization_msgs::MarkerArray marker_array;
     marker_array.markers.resize(1);
-    ColorMode color_mode = ColorMode::kColor;
+    ColorMode color_mode = ColorMode::kNormals;
     fillMarkerWithMesh(mesh, color_mode, &marker_array.markers[0]);
     marker_array.markers[0].header.frame_id = world_frame_;
     tsdf_gt_mesh_pub_.publish(marker_array);
