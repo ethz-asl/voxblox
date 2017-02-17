@@ -60,10 +60,10 @@ class VoxbloxNode {
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
 
-  bool generateMeshCallback(std_srvs::Empty::Request& request,      // NOLINT
-                            std_srvs::Empty::Response& response);   // NOLINT
-  bool generateEsdfCallback(std_srvs::Empty::Request& request,      // NOLINT
-                            std_srvs::Empty::Response& response);   // NOLINT
+  bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
+                            std_srvs::Empty::Response& response);    // NOLINT
+  bool generateEsdfCallback(std_srvs::Empty::Request& request,       // NOLINT
+                            std_srvs::Empty::Response& response);    // NOLINT
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
   bool loadMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
@@ -449,6 +449,12 @@ void VoxbloxNode::insertPointcloudWithTf(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (std::isnan(pointcloud_pcl.points[i].x) ||
+          std::isnan(pointcloud_pcl.points[i].y) ||
+          std::isnan(pointcloud_pcl.points[i].z)) {
+        continue;
+      }
+
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
@@ -617,7 +623,8 @@ bool VoxbloxNode::lookupTransformTf(const std::string& from_frame,
   // If this transform isn't possible at the time, then try to just look up
   // the latest (this is to work with bag files and static transform
   // publisher, etc).
-  if (!tf_listener_.canTransform(to_frame, from_frame_modified, time_to_lookup)) {
+  if (!tf_listener_.canTransform(to_frame, from_frame_modified,
+                                 time_to_lookup)) {
     time_to_lookup = ros::Time(0);
     ROS_WARN("Using latest TF transform instead of timestamp match.");
   }
