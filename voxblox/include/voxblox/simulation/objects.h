@@ -23,12 +23,20 @@ class Object {
       : center_(center), type_(type), color_(color) {}
   virtual ~Object() {}
 
-  // .... here go useful functions ...
+  // Map-building accessors.
   virtual FloatingPoint getDistanceToPoint(const Point& point) const {
     return 0.0;
   }
-
   Color getColor() const { return color_; }
+
+  // Raycasting accessors.
+  virtual bool getRayIntersection(const Point& ray_origin,
+                                  const Point& ray_direction,
+                                  FloatingPoint max_dist,
+                                  Point* intersect_point,
+                                  FloatingPoint* intersect_dist) const {
+    return false;
+  }
 
  protected:
   Point center_;
@@ -46,6 +54,41 @@ class Sphere : public Object {
   virtual FloatingPoint getDistanceToPoint(const Point& point) const {
     FloatingPoint distance = (center_ - point).norm() - radius_;
     return distance;
+  }
+
+  virtual bool getRayIntersection(const Point& ray_origin,
+                                  const Point& ray_direction,
+                                  FloatingPoint max_dist,
+                                  Point* intersect_point,
+                                  FloatingPoint* intersect_dist) const {
+    // From https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
+    // x = o + dl is the ray equation
+    // r = sphere radius, c = sphere center
+    FloatingPoint under_square_root =
+        pow(ray_direction.dot(ray_origin - center_), 2) -
+        (ray_origin - center_).squaredNorm() + pow(radius_, 2);
+
+    // No real roots = no intersection.
+    if (under_square_root < 0.0) {
+      return false;
+    }
+
+    FloatingPoint d =
+        -(ray_direction.dot(ray_origin - center_)) - sqrt(under_square_root);
+
+    // Intersection behind the origin.
+    if (d < 0.0) {
+      return false;
+    }
+    // Intersection greater than max dist, so no intersection in the sensor
+    // range.
+    if (d > max_dist) {
+      return false;
+    }
+
+    *intersect_point = ray_origin + d * ray_direction;
+    *intersect_dist = d;
+    return true;
   }
 
  protected:
@@ -112,6 +155,32 @@ class Plane : public Object {
 
     FloatingPoint distance = normal_.dot(point) + p;
     return distance;
+  }
+
+  virtual bool getRayIntersection(const Point& ray_origin,
+                                  const Point& ray_direction,
+                                  FloatingPoint max_dist,
+                                  Point* intersect_point,
+                                  FloatingPoint* intersect_dist) const {
+    // From https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
+    // Following notation of sphere more...
+    // x = o + dl is the ray equation
+    // n = normal, c = plane 'origin'
+    FloatingPoint denominator = ray_direction.dot(normal_);
+    if (denominator < 1e-6) {
+      // Lines are parallel, no intersection.
+      return false;
+    }
+    FloatingPoint d = (center_ - ray_origin).dot(normal_) / denominator;
+    if (d < 0.0) {
+      return false;
+    }
+    if (d > max_dist) {
+      return false;
+    }
+    *intersect_point = ray_origin + d * ray_direction;
+    *intersect_dist = d;
+    return true;
   }
 
  protected:

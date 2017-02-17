@@ -21,7 +21,7 @@ class SimulationServer {
   void prepareWorld();
 
   // Generates a SDF by generating random poses and putting them into an SDF.
-  void generateSDF() {}
+  void generateSDF();
 
   // Evaluate errors...
   void evaluate() {}
@@ -38,6 +38,7 @@ class SimulationServer {
   ros::Publisher tsdf_gt_pub_;
   ros::Publisher esdf_gt_pub_;
   ros::Publisher tsdf_gt_mesh_pub_;
+  ros::Publisher view_ptcloud_pub_;
 
   // Settings
   std::string world_frame_;
@@ -72,6 +73,9 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
       "esdf_gt", 1, true);
   tsdf_gt_mesh_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
       "tsdf_gt_mesh", 1, true);
+
+  view_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+      "view_ptcloud_pub", 1, true);
 }
 
 void SimulationServer::prepareWorld() {
@@ -88,6 +92,39 @@ void SimulationServer::prepareWorld() {
 
   world_.generateSdfFromWorld(0.5, tsdf_gt_.get());
   world_.generateSdfFromWorld(2.0, esdf_gt_.get());
+}
+
+void SimulationServer::generateSDF() {
+  Point view_origin(0.0, 0.0, 2.0);
+  Point view_direction(1.0, 0.0, 0.0);
+
+  Eigen::Vector2i res(320, 240);
+  FloatingPoint fov_h_rad = 1.5708;  // 90 degrees.
+  FloatingPoint max_dist = 10.0;
+
+  Pointcloud ptcloud;
+  Colors colors;
+
+  world_.getPointcloudFromViewpoint(view_origin, view_direction, res, fov_h_rad,
+                                    max_dist, &ptcloud, &colors);
+
+  // Convert to a XYZRGB pointcloud.
+  pcl::PointCloud<pcl::PointXYZRGB> ptcloud_pcl;
+  ptcloud_pcl.reserve(ptcloud.size());
+  for (size_t i = 0; i < ptcloud.size(); ++i) {
+    pcl::PointXYZRGB point;
+    point.x = ptcloud[i].x();
+    point.y = ptcloud[i].y();
+    point.z = ptcloud[i].z();
+
+    point.r = colors[i].r;
+    point.g = colors[i].g;
+    point.b = colors[i].b;
+
+    ptcloud_pcl.push_back(point);
+  }
+
+  view_ptcloud_pub_.publish(ptcloud_pcl);
 }
 
 void SimulationServer::visualize() {
