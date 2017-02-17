@@ -26,7 +26,7 @@ void SimulationWorld::getPointcloudFromViewpoint(
     const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
     FloatingPoint max_dist, Pointcloud* ptcloud, Colors* colors) const {
   // First, figure out, for instance, how big each ray increment is.
-  FloatingPoint fov_increment = camera_res.x() / fov_h_rad;
+  FloatingPoint fov_increment = fov_h_rad / camera_res.x();
   FloatingPoint fov_v_rad = fov_h_rad * camera_res.y() / camera_res.x();
 
   // Now actually iterate over all pixels by fov_h_rad increments.
@@ -35,10 +35,12 @@ void SimulationWorld::getPointcloudFromViewpoint(
     for (FloatingPoint v_angle = -fov_v_rad / 2.0; v_angle <= fov_v_rad / 2.0;
          v_angle += fov_increment) {
       // Direction for this ray is...
-      Eigen::AngleAxis<FloatingPoint> u_rot(u_angle, Point::UnitZ());
+      Eigen::AngleAxis<FloatingPoint> u_rot(u_angle, Point::UnitX());
       Eigen::AngleAxis<FloatingPoint> v_rot(v_angle, Point::UnitY());
 
       Point ray_direction = v_rot * u_rot * view_direction;
+      std::cout << "View origin: " << view_origin.transpose()
+                << " direction: " << ray_direction.transpose() << std::endl;
       // Cast this ray into every object.
       bool ray_valid = false;
       FloatingPoint ray_dist = max_dist;
