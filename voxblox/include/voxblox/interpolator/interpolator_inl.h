@@ -23,6 +23,8 @@ bool Interpolator<VoxelType>::getDistance(const Point& pos,
 template <typename VoxelType>
 bool Interpolator<VoxelType>::getVoxel(const Point& pos, VoxelType* voxel,
                                        bool interpolate) const {
+  // DEBUG
+  //std::cout << "entering getVoxel" << std::endl;
   if (interpolate) {
     return getInterpVoxel(pos, voxel);
   } else {
@@ -208,13 +210,20 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
     typename Layer<VoxelType>::BlockType::ConstPtr block_ptr =
         layer_->getBlockPtrByIndex(block_index);
     if (block_ptr == nullptr) {
+      //std::cout << "failed at block_ptr == nullptr #1" << std::endl;
       return false;
     }
 
     VoxelIndex voxel_index = voxel_indexes.col(i);
+
+    // DEBUG
+    std::cout << "block_index original: " << std::endl << block_index << std::endl;
+    std::cout << "voxel_index original: " << std::endl << voxel_index << std::endl;
+
+
     // if voxel index is too large get neighboring block and update index
+    BlockIndex new_block_index = block_index;
     if ((voxel_index.array() >= block_ptr->voxels_per_side()).any()) {
-      BlockIndex new_block_index = block_index;
       for (size_t j = 0; j < block_index.rows(); ++j) {
         if (voxel_index(j) >= block_ptr->voxels_per_side()) {
           new_block_index(j)++;
@@ -223,9 +232,14 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
       }
       block_ptr = layer_->getBlockPtrByIndex(new_block_index);
       if (block_ptr == nullptr) {
+        //std::cout << "failed at block_ptr == nullptr #2" << std::endl;
         return false;
       }
     }
+
+    std::cout << "block_index new: " << std::endl << new_block_index << std::endl;
+    std::cout << "voxel_index new: " << std::endl << voxel_index << std::endl;
+
     // use bottom left corner voxel to compute weights vector
     if (i == 0) {
       getQVector(block_ptr->computeCoordinatesFromVoxelIndex(voxel_index), pos,
@@ -236,6 +250,7 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
 
     voxels[i] = &voxel;
     if (!isVoxelValid(voxel)) {
+      //std::cout << "failed at isVoxelValid" << std::endl;
       return false;
     }
   }
@@ -249,11 +264,23 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
   BlockIndex block_index;
   InterpIndexes voxel_indexes;
   if (!setIndexes(pos, &block_index, &voxel_indexes)) {
+    //std::cout << "failed at: setIndexes" << std::endl;
     return false;
   }
 
+  // DEBUG
+  std::cout << "block_index: " << std::endl << block_index << std::endl;
+  std::cout << "voxel_indexes: " << std::endl << voxel_indexes << std::endl;
+
+
+
   // get distances of 8 surrounding voxels and weights vector
-  return getVoxelsAndQVector(block_index, voxel_indexes, pos, voxels, q_vector);
+  if (getVoxelsAndQVector(block_index, voxel_indexes, pos, voxels, q_vector)) {
+    return true;
+  } else {
+    //std::cout << "failed at: getVoxelsAndQVector2" << std::endl;
+    return false;
+  }
 }
 
 template <typename VoxelType>
@@ -295,16 +322,56 @@ bool Interpolator<VoxelType>::getInterpVoxel(const Point& pos,
                                              VoxelType* voxel) const {
   CHECK_NOTNULL(voxel);
 
+  // DEBUG
+  std::cout << "entering getInterpVoxel" << std::endl;
+
   // get voxels of 8 surrounding voxels and weights vector
-  const VoxelType* voxels[9];
+  const VoxelType* voxels[8];
   InterpVector q_vector;
   if (!getVoxelsAndQVector(pos, voxels, &q_vector)) {
+/*
+    // DEBUG
+    for (voxel_index = 0; voxel_index < 8; voxel_index++) {
+      VoxelType voxel = voxels[voxel_index];
+    }
+*/
     return false;
   } else {
     *voxel = interpVoxel(q_vector, voxels);
     return true;
   }
 }
+
+
+
+
+template <typename VoxelType>
+bool Interpolator<VoxelType>::getInterpVoxelTest(const Point& pos,
+                                             VoxelType* voxel, const VoxelType** voxels) const {
+  CHECK_NOTNULL(voxel);
+
+  // DEBUG
+  std::cout << "entering getInterpVoxel" << std::endl;
+
+  // get voxels of 8 surrounding voxels and weights vector
+  //const VoxelType* voxels[8];
+  InterpVector q_vector;
+  if (!getVoxelsAndQVector(pos, voxels, &q_vector)) {
+/*
+    // DEBUG
+    for (voxel_index = 0; voxel_index < 8; voxel_index++) {
+      VoxelType voxel = voxels[voxel_index];
+    }
+*/
+    return false;
+  } else {
+    *voxel = interpVoxel(q_vector, voxels);
+    return true;
+  }
+}
+
+
+
 
 template <typename VoxelType>
 bool Interpolator<VoxelType>::getNearestVoxel(const Point& pos,
