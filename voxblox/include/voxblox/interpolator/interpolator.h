@@ -36,6 +36,13 @@ class Interpolator {
   bool getNearestDistanceAndWeight(const Point& pos, FloatingPoint* distance,
                                    float* weight) const;
 
+
+
+
+  bool getInterpVoxelTest(const Point& pos, VoxelType* voxel, const VoxelType** voxels) const;
+
+
+
  private:
   bool setIndexes(const Point& pos, BlockIndex* block_index,
                   InterpIndexes* voxel_indexes) const;
