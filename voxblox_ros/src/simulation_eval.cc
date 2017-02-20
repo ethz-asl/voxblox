@@ -94,9 +94,13 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
   // Used to be * 4 according to Marius's experience, now * 2.
   // This should be made bigger again if behind-surface weighting is improved.
   integrator_config.default_truncation_distance = voxel_size * 4;
-
+  integrator_config.allow_clear = true;
+  integrator_config.use_const_weight = false;
+  integrator_config.use_weight_dropoff = true;
+  integrator_config.max_ray_length_m = 10.0;
   double truncation_distance = integrator_config.default_truncation_distance;
   double max_weight = integrator_config.max_weight;
+
   nh_private_.param("voxel_carving_enabled",
                     integrator_config.voxel_carving_enabled,
                     integrator_config.voxel_carving_enabled);
@@ -144,7 +148,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
 
 void SimulationServer::prepareWorld() {
   world_.addObject(std::unique_ptr<Object>(
-      new Sphere(Point(2.0, 0.0, 2.0), 2.0, Color::Red())));
+      new Sphere(Point(2.0, 2.0, 2.0), 2.0, Color::Red())));
 
   world_.addObject(std::unique_ptr<Object>(
       new Plane(Point(-2.0, -3.0, 2.0), Point(0, 1, 0), Color::White())));
@@ -168,8 +172,8 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
   FloatingPoint max_distance = min_distance * 2.0;
 
   // Figure out the dimensions of the space.
-  Point space_min = world_.getMinBound();
-  Point space_size = world_.getMaxBound() - space_min;
+  Point space_min = world_.getMinBound()/2.0;
+  Point space_size = world_.getMaxBound() - space_min/2.0;
 
   Point position = Point::Zero();
   bool success = false;
@@ -212,7 +216,7 @@ void SimulationServer::generateSDF() {
   FloatingPoint fov_h_rad = 1.5708;  // 90 degrees.
   FloatingPoint max_dist = 10.0;
   FloatingPoint min_dist = 0.5;
-  constexpr int num_viewpoints = 100;
+  constexpr int num_viewpoints = 50;
 
   Pointcloud ptcloud;
   Colors colors;
@@ -254,8 +258,10 @@ void SimulationServer::generateSDF() {
     // Convert to a XYZRGB pointcloud.
     if (visualize_) {
       ptcloud_pcl.header.frame_id = world_frame_;
+      pcl::PointCloud<pcl::PointXYZRGB> ptcloud_temp;
 
-      // pointcloudToPclXYZRGB(ptcloud, colors, &ptcloud_pcl);
+      pointcloudToPclXYZRGB(ptcloud, colors, &ptcloud_temp);
+      ptcloud_pcl += ptcloud_temp;
 
       pcl::PointXYZRGB point;
       point.x = view_origin.x();

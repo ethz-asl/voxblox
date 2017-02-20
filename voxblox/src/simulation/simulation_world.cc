@@ -3,7 +3,7 @@
 namespace voxblox {
 
 SimulationWorld::SimulationWorld()
-    : min_bound_(-6.0, -6.0, -2.0), max_bound_(6.0, 6.0, 10.0) {}
+    : min_bound_(-5.0, -5.0, -1.0), max_bound_(5.0, 5.0, 9.0) {}
 
 void SimulationWorld::addObject(std::unique_ptr<Object> object) {
   objects_.push_back(std::move(object));
