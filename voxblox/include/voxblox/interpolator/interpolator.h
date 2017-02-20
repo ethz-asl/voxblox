@@ -14,13 +14,16 @@ class Interpolator {
  public:
   typedef std::shared_ptr<Interpolator> Ptr;
 
-  explicit Interpolator(Layer<VoxelType>* layer);
+  explicit Interpolator(const Layer<VoxelType>* layer);
 
   bool getGradient(const Point& pos, Point* grad,
                    const bool interpolate = false) const;
 
   bool getDistance(const Point& pos, FloatingPoint* distance,
                    bool interpolate = false) const;
+
+  bool getVoxel(const Point& pos, VoxelType* voxel,
+                bool interpolate = false) const;
 
   // This tries to use whatever information is available to interpolate the
   // distance and gradient -- if only one side is available, for instance,
@@ -43,23 +46,42 @@ class Interpolator {
   void getQVector(const Point& voxel_pos, const Point& pos,
                   InterpVector* q_vector) const;
 
-  bool getDistancesAndQVector(const BlockIndex& block_index,
-                              const InterpIndexes& voxel_indexes,
-                              const Point& pos, InterpVector* distances,
-                              InterpVector* q_vector) const;
+  bool getVoxelsAndQVector(const BlockIndex& block_index,
+                           const InterpIndexes& voxel_indexes, const Point& pos,
+                           const VoxelType** voxels,
+                           InterpVector* q_vector) const;
+
+  bool getVoxelsAndQVector(const Point& pos, const VoxelType** voxels,
+                           InterpVector* q_vector) const;
 
   bool getInterpDistance(const Point& pos, FloatingPoint* distance) const;
 
   bool getNearestDistance(const Point& pos, FloatingPoint* distance) const;
 
+  bool getInterpVoxel(const Point& pos, VoxelType* voxel) const;
+
+  bool getNearestVoxel(const Point& pos, VoxelType* voxel) const;
+
   // Allow this class to be templated on all kinds of voxels.
-  FloatingPoint getVoxelDistance(const VoxelType& voxel) const;
-  float getVoxelWeight(const VoxelType& voxel) const;
+  static FloatingPoint getVoxelDistance(const VoxelType& voxel);
+  static float getVoxelWeight(const VoxelType& voxel);
   // Returns true if the voxel should be used in interpolation/gradient
   // calculation. False otherwise.
-  bool isVoxelValid(const VoxelType& voxel) const;
+  static bool isVoxelValid(const VoxelType& voxel);
+  static uint8_t getRed(const VoxelType& voxel);
+  static uint8_t getBlue(const VoxelType& voxel);
+  static uint8_t getGreen(const VoxelType& voxel);
+  static uint8_t getAlpha(const VoxelType& voxel);
 
-  Layer<VoxelType>* layer_;
+  template <typename TGetter>
+  static FloatingPoint interpMember(const InterpVector& q_vector,
+                                    const VoxelType** voxels,
+                                    TGetter (*getter)(const VoxelType&));
+
+  static VoxelType interpVoxel(const InterpVector& q_vector,
+                               const VoxelType** voxels);
+
+  const Layer<VoxelType>* layer_;
 };
 
 }  // namespace voxblox
