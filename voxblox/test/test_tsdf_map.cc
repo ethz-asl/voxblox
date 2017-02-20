@@ -10,8 +10,8 @@ class TsdfMapTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     TsdfMap::Config config;
-    config.tsdf_voxel_size = 0.1;
-    config.tsdf_voxels_per_side = 8;
+    config.tsdf_voxel_size = 0.1f;
+    config.tsdf_voxels_per_side = 8u;
     map_ = std::make_shared<TsdfMap>(config);
   }
 

@@ -37,6 +37,18 @@ class LabelTsdfMap {
     return *tsdf_layer_;
   }
 
+  Layer<LabelVoxel>* getLabelLayerPtr() {
+    return label_layer_.get();
+  }
+
+  const Layer<LabelVoxel>& getLabelLayer() const {
+    return *label_layer_;
+  }
+
+  Label* getHighestLabelPtr() {
+    return &highest_label_;
+  }
+
   FloatingPoint block_size() const { return tsdf_layer_->block_size(); }
 
  protected:

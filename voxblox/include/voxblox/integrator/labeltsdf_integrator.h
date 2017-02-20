@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <limits>
 #include <map>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -18,7 +19,7 @@
 
 namespace voxblox {
 
-class LabelTsdfIntegrator : TsdfIntegrator {
+class LabelTsdfIntegrator : public TsdfIntegrator {
  public:
   LabelTsdfIntegrator(const Config& config,
                       Layer<TsdfVoxel>* tsdf_layer,
@@ -38,7 +39,7 @@ class LabelTsdfIntegrator : TsdfIntegrator {
                                      const Pointcloud& points_C,
                                      Labels* labels) {
     CHECK_NOTNULL(labels);
-    CHECK_EQ(points_C.size(), labels->size());
+    labels->resize(points_C.size());
 
     std::map<Label, size_t> label_count;
     size_t unlabeled_count = 0u;
@@ -60,6 +61,7 @@ class LabelTsdfIntegrator : TsdfIntegrator {
     }
 
     // Find label with highest frequency.
+    // TODO(grinvalm) add threshold, probably in the form of a ratio
     size_t current_max = 0u;
     Label label_max;
     for (const std::pair<Label, size_t>& label_count_pair : label_count) {
@@ -91,6 +93,9 @@ class LabelTsdfIntegrator : TsdfIntegrator {
     } else {
       if (label_voxel->label_confidence <= 0.0f) {
         label_voxel->label = label;
+        if (*highest_label_ < label) {
+          *highest_label_ = label;
+        }
       } else {
         label_voxel->label_confidence--;
       }
@@ -99,8 +104,8 @@ class LabelTsdfIntegrator : TsdfIntegrator {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C,
-                           const Labels& labels,
-                           const Colors& colors) {
+                           const Colors& colors,
+                           const Labels& labels) {
     CHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
@@ -160,8 +165,8 @@ class LabelTsdfIntegrator : TsdfIntegrator {
         }
 
         if (!tsdf_block || block_idx != last_block_idx) {
-          if (!tsdf_block) {
-            CHECK(!label_block);
+          if (!tsdf_block != !label_block) {
+            LOG(FATAL) << "Block allocation differs between the two layers.";
           }
           tsdf_block = layer_->allocateBlockPtrByIndex(block_idx);
           label_block = label_layer_->allocateBlockPtrByIndex(block_idx);
@@ -195,21 +200,9 @@ class LabelTsdfIntegrator : TsdfIntegrator {
   }
 
  protected:
-  Config config_;
-
   Layer<LabelVoxel>* label_layer_;
 
   Label* highest_label_;
-
-  // Cached map config.
-  FloatingPoint voxel_size_;
-  size_t voxels_per_side_;
-  FloatingPoint block_size_;
-
-  // Derived types.
-  FloatingPoint voxel_size_inv_;
-  FloatingPoint voxels_per_side_inv_;
-  FloatingPoint block_size_inv_;
 };
 
 }  // namespace voxblox

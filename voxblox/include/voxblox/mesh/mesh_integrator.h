@@ -48,10 +48,9 @@ class MeshIntegrator {
 
   MeshIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
                  MeshLayer* mesh_layer)
-      : config_(config), tsdf_layer_(tsdf_layer), mesh_layer_(mesh_layer) {
-    DCHECK_NOTNULL(tsdf_layer_);
-    DCHECK_NOTNULL(mesh_layer_);
-
+      : config_(config),
+        tsdf_layer_(CHECK_NOTNULL(tsdf_layer)),
+        mesh_layer_(CHECK_NOTNULL(mesh_layer)) {
     voxel_size_ = tsdf_layer_->voxel_size();
     block_size_ = tsdf_layer_->block_size();
     voxels_per_side_ = tsdf_layer_->voxels_per_side();
@@ -95,20 +94,7 @@ class MeshIntegrator {
     }
   }
 
-  void updateMeshForBlock(const BlockIndex& block_index) {
-    Mesh::Ptr mesh = mesh_layer_->allocateMeshPtrByIndex(block_index);
-    mesh->clear();
-    // This block should already exist, otherwise it makes no sense to update
-    // the mesh for it. ;)
-    Block<TsdfVoxel>::ConstPtr block =
-        tsdf_layer_->getBlockPtrByIndex(block_index);
-
-    if (!block) {
-      LOG(ERROR) << "Trying to mesh a non-existent block at index: "
-                 << block_index.transpose();
-      return;
-    }
-
+  void extractBlockMesh(Block<TsdfVoxel>::ConstPtr block, Mesh::Ptr mesh) {
     size_t vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
@@ -153,6 +139,23 @@ class MeshIntegrator {
                             mesh.get());
       }
     }
+  }
+
+  virtual void updateMeshForBlock(const BlockIndex& block_index) {
+    Mesh::Ptr mesh = mesh_layer_->allocateMeshPtrByIndex(block_index);
+    mesh->clear();
+    // This block should already exist, otherwise it makes no sense to update
+    // the mesh for it. ;)
+    Block<TsdfVoxel>::ConstPtr block =
+        tsdf_layer_->getBlockPtrByIndex(block_index);
+
+    if (!block) {
+      LOG(ERROR) << "Trying to mesh a non-existent block at index: "
+                 << block_index.transpose();
+      return;
+    }
+
+    extractBlockMesh(block, mesh);
 
     // Update colors if needed.
     if (config_.use_color) {
@@ -264,6 +267,8 @@ class MeshIntegrator {
   }
 
   void updateMeshColor(const Block<TsdfVoxel>& block, Mesh* mesh) {
+    CHECK_NOTNULL(mesh);
+
     mesh->colors.clear();
     mesh->colors.resize(mesh->indices.size());
 
@@ -271,11 +276,12 @@ class MeshIntegrator {
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
       const Point& vertex = mesh->vertices[i];
       VoxelIndex voxel_index = block.computeVoxelIndexFromCoordinates(vertex);
-      Point voxel_center = block.computeCoordinatesFromVoxelIndex(voxel_index);
+      const Point voxel_center =
+          block.computeCoordinatesFromVoxelIndex(voxel_index);
 
       // Should be within half a voxel of the voxel center in all dimensions, or
       // it belongs in the other one.
-      Point dist_from_center = vertex - voxel_center;
+      const Point dist_from_center = vertex - voxel_center;
       for (unsigned int j = 0; j < 3; ++j) {
         if (std::abs(dist_from_center(j)) > voxel_size_ / 2.0) {
           voxel_index(j) += signum(dist_from_center(j));
