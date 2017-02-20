@@ -96,7 +96,7 @@ void SimulationServer::prepareWorld() {
 
 void SimulationServer::generateSDF() {
   Point view_origin(0.0, 0.0, 2.0);
-  Point view_direction(0.0, 0.0, -1.0);
+  Point view_direction(0.0, 1.0, 0.0);
   view_direction.normalize();
 
   Eigen::Vector2i res(320, 240);
