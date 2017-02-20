@@ -121,6 +121,8 @@ class EsdfIntegrator {
         // Check for frontier voxels.
         // This is the check for the lower frontier.
         if (isFixed(tsdf_voxel.distance)) {
+          // This is if the distance has been lowered or the voxel is new.
+          // Gets put into lower frontier (open_).
           if (!esdf_voxel.observed ||
               esdf_voxel.distance > tsdf_voxel.distance) {
             esdf_voxel.distance = tsdf_voxel.distance;
@@ -133,10 +135,14 @@ class EsdfIntegrator {
                        esdf_voxel.distance);
             num_lower++;
           } else if (esdf_voxel.distance < tsdf_voxel.distance) {
+            // In case the fixed voxel has a HIGHER distance than the esdf
+            // voxel. Need to raise it, and burn its children.
             esdf_voxel.distance = tsdf_voxel.distance;
             esdf_voxel.parent.setZero();
             esdf_voxel.fixed = true;
             raise_.push(std::make_pair(block_index, voxel_index));
+            // We need to also make sure this voxel ends up in the lower
+            // frontier, as it is fixed.
             open_.push(std::make_pair(block_index, voxel_index),
                        esdf_voxel.distance);
             esdf_voxel.in_queue = true;
@@ -158,6 +164,7 @@ class EsdfIntegrator {
             esdf_voxel.distance =
                 signum(tsdf_voxel.distance) * config_.default_distance_m;
             esdf_voxel.observed = true;
+            esdf_voxel.fixed = false;
             esdf_voxel.parent.setZero();
             if (push_neighbors) {
               pushNeighborsToOpen(block_index, voxel_index);
@@ -212,13 +219,14 @@ class EsdfIntegrator {
     }
   }
 
+  // The raise set is always empty in batch operations.
   void processRaiseSet() {
     size_t num_updates = 0u;
     // For the raise set, get all the neighbors, then:
     // 1. if the neighbor's parent is the current voxel, add it to the raise
     //    queue.
     // 2. if the neighbor's parent differs, add it to open (we will have to
-    //    update our current weights, of course).
+    //    update our current distances, of course).
     while (!raise_.empty()) {
       VoxelKey kv = raise_.front();
       raise_.pop();
@@ -259,6 +267,7 @@ class EsdfIntegrator {
         if (!neighbor_voxel.observed) {
           continue;
         }
+        // This will never update fixed voxels as they are their own parents.
         if (neighbor_voxel.parent == -directions[i]) {
           // This is the case where we are the parent of this one, so we
           // should clear it and raise it.
@@ -290,6 +299,7 @@ class EsdfIntegrator {
           esdf_layer_->getBlockPtrByIndex(kv.first);
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
+      // Again, no point updating unobserved voxels.
       if (!esdf_voxel.observed) {
         esdf_voxel.in_queue = false;
         continue;
@@ -482,7 +492,8 @@ class EsdfIntegrator {
   BucketQueue<VoxelKey> open_;
 
   // Raise set for updates; these are values that used to be in the fixed
-  // frontier and now have a higher value.
+  // frontier and now have a higher value, or their children which need to have
+  // their values invalidated.
   std::queue<VoxelKey> raise_;
 
   size_t esdf_voxels_per_side_;

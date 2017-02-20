@@ -354,6 +354,7 @@ bool SimulationServer::evaluateVoxel(const TsdfVoxel& voxel_test,
   if (voxel_test.weight < 1e-6) {
     return false;
   }
+
   *error = voxel_gt.distance - voxel_test.distance;
   if (voxel_gt.distance < truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
@@ -368,6 +369,7 @@ bool SimulationServer::evaluateVoxel(const EsdfVoxel& voxel_test,
   if (!voxel_test.observed) {
     return false;
   }
+
   *error = voxel_gt.distance - voxel_test.distance;
   if (voxel_gt.distance < truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
