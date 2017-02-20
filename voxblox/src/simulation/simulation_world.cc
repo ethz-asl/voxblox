@@ -29,16 +29,22 @@ void SimulationWorld::getPointcloudFromViewpoint(
   FloatingPoint fov_increment = fov_h_rad / camera_res.x();
   FloatingPoint fov_v_rad = fov_h_rad * camera_res.y() / camera_res.x();
 
-  // Now actually iterate over all pixels by fov_h_rad increments.
-  for (FloatingPoint u_angle = -fov_h_rad / 2.0; u_angle <= fov_h_rad / 2.0;
-       u_angle += fov_increment) {
-    for (FloatingPoint v_angle = -fov_v_rad / 2.0; v_angle <= fov_v_rad / 2.0;
-         v_angle += fov_increment) {
-      // Direction for this ray is...
-      Eigen::AngleAxis<FloatingPoint> u_rot(u_angle, Point::UnitX());
-      Eigen::AngleAxis<FloatingPoint> v_rot(v_angle, Point::UnitY());
+  FloatingPoint focal_length = camera_res.x() / (2 * tan(fov_h_rad / 2.0));
 
-      Point ray_direction = v_rot * u_rot * view_direction;
+  // Calculate transformation between nominal camera view direction and our
+  // view direction. Nominal view is positive x direction.
+  Point nominal_view_direction(1.0, 0.0, 0.0);
+  // TODO(helenol): fix type for floats.
+  Eigen::Quaterniond ray_rotation = Eigen::Quaterniond::FromTwoVectors(
+      nominal_view_direction, view_direction);
+
+  // Now actually iterate over all pixels.
+  for (int u = -camera_res.x() / 2; u < camera_res.x() / 2; ++u) {
+    for (int v = -camera_res.y() / 2; v < camera_res.y() / 2; ++v) {
+      Point ray_camera_direction =
+          Point(1.0, u / focal_length, v / focal_length);
+      Point ray_direction = ray_rotation * (ray_camera_direction).normalized();
+
       std::cout << "View origin: " << view_origin.transpose()
                 << " direction: " << ray_direction.transpose() << std::endl;
       // Cast this ray into every object.
