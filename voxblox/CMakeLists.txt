@@ -65,10 +65,10 @@ target_link_libraries(test_labeltsdf_integrator
   ${PROJECT_NAME} ${catkin_LIBRARIES}
 )
 
-catkin_add_gtest(test_merge_integrator
-  test/test_merge_integrator.cc
+catkin_add_gtest(test_tsdf_interpolator
+  test/test_tsdf_interpolator.cc
 )
-target_link_libraries(test_merge_integrator ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_dependencies(test_labeltsdf_integrator test_data)
 
