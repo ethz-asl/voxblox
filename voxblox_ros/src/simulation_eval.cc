@@ -2,6 +2,8 @@
 
 #include <voxblox/simulation/simulation_world.h>
 #include <voxblox/mesh/mesh_integrator.h>
+#include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
 
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/mesh_vis.h"
@@ -24,7 +26,7 @@ class SimulationServer {
   void generateSDF();
 
   // Evaluate errors...
-  void evaluate() {}
+  void evaluate();
 
   // Visualize results. :)
   void visualize();
@@ -37,6 +39,14 @@ class SimulationServer {
   void transformPointcloud(const Transformation& T_N_O,
                            const Pointcloud& ptcloud,
                            Pointcloud* ptcloud_out) const;
+
+  template <typename VoxelType>
+  FloatingPoint evaluateLayerAgainstGt(const Layer<VoxelType>& layer_test,
+                                       const Layer<VoxelType>& layer_gt) const;
+
+  template <typename VoxelType>
+  bool evaluateVoxel(const VoxelType& voxel_test, const VoxelType& voxel_gt,
+                     FloatingPoint* error) const;
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -55,6 +65,8 @@ class SimulationServer {
   std::string world_frame_;
   bool visualize_;
   bool generate_mesh_;
+  FloatingPoint truncation_distance_;
+  FloatingPoint esdf_max_distance_;
 
   // Actual simulation server.
   SimulationWorld world_;
@@ -98,29 +110,40 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
   integrator_config.use_const_weight = false;
   integrator_config.use_weight_dropoff = true;
   integrator_config.max_ray_length_m = 10.0;
-  double truncation_distance = integrator_config.default_truncation_distance;
-  double max_weight = integrator_config.max_weight;
+  truncation_distance_ = integrator_config.default_truncation_distance;
 
   nh_private_.param("voxel_carving_enabled",
                     integrator_config.voxel_carving_enabled,
                     integrator_config.voxel_carving_enabled);
-  nh_private_.param("truncation_distance", truncation_distance,
-                    truncation_distance);
+  nh_private_.param("truncation_distance", truncation_distance_,
+                    truncation_distance_);
   nh_private_.param("max_ray_length_m", integrator_config.max_ray_length_m,
                     integrator_config.max_ray_length_m);
   nh_private_.param("min_ray_length_m", integrator_config.min_ray_length_m,
                     integrator_config.min_ray_length_m);
-  nh_private_.param("max_weight", max_weight, max_weight);
+  nh_private_.param("max_weight", integrator_config.max_weight,
+                    integrator_config.max_weight);
   nh_private_.param("use_const_weight", integrator_config.use_const_weight,
                     integrator_config.use_const_weight);
   nh_private_.param("allow_clear", integrator_config.allow_clear,
                     integrator_config.allow_clear);
   integrator_config.default_truncation_distance =
-      static_cast<float>(truncation_distance);
-  integrator_config.max_weight = static_cast<float>(max_weight);
+      static_cast<float>(truncation_distance_);
 
   tsdf_integrator_.reset(
       new TsdfIntegrator(integrator_config, tsdf_test_.get()));
+
+  EsdfIntegrator::Config esdf_integrator_config;
+  // Make sure that this is the same as the truncation distance OR SMALLER!
+  esdf_integrator_config.min_distance_m = truncation_distance_ / 2.0;
+  nh_private_.param("esdf_max_distance_m",
+                    esdf_integrator_config.max_distance_m,
+                    esdf_integrator_config.max_distance_m);
+  esdf_max_distance_ = esdf_integrator_config.max_distance_m;
+  esdf_integrator_config.default_distance_m = esdf_max_distance_;
+
+  esdf_integrator_.reset(new EsdfIntegrator(
+      esdf_integrator_config, tsdf_test_.get(), esdf_test_.get()));
 
   // ROS stuff.
   // GT
@@ -148,18 +171,21 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
 
 void SimulationServer::prepareWorld() {
   world_.addObject(std::unique_ptr<Object>(
-      new Sphere(Point(2.0, 2.0, 2.0), 2.0, Color::Red())));
+      new Sphere(Point(0.0, 0.0, 2.0), 2.0, Color::Red())));
 
   world_.addObject(std::unique_ptr<Object>(
-      new Plane(Point(-2.0, -3.0, 2.0), Point(0, 1, 0), Color::White())));
+      new Plane(Point(-2.0, -4.0, 2.0), Point(0, 1, 0), Color::White())));
 
   world_.addObject(std::unique_ptr<Object>(
-      new Cube(Point(-2.0, 5.0, 2.0), Point(4, 4, 4), Color::Green())));
+      new Plane(Point(4.0, 0.0, 0.0), Point(-1, 0, 0), Color::Pink())));
+
+  world_.addObject(std::unique_ptr<Object>(
+      new Cube(Point(-4.0, 4.0, 2.0), Point(4, 4, 4), Color::Green())));
 
   world_.addGroundLevel(0.0);
 
-  world_.generateSdfFromWorld(0.5, tsdf_gt_.get());
-  world_.generateSdfFromWorld(2.0, esdf_gt_.get());
+  world_.generateSdfFromWorld(truncation_distance_, tsdf_gt_.get());
+  world_.generateSdfFromWorld(esdf_max_distance_, esdf_gt_.get());
 }
 
 bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
@@ -172,8 +198,8 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
   FloatingPoint max_distance = min_distance * 2.0;
 
   // Figure out the dimensions of the space.
-  Point space_min = world_.getMinBound()/2.0;
-  Point space_size = world_.getMaxBound() - space_min/2.0;
+  Point space_min = world_.getMinBound() / 2.0;
+  Point space_size = world_.getMaxBound() - space_min / 2.0;
 
   Point position = Point::Zero();
   bool success = false;
@@ -255,13 +281,16 @@ void SimulationServer::generateSDF() {
     tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
                                                 discard);
 
+    const bool clear_updated_flag = true;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
+
     // Convert to a XYZRGB pointcloud.
     if (visualize_) {
       ptcloud_pcl.header.frame_id = world_frame_;
       pcl::PointCloud<pcl::PointXYZRGB> ptcloud_temp;
 
-      pointcloudToPclXYZRGB(ptcloud, colors, &ptcloud_temp);
-      ptcloud_pcl += ptcloud_temp;
+      /* pointcloudToPclXYZRGB(ptcloud, colors, &ptcloud_temp);
+      ptcloud_pcl += ptcloud_temp; */
 
       pcl::PointXYZRGB point;
       point.x = view_origin.x();
@@ -273,6 +302,86 @@ void SimulationServer::generateSDF() {
       ros::spinOnce();
     }
   }
+
+  // Generate ESDF in batch.
+  // esdf_integrator_->updateFromTsdfLayerBatch();
+}
+
+template <typename VoxelType>
+FloatingPoint SimulationServer::evaluateLayerAgainstGt(
+    const Layer<VoxelType>& layer_test,
+    const Layer<VoxelType>& layer_gt) const {
+  // Iterate over all voxels in GT set and look them up in the test set.
+  // Then compute RMSE.
+  BlockIndexList block_list;
+  layer_gt.getAllAllocatedBlocks(&block_list);
+  size_t vps = layer_gt.voxels_per_side();
+  size_t num_voxels_per_block = vps * vps * vps;
+
+  double total_squared_error = 0.0;
+  size_t num_evaluated_voxels = 0;
+
+  for (const BlockIndex block_index : block_list) {
+    if (!layer_test.hasBlock(block_index)) {
+      continue;
+    }
+    const Block<VoxelType>& gt_block = layer_gt.getBlockByIndex(block_index);
+    const Block<VoxelType>& test_block =
+        layer_test.getBlockByIndex(block_index);
+
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
+         ++linear_index) {
+      FloatingPoint error = 0.0;
+      if (evaluateVoxel<VoxelType>(
+              test_block.getVoxelByLinearIndex(linear_index),
+              gt_block.getVoxelByLinearIndex(linear_index), &error)) {
+        total_squared_error += error * error;
+        num_evaluated_voxels++;
+      }
+    }
+  }
+  // Return the RMSE.
+  if (num_evaluated_voxels == 0) {
+    return 0.0;
+  }
+  return sqrt(total_squared_error / num_evaluated_voxels);
+}
+
+template <>
+bool SimulationServer::evaluateVoxel(const TsdfVoxel& voxel_test,
+                                     const TsdfVoxel& voxel_gt,
+                                     FloatingPoint* error) const {
+  if (voxel_test.weight < 1e-6) {
+    return false;
+  }
+  *error = voxel_gt.distance - voxel_test.distance;
+  if (voxel_gt.distance < truncation_distance_) {
+    *error = -truncation_distance_ - voxel_test.distance;
+  }
+  return true;
+}
+
+template <>
+bool SimulationServer::evaluateVoxel(const EsdfVoxel& voxel_test,
+                                     const EsdfVoxel& voxel_gt,
+                                     FloatingPoint* error) const {
+  if (!voxel_test.observed) {
+    return false;
+  }
+  *error = voxel_gt.distance - voxel_test.distance;
+  if (voxel_gt.distance < truncation_distance_) {
+    *error = -truncation_distance_ - voxel_test.distance;
+  }
+  return true;
+}
+
+void SimulationServer::evaluate() {
+  // First evaluate the TSDF vs ground truth...
+  // Use only observed points.
+  double tsdf_rmse = evaluateLayerAgainstGt(*tsdf_test_, *tsdf_gt_);
+  double esdf_rmse = evaluateLayerAgainstGt(*esdf_test_, *esdf_gt_);
+
+  ROS_INFO_STREAM("TSDF RMSE: " << tsdf_rmse << " ESDF RMSE: " << esdf_rmse);
 }
 
 void SimulationServer::visualize() {
@@ -294,6 +403,10 @@ void SimulationServer::visualize() {
   pointcloud.clear();
   createDistancePointcloudFromTsdfLayer(*tsdf_test_, &pointcloud);
   tsdf_test_pub_.publish(pointcloud);
+
+  pointcloud.clear();
+  createDistancePointcloudFromEsdfLayer(*esdf_test_, &pointcloud);
+  esdf_test_pub_.publish(pointcloud);
 
   if (generate_mesh_) {
     // Generate TSDF GT mesh.
