@@ -92,7 +92,7 @@ class EsdfIntegrator {
     size_t num_new = 0u;
     timing::Timer propagate_timer("esdf/propagate_tsdf");
     VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
-              << " updated blocks from the TSDF.";
+            << " updated blocks from the TSDF.";
     for (const BlockIndex& block_index : tsdf_blocks) {
       const Block<TsdfVoxel>& tsdf_block =
           tsdf_layer_->getBlockByIndex(block_index);
@@ -175,8 +175,8 @@ class EsdfIntegrator {
       }
     }
     propagate_timer.Stop();
-    VLOG(3) << "[ESDF update]: Lower: " << num_lower
-              << " Raise: " << num_raise << " New: " << num_new;
+    VLOG(3) << "[ESDF update]: Lower: " << num_lower << " Raise: " << num_raise
+            << " New: " << num_new;
 
     timing::Timer raise_timer("esdf/raise_esdf");
     // Process the open set now.
@@ -211,6 +211,10 @@ class EsdfIntegrator {
       }
       EsdfVoxel& neighbor_voxel =
           neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+
+      if (!neighbor_voxel.observed) {
+        continue;
+      }
 
       if (!neighbor_voxel.in_queue) {
         open_.push(neighbor, neighbor_voxel.distance);
@@ -306,7 +310,7 @@ class EsdfIntegrator {
       }
 
       // Don't bother propagating this -- can't make any active difference.
-      if (esdf_voxel.distance >= config_.default_distance_m) {
+      if (esdf_voxel.distance >= config_.max_distance_m) {
         esdf_voxel.in_queue = false;
         continue;
       }
@@ -352,7 +356,7 @@ class EsdfIntegrator {
           continue;
         }
 
-        if (esdf_voxel.distance > 0.0 &&
+        if (esdf_voxel.distance >= 0.0 &&
             esdf_voxel.distance + distance_to_neighbor <
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
@@ -366,7 +370,7 @@ class EsdfIntegrator {
             }
           }
         }
-        if (esdf_voxel.distance < 0.0 &&
+        /*if (esdf_voxel.distance < 0.0 &&
             esdf_voxel.distance - distance_to_neighbor >
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
@@ -376,7 +380,7 @@ class EsdfIntegrator {
             open_.push(neighbors[i], neighbor_voxel.distance);
             neighbor_voxel.in_queue = true;
           }
-        }
+        } */
       }
 
       num_updates++;
