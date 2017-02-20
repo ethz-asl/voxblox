@@ -3,7 +3,7 @@
 namespace voxblox {
 
 SimulationWorld::SimulationWorld()
-    : min_bound_(-5.0, -5.0, -1.0), max_bound_(5.0, 5.0, 5.0) {}
+    : min_bound_(-6.0, -6.0, -2.0), max_bound_(6.0, 6.0, 10.0) {}
 
 void SimulationWorld::addObject(std::unique_ptr<Object> object) {
   objects_.push_back(std::move(object));
@@ -21,14 +21,24 @@ void SimulationWorld::addPlaneBoundaries(FloatingPoint x_min,
 
 void SimulationWorld::clear() { objects_.clear(); }
 
+FloatingPoint SimulationWorld::getDistanceToPoint(
+    const Point& coords, FloatingPoint max_dist) const {
+  FloatingPoint min_dist = max_dist;
+  for (size_t j = 0; j < objects_.size(); ++j) {
+    FloatingPoint object_dist = objects_[j]->getDistanceToPoint(coords);
+    if (object_dist < min_dist) {
+      min_dist = object_dist;
+    }
+  }
+
+  return min_dist;
+}
+
 void SimulationWorld::getPointcloudFromViewpoint(
     const Point& view_origin, const Point& view_direction,
     const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
     FloatingPoint max_dist, Pointcloud* ptcloud, Colors* colors) const {
-  // First, figure out, for instance, how big each ray increment is.
-  FloatingPoint fov_increment = fov_h_rad / camera_res.x();
-  FloatingPoint fov_v_rad = fov_h_rad * camera_res.y() / camera_res.x();
-
+  // Focal length based on fov.
   FloatingPoint focal_length = camera_res.x() / (2 * tan(fov_h_rad / 2.0));
 
   // Calculate transformation between nominal camera view direction and our
@@ -45,8 +55,6 @@ void SimulationWorld::getPointcloudFromViewpoint(
           Point(1.0, u / focal_length, v / focal_length);
       Point ray_direction = ray_rotation * (ray_camera_direction).normalized();
 
-      std::cout << "View origin: " << view_origin.transpose()
-                << " direction: " << ray_direction.transpose() << std::endl;
       // Cast this ray into every object.
       bool ray_valid = false;
       FloatingPoint ray_dist = max_dist;
