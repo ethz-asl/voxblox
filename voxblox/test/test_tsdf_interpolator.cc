@@ -15,10 +15,12 @@ class TsdfMergeIntegratorTest : public ::testing::Test {
   virtual void SetUp() {
     tsdf_voxels_per_side_ = 10u;
     tsdf_voxel_size_ = 1.0f;
+    compare_tol_ = 0.0000001f;
   }
 
   size_t tsdf_voxels_per_side_;
   float tsdf_voxel_size_;
+  float compare_tol_;
 
   void setBlockSameValues(const float distance,
                           Block<TsdfVoxel>::Ptr block_ptr) {
@@ -89,7 +91,7 @@ TEST_F(TsdfMergeIntegratorTest, WithinBlock) {
         Point point(x, y, z);
         // Interpolating at this point
         if (interpolator.getVoxel(point, &voxel, true)) {
-          if (voxel.distance != z) {
+          if (fabs(voxel.distance - z) > compare_tol_) {
             wrong_answer = true;
           }
         } else {
@@ -161,7 +163,7 @@ TEST_F(TsdfMergeIntegratorTest, BetweenBlocks) {
     Point point = points_below[point_index];
     interpolator.getVoxel(point, &voxel, true);
     // Testing
-    EXPECT_EQ(voxel.distance, expected_answers_below[point_index]);
+    EXPECT_NEAR(voxel.distance, expected_answers_below[point_index], compare_tol_);
   }
 }
 
