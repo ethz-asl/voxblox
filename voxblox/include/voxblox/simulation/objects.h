@@ -109,14 +109,14 @@ class Cube : public Object {
 
     Point distance_vector = Point::Zero();
     distance_vector.x() =
-        std::max(std::max(center_.x() - size_.x() - point.x(), 0.0),
-                 point.x() - center_.x() - size_.x());
+        std::max(std::max(center_.x() - size_.x() / 2.0 - point.x(), 0.0),
+                 point.x() - center_.x() - size_.x() / 2.0);
     distance_vector.y() =
-        std::max(std::max(center_.y() - size_.y() - point.y(), 0.0),
-                 point.y() - center_.y() - size_.y());
+        std::max(std::max(center_.y() - size_.y() / 2.0 - point.y(), 0.0),
+                 point.y() - center_.y() - size_.y() / 2.0);
     distance_vector.z() =
-        std::max(std::max(center_.z() - size_.z() - point.z(), 0.0),
-                 point.z() - center_.z() - size_.z());
+        std::max(std::max(center_.z() - size_.z() / 2.0 - point.z(), 0.0),
+                 point.z() - center_.z() - size_.z() / 2.0);
 
     // TODO(helenol): check if inside, and see if the 0s there are necessary.
 
@@ -124,16 +124,70 @@ class Cube : public Object {
 
     // Basically 0... Means it's inside!
     if (distance < 1e-6) {
-      distance_vector.x() = std::max(center_.x() - size_.x() - point.x(),
-                                     point.x() - center_.x() - size_.x());
-      distance_vector.y() = std::max(center_.y() - size_.y() - point.y(),
-                                     point.y() - center_.y() - size_.y());
-      distance_vector.z() = std::max(center_.z() - size_.z() - point.z(),
-                                     point.z() - center_.z() - size_.z());
+      distance_vector.x() = std::max(center_.x() - size_.x() / 2.0 - point.x(),
+                                     point.x() - center_.x() - size_.x() / 2.0);
+      distance_vector.y() = std::max(center_.y() - size_.y() / 2.0 - point.y(),
+                                     point.y() - center_.y() - size_.y() / 2.0);
+      distance_vector.z() = std::max(center_.z() - size_.z() / 2.0 - point.z(),
+                                     point.z() - center_.z() - size_.z() / 2.0);
       distance = distance_vector.maxCoeff();
     }
 
     return distance;
+  }
+
+  virtual bool getRayIntersection(const Point& ray_origin,
+                                  const Point& ray_direction,
+                                  FloatingPoint max_dist,
+                                  Point* intersect_point,
+                                  FloatingPoint* intersect_dist) const {
+    // Adapted from https://www.scratchapixel.com/lessons/3d-basic-rendering/
+    // minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
+    // Compute min and max limits in 3D.
+
+    // Precalculate signs and inverse directions.
+    Point inv_dir(1.0 / ray_direction.x(), 1.0 / ray_direction.y(),
+                  1.0 / ray_direction.z());
+    Eigen::Vector3i ray_sign(inv_dir.x() < 0.0, inv_dir.y() < 0.0,
+                             inv_dir.z() < 0.0);
+
+    Point bounds[2];
+    bounds[0] = center_ - size_ / 2.0;
+    bounds[1] = center_ + size_ / 2.0;
+
+    FloatingPoint tmin =
+        (bounds[ray_sign.x()].x() - ray_origin.x()) * inv_dir.x();
+    FloatingPoint tmax =
+        (bounds[1 - ray_sign.x()].x() - ray_origin.x()) * inv_dir.x();
+    FloatingPoint tymin =
+        (bounds[ray_sign.y()].y() - ray_origin.y()) * inv_dir.y();
+    FloatingPoint tymax =
+        (bounds[1 - ray_sign.y()].y() - ray_origin.y()) * inv_dir.y();
+
+    if ((tmin > tymax) || (tymin > tmax)) return false;
+    if (tymin > tmin) tmin = tymin;
+    if (tymax < tmax) tmax = tymax;
+
+    FloatingPoint tzmin =
+        (bounds[ray_sign.z()].z() - ray_origin.z()) * inv_dir.z();
+    FloatingPoint tzmax =
+        (bounds[1 - ray_sign.z()].z() - ray_origin.z()) * inv_dir.z();
+
+    if ((tmin > tzmax) || (tzmin > tmax)) return false;
+    if (tzmin > tmin) tmin = tzmin;
+    if (tzmax < tmax) tmax = tzmax;
+
+    FloatingPoint t = tmin;
+    if (t < 0.0) {
+      t = tmax;
+      if (t < 0.0) {
+        return false;
+      }
+    }
+    *intersect_dist = t;
+    *intersect_point = ray_origin + ray_direction * t;
+
+    return true;
   }
 
  protected:
@@ -173,7 +227,6 @@ class Plane : public Object {
       return false;
     }
     FloatingPoint d = (center_ - ray_origin).dot(normal_) / denominator;
-    std::cout << "d: " << d << std::endl;
     if (d < 0.0) {
       return false;
     }

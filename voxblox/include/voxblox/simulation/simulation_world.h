@@ -46,6 +46,12 @@ class SimulationWorld {
   void generateSdfFromWorld(FloatingPoint max_dist,
                             Layer<VoxelType>* layer) const;
 
+  FloatingPoint getDistanceToPoint(const Point& coords,
+                                   FloatingPoint max_dist) const;
+
+  Point getMinBound() const { return min_bound_; }
+  Point getMaxBound() const { return max_bound_; }
+
  private:
   template <typename VoxelType>
   void setVoxel(FloatingPoint dist, const Color& color, VoxelType* voxel) const;

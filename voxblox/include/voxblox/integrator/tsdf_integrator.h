@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 #include <Eigen/Core>
 #include <glog/logging.h>
