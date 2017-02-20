@@ -401,18 +401,33 @@ inline FloatingPoint Interpolator<VoxelType>::interpMember(
   for (size_t i = 0; i < data.size(); ++i) {
     data[i] = static_cast<FloatingPoint>((*getter)(*voxels[i]));
   }
+  /*
+    The paper (http://spie.org/samples/PM159.pdf) has a different
+    order than us for the data. The table below is therefore a 
+    permuted version of the table in the paper.
 
-  static InterpTable interp_table =
-      (InterpTable() << 1, 0, 0, 0, 0, 0, 0, 0,  // NOLINT
-       -1, 0, 0, 0, 1, 0, 0, 0,                  // NOLINT
-       -1, 0, 1, 0, 0, 0, 0, 0,                  // NOLINT
-       -1, 1, 0, 0, 0, 0, 0, 0,                  // NOLINT
-       1, 0, -1, 0, -1, 0, 1, 0,                 // NOLINT
-       1, -1, -1, 1, 0, 0, 0, 0,                 // NOLINT
-       1, -1, 0, 0, -1, 1, 0, 0,                 // NOLINT
-       -1, 1, 1, -1, 1, -1, -1, 1                // NOLINT
+    Current data order
+    -----------------
+    0 1 0 1 0 1 0 1
+    0 0 1 1 0 0 1 1
+    0 0 0 0 1 1 1 1
+
+    Desired data order
+    ------------------
+    0 0 0 0 1 1 1 1
+    0 0 1 1 0 0 1 1
+    0 1 0 1 0 1 0 1
+  */
+  static const InterpTable interp_table =
+      (InterpTable() <<  1, 0, 0, 0, 0, 0, 0, 0,    // NOLINT
+                        -1, 1, 0, 0, 0, 0, 0, 0,    // NOLINT
+                        -1, 0, 1, 0, 0, 0, 0, 0,    // NOLINT
+                        -1, 0, 0, 0, 1, 0, 0, 0,    // NOLINT
+                         1, -1, -1, 1, 0, 0, 0, 0,  // NOLINT
+                         1, 0, -1, 0, -1, 0, 1, 0,  // NOLINT
+                         1, -1, 0, 0, -1, 1, 0, 0,  // NOLINT
+                        -1, 1, 1, -1, 1, -1, -1, 1  // NOLINT
        ).finished();
-
   // interpolate
   return q_vector * (interp_table * data.transpose());
 }
