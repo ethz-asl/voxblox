@@ -143,7 +143,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
   esdf_integrator_config.default_distance_m = esdf_max_distance_;
 
   esdf_integrator_.reset(new EsdfIntegrator(
-      esdf_integrator_config, tsdf_test_.get(), esdf_test_.get()));
+      esdf_integrator_config, tsdf_gt_.get(), esdf_test_.get()));
 
   // ROS stuff.
   // GT
@@ -304,7 +304,7 @@ void SimulationServer::generateSDF() {
   }
 
   // Generate ESDF in batch.
-    esdf_integrator_->updateFromTsdfLayerBatch();
+  esdf_integrator_->updateFromTsdfLayerBatch();
 
   // esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
 }
@@ -358,7 +358,7 @@ bool SimulationServer::evaluateVoxel(const TsdfVoxel& voxel_test,
   }
 
   *error = voxel_gt.distance - voxel_test.distance;
-  if (voxel_gt.distance < truncation_distance_) {
+  if (voxel_gt.distance < -truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
   }
   return true;
@@ -373,7 +373,7 @@ bool SimulationServer::evaluateVoxel(const EsdfVoxel& voxel_test,
   }
 
   *error = voxel_gt.distance - voxel_test.distance;
-  if (voxel_gt.distance < truncation_distance_) {
+  if (voxel_gt.distance < -truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
   }
   return true;
