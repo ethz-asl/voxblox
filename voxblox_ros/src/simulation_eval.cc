@@ -282,7 +282,7 @@ void SimulationServer::generateSDF() {
                                                 discard);
 
     const bool clear_updated_flag = true;
-    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
+    // esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
 
     // Convert to a XYZRGB pointcloud.
     if (visualize_) {
@@ -304,7 +304,9 @@ void SimulationServer::generateSDF() {
   }
 
   // Generate ESDF in batch.
-  // esdf_integrator_->updateFromTsdfLayerBatch();
+    esdf_integrator_->updateFromTsdfLayerBatch();
+
+  // esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
 }
 
 template <typename VoxelType>
