@@ -509,6 +509,7 @@ class EsdfIntegrator {
 
       // Do NOT update unobserved distances.
       CHECK_EQ(neighbors.size(), distances.size());
+
       for (size_t i = 0; i < neighbors.size(); ++i) {
         BlockIndex neighbor_block_index = neighbors[i].first;
         VoxelIndex neighbor_voxel_index = neighbors[i].second;
@@ -530,28 +531,19 @@ class EsdfIntegrator {
         EsdfVoxel& neighbor_voxel =
             neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
 
-        if (!neighbor_voxel.observed) {
+        if (!neighbor_voxel.observed || neighbor_voxel.fixed) {
           continue;
         }
 
         // + or - direction?? Maybe minus...
         const FloatingPoint neighbor_distance =
             parent_distance +
-            (esdf_voxel.parent.cast<FloatingPoint>() -
+            (-esdf_voxel.parent.cast<FloatingPoint>() +
              directions[i].cast<FloatingPoint>())
                     .norm() *
                 esdf_voxel_size_;
 
-        // Don't bother updating fixed voxels.
-        if (neighbor_voxel.fixed) {
-          continue;
-        }
-        // Don't bother trying to update our parent, this makes no sense.
-        if (-directions[i] == esdf_voxel.parent) {
-          continue;
-        }
-
-        if (esdf_voxel.distance >= 0.0 &&
+        if (neighbor_distance >= 0.0 &&
             neighbor_distance < neighbor_voxel.distance) {
           neighbor_voxel.distance = neighbor_distance;
           // Also update parent.
@@ -565,8 +557,7 @@ class EsdfIntegrator {
           }
         }
 
-        // Never happens because of how fixed is done right now.
-        if (esdf_voxel.distance < 0.0 &&
+        if (neighbor_distance < 0.0 &&
             neighbor_distance > neighbor_voxel.distance) {
           neighbor_voxel.distance = neighbor_distance;
           // Also update parent.
@@ -692,7 +683,8 @@ class EsdfIntegrator {
   BucketQueue<VoxelKey> open_;
 
   // Raise set for updates; these are values that used to be in the fixed
-  // frontier and now have a higher value, or their children which need to have
+  // frontier and now have a higher value, or their children which need to
+  // have
   // their values invalidated.
   std::queue<VoxelKey> raise_;
 

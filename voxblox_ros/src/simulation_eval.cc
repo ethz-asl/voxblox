@@ -4,6 +4,8 @@
 #include <voxblox/mesh/mesh_integrator.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/integrator/occupancy_integrator.h>
+#include <voxblox/integrator/esdf_occ_integrator.h>
 
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/mesh_vis.h"
@@ -63,6 +65,7 @@ class SimulationServer {
 
   // Settings
   std::string world_frame_;
+  bool generate_occupancy_;
   bool visualize_;
   bool generate_mesh_;
   FloatingPoint truncation_distance_;
@@ -78,10 +81,13 @@ class SimulationServer {
   // Generated maps:
   std::unique_ptr<Layer<TsdfVoxel> > tsdf_test_;
   std::unique_ptr<Layer<EsdfVoxel> > esdf_test_;
+  std::unique_ptr<Layer<OccupancyVoxel> > occ_test_;
 
   // Integrators:
   std::unique_ptr<TsdfIntegrator> tsdf_integrator_;
   std::unique_ptr<EsdfIntegrator> esdf_integrator_;
+  std::unique_ptr<OccupancyIntegrator> occ_integrator_;
+  std::unique_ptr<EsdfOccIntegrator> esdf_occ_integrator_;
 };
 
 SimulationServer::SimulationServer(const ros::NodeHandle& nh,
@@ -89,6 +95,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       world_frame_("world"),
+      generate_occupancy_(true),
       visualize_(true),
       generate_mesh_(true) {
   FloatingPoint voxel_size = 0.20;
@@ -100,16 +107,20 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
   tsdf_test_.reset(new Layer<TsdfVoxel>(voxel_size, voxels_per_side));
   esdf_test_.reset(new Layer<EsdfVoxel>(voxel_size, voxels_per_side));
 
+  if (generate_occupancy_) {
+    occ_test_.reset(new Layer<OccupancyVoxel>(voxel_size, voxels_per_side));
+  }
+
   // Make some integrators.
   TsdfIntegrator::Config integrator_config;
   integrator_config.voxel_carving_enabled = true;
   // Used to be * 4 according to Marius's experience, now * 2.
   // This should be made bigger again if behind-surface weighting is improved.
   integrator_config.default_truncation_distance = voxel_size * 4;
-  integrator_config.allow_clear = true;
+  integrator_config.allow_clear = false;
   integrator_config.use_const_weight = false;
   integrator_config.use_weight_dropoff = true;
-  integrator_config.max_ray_length_m = 10.0;
+  integrator_config.max_ray_length_m = 5.0;
   truncation_distance_ = integrator_config.default_truncation_distance;
 
   nh_private_.param("voxel_carving_enabled",
@@ -135,7 +146,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
 
   EsdfIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
-  esdf_integrator_config.min_distance_m = truncation_distance_ / 2.0;
+  esdf_integrator_config.min_distance_m = truncation_distance_  /2.0;
   nh_private_.param("esdf_max_distance_m",
                     esdf_integrator_config.max_distance_m,
                     esdf_integrator_config.max_distance_m);
@@ -143,7 +154,20 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
   esdf_integrator_config.default_distance_m = esdf_max_distance_;
 
   esdf_integrator_.reset(new EsdfIntegrator(
-      esdf_integrator_config, tsdf_gt_.get(), esdf_test_.get()));
+      esdf_integrator_config, tsdf_test_.get(), esdf_test_.get()));
+
+  if (generate_occupancy_) {
+    OccupancyIntegrator::Config occ_integrator_config;
+    occ_integrator_config.max_ray_length_m = integrator_config.max_ray_length_m;
+    occ_integrator_.reset(
+        new OccupancyIntegrator(occ_integrator_config, occ_test_.get()));
+
+    EsdfOccIntegrator::Config esdf_occ_config;
+    esdf_occ_config.max_distance_m = esdf_max_distance_;
+    esdf_occ_config.default_distance_m = esdf_max_distance_;
+    esdf_occ_integrator_.reset(new EsdfOccIntegrator(
+        esdf_occ_config, occ_test_.get(), esdf_test_.get()));
+  }
 
   // ROS stuff.
   // GT
@@ -182,7 +206,7 @@ void SimulationServer::prepareWorld() {
   world_.addObject(std::unique_ptr<Object>(
       new Cube(Point(-4.0, 4.0, 2.0), Point(4, 4, 4), Color::Green())));
 
-  world_.addGroundLevel(0.0);
+  world_.addGroundLevel(0.03);
 
   world_.generateSdfFromWorld(truncation_distance_, tsdf_gt_.get());
   world_.generateSdfFromWorld(esdf_max_distance_, esdf_gt_.get());
@@ -193,7 +217,7 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
                                                   Point* ray_direction) const {
   // Generate a viewpoint at least min_distance from any objects (if you want
   // just outside an object, just call this with min_distance = 0).
-  constexpr int max_tries = 100;
+  constexpr int max_tries = 50;
 
   FloatingPoint max_distance = min_distance * 2.0;
 
@@ -281,6 +305,10 @@ void SimulationServer::generateSDF() {
     tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
                                                 discard);
 
+    if (generate_occupancy_) {
+      occ_integrator_->integratePointCloud(T_G_C, ptcloud_C);
+    }
+
     const bool clear_updated_flag = true;
     // esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
 
@@ -291,7 +319,6 @@ void SimulationServer::generateSDF() {
 
       /* pointcloudToPclXYZRGB(ptcloud, colors, &ptcloud_temp);
       ptcloud_pcl += ptcloud_temp; */
-
       pcl::PointXYZRGB point;
       point.x = view_origin.x();
       point.y = view_origin.y();
@@ -304,7 +331,9 @@ void SimulationServer::generateSDF() {
   }
 
   // Generate ESDF in batch.
-  esdf_integrator_->updateFromTsdfLayerBatch();
+  esdf_occ_integrator_->updateFromOccLayerBatch();
+
+  // esdf_integrator_->updateFromTsdfLayerBatch();
 
   // esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
 }
@@ -346,6 +375,7 @@ FloatingPoint SimulationServer::evaluateLayerAgainstGt(
   if (num_evaluated_voxels == 0) {
     return 0.0;
   }
+  ROS_INFO_STREAM("Number of voxels evaluated: " << num_evaluated_voxels);
   return sqrt(total_squared_error / num_evaluated_voxels);
 }
 
@@ -353,14 +383,14 @@ template <>
 bool SimulationServer::evaluateVoxel(const TsdfVoxel& voxel_test,
                                      const TsdfVoxel& voxel_gt,
                                      FloatingPoint* error) const {
-  if (voxel_test.weight < 1e-6) {
+  if (voxel_test.weight < 1e-6 || voxel_gt.distance < 0.0) {
     return false;
   }
 
   *error = voxel_gt.distance - voxel_test.distance;
-  if (voxel_gt.distance < -truncation_distance_) {
+  /* if (voxel_gt.distance < -truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
-  }
+  } */
   return true;
 }
 
@@ -368,14 +398,14 @@ template <>
 bool SimulationServer::evaluateVoxel(const EsdfVoxel& voxel_test,
                                      const EsdfVoxel& voxel_gt,
                                      FloatingPoint* error) const {
-  if (!voxel_test.observed) {
+  if (!voxel_test.observed || voxel_gt.distance < 0.0) {
     return false;
   }
 
   *error = voxel_gt.distance - voxel_test.distance;
-  if (voxel_gt.distance < -truncation_distance_) {
+  /* if (voxel_gt.distance < -truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
-  }
+  } */
   return true;
 }
 
@@ -392,24 +422,33 @@ void SimulationServer::visualize() {
   if (!visualize_) {
     return;
   }
+  FloatingPoint slice_level = 2.0;
 
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
   pointcloud.header.frame_id = world_frame_;
-
-  createDistancePointcloudFromTsdfLayer(*tsdf_gt_, &pointcloud);
+  createDistancePointcloudFromTsdfLayerSlice(*tsdf_gt_, 2,
+                                               slice_level, &pointcloud);
+  // createDistancePointcloudFromTsdfLayer(*tsdf_gt_, &pointcloud);
   tsdf_gt_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromEsdfLayer(*esdf_gt_, &pointcloud);
+  createDistancePointcloudFromEsdfLayerSlice(*esdf_gt_, 2,
+                                               slice_level, &pointcloud);
+  // createDistancePointcloudFromEsdfLayer(*esdf_gt_, &pointcloud);
   esdf_gt_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromTsdfLayer(*tsdf_test_, &pointcloud);
+  createDistancePointcloudFromTsdfLayerSlice(*tsdf_test_, 2,
+                                               slice_level, &pointcloud);
+
+  // createDistancePointcloudFromTsdfLayer(*tsdf_test_, &pointcloud);
   tsdf_test_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromEsdfLayer(*esdf_test_, &pointcloud);
+  createDistancePointcloudFromEsdfLayerSlice(*esdf_test_, 2,
+                                               slice_level, &pointcloud);
+  // createDistancePointcloudFromEsdfLayer(*esdf_test_, &pointcloud);
   esdf_test_pub_.publish(pointcloud);
 
   if (generate_mesh_) {
