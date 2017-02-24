@@ -7,14 +7,6 @@ catkin_simple(ALL_DEPS_REQUIRED)
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
-#########
-# EIGEN #
-#########
-find_package(Eigen3 REQUIRED)
-include_directories(
-  ${EIGEN3_INCLUDE_DIR}
-)
-
 ############
 # PROTOBUF #
 ############
