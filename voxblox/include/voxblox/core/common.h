@@ -27,7 +27,7 @@ typedef AnyIndex BlockIndex;
 
 typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 
-typedef std::vector<AnyIndex> IndexVector;
+typedef std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex> > IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
@@ -35,7 +35,7 @@ struct Color;
 typedef uint32_t Label;
 
 // Pointcloud types for external interface.
-typedef std::vector<Point> Pointcloud;
+typedef std::vector<Point, Eigen::aligned_allocator<Point>> Pointcloud;
 typedef std::vector<Color> Colors;
 typedef std::vector<Label> Labels;
 
@@ -150,7 +150,7 @@ inline Point getOriginPointFromGridIndex(const AnyIndex& idx,
 }
 
 inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
-    AnyIndex global_voxel_idx, FloatingPoint voxels_per_side_inv_) {
+    const AnyIndex& global_voxel_idx, FloatingPoint voxels_per_side_inv_) {
   return BlockIndex(
       std::floor(static_cast<FloatingPoint>(global_voxel_idx.x()) *
                  voxels_per_side_inv_),
@@ -160,7 +160,7 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
                  voxels_per_side_inv_));
 }
 
-inline VoxelIndex getLocalFromGlobalVoxelIndex(AnyIndex global_voxel_idx,
+inline VoxelIndex getLocalFromGlobalVoxelIndex(const AnyIndex& global_voxel_idx,
                                                int voxels_per_side) {
   VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side,
                              global_voxel_idx.y() % voxels_per_side,

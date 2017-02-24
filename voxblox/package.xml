@@ -15,7 +15,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
 
-  <depend>eigen_catkin</depend>
+  <depend>eigen_catkin</depend>   
   <depend>eigen_checks</depend>
   <depend>glog_catkin</depend>
   <depend>gflags_catkin</depend>

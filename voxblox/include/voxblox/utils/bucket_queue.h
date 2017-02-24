@@ -1,9 +1,9 @@
 #ifndef VOXBLOX_UTILS_BUCKET_QUEUE_H_
 #define VOXBLOX_UTILS_BUCKET_QUEUE_H_
 
-#include <vector>
-#include <queue>
 #include <glog/logging.h>
+#include <queue>
+#include <vector>
 
 // Bucketed priority queue, mostly following L. Yatziv et al in
 // O(N) Implementation of the Fast Marching Algorithm, though skipping the
@@ -70,7 +70,8 @@ class BucketQueue {
  private:
   int num_buckets_;
   double max_val_;
-  std::vector<std::queue<T> > buckets_;
+  std::vector<std::queue<T, std::deque<T, Eigen::aligned_allocator<T>>>>
+      buckets_;
 
   // Speed up retrivals.
   int last_bucket_index_;

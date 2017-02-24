@@ -2,17 +2,18 @@
 #define VOXBLOX_INTEGRATOR_ESDF_INTEGRATOR_H_
 
 #include <algorithm>
-#include <Eigen/Core>
-#include <glog/logging.h>
 #include <queue>
 #include <utility>
 #include <vector>
 
+#include <glog/logging.h>
+#include <Eigen/Core>
+
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
-#include "voxblox/utils/timing.h"
 #include "voxblox/utils/bucket_queue.h"
+#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
@@ -188,7 +189,8 @@ class EsdfIntegrator {
                            const VoxelIndex& voxel_index) {
     std::vector<VoxelKey> neighbors;
     std::vector<float> distances;
-    std::vector<Eigen::Vector3i> directions;
+    std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
+        directions;
     getNeighborsAndDistances(block_index, voxel_index, &neighbors, &distances,
                              &directions);
 
@@ -229,7 +231,8 @@ class EsdfIntegrator {
       // See if you can update the neighbors.
       std::vector<VoxelKey> neighbors;
       std::vector<float> distances;
-      std::vector<Eigen::Vector3i> directions;
+      std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
+          directions;
       getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                                &directions);
 
@@ -303,7 +306,8 @@ class EsdfIntegrator {
       // See if you can update the neighbors.
       std::vector<VoxelKey> neighbors;
       std::vector<float> distances;
-      std::vector<Eigen::Vector3i> directions;
+      std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>
+          directions;
       getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                                &directions);
 
@@ -380,11 +384,11 @@ class EsdfIntegrator {
   // Directions is the direction that the neighbor voxel lives in. If you
   // need the direction FROM the neighbor voxel TO the current voxel, take
   // negative of the given direction.
-  void getNeighborsAndDistances(const BlockIndex& block_index,
-                                const VoxelIndex& voxel_index,
-                                std::vector<VoxelKey>* neighbors,
-                                std::vector<float>* distances,
-                                std::vector<Eigen::Vector3i>* directions) {
+  void getNeighborsAndDistances(
+      const BlockIndex& block_index, const VoxelIndex& voxel_index,
+      std::vector<VoxelKey>* neighbors, std::vector<float>* distances,
+      std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>*
+          directions) {
     CHECK_NOTNULL(neighbors);
     CHECK_NOTNULL(distances);
     CHECK_NOTNULL(directions);
