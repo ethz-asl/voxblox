@@ -20,7 +20,7 @@ class OccupancyMap {
     size_t occupancy_voxels_per_side = 16u;
   };
 
-  explicit OccupancyMap(Config config)
+  explicit OccupancyMap(const Config& config)
       : occupancy_layer_(new Layer<OccupancyVoxel>(
             config.occupancy_voxel_size, config.occupancy_voxels_per_side)) {
     block_size_ =
