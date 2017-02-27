@@ -6,7 +6,7 @@ namespace voxblox {
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private) {
+    : TsdfServer(nh, nh_private), clear_sphere_for_planning_(false) {
   esdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
                                                               1, true);
@@ -46,6 +46,11 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                             tsdf_map_->getTsdfLayerPtr(),
                                             esdf_map_->getEsdfLayerPtr()));
+
+  // Whether to clear each new pose as it comes in, and then set a sphere
+  // around it to occupied.
+  nh_private_.param("clear_sphere_for_planning", clear_sphere_for_planning_,
+                    clear_sphere_for_planning_);
 }
 
 void EsdfServer::publishAllUpdatedEsdfVoxels() {
@@ -104,6 +109,12 @@ void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
   }
 
   TsdfServer::updateMeshEvent(event);
+}
+
+void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
+  if (clear_sphere_for_planning_) {
+    esdf_integrator_->addNewRobotPosition(T_G_C.getPosition());
+  }
 }
 
 void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {

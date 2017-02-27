@@ -213,6 +213,9 @@ void TsdfServer::insertPointcloud(
     publishTsdfOccupiedNodes();
     publishSlices();
 
+    // Callback for inheriting classes.
+    newPoseCallback(T_G_C);
+
     if (verbose_) {
       ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
     }

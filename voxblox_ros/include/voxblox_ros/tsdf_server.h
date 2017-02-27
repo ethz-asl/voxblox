@@ -33,7 +33,8 @@ class TsdfServer {
   TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   virtual ~TsdfServer() {}
 
-  void insertPointcloud(const sensor_msgs::PointCloud2::Ptr& pointcloud);
+  virtual void insertPointcloud(const sensor_msgs::PointCloud2::Ptr& pointcloud);
+  virtual void newPoseCallback(const Transformation& new_pose) {}
 
   void publishAllUpdatedTsdfVoxels();
   void publishTsdfSurfacePoints();
