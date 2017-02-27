@@ -52,6 +52,22 @@ class EsdfIntegrator {
     return std::abs(dist_m) < config_.min_distance_m || dist_m < 0.0;
   }
 
+  typedef BlockHashMapType<VoxelIndexList>::type BlockVoxelListMap;
+
+  void getSphereAroundPoint(const Point& center, FloatingPoint radius,
+                            BlockVoxelListMap* block_voxel_list) const {
+    // TODO(zac): Put stuff here!
+    // Input center and radius, output a map<BlockIndex, vector<VoxelIndex>>.
+  }
+
+  // Used for planning - allocates sphere around as observed but occupied,
+  // and clears space in a sphere around current position.
+  void addNewRobotPosition(const Point& position) {
+    constexpr FloatingPoint planning_sphere_radius = 5.0;
+    // Ugh this should probably match the checking radius...
+    constexpr FloatingPoint clear_sphere_radius = 0.5;
+  }
+
   void updateFromTsdfLayerBatch() {
     esdf_layer_->removeAllBlocks();
     BlockIndexList tsdf_blocks;
@@ -279,7 +295,6 @@ class EsdfIntegrator {
     esdf_timer.Stop();
   }
 
-
   inline bool isFixedOccupancy(FloatingPoint dist_m) const {
     return dist_m < 0.0;
   }
@@ -362,8 +377,8 @@ class EsdfIntegrator {
       }
     }
     propagate_timer.Stop();
-    VLOG(3) << "[ESDF occ update]: Lower: " << num_lower << " Raise: " << num_raise
-            << " New: " << num_new;
+    VLOG(3) << "[ESDF occ update]: Lower: " << num_lower
+            << " Raise: " << num_raise << " New: " << num_new;
 
     timing::Timer update_timer("esdf/update_esdf");
     // Process the open set now.
