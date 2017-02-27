@@ -84,6 +84,8 @@ class EsdfIntegrator {
   // Used for planning - allocates sphere around as observed but occupied,
   // and clears space in a sphere around current position.
   void addNewRobotPosition(const Point& position) {
+    timing::Timer clear_timer("esdf/clear_radius");
+
     constexpr FloatingPoint planning_sphere_radius = 5.0;
     // Ugh this should probably match the checking radius...
     constexpr FloatingPoint clear_sphere_radius = 0.5;
@@ -93,12 +95,13 @@ class EsdfIntegrator {
     getSphereAroundPoint(position, clear_sphere_radius, &block_voxel_list);
     for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
       // Get block.
-      EsdfBlock::Ptr block_ptr = esdf_layer_->allocateBlockPtrByIndex(kv.first);
+      Block<EsdfVoxel>::Ptr block_ptr =
+          esdf_layer_->allocateBlockPtrByIndex(kv.first);
 
       for (const VoxelIndex& voxel_index : kv.second) {
         EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
         if (!esdf_voxel.observed) {
-          esdf_voxel.distance = max_distance_m;
+          esdf_voxel.distance = config_.default_distance_m;
           esdf_voxel.observed = true;
           pushNeighborsToOpen(kv.first, voxel_index);
         }
@@ -110,17 +113,19 @@ class EsdfIntegrator {
     getSphereAroundPoint(position, planning_sphere_radius, &block_voxel_list);
     for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
       // Get block.
-      EsdfBlock::Ptr block_ptr = esdf_layer_->allocateBlockPtrByIndex(kv.first);
+      Block<EsdfVoxel>::Ptr block_ptr =
+          esdf_layer_->allocateBlockPtrByIndex(kv.first);
 
       for (const VoxelIndex& voxel_index : kv.second) {
         EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
         if (!esdf_voxel.observed) {
-          esdf_voxel.distance = -max_distance_m;
+          esdf_voxel.distance = -config_.default_distance_m;
           esdf_voxel.observed = true;
           pushNeighborsToOpen(kv.first, voxel_index);
         }
       }
     }
+    clear_timer.Stop();
   }
 
   void updateFromTsdfLayerBatch() {
@@ -283,7 +288,10 @@ class EsdfIntegrator {
           // This is if the distance has been lowered or the voxel is new.
           // Gets put into lower frontier (open_).
           if (!esdf_voxel.observed ||
-              esdf_voxel.distance > tsdf_voxel.distance) {
+              (tsdf_voxel.distance >= 0.0 &&
+               esdf_voxel.distance > tsdf_voxel.distance) ||
+              (tsdf_voxel.distance < 0.0 &&
+               esdf_voxel.distance < tsdf_voxel.distance)) {
             esdf_voxel.distance = tsdf_voxel.distance;
             esdf_voxel.observed = true;
             esdf_voxel.fixed = true;
@@ -293,7 +301,7 @@ class EsdfIntegrator {
             open_.push(std::make_pair(block_index, voxel_index),
                        esdf_voxel.distance);
             num_lower++;
-          } else if (esdf_voxel.distance < tsdf_voxel.distance) {
+          } else {
             // In case the fixed voxel has a HIGHER distance than the esdf
             // voxel. Need to raise it, and burn its children.
             esdf_voxel.distance = tsdf_voxel.distance;
