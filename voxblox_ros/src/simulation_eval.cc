@@ -95,11 +95,13 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       world_frame_("world"),
-      generate_occupancy_(true),
+      generate_occupancy_(false),
       visualize_(true),
       generate_mesh_(true) {
-  FloatingPoint voxel_size = 0.20;
+  FloatingPoint voxel_size = 0.1;
   int voxels_per_side = 16;
+
+  nh_private_.param("voxel_size", voxel_size, voxel_size);
 
   tsdf_gt_.reset(new Layer<TsdfVoxel>(voxel_size, voxels_per_side));
   esdf_gt_.reset(new Layer<EsdfVoxel>(voxel_size, voxels_per_side));
@@ -146,7 +148,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
 
   EsdfIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
-  esdf_integrator_config.min_distance_m = truncation_distance_  /2.0;
+  esdf_integrator_config.min_distance_m = truncation_distance_ / 2.0;
   nh_private_.param("esdf_max_distance_m",
                     esdf_integrator_config.max_distance_m,
                     esdf_integrator_config.max_distance_m);
@@ -331,11 +333,13 @@ void SimulationServer::generateSDF() {
   }
 
   // Generate ESDF in batch.
-  esdf_occ_integrator_->updateFromOccLayerBatch();
+  // esdf_occ_integrator_->updateFromOccLayerBatch();
 
   // esdf_integrator_->updateFromTsdfLayerBatch();
 
   // esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
+
+  esdf_integrator_->updateFromTsdfLayerBatchOccupancy();
 }
 
 template <typename VoxelType>
@@ -388,6 +392,8 @@ bool SimulationServer::evaluateVoxel(const TsdfVoxel& voxel_test,
   }
 
   *error = voxel_gt.distance - voxel_test.distance;
+
+
   /* if (voxel_gt.distance < -truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
   } */
@@ -402,7 +408,11 @@ bool SimulationServer::evaluateVoxel(const EsdfVoxel& voxel_test,
     return false;
   }
 
+
+
   *error = voxel_gt.distance - voxel_test.distance;
+
+
   /* if (voxel_gt.distance < -truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
   } */
@@ -416,6 +426,8 @@ void SimulationServer::evaluate() {
   double esdf_rmse = evaluateLayerAgainstGt(*esdf_test_, *esdf_gt_);
 
   ROS_INFO_STREAM("TSDF RMSE: " << tsdf_rmse << " ESDF RMSE: " << esdf_rmse);
+
+  ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
 }
 
 void SimulationServer::visualize() {
@@ -427,27 +439,27 @@ void SimulationServer::visualize() {
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
   pointcloud.header.frame_id = world_frame_;
-  createDistancePointcloudFromTsdfLayerSlice(*tsdf_gt_, 2,
-                                               slice_level, &pointcloud);
+  createDistancePointcloudFromTsdfLayerSlice(*tsdf_gt_, 2, slice_level,
+                                             &pointcloud);
   // createDistancePointcloudFromTsdfLayer(*tsdf_gt_, &pointcloud);
   tsdf_gt_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromEsdfLayerSlice(*esdf_gt_, 2,
-                                               slice_level, &pointcloud);
+  createDistancePointcloudFromEsdfLayerSlice(*esdf_gt_, 2, slice_level,
+                                             &pointcloud);
   // createDistancePointcloudFromEsdfLayer(*esdf_gt_, &pointcloud);
   esdf_gt_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromTsdfLayerSlice(*tsdf_test_, 2,
-                                               slice_level, &pointcloud);
+  createDistancePointcloudFromTsdfLayerSlice(*tsdf_test_, 2, slice_level,
+                                             &pointcloud);
 
   // createDistancePointcloudFromTsdfLayer(*tsdf_test_, &pointcloud);
   tsdf_test_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromEsdfLayerSlice(*esdf_test_, 2,
-                                               slice_level, &pointcloud);
+  createDistancePointcloudFromEsdfLayerSlice(*esdf_test_, 2, slice_level,
+                                             &pointcloud);
   // createDistancePointcloudFromEsdfLayer(*esdf_test_, &pointcloud);
   esdf_test_pub_.publish(pointcloud);
 
