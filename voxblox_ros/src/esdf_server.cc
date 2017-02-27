@@ -124,6 +124,7 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
   if (!success) {
     ROS_ERROR_THROTTLE(10, "Got an invalid ESDF map message!");
   } else {
+    ROS_INFO("Map callback.");
     publishAllUpdatedEsdfVoxels();
     publishSlices();
   }
