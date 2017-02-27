@@ -60,6 +60,12 @@ class EsdfIntegrator {
     updateFromTsdfBlocks(tsdf_blocks, push_neighbors);
   }
 
+  void updateFromTsdfLayerBatchOccupancy() {
+    esdf_layer_->removeAllBlocks();
+    BlockIndexList tsdf_blocks;
+    tsdf_layer_->getAllAllocatedBlocks(&tsdf_blocks);
+    updateFromTsdfBlocksAsOccupancy(tsdf_blocks);
+  }
   void updateFromTsdfLayerBatchFullEuclidean() {
     esdf_layer_->removeAllBlocks();
     BlockIndexList tsdf_blocks;
@@ -273,6 +279,101 @@ class EsdfIntegrator {
     esdf_timer.Stop();
   }
 
+
+  inline bool isFixedOccupancy(FloatingPoint dist_m) const {
+    return dist_m < 0.0;
+  }
+
+  void updateFromTsdfBlocksAsOccupancy(const BlockIndexList& tsdf_blocks) {
+    DCHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
+    timing::Timer esdf_timer("esdf");
+
+    // Get a specific list of voxels in the TSDF layer, and propagate out from
+    // there.
+    // Go through all blocks in TSDF and copy their values for relevant voxels.
+    size_t num_lower = 0u;
+    size_t num_raise = 0u;
+    size_t num_new = 0u;
+    timing::Timer propagate_timer("esdf/propagate_tsdf");
+    VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
+            << " updated blocks from the TSDF.";
+    for (const BlockIndex& block_index : tsdf_blocks) {
+      const Block<TsdfVoxel>& tsdf_block =
+          tsdf_layer_->getBlockByIndex(block_index);
+
+      // Allocate the same block in the ESDF layer.
+      // Block indices are the same across all layers.
+      Block<EsdfVoxel>::Ptr esdf_block =
+          esdf_layer_->allocateBlockPtrByIndex(block_index);
+
+      // TODO(helenol): assumes that TSDF and ESDF layer are the same size.
+      // This will not always be true...
+      const size_t num_voxels_per_block = tsdf_block.num_voxels();
+
+      for (size_t lin_index = 0u; lin_index < num_voxels_per_block;
+           ++lin_index) {
+        const TsdfVoxel& tsdf_voxel =
+            tsdf_block.getVoxelByLinearIndex(lin_index);
+
+        if (tsdf_voxel.weight < config_.min_weight) {
+          continue;
+        }
+
+        EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
+        VoxelIndex voxel_index =
+            esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
+        // Check for frontier voxels.
+        // This is the check for the lower frontier.
+        if (isFixedOccupancy(tsdf_voxel.distance)) {
+          // This is if the distance has been lowered or the voxel is new.
+          // Gets put into lower frontier (open_).
+          if (!esdf_voxel.observed || !esdf_voxel.fixed) {
+            esdf_voxel.distance = tsdf_voxel.distance;
+            esdf_voxel.observed = true;
+            esdf_voxel.fixed = true;
+            esdf_voxel.parent.setZero();
+
+            esdf_voxel.in_queue = true;
+            open_.push(std::make_pair(block_index, voxel_index),
+                       esdf_voxel.distance);
+            num_lower++;
+          }
+        } else {
+          // If the tsdf voxel isn't fixed...
+          // If it used to be, then this is a raise.
+          if (esdf_voxel.observed && esdf_voxel.fixed) {
+            esdf_voxel.distance =
+                signum(tsdf_voxel.distance) * config_.default_distance_m;
+            esdf_voxel.parent.setZero();
+            esdf_voxel.fixed = false;
+            raise_.push(std::make_pair(block_index, voxel_index));
+            num_raise++;
+          }
+          // Then there's the case where it's a completely new voxel.
+          if (!esdf_voxel.observed) {
+            esdf_voxel.distance =
+                signum(tsdf_voxel.distance) * config_.default_distance_m;
+            esdf_voxel.observed = true;
+            esdf_voxel.fixed = false;
+            esdf_voxel.parent.setZero();
+            num_new++;
+          }
+        }
+      }
+    }
+    propagate_timer.Stop();
+    VLOG(3) << "[ESDF occ update]: Lower: " << num_lower << " Raise: " << num_raise
+            << " New: " << num_new;
+
+    timing::Timer update_timer("esdf/update_esdf");
+    // Process the open set now.
+    // processOpenSetFullEuclidean();
+    processOpenSet();
+    update_timer.Stop();
+
+    esdf_timer.Stop();
+  }
+
   void pushNeighborsToOpen(const BlockIndex& block_index,
                            const VoxelIndex& voxel_index) {
     std::vector<VoxelKey> neighbors;
@@ -438,7 +539,7 @@ class EsdfIntegrator {
           continue;
         }
 
-        if (esdf_voxel.distance >= 0.0 &&
+        if (esdf_voxel.distance + distance_to_neighbor >= 0.0 &&
             esdf_voxel.distance + distance_to_neighbor <
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
@@ -454,9 +555,10 @@ class EsdfIntegrator {
         }
 
         // Never happens because of how fixed is done right now.
-        if (esdf_voxel.distance < 0.0 &&
+        if (esdf_voxel.distance - distance_to_neighbor < 0.0 &&
             esdf_voxel.distance - distance_to_neighbor >
                 neighbor_voxel.distance) {
+          std::cout << "Shouldn't happen!" << std::endl;
           neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
           // Also update parent.
           neighbor_voxel.parent = -directions[i];
