@@ -49,7 +49,7 @@ class EsdfIntegrator {
   }
 
   inline bool isFixed(FloatingPoint dist_m) const {
-    return std::abs(dist_m) < config_.min_distance_m;
+    return std::abs(dist_m) <= config_.min_distance_m;
   }
 
   typedef BlockHashMapType<VoxelIndexList>::type BlockVoxelListMap;
@@ -86,7 +86,7 @@ class EsdfIntegrator {
 
     constexpr FloatingPoint planning_sphere_radius = 5.0;
     // Ugh this should probably match the checking radius...
-    constexpr FloatingPoint clear_sphere_radius = 0.5;
+    constexpr FloatingPoint clear_sphere_radius = 1.0;
 
     // First set all in inner sphere to free.
     BlockVoxelListMap block_voxel_list;
@@ -118,12 +118,14 @@ class EsdfIntegrator {
       for (const VoxelIndex& voxel_index : kv.second) {
         EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
         if (!esdf_voxel.observed) {
-          // esdf_voxel.distance = -config_.default_distance_m;
-          // esdf_voxel.observed = true;
-          // pushNeighborsToOpen(kv.first, voxel_index);
+          esdf_voxel.distance = -config_.default_distance_m;
+          esdf_voxel.observed = true;
+          pushNeighborsToOpen(kv.first, voxel_index);
+          updated_blocks_.insert(kv.first);
         }
       }
     }
+    VLOG(3) << "Cleared " << updated_blocks_.size() << " blocks.";
     clear_timer.Stop();
   }
 
@@ -131,6 +133,9 @@ class EsdfIntegrator {
     esdf_layer_->removeAllBlocks();
     BlockIndexList tsdf_blocks;
     tsdf_layer_->getAllAllocatedBlocks(&tsdf_blocks);
+    tsdf_blocks.insert(tsdf_blocks.end(), updated_blocks_.begin(),
+                       updated_blocks_.end());
+    updated_blocks_.clear();
     constexpr bool push_neighbors = false;
     updateFromTsdfBlocks(tsdf_blocks, push_neighbors);
   }
@@ -633,8 +638,11 @@ class EsdfIntegrator {
           continue;
         }
 
+        // Everything outside the surface.
+        // I think this can easily be combined with that below...
         if (esdf_voxel.distance + distance_to_neighbor >= 0.0 &&
-            esdf_voxel.distance + distance_to_neighbor <
+            neighbor_voxel.distance >= 0.0 && esdf_voxel.distance >= 0.0 &&
+            esdf_voxel.distance + distance_to_neighbor + 1e-4 <
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
           // Also update parent.
@@ -648,16 +656,56 @@ class EsdfIntegrator {
           }
         }
 
-        // Never happens because of how fixed is done right now.
+        // Everything inside the surface.
         if (esdf_voxel.distance - distance_to_neighbor < 0.0 &&
-            esdf_voxel.distance - distance_to_neighbor >
+            neighbor_voxel.distance <= 0.0 && esdf_voxel.distance <= 0.0 &&
+            esdf_voxel.distance - distance_to_neighbor - 1e-4 >
                 neighbor_voxel.distance) {
           neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
           // Also update parent.
           neighbor_voxel.parent = -directions[i];
-          if (!neighbor_voxel.in_queue) {
-            // open_.push(neighbors[i], neighbor_voxel.distance);
-            // neighbor_voxel.in_queue = true;
+          if (neighbor_voxel.distance > -config_.max_distance_m) {
+            if (!neighbor_voxel.in_queue) {
+              open_.push(neighbors[i], neighbor_voxel.distance);
+              neighbor_voxel.in_queue = true;
+            }
+          }
+        }
+
+        // If there's a sign flippy flip.
+        if (signum(esdf_voxel.distance) != signum(neighbor_voxel.distance)) {
+          if (esdf_voxel.fixed &&
+              std::abs(neighbor_voxel.distance + esdf_voxel.distance) >
+                  distance_to_neighbor) {
+            neighbor_voxel.distance =
+                esdf_voxel.distance -
+                signum(esdf_voxel.distance) * distance_to_neighbor;
+            neighbor_voxel.parent = -directions[i];
+            if (!neighbor_voxel.in_queue) {
+              open_.push(neighbors[i], neighbor_voxel.distance);
+              neighbor_voxel.in_queue = true;
+            }
+          } else if (std::abs(neighbor_voxel.distance + esdf_voxel.distance) <
+                     distance_to_neighbor) {
+            // Do nothing, we good.
+          } else if (neighbor_voxel.distance < 0.0 &&
+                     esdf_voxel.distance > distance_to_neighbor) {
+            // OK now the other case is if it's 2 totally different signs...
+            neighbor_voxel.distance = -distance_to_neighbor;
+            neighbor_voxel.parent = -directions[i];
+            if (!neighbor_voxel.in_queue) {
+              open_.push(neighbors[i], neighbor_voxel.distance);
+              neighbor_voxel.in_queue = true;
+            }
+          } else if (neighbor_voxel.distance >= distance_to_neighbor &&
+                     esdf_voxel.distance < -distance_to_neighbor) {
+            // OK now the other case is if it's 2 totally different signs...
+            neighbor_voxel.distance = distance_to_neighbor;
+            neighbor_voxel.parent = -directions[i];
+            if (!neighbor_voxel.in_queue) {
+              open_.push(neighbors[i], neighbor_voxel.distance);
+              neighbor_voxel.in_queue = true;
+            }
           }
         }
       }
