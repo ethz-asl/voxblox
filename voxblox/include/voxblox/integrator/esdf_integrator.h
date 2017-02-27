@@ -49,7 +49,7 @@ class EsdfIntegrator {
   }
 
   inline bool isFixed(FloatingPoint dist_m) const {
-    return std::abs(dist_m) < config_.min_distance_m || dist_m < 0.0;
+    return std::abs(dist_m) < config_.min_distance_m;
   }
 
   typedef BlockHashMapType<VoxelIndexList>::type BlockVoxelListMap;
@@ -66,6 +66,40 @@ class EsdfIntegrator {
     constexpr FloatingPoint planning_sphere_radius = 5.0;
     // Ugh this should probably match the checking radius...
     constexpr FloatingPoint clear_sphere_radius = 0.5;
+
+    // First set all in inner sphere to free.
+    BlockVoxelListMap block_voxel_list;
+    getSphereAroundPoint(position, clear_sphere_radius, &block_voxel_list);
+    for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
+      // Get block.
+      EsdfBlock::Ptr block_ptr = esdf_layer_->allocateBlockPtrByIndex(kv.first);
+
+      for (const VoxelIndex& voxel_index : kv.second) {
+        EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+        if (!esdf_voxel.observed) {
+          esdf_voxel.distance = max_distance_m;
+          esdf_voxel.observed = true;
+          pushNeighborsToOpen(kv.first, voxel_index);
+        }
+      }
+    }
+
+    // Second set all remaining unknown to occupied.
+    block_voxel_list.clear();
+    getSphereAroundPoint(position, planning_sphere_radius, &block_voxel_list);
+    for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
+      // Get block.
+      EsdfBlock::Ptr block_ptr = esdf_layer_->allocateBlockPtrByIndex(kv.first);
+
+      for (const VoxelIndex& voxel_index : kv.second) {
+        EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+        if (!esdf_voxel.observed) {
+          esdf_voxel.distance = -max_distance_m;
+          esdf_voxel.observed = true;
+          pushNeighborsToOpen(kv.first, voxel_index);
+        }
+      }
+    }
   }
 
   void updateFromTsdfLayerBatch() {
