@@ -34,8 +34,9 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
 
   EsdfIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
-  esdf_integrator_config.min_distance_m =
-      tsdf_integrator_->getConfig().default_truncation_distance;
+  esdf_integrator_config.min_distance_m = esdf_config.esdf_voxel_size;
+  // esdf_integrator_config.min_distance_m =
+  //    tsdf_integrator_->getConfig().default_truncation_distance;
   nh_private_.param("esdf_max_distance_m",
                     esdf_integrator_config.max_distance_m,
                     esdf_integrator_config.max_distance_m);
