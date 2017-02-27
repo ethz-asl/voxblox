@@ -1,9 +1,9 @@
 #ifndef VOXBLOX_INTEGRATOR_ESDF_INTEGRATOR_H_
 #define VOXBLOX_INTEGRATOR_ESDF_INTEGRATOR_H_
 
-#include <algorithm>
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
+#include <algorithm>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -11,8 +11,8 @@
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
-#include "voxblox/utils/timing.h"
 #include "voxblox/utils/bucket_queue.h"
+#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
@@ -56,8 +56,29 @@ class EsdfIntegrator {
 
   void getSphereAroundPoint(const Point& center, FloatingPoint radius,
                             BlockVoxelListMap* block_voxel_list) const {
-    // TODO(zac): Put stuff here!
-    // Input center and radius, output a map<BlockIndex, vector<VoxelIndex>>.
+    // search a cube with side length 2*radius
+    for (FloatingPoint x = -radius; x <= radius; x += esdf_voxel_size_) {
+      for (FloatingPoint y = -radius; y <= radius; y += esdf_voxel_size_) {
+        for (FloatingPoint z = -radius; z <= radius; z += esdf_voxel_size_) {
+          Point point(x, y, z);
+
+          // check if point is inside the spheres radius
+          if (point.squaredNorm() <= radius * radius) {
+            // convert to global coordinate
+            point += center;
+
+            BlockIndex block_index =
+                esdf_layer_->computeBlockIndexFromCoordinates(point);
+
+            if (esdf_layer_->hasBlock(block_index)) {
+              (*block_voxel_list)[block_index].push_back(
+                  esdf_layer_->getBlockByIndex(block_index)
+                      .computeVoxelIndexFromCoordinates(point));
+            }
+          }
+        }
+      }
+    }
   }
 
   // Used for planning - allocates sphere around as observed but occupied,
