@@ -70,11 +70,9 @@ class EsdfIntegrator {
             BlockIndex block_index =
                 esdf_layer_->computeBlockIndexFromCoordinates(point);
 
-            if (esdf_layer_->hasBlock(block_index)) {
-              (*block_voxel_list)[block_index].push_back(
-                  esdf_layer_->getBlockByIndex(block_index)
-                      .computeVoxelIndexFromCoordinates(point));
-            }
+            (*block_voxel_list)[block_index].push_back(
+                esdf_layer_->allocateBlockPtrByIndex(block_index)
+                    ->computeVoxelIndexFromCoordinates(point));
           }
         }
       }
@@ -104,6 +102,7 @@ class EsdfIntegrator {
           esdf_voxel.distance = config_.default_distance_m;
           esdf_voxel.observed = true;
           pushNeighborsToOpen(kv.first, voxel_index);
+          updated_blocks_.insert(kv.first);
         }
       }
     }
@@ -119,9 +118,9 @@ class EsdfIntegrator {
       for (const VoxelIndex& voxel_index : kv.second) {
         EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
         if (!esdf_voxel.observed) {
-          esdf_voxel.distance = -config_.default_distance_m;
-          esdf_voxel.observed = true;
-          pushNeighborsToOpen(kv.first, voxel_index);
+          // esdf_voxel.distance = -config_.default_distance_m;
+          // esdf_voxel.observed = true;
+          // pushNeighborsToOpen(kv.first, voxel_index);
         }
       }
     }
@@ -152,6 +151,9 @@ class EsdfIntegrator {
   void updateFromTsdfLayer(bool clear_updated_flag) {
     BlockIndexList tsdf_blocks;
     tsdf_layer_->getAllUpdatedBlocks(&tsdf_blocks);
+    tsdf_blocks.insert(tsdf_blocks.end(), updated_blocks_.begin(),
+                       updated_blocks_.end());
+    updated_blocks_.clear();
     updateFromTsdfBlocks(tsdf_blocks);
 
     if (clear_updated_flag) {
@@ -182,6 +184,9 @@ class EsdfIntegrator {
     VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
             << " updated blocks from the TSDF.";
     for (const BlockIndex& block_index : tsdf_blocks) {
+      if (!tsdf_layer_->hasBlock(block_index)) {
+        continue;
+      }
       const Block<TsdfVoxel>& tsdf_block =
           tsdf_layer_->getBlockByIndex(block_index);
 
@@ -258,6 +263,9 @@ class EsdfIntegrator {
     VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
             << " updated blocks from the TSDF.";
     for (const BlockIndex& block_index : tsdf_blocks) {
+      if (!tsdf_layer_->hasBlock(block_index)) {
+        continue;
+      }
       const Block<TsdfVoxel>& tsdf_block =
           tsdf_layer_->getBlockByIndex(block_index);
 
@@ -318,7 +326,11 @@ class EsdfIntegrator {
         } else {
           // If the tsdf voxel isn't fixed...
           // If it used to be, then this is a raise.
-          if (esdf_voxel.observed && esdf_voxel.fixed) {
+          // Or sign is flipped...
+
+          if (esdf_voxel.observed &&
+              (esdf_voxel.fixed ||
+               signum(esdf_voxel.distance) != signum(tsdf_voxel.distance))) {
             esdf_voxel.distance =
                 signum(tsdf_voxel.distance) * config_.default_distance_m;
             esdf_voxel.parent.setZero();
@@ -376,6 +388,9 @@ class EsdfIntegrator {
     VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
             << " updated blocks from the TSDF.";
     for (const BlockIndex& block_index : tsdf_blocks) {
+      if (!tsdf_layer_->hasBlock(block_index)) {
+        continue;
+      }
       const Block<TsdfVoxel>& tsdf_block =
           tsdf_layer_->getBlockByIndex(block_index);
 
@@ -571,7 +586,8 @@ class EsdfIntegrator {
       }
 
       // Don't bother propagating this -- can't make any active difference.
-      if (esdf_voxel.distance >= config_.max_distance_m) {
+      if (esdf_voxel.distance >= config_.max_distance_m ||
+          esdf_voxel.distance <= -config_.max_distance_m) {
         esdf_voxel.in_queue = false;
         continue;
       }
@@ -636,13 +652,12 @@ class EsdfIntegrator {
         if (esdf_voxel.distance - distance_to_neighbor < 0.0 &&
             esdf_voxel.distance - distance_to_neighbor >
                 neighbor_voxel.distance) {
-          std::cout << "Shouldn't happen!" << std::endl;
           neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
           // Also update parent.
           neighbor_voxel.parent = -directions[i];
           if (!neighbor_voxel.in_queue) {
-            open_.push(neighbors[i], neighbor_voxel.distance);
-            neighbor_voxel.in_queue = true;
+            // open_.push(neighbors[i], neighbor_voxel.distance);
+            // neighbor_voxel.in_queue = true;
           }
         }
       }
@@ -870,6 +885,8 @@ class EsdfIntegrator {
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;
+
+  IndexSet updated_blocks_;
 };
 
 }  // namespace voxblox
