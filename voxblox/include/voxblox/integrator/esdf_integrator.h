@@ -86,7 +86,7 @@ class EsdfIntegrator {
 
     constexpr FloatingPoint planning_sphere_radius = 5.0;
     // Ugh this should probably match the checking radius...
-    constexpr FloatingPoint clear_sphere_radius = 1.0;
+    constexpr FloatingPoint clear_sphere_radius = 1.5;
 
     // First set all in inner sphere to free.
     BlockVoxelListMap block_voxel_list;
