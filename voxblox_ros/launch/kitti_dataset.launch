@@ -36,7 +36,7 @@
     <param name="slice_level" value="1.0" />
     <param name="method" value="merged_discard" />
     <param name="use_const_weight" value="true" />
-    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon kitti).ply" />
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/out.ply" />
   </node>
 
 </launch>
