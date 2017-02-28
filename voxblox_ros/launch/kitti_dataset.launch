@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-15"?>
 <launch>
   <arg name="play_bag" value="true" />
-  <arg name="bag_file" value="/Users/helen/data/kitti/2011_09_26/2011_09_26_drive_0035_sync/drive35.bag"/>
+  <arg name="bag_file" value="/home/z/local_datasets/2011_09_26/2011_09_26_drive_0035_sync/rosbag.bag"/>
   <arg name="voxel_size" default="0.25"/>
-  <arg name="generate_esdf" default="true" />
+  <arg name="generate_esdf" default="false" />
 
   <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.1 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
 
