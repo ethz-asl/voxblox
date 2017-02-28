@@ -208,10 +208,10 @@ class TsdfIntegrator {
     const Point& origin = T_G_C.getPosition();
     const Point voxel_center_offset(0.5, 0.5, 0.5);
 
-    // Key actually doesn't matter at all.
-    Point mean_point_C = Point::Zero();
-    Color mean_color;
-    float total_weight = 0.0;
+    //stores all the information needed to update a map voxel
+    VoxelInfo voxel_info;
+    voxel_info.point_C = Point::Zero();
+    voxel_info.voxel.weight = 0.0;
 
     for (const size_t pt_idx : kv.second) {
       const Point& point_C = points_C[pt_idx];
@@ -220,11 +220,11 @@ class TsdfIntegrator {
       float point_weight = getVoxelWeight(
           point_C, T_G_C * point_C, origin,
           (kv.first.cast<FloatingPoint>() + voxel_center_offset) * voxel_size_);
-      mean_point_C = (mean_point_C * total_weight + point_C * point_weight) /
-                     (total_weight + point_weight);
-      mean_color =
-          Color::blendTwoColors(mean_color, total_weight, color, point_weight);
-      total_weight += point_weight;
+      voxel_info.point_C = (voxel_info.point_C * voxel_info.weight + point_C * point_weight) /
+                     (voxel_info.weight + point_weight);
+      voxel_info.color =
+          Color::blendTwoColors(voxel_info.color, voxel_info.weight, color, point_weight);
+      voxel_info.weight += point_weight;
 
       // only take first point when clearing
       if (clearing_ray) {
@@ -232,19 +232,19 @@ class TsdfIntegrator {
       }
     }
 
-    const Point point_G = T_G_C * mean_point_C;
-    const Ray unit_ray = (point_G - origin).normalized();
+    voxel_info.point_G = T_G_C * voxel_info.point_C;
+    const Ray unit_ray = (voxel_info.point_G - origin).normalized();
 
     Point ray_end, ray_start;
     if (clearing_ray) {
       ray_end = origin + unit_ray * config_.max_ray_length_m;
       ray_start = origin;
     } else {
-      ray_end = point_G + unit_ray * config_.default_truncation_distance;
+      ray_end = voxel_info.point_G + unit_ray * config_.default_truncation_distance;
       ray_start =
           config_.voxel_carving_enabled
               ? origin
-              : (point_G - unit_ray * config_.default_truncation_distance);
+              : (voxel_info.point_G - unit_ray * config_.default_truncation_distance);
     }
 
     const Point start_scaled = ray_start * voxel_size_inv_;
@@ -286,11 +286,31 @@ class TsdfIntegrator {
           block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
       TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
 
-      updateTsdfVoxel(origin, mean_point_C, point_G, voxel_center_G, mean_color,
-                      config_.default_truncation_distance, total_weight,
+      updateTsdfVoxel(origin, voxel_info.point_C, voxel_info.point_G, voxel_center_G, voxel_info.color,
+                      config_.default_truncation_distance, voxel_info.weight,
                       &tsdf_voxel);
+
     }
     update_voxels_timer.Stop();
+  }
+
+  void updateVoxel(const VoxelInfo& voxel_info, const Point& origin){
+    static BlockIndex last_block_idx = BlockIndex::Zero();
+    static Block<TsdfVoxel>::Ptr block;
+
+    if (!block || block_idx != last_block_idx) {
+        block = layer_->allocateBlockPtrByIndex(block_idx);
+        block->updated() = true;
+        last_block_idx = block_idx;
+      }
+
+      const Point voxel_center_G =
+          block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
+      TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
+
+      updateTsdfVoxel(origin, voxel_info.point_C, voxel_info.point_G, voxel_center_G, voxel_info.color,
+                      config_.default_truncation_distance, voxel_info.weight,
+                      &tsdf_voxel);
   }
 
   void integratePointCloudMerged(const Transformation& T_G_C,
@@ -333,6 +353,19 @@ class TsdfIntegrator {
   const Config& getConfig() const { return config_; }
 
  protected:
+
+  struct VoxelInfo{
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    TsdfVoxel voxel;
+
+    BlockIndex block_idx;
+    VoxelIndex local_voxel_idx;
+
+    Point point_C;
+    Point point_G;
+  }
+
   Config config_;
 
   Layer<TsdfVoxel>* layer_;
