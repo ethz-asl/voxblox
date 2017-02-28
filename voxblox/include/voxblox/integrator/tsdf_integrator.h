@@ -2,6 +2,7 @@
 #define VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
 
 #include <algorithm>
+#include <queue>
 #include <thread>
 #include <vector>
 
@@ -11,7 +12,6 @@
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
-#include "voxblox/utils/concurrentqueue.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -26,7 +26,7 @@ class TsdfIntegrator {
     FloatingPoint max_ray_length_m = 5.0;
     bool use_const_weight = false;
     bool allow_clear = true;
-    size_t integrator_threads = 2;
+    size_t integrator_threads = std::thread::hardware_concurrency();
   };
 
   struct VoxelInfo {
@@ -52,6 +52,13 @@ class TsdfIntegrator {
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_inv_ = 1.0 / block_size_;
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
+
+    voxel_update_queues_.resize(config_.integrator_threads);
+
+    if(config_.integrator_threads == 0){
+      LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
+      config_.integrator_threads = 1;
+    }
   }
 
   float getVoxelWeight(const Point& point_C, const Point& point_G,
@@ -237,7 +244,8 @@ class TsdfIntegrator {
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool discard, bool clearing_ray,
       const std::pair<AnyIndex, std::vector<size_t>>& kv,
-      const BlockHashMapType<std::vector<size_t>>::type& voxel_map) {
+      const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
+      const size_t tid) {
     if (kv.second.empty()) {
       return;
     }
@@ -312,7 +320,7 @@ class TsdfIntegrator {
       voxel_info.local_voxel_idx =
           getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
-      voxel_update_queue_.enqueue(voxel_info);
+      voxel_update_queues_[tid].push(voxel_info);
     }
     update_voxels_timer.Stop();
   }
@@ -333,18 +341,35 @@ class TsdfIntegrator {
     for (size_t i = 0; i < voxel_map.size(); ++i) {
       if (((i + tid + 1) % config_.integrator_threads) == 0) {
         integrateVoxel(T_G_C, points_C, colors, discard, clearing_ray, *it,
-                       voxel_map);
+                       voxel_map, tid);
       }
       ++it;
     }
   }
 
-  void updateVoxels(const std::atomic<bool>& integration_finished,
-                    const Point& origin) {
-    VoxelInfo voxel_info;
-    while (voxel_update_queue_.try_dequeue(voxel_info) ||
-           !integration_finished.load()) {
-      updateVoxel(voxel_info, origin);
+  void integrateRays(
+      const Transformation& T_G_C, const Pointcloud& points_C,
+      const Colors& colors, bool discard, bool clearing_ray,
+      const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
+      const BlockHashMapType<std::vector<size_t>>::type& clear_map) {
+
+    const Point& origin = T_G_C.getPosition();
+    
+    std::vector<std::thread> integration_threads;
+    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+      integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,
+                                       T_G_C, points_C, colors, discard,
+                                       clearing_ray, voxel_map, clear_map, i);
+    }
+
+    for (std::thread& thread : integration_threads) {
+      thread.join();
+    }
+    for (std::queue<VoxelInfo>& voxel_update_queue : voxel_update_queues_) {
+      while (!voxel_update_queue.empty()) {
+        updateVoxel(voxel_update_queue.front(), origin);
+        voxel_update_queue.pop();
+      }
     }
   }
 
@@ -353,8 +378,6 @@ class TsdfIntegrator {
                                  const Colors& colors, bool discard) {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
-
-    const Point& origin = T_G_C.getPosition();
 
     // Pre-compute a list of unique voxels to end on.
     // Create a hashmap: VOXEL INDEX -> index in original cloud.
@@ -365,56 +388,12 @@ class TsdfIntegrator {
 
     bundleRays(T_G_C, points_C, &voxel_map, &clear_map);
 
-    std::vector<std::thread> integration_threads;
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
-      integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,
-                                       T_G_C, points_C, colors, discard, false,
-                                       voxel_map, clear_map, i);
-    }
-
-    /*std::atomic<bool> integration_finished(false);
-    std::thread update_thread(&TsdfIntegrator::updateVoxels, this,
-                              std::ref(integration_finished), origin);
-
-    for (std::thread& thread : integration_threads) {
-      thread.join();
-    }
-    integration_finished.store(true);
-    update_thread.join();*/
-
-    for (std::thread& thread : integration_threads) {
-      thread.join();
-    }
-    VoxelInfo voxel_info;
-    while (voxel_update_queue_.try_dequeue(voxel_info)) {
-      updateVoxel(voxel_info, origin);
-    }
+    integrateRays(T_G_C, points_C, colors, discard, false, voxel_map,
+                  clear_map);
 
     timing::Timer clear_timer("integrate/clear");
 
-    integration_threads.clear();
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
-      integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,
-                                       T_G_C, points_C, colors, discard, true,
-                                       voxel_map, clear_map, i);
-    }
-
-    /*integration_finished.store(false);
-    update_thread = std::thread(&TsdfIntegrator::updateVoxels, this,
-                                std::ref(integration_finished), origin);
-
-    for (std::thread& thread : integration_threads) {
-      thread.join();
-    }
-    integration_finished.store(true);
-    update_thread.join();*/
-
-    for (std::thread& thread : integration_threads) {
-      thread.join();
-    }
-    while (voxel_update_queue_.try_dequeue(voxel_info)) {
-      updateVoxel(voxel_info, origin);
-    }
+    integrateRays(T_G_C, points_C, colors, discard, true, voxel_map, clear_map);
 
     clear_timer.Stop();
 
@@ -429,7 +408,7 @@ class TsdfIntegrator {
 
   Layer<TsdfVoxel>* layer_;
 
-  moodycamel::ConcurrentQueue<VoxelInfo> voxel_update_queue_;
+  std::vector<std::queue<VoxelInfo>> voxel_update_queues_;
 
   // Cached map config.
   FloatingPoint voxel_size_;
