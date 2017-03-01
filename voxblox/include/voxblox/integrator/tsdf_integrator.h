@@ -53,9 +53,7 @@ class TsdfIntegrator {
     block_size_inv_ = 1.0 / block_size_;
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
 
-    voxel_update_queues_.resize(config_.integrator_threads);
-
-    if(config_.integrator_threads == 0){
+    if (config_.integrator_threads == 0) {
       LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
       config_.integrator_threads = 1;
     }
@@ -245,7 +243,7 @@ class TsdfIntegrator {
       const Colors& colors, bool discard, bool clearing_ray,
       const std::pair<AnyIndex, std::vector<size_t>>& kv,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-      const size_t tid) {
+      std::queue<VoxelInfo>* voxel_update_queue) {
     if (kv.second.empty()) {
       return;
     }
@@ -320,7 +318,7 @@ class TsdfIntegrator {
       voxel_info.local_voxel_idx =
           getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
-      voxel_update_queues_[tid].push(voxel_info);
+      voxel_update_queue->push(voxel_info);
     }
     update_voxels_timer.Stop();
   }
@@ -330,7 +328,7 @@ class TsdfIntegrator {
       const Colors& colors, bool discard, bool clearing_ray,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
       const BlockHashMapType<std::vector<size_t>>::type& clear_map,
-      size_t tid) {
+      std::queue<VoxelInfo>* voxel_update_queue, size_t tid) {
     BlockHashMapType<std::vector<size_t>>::type::const_iterator it;
     if (clearing_ray) {
       it = clear_map.begin();
@@ -341,7 +339,7 @@ class TsdfIntegrator {
     for (size_t i = 0; i < voxel_map.size(); ++i) {
       if (((i + tid + 1) % config_.integrator_threads) == 0) {
         integrateVoxel(T_G_C, points_C, colors, discard, clearing_ray, *it,
-                       voxel_map, tid);
+                       voxel_map, voxel_update_queue);
       }
       ++it;
     }
@@ -352,20 +350,23 @@ class TsdfIntegrator {
       const Colors& colors, bool discard, bool clearing_ray,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
       const BlockHashMapType<std::vector<size_t>>::type& clear_map) {
+    std::vector<std::queue<VoxelInfo>> voxel_update_queues(
+        config_.integrator_threads);
 
     const Point& origin = T_G_C.getPosition();
-    
+
     std::vector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,
                                        T_G_C, points_C, colors, discard,
-                                       clearing_ray, voxel_map, clear_map, i);
+                                       clearing_ray, voxel_map, clear_map,
+                                       &(voxel_update_queues[i]), i);
     }
 
     for (std::thread& thread : integration_threads) {
       thread.join();
     }
-    for (std::queue<VoxelInfo>& voxel_update_queue : voxel_update_queues_) {
+    for (std::queue<VoxelInfo>& voxel_update_queue : voxel_update_queues) {
       while (!voxel_update_queue.empty()) {
         updateVoxel(voxel_update_queue.front(), origin);
         voxel_update_queue.pop();
@@ -407,8 +408,6 @@ class TsdfIntegrator {
   Config config_;
 
   Layer<TsdfVoxel>* layer_;
-
-  std::vector<std::queue<VoxelInfo>> voxel_update_queues_;
 
   // Cached map config.
   FloatingPoint voxel_size_;
