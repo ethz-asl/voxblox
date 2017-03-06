@@ -355,16 +355,23 @@ class TsdfIntegrator {
 
     const Point& origin = T_G_C.getPosition();
 
-    std::vector<std::thread> integration_threads;
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
-      integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,
-                                       T_G_C, points_C, colors, discard,
-                                       clearing_ray, voxel_map, clear_map,
-                                       &(voxel_update_queues[i]), i);
+    //if only 1 thread just do function call, otherwise spawn threads
+    if (config_.integrator_threads == 1) {
+      integrateVoxels(T_G_C, points_C, colors, discard, clearing_ray, voxel_map,
+                      clear_map, &(voxel_update_queues[0]), 0);
     }
+    else {
+      std::vector<std::thread> integration_threads;
+      for (size_t i = 0; i < config_.integrator_threads; ++i) {
+        integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,
+                                         T_G_C, points_C, colors, discard,
+                                         clearing_ray, voxel_map, clear_map,
+                                         &(voxel_update_queues[i]), i);
+      }
 
-    for (std::thread& thread : integration_threads) {
-      thread.join();
+      for (std::thread& thread : integration_threads) {
+        thread.join();
+      }
     }
     for (std::queue<VoxelInfo>& voxel_update_queue : voxel_update_queues) {
       while (!voxel_update_queue.empty()) {
