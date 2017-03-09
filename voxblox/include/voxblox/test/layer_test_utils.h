@@ -77,13 +77,6 @@ class LayerTest {
 };
 
 template <>
-void LayerTest<LabelVoxel>::CompareVoxel(const LabelVoxel& voxel_A,
-                                         const LabelVoxel& voxel_B) const {
-  CHECK_EQ(voxel_A.label, voxel_B.label);
-  CHECK_EQ(voxel_A.label_confidence, voxel_B.label_confidence);
-}
-
-template <>
 void LayerTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
                                         const TsdfVoxel& voxel_B) const {
   CHECK_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);

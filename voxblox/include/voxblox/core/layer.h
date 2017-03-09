@@ -211,7 +211,7 @@ class Layer {
   size_t getMemorySize() const;
 
  private:
-  VoxelTypes getType() const;
+  std::string getType() const;
 
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;
