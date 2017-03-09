@@ -24,10 +24,9 @@ template <typename VoxelType>
 Layer<VoxelType>::Layer(const LayerProto& proto)
     : voxel_size_(proto.voxel_size()),
       voxels_per_side_(proto.voxels_per_side()) {
-
-  CHECK_EQ(static_cast<int>(getType()), static_cast<int>(proto.type()))
+  CHECK_EQ(getType().compare(proto.type()), 0)
       << "Incorrect voxel type, proto type: " << proto.type()
-      << " layer type: " << static_cast<int>(getType());
+      << " layer type: " << getType();
 
   // Derived config parameter.
   block_size_ = voxel_size_ * voxels_per_side_;
@@ -41,13 +40,12 @@ template <typename VoxelType>
 void Layer<VoxelType>::getProto(LayerProto* proto) const {
   CHECK_NOTNULL(proto);
 
-  CHECK_NE(static_cast<int>(getType()),
-           static_cast<int>(VoxelTypes::kNotSerializable))
+  CHECK_NE(getType().compare(voxel_types::kNotSerializable), 0)
       << "The voxel type of this layer is not serializable!";
 
   proto->set_voxel_size(voxel_size_);
   proto->set_voxels_per_side(voxels_per_side_);
-  proto->set_type(static_cast<int32_t>(getType()));
+  proto->set_type(getType());
 }
 
 template <typename VoxelType>
@@ -60,8 +58,7 @@ template <typename VoxelType>
 bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
                                         BlockIndexList blocks_to_include,
                                         bool include_all_blocks) const {
-  CHECK_NE(static_cast<int>(getType()),
-           static_cast<int>(VoxelTypes::kNotSerializable))
+  CHECK_NE(getType().compare(voxel_types::kNotSerializable), 0)
       << "The voxel type of this layer is not serializable!";
 
   CHECK(!file_path.empty());
@@ -144,8 +141,7 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
 template <typename VoxelType>
 bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
                                          BlockMergingStrategy strategy) {
-  CHECK_NE(static_cast<int>(getType()),
-           static_cast<int>(VoxelTypes::kNotSerializable))
+  CHECK_NE(getType().compare(voxel_types::kNotSerializable), 0)
       << "The voxel type of this layer is not serializable!";
 
   if (isCompatible(block_proto)) {
@@ -192,7 +188,7 @@ bool Layer<VoxelType>::isCompatible(const LayerProto& layer_proto) const {
   bool compatible = true;
   compatible &= (layer_proto.voxel_size() == voxel_size_);
   compatible &= (layer_proto.voxels_per_side() == voxels_per_side_);
-  compatible &= (layer_proto.type() == static_cast<int32_t>(getType()));
+  compatible &= (getType().compare(layer_proto.type()) == 0);
   return compatible;
 }
 
@@ -224,7 +220,7 @@ size_t Layer<VoxelType>::getMemorySize() const {
 }
 
 template <typename VoxelType>
-VoxelTypes Layer<VoxelType>::getType() const {
+std::string Layer<VoxelType>::getType() const {
   return getVoxelType<VoxelType>();
 }
 
