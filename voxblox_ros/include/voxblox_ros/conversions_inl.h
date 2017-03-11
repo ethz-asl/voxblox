@@ -12,7 +12,7 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
   msg->voxels_per_side = layer.voxels_per_side();
   msg->voxel_size = layer.voxel_size();
 
-  msg->layer_type = static_cast<uint8_t>(getVoxelType<VoxelType>());
+  msg->layer_type = getVoxelType<VoxelType>();
 
   BlockIndexList block_list;
   if (only_updated) {
@@ -42,7 +42,7 @@ template <typename VoxelType>
 bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
                            Layer<VoxelType>* layer) {
   CHECK_NOTNULL(layer);
-  if (msg.layer_type != static_cast<uint8_t>(getVoxelType<VoxelType>())) {
+  if (getVoxelType<VoxelType>().compare(msg.layer_type) != 0) {
     return false;
   }
 
