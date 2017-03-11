@@ -1,11 +1,12 @@
 #include <gtest/gtest.h>
 
-#include "voxblox/core/labeltsdf_map.h"
-#include "voxblox/integrator/labeltsdf_integrator.h"
-#include "voxblox/io/layer_io.h"
-#include "voxblox/io/mesh_ply.h"
-#include "voxblox/mesh/mesh_label_integrator.h"
-#include "voxblox/test/layer_test_utils.h"
+#include <voxblox/io/layer_io.h>
+#include <voxblox/io/mesh_ply.h>
+
+#include "global_segment_map/label_tsdf_integrator.h"
+#include "global_segment_map/label_tsdf_map.h"
+#include "global_segment_map/label_tsdf_mesh_integrator.h"
+#include "global_segment_map/test/layer_test_utils.h"
 
 namespace voxblox {
 
@@ -72,9 +73,9 @@ TEST_F(LabelTsdfIntegratorTest, IntegratePointCloud) {
                                    colors_to_integrate, labels_to_integrate);
 
   const std::string tsdf_file =
-        "test_data/labeltsdf_integrator_test_1.tsdf.voxblox";
+        "test_data/label_tsdf_integrator_test_1.tsdf.voxblox";
   const std::string label_file =
-        "test_data/labeltsdf_integrator_test_1.label.voxblox";
+        "test_data/label_tsdf_integrator_test_1.label.voxblox";
 
   if (save_layers_) {
     // Store tsdf and label layers ground truth to file
@@ -233,7 +234,7 @@ TEST_F(LabelTsdfIntegratorTest, ComputeUnseenLabelPointCloud) {
                          expected_labels.begin()));
 
   #ifdef VISUALIZE_UNIT_TEST_RESULTS
-    visualizeTestResult("labeltsdf_integrator_test_mesh_4.ply");
+    visualizeTestResult("label_tsdf_integrator_test_mesh_4.ply");
   #endif
 }
 }  // namespace voxblox
