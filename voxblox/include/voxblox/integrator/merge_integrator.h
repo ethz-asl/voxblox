@@ -207,19 +207,6 @@ void MergeIntegrator::mergeVoxelAIntoVoxelB(const OccupancyVoxel& voxel_A,
   voxel_B->observed = voxel_B->observed || voxel_A.observed;
 }
 
-template <>
-void MergeIntegrator::mergeVoxelAIntoVoxelB(const LabelVoxel& voxel_A,
-                                            LabelVoxel* voxel_B) {
-  if (voxel_A.label == voxel_B->label) {
-    voxel_B->label_confidence += voxel_A.label_confidence;
-  } else if (voxel_A.label_confidence > voxel_B->label_confidence) {
-    voxel_B->label = voxel_A.label;
-    voxel_B->label_confidence =
-        voxel_A.label_confidence - voxel_B->label_confidence;
-  } else {
-    voxel_B->label_confidence -= voxel_A.label_confidence;
-  }
-}
 }  // namespace voxblox
 
 #endif  // VOXBLOX_INTEGRATOR_MERGE_INTEGRATOR_H_
