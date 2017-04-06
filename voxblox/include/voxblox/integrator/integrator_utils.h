@@ -80,7 +80,7 @@ inline void getHierarchicalIndexAlongRay(
     const Point& start, const Point& end, size_t voxels_per_side,
     FloatingPoint voxel_size, FloatingPoint truncation_distance,
     bool voxel_carving_enabled, HierarchicalIndexMap* hierarchical_idx_map) {
-  DCHECK_NOTNULL(hierarchical_idx_map->clear());
+  hierarchical_idx_map->clear();
 
   FloatingPoint voxels_per_side_inv = 1.0 / voxels_per_side;
   FloatingPoint voxel_size_inv = 1.0 / voxel_size;
