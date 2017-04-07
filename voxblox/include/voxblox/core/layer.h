@@ -121,7 +121,7 @@ class Layer {
     DCHECK(insert_status.second) << "Block already exists when allocating at "
                                  << index.transpose();
 
-    DCHECK_NOTNULL(insert_status.first->second);
+    DCHECK(insert_status.first->second);
     DCHECK_EQ(insert_status.first->first, index);
     return insert_status.first->second;
   }
