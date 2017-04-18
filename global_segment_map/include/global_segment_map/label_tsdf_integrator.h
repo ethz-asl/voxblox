@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INTEGRATOR_LABELTSDF_INTEGRATOR_H_
-#define VOXBLOX_INTEGRATOR_LABELTSDF_INTEGRATOR_H_
+#ifndef GLOBAL_SEGMENT_MAP_LABEL_TSDF_INTEGRATOR_H_
+#define GLOBAL_SEGMENT_MAP_LABEL_TSDF_INTEGRATOR_H_
 
 #include <algorithm>
 #include <limits>
@@ -7,33 +7,31 @@
 #include <utility>
 #include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
 
-#include "voxblox/core/layer.h"
-#include "voxblox/core/labeltsdf_map.h"
-#include "voxblox/core/voxel.h"
-#include "voxblox/integrator/integrator_utils.h"
-#include "voxblox/integrator/tsdf_integrator.h"
-#include "voxblox/utils/timing.h"
+#include <voxblox/core/layer.h>
+#include <voxblox/core/voxel.h>
+#include <voxblox/integrator/integrator_utils.h>
+#include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/utils/timing.h>
+
+#include "global_segment_map/label_tsdf_map.h"
+#include "global_segment_map/label_voxel.h"
 
 namespace voxblox {
 
 class LabelTsdfIntegrator : public TsdfIntegrator {
  public:
-  LabelTsdfIntegrator(const Config& config,
-                      Layer<TsdfVoxel>* tsdf_layer,
-                      Layer<LabelVoxel>* label_layer,
-                      Label* highest_label)
+  LabelTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
+                      Layer<LabelVoxel>* label_layer, Label* highest_label)
       : TsdfIntegrator(config, CHECK_NOTNULL(tsdf_layer)),
         label_layer_(CHECK_NOTNULL(label_layer)),
         highest_label_(CHECK_NOTNULL(highest_label)) {
     CHECK(label_layer_);
   }
 
-  Label get_fresh_label() {
-    return ++(*highest_label_);
-  }
+  Label get_fresh_label() { return ++(*highest_label_); }
 
   inline void computePointCloudLabel(const Transformation& T_G_C,
                                      const Pointcloud& points_C,
@@ -83,8 +81,7 @@ class LabelTsdfIntegrator : public TsdfIntegrator {
     }
   }
 
-  inline void updateLabelVoxel(const Label& label,
-                               LabelVoxel* label_voxel) {
+  inline void updateLabelVoxel(const Label& label, LabelVoxel* label_voxel) {
     CHECK_NOTNULL(label_voxel);
 
     // TODO(grinvalm) use cap confidence value as in paper and consider noise.
@@ -103,8 +100,7 @@ class LabelTsdfIntegrator : public TsdfIntegrator {
   }
 
   void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C,
-                           const Colors& colors,
+                           const Pointcloud& points_C, const Colors& colors,
                            const Labels& labels) {
     CHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
@@ -207,4 +203,4 @@ class LabelTsdfIntegrator : public TsdfIntegrator {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_LABELTSDF_INTEGRATOR_H_
+#endif  // GLOBAL_SEGMENT_MAP_LABEL_TSDF_INTEGRATOR_H_

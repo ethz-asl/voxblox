@@ -1,13 +1,15 @@
-#ifndef VOXBLOX_CORE_LABELTSDF_MAP_H_
-#define VOXBLOX_CORE_LABELTSDF_MAP_H_
+#ifndef GLOBAL_SEGMENT_MAP_LABEL_TSDF_MAP_H_
+#define GLOBAL_SEGMENT_MAP_LABEL_TSDF_MAP_H_
 
 #include <glog/logging.h>
 #include <memory>
 #include <utility>
 
-#include "voxblox/core/common.h"
-#include "voxblox/core/layer.h"
-#include "voxblox/core/voxel.h"
+#include <voxblox/core/common.h>
+#include <voxblox/core/layer.h>
+#include <voxblox/core/voxel.h>
+
+#include "global_segment_map/label_voxel.h"
 
 namespace voxblox {
 
@@ -20,7 +22,7 @@ class LabelTsdfMap {
     size_t voxels_per_side = 16u;
   };
 
-  explicit LabelTsdfMap(Config config)
+  explicit LabelTsdfMap(const Config& config)
       : tsdf_layer_(new Layer<TsdfVoxel>(
           config.voxel_size, config.voxels_per_side)),
         label_layer_(new Layer<LabelVoxel>(
@@ -61,4 +63,4 @@ class LabelTsdfMap {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_LABELTSDF_MAP_H_
+#endif  // GLOBAL_SEGMENT_MAP_LABEL_TSDF_MAP_H_

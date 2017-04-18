@@ -16,11 +16,9 @@
 #include <visualization_msgs/MarkerArray.h>
 
 #include <voxblox/core/esdf_map.h>
-#include <voxblox/core/labeltsdf_map.h>
 #include <voxblox/core/occupancy_map.h>
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
-#include <voxblox/integrator/labeltsdf_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>

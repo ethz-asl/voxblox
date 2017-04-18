@@ -21,7 +21,7 @@ class EsdfMap {
     size_t esdf_voxels_per_side = 16u;
   };
 
-  explicit EsdfMap(Config config)
+  explicit EsdfMap(const Config& config)
       : esdf_layer_(new Layer<EsdfVoxel>(config.esdf_voxel_size,
                                          config.esdf_voxels_per_side)),
         interpolator_(esdf_layer_.get()) {

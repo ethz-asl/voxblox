@@ -4,7 +4,7 @@
 #include <functional>
 #include <unordered_map>
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 
 #include "voxblox/core/common.h"
 
@@ -23,11 +23,14 @@ struct BlockIndexHash {
 
 template <typename ValueType>
 struct BlockHashMapType {
-  typedef std::unordered_map<BlockIndex, ValueType, BlockIndexHash,
-                             std::equal_to<BlockIndex> > type;
+  typedef std::unordered_map<
+      BlockIndex, ValueType, BlockIndexHash, std::equal_to<BlockIndex>,
+      Eigen::aligned_allocator<std::pair<const BlockIndex, ValueType> > >
+      type;
 };
 
-typedef std::unordered_set<AnyIndex, BlockIndexHash, std::equal_to<AnyIndex> >
+typedef std::unordered_set<AnyIndex, BlockIndexHash, std::equal_to<AnyIndex>,
+                           Eigen::aligned_allocator<AnyIndex> >
     IndexSet;
 
 typedef typename BlockHashMapType<IndexVector>::type HierarchicalIndexMap;

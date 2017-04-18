@@ -1,16 +1,18 @@
-#ifndef VOXBLOX_MESH_MESH_LABEL_INTEGRATOR_H_
-#define VOXBLOX_MESH_MESH_LABEL_INTEGRATOR_H_
+#ifndef GLOBAL_SEGMENT_MAP_LABEL_TSDF_MESH_INTEGRATOR_H_
+#define GLOBAL_SEGMENT_MAP_LABEL_TSDF_MESH_INTEGRATOR_H_
 
 #include <algorithm>
 #include <cmath>
 #include <map>
 #include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
 
-#include "voxblox/core/color.h"
-#include "voxblox/mesh/mesh_integrator.h"
+#include <voxblox/core/color.h>
+#include <voxblox/mesh/mesh_integrator.h>
+
+#include "global_segment_map/label_voxel.h"
 
 namespace voxblox {
 
@@ -115,4 +117,4 @@ class MeshLabelIntegrator : public MeshIntegrator {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_MESH_MESH_LABEL_INTEGRATOR_H_
+#endif  // GLOBAL_SEGMENT_MAP_LABEL_TSDF_MESH_INTEGRATOR_H_
