@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
+#include <queue>
+#include <thread>
+#include <utility>
 
 #include <Eigen/Core>
 #include <glog/logging.h>
@@ -204,7 +207,6 @@ class TsdfIntegrator {
     integrate_timer.Stop();
   }
 
-
   inline void bundleRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
       BlockHashMapType<std::vector<size_t>>::type* voxel_map,
@@ -261,7 +263,6 @@ class TsdfIntegrator {
       const std::pair<AnyIndex, std::vector<size_t>>& kv,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
       std::queue<VoxelInfo>* voxel_update_queue) {
-
     if (kv.second.empty()) {
       return;
     }
@@ -376,12 +377,11 @@ class TsdfIntegrator {
 
     const Point& origin = T_G_C.getPosition();
 
-    //if only 1 thread just do function call, otherwise spawn threads
+    // if only 1 thread just do function call, otherwise spawn threads
     if (config_.integrator_threads == 1) {
       integrateVoxels(T_G_C, points_C, colors, discard, clearing_ray, voxel_map,
                       clear_map, &(voxel_update_queues[0]), 0);
-    }
-    else {
+    } else {
       std::vector<std::thread> integration_threads;
       for (size_t i = 0; i < config_.integrator_threads; ++i) {
         integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,
