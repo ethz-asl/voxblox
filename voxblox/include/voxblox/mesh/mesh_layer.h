@@ -100,7 +100,7 @@ class MeshLayer {
                    block_size_, index.cast<FloatingPoint>() * block_size_))));
     DCHECK(insert_status.second) << "Mesh already exists when allocating at "
                                  << index.transpose();
-    DCHECK_NOTNULL(insert_status.first->second);
+    DCHECK(insert_status.first->second);
     DCHECK_EQ(insert_status.first->first, index);
     return insert_status.first->second;
   }

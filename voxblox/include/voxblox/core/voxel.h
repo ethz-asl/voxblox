@@ -15,6 +15,8 @@ struct TsdfVoxel {
 };
 
 struct EsdfVoxel {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   float distance = 0.0f;
   bool observed = false;
   bool in_queue = false;
@@ -29,43 +31,32 @@ struct OccupancyVoxel {
   bool observed = false;
 };
 
-struct LabelVoxel {
-  float label_confidence = 0.0f;
-  Label label = 0u;
-};
-
 // Used for serialization only.
-enum class VoxelTypes {
-  kNotSerializable = 0,
-  kTsdf = 1,
-  kEsdf = 2,
-  kOccupancy = 3,
-  kLabel = 4
-};
+namespace voxel_types {
+  const std::string kNotSerializable = "not_serializable";
+  const std::string kTsdf = "tsdf";
+  const std::string kEsdf = "esdf";
+  const std::string kOccupancy = "occupancy";
+}  // namespace voxel_types
 
 template <typename Type>
-VoxelTypes getVoxelType() {
-  return VoxelTypes::kNotSerializable;
+std::string getVoxelType() {
+  return voxel_types::kNotSerializable;
 }
 
 template <>
-inline VoxelTypes getVoxelType<TsdfVoxel>() {
-  return VoxelTypes::kTsdf;
+inline std::string getVoxelType<TsdfVoxel>() {
+  return voxel_types::kTsdf;
 }
 
 template <>
-inline VoxelTypes getVoxelType<EsdfVoxel>() {
-  return VoxelTypes::kEsdf;
+inline std::string getVoxelType<EsdfVoxel>() {
+  return voxel_types::kEsdf;
 }
 
 template <>
-inline VoxelTypes getVoxelType<OccupancyVoxel>() {
-  return VoxelTypes::kOccupancy;
-}
-
-template <>
-inline VoxelTypes getVoxelType<LabelVoxel>() {
-  return VoxelTypes::kLabel;
+inline std::string getVoxelType<OccupancyVoxel>() {
+  return voxel_types::kOccupancy;
 }
 
 }  // namespace voxblox

@@ -17,6 +17,8 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 
 Serialization is currently implemented for:
  * TSDF layers
+ * ESDF layers
+ * Occupancy layers
  * ...
 
 The following serialization tools are implemented:
@@ -25,11 +27,31 @@ The following serialization tools are implemented:
 * Store a subset of the blocks of a layer to file
 * Load blocks from file and add to a layer
 
-### How to add serialization for a new layer
+### How to add your own voxel/layer type
 
- - [ ] In **```block.cc```**: Implement the (de)serialization
+- [ ] Add your own voxel type and implement the ```getVoxelType()```, e.g. **```fancy_voxel.h```** :
 
+```cpp
+namespace voxblox {
+
+// Used for serialization only.
+namespace voxel_types {
+ const std::string kYOUR_FANCY_VOXEL = "fancy_voxel"
+}  // namespace voxel_types
+
+template <>
+inline std::string getVoxelType<YOUR_FANCY_VOXEL>() {
+ return voxel_types::kYOUR_FANCY_VOXEL;
+}
+
+}  // namespace voxblox
 ```
+
+ - [ ] Implement the block (de)serialization functions for your voxel type, e.g. **```fancy_block_serialization.cc```**
+
+```cpp
+namespace voxblox {
+
 template <>
 void Block<YOUR_FANCY_VOXEL>::DeserializeVoxelData(const BlockProto& proto,
                                             YOUR_FANCY_VOXEL* voxels) {
@@ -41,22 +63,12 @@ void Block<YOUR_FANCY_VOXEL>::SerializeVoxelData(const YOUR_FANCY_VOXEL* voxels,
                                           BlockProto* proto) const {
 // Your serialization code.
 }
+
+}  // namespace voxblox
 ```
 
- - [ ] In  **```voxel.h```**: Add a type enum and implement the ```getVoxelType()``` function:
+ - [ ] Create your own fancy_integrator.h, fancy_mesh_integrator.h, ...
 
-```
-enum class VoxelTypes {
-  kNotSerializable = 0,
-  kTsdf = 1,
-  kEsdf = 2,
-  kOccupancy = 3,
-  kYOUR_FANCY_VOXEL
-};
+  **Have a look at the example package:**
 
-template <>
-inline VoxelTypes getVoxelType<YOUR_FANCY_VOXEL>() {
-  return VoxelTypes::kYOUR_FANCY_VOXEL;
-}
-```
-
+  TODO(mfehr, helenol): add example package with a new voxel type
