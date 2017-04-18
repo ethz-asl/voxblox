@@ -68,6 +68,7 @@ class SimulationServer {
   bool generate_occupancy_;
   bool visualize_;
   bool generate_mesh_;
+  bool incremental_;
   FloatingPoint truncation_distance_;
   FloatingPoint esdf_max_distance_;
 
@@ -97,7 +98,15 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
       world_frame_("world"),
       generate_occupancy_(false),
       visualize_(true),
-      generate_mesh_(true) {
+      generate_mesh_(true),
+      incremental_(true) {
+  // Settings for simulation.
+  nh_private_.param("incremental", incremental_, incremental_);
+  nh_private_.param("generate_mesh", generate_mesh_, generate_mesh_);
+  nh_private_.param("visualize", visualize_, visualize_);
+  nh_private_.param("generate_occupancy", generate_occupancy_,
+                    generate_occupancy_);
+
   FloatingPoint voxel_size = 0.1;
   int voxels_per_side = 16;
 
@@ -312,15 +321,13 @@ void SimulationServer::generateSDF() {
     }
 
     const bool clear_updated_flag = true;
-    // esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
+    if (incremental_) {
+      esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
+    }
 
     // Convert to a XYZRGB pointcloud.
     if (visualize_) {
       ptcloud_pcl.header.frame_id = world_frame_;
-      pcl::PointCloud<pcl::PointXYZRGB> ptcloud_temp;
-
-      /* pointcloudToPclXYZRGB(ptcloud, colors, &ptcloud_temp);
-      ptcloud_pcl += ptcloud_temp; */
       pcl::PointXYZRGB point;
       point.x = view_origin.x();
       point.y = view_origin.y();
@@ -333,13 +340,17 @@ void SimulationServer::generateSDF() {
   }
 
   // Generate ESDF in batch.
-  // esdf_occ_integrator_->updateFromOccLayerBatch();
+  if (!incremental_) {
+    if (generate_occupancy_) {
+      esdf_occ_integrator_->updateFromOccLayerBatch();
+    }
 
-  // esdf_integrator_->updateFromTsdfLayerBatch();
+    esdf_integrator_->updateFromTsdfLayerBatch();
 
-  // esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
-
-  esdf_integrator_->updateFromTsdfLayerBatchOccupancy();
+    // Other batch options for reference:
+    // esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
+    // esdf_integrator_->updateFromTsdfLayerBatchOccupancy();
+  }
 }
 
 template <typename VoxelType>
@@ -393,7 +404,6 @@ bool SimulationServer::evaluateVoxel(const TsdfVoxel& voxel_test,
 
   *error = voxel_gt.distance - voxel_test.distance;
 
-
   /* if (voxel_gt.distance < -truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
   } */
@@ -408,10 +418,7 @@ bool SimulationServer::evaluateVoxel(const EsdfVoxel& voxel_test,
     return false;
   }
 
-
-
   *error = voxel_gt.distance - voxel_test.distance;
-
 
   /* if (voxel_gt.distance < -truncation_distance_) {
     *error = -truncation_distance_ - voxel_test.distance;
