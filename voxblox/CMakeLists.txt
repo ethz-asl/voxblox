@@ -10,18 +10,30 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 ############
 # PROTOBUF #
 ############
-find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-set(PROTO_DEFNS proto/voxblox/Block.proto
-                proto/voxblox/Layer.proto)
-PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
+# General idea: first check if we have protobuf catkin, then use that.
+# Otherwise use system protobuf.
+find_package(protobuf_catkin)
+if (protobuf_catkin_FOUND)
+    message(STATUS "-- Using protobuf_catkin")
+    list(APPEND catkin_INCLUDE_DIRS ${protobuf_catkin_INCLUDE_DIRS})
+    list(APPEND catkin_LIBRARIES ${protobuf_catkin_LIBRARIES})
 
-# Horrible hack to fix mac mini build.
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARIES})
+    set(ADDITIONAL_LIBRARIES "")
 else()
-  set(ADDITIONAL_LIBRARIES "")
+  message(STATUS "-- Using system protobuf")
+  find_package(Protobuf REQUIRED)
+  include_directories(${PROTOBUF_INCLUDE_DIRS})
+  include_directories(${CMAKE_CURRENT_BINARY_DIR})
+  set(PROTO_DEFNS proto/voxblox/Block.proto
+                  proto/voxblox/Layer.proto)
+  PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
+
+  # Horrible hack to fix mac mini build.
+  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARIES})
+  else()
+    set(ADDITIONAL_LIBRARIES "")
+  endif()
 endif()
 
 
