@@ -16,7 +16,7 @@ set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
 set(ADDITIONAL_LIBRARIES "")
 
-find_package(protobuf_catkin)
+find_package(protobuf_catkin QUIET)
 if (protobuf_catkin_FOUND)
     message(STATUS "Using protobuf_catkin")
     list(APPEND catkin_INCLUDE_DIRS ${protobuf_catkin_INCLUDE_DIRS})
