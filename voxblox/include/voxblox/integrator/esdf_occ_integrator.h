@@ -57,18 +57,6 @@ class EsdfOccIntegrator {
     updateFromOccBlocks(occ_blocks, push_neighbors);
   }
 
-  void updateFromOccLayer(bool clear_updated_flag) {
-    BlockIndexList occ_blocks;
-    occ_layer_->getAllUpdatedBlocks(&occ_blocks);
-    updateFromOccBlocks(occ_blocks);
-
-    if (clear_updated_flag) {
-      for (const BlockIndex& block_index : occ_blocks) {
-        occ_layer_->getBlockByIndex(block_index).updated() = false;
-      }
-    }
-  }
-
   // Short-cut for pushing neighbors (i.e., incremental update) by default.
   // Not necessary in batch.
   void updateFromOccBlocks(const BlockIndexList& occ_blocks) {
@@ -155,108 +143,6 @@ class EsdfOccIntegrator {
 
     esdf_timer.Stop();
   }
-  /*
-    void pushNeighborsToOpen(const BlockIndex& block_index,
-                             const VoxelIndex& voxel_index) {
-      std::vector<VoxelKey> neighbors;
-      std::vector<float> distances;
-      std::vector<Eigen::Vector3i> directions;
-      getNeighborsAndDistances(block_index, voxel_index, &neighbors, &distances,
-                               &directions);
-
-      for (const VoxelKey& neighbor : neighbors) {
-        BlockIndex neighbor_block_index = neighbor.first;
-        VoxelIndex neighbor_voxel_index = neighbor.second;
-
-        // Get the block for this voxel.
-        Block<EsdfVoxel>::Ptr neighbor_block =
-            esdf_layer_->getBlockPtrByIndex(neighbor_block_index);
-        if (!neighbor_block) {
-          continue;
-        }
-        EsdfVoxel& neighbor_voxel =
-            neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
-
-        if (!neighbor_voxel.observed) {
-          continue;
-        }
-
-        if (!neighbor_voxel.in_queue) {
-          open_.push(neighbor, neighbor_voxel.distance);
-          neighbor_voxel.in_queue = true;
-        }
-      }
-    }
-
-    // The raise set is always empty in batch operations.
-    void processRaiseSet() {
-      size_t num_updates = 0u;
-      // For the raise set, get all the neighbors, then:
-      // 1. if the neighbor's parent is the current voxel, add it to the raise
-      //    queue.
-      // 2. if the neighbor's parent differs, add it to open (we will have to
-      //    update our current distances, of course).
-      while (!raise_.empty()) {
-        VoxelKey kv = raise_.front();
-        raise_.pop();
-
-        Block<EsdfVoxel>::Ptr esdf_block =
-            esdf_layer_->getBlockPtrByIndex(kv.first);
-
-        // See if you can update the neighbors.
-        std::vector<VoxelKey> neighbors;
-        std::vector<float> distances;
-        std::vector<Eigen::Vector3i> directions;
-        getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
-                                 &directions);
-
-        CHECK_EQ(neighbors.size(), distances.size());
-        for (size_t i = 0u; i < neighbors.size(); ++i) {
-          BlockIndex neighbor_block_index = neighbors[i].first;
-          VoxelIndex neighbor_voxel_index = neighbors[i].second;
-
-          // Get the block for this voxel.
-          Block<EsdfVoxel>::Ptr neighbor_block;
-          if (neighbor_block_index == kv.first) {
-            neighbor_block = esdf_block;
-          } else {
-            neighbor_block =
-                esdf_layer_->getBlockPtrByIndex(neighbor_block_index);
-          }
-          if (!neighbor_block) {
-            continue;
-          }
-          CHECK(neighbor_block->isValidVoxelIndex(neighbor_voxel_index))
-              << "Neigbor voxel index: " << neighbor_voxel_index.transpose();
-
-          EsdfVoxel& neighbor_voxel =
-              neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
-
-          // Do NOT update unobserved distances.
-          if (!neighbor_voxel.observed) {
-            continue;
-          }
-          // This will never update fixed voxels as they are their own parents.
-          if (neighbor_voxel.parent == -directions[i]) {
-            // This is the case where we are the parent of this one, so we
-            // should clear it and raise it.
-            neighbor_voxel.distance =
-                signum(neighbor_voxel.distance) * config_.default_distance_m;
-            neighbor_voxel.parent.setZero();
-            raise_.push(neighbors[i]);
-          } else {
-            // If it's not in the queue, then add it to open so it can update
-            // our weights back.
-            if (!neighbor_voxel.in_queue) {
-              open_.push(neighbors[i], neighbor_voxel.distance);
-              neighbor_voxel.in_queue = true;
-            }
-          }
-        }
-        num_updates++;
-      }
-      VLOG(3) << "[ESDF update]: raised " << num_updates << " voxels.";
-    } */
 
   void processOpenSet() {
     size_t num_updates = 0u;
