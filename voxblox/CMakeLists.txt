@@ -12,20 +12,23 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 ############
 # General idea: first check if we have protobuf catkin, then use that.
 # Otherwise use system protobuf.
+set(PROTO_DEFNS proto/voxblox/Block.proto
+                proto/voxblox/Layer.proto)
+
 find_package(protobuf_catkin)
 if (protobuf_catkin_FOUND)
-    message(STATUS "-- Using protobuf_catkin")
+    message(STATUS "Using protobuf_catkin")
     list(APPEND catkin_INCLUDE_DIRS ${protobuf_catkin_INCLUDE_DIRS})
     list(APPEND catkin_LIBRARIES ${protobuf_catkin_LIBRARIES})
 
+    PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
     set(ADDITIONAL_LIBRARIES "")
 else()
-  message(STATUS "-- Using system protobuf")
+  message(STATUS "Using system protobuf")
   find_package(Protobuf REQUIRED)
   include_directories(${PROTOBUF_INCLUDE_DIRS})
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
-  set(PROTO_DEFNS proto/voxblox/Block.proto
-                  proto/voxblox/Layer.proto)
+
   PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
 
   # Horrible hack to fix mac mini build.
