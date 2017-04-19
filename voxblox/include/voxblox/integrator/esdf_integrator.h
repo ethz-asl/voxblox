@@ -34,6 +34,12 @@ class EsdfIntegrator {
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
+
+    // For marking unknown space around a robot as free or occupied, these are
+    // the
+    // radiuses used around each robot position.
+    FloatingPoint clear_sphere_radius = 1.5;
+    FloatingPoint occupied_sphere_radius = 5.0;
   };
 
   EsdfIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
@@ -84,13 +90,10 @@ class EsdfIntegrator {
   void addNewRobotPosition(const Point& position) {
     timing::Timer clear_timer("esdf/clear_radius");
 
-    constexpr FloatingPoint planning_sphere_radius = 5.0;
-    // Ugh this should probably match the checking radius...
-    constexpr FloatingPoint clear_sphere_radius = 1.5;
-
     // First set all in inner sphere to free.
     BlockVoxelListMap block_voxel_list;
-    getSphereAroundPoint(position, clear_sphere_radius, &block_voxel_list);
+    getSphereAroundPoint(position, config_.clear_sphere_radius,
+                         &block_voxel_list);
     for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
       // Get block.
       Block<EsdfVoxel>::Ptr block_ptr =
@@ -109,7 +112,8 @@ class EsdfIntegrator {
 
     // Second set all remaining unknown to occupied.
     block_voxel_list.clear();
-    getSphereAroundPoint(position, planning_sphere_radius, &block_voxel_list);
+    getSphereAroundPoint(position, config_.occupied_sphere_radius,
+                         &block_voxel_list);
     for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
       // Get block.
       Block<EsdfVoxel>::Ptr block_ptr =
@@ -927,8 +931,7 @@ class EsdfIntegrator {
 
   // Raise set for updates; these are values that used to be in the fixed
   // frontier and now have a higher value, or their children which need to
-  // have
-  // their values invalidated.
+  // have their values invalidated.
   std::queue<VoxelKey> raise_;
 
   size_t esdf_voxels_per_side_;
