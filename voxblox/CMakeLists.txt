@@ -24,7 +24,6 @@ if (protobuf_catkin_FOUND)
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
     PROTOBUF_CATKIN_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
-    set(ADDITIONAL_DEPENDENCIES "protobuf_catkin")
     set(ADDITIONAL_LIBRARIES ${protobuf_catkin_LIBRARIES})
 else()
   message(STATUS "Using system protobuf")
@@ -97,5 +96,4 @@ target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES}
 cs_install()
 cs_export(INCLUDE_DIRS include ${CMAKE_CURRENT_BINARY_DIR}
           CFG_EXTRAS voxblox-extras.cmake
-          DEPENDS ${ADDITIONAL_DEPENDENCIES}
           LIBRARIES ${ADDITIONAL_LIBRARIES})
