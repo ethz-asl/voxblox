@@ -69,11 +69,11 @@ wstool update
 
 # Running Voxblox
 The easiest way to test out voxblox is to try it out on a dataset.
-We have launch files for our own dataset (TODO), the [Euroc Vicon Room datasets](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets), and the [KITTI raw datasets](http://www.cvlibs.net/datasets/kitti/) processed through [kitti_to_rosbag](https://github.com/ethz-asl/kitti_to_rosbag).
+We have launch files for our [own dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), the [Euroc Vicon Room datasets](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets), and the [KITTI raw datasets](http://www.cvlibs.net/datasets/kitti/) processed through [kitti_to_rosbag](https://github.com/ethz-asl/kitti_to_rosbag).
 
 For each of these datasets, there's a launch file associated under `voxblox_ros/launch`.
 
-The easiest way to start is to download the cow and lady dataset (TODO), edit the path to the bagfile in `cow_and_lady_dataset.launch`, and then simply:
+The easiest way to start is to download the [cow and lady dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), edit the path to the bagfile in `cow_and_lady_dataset.launch`, and then simply:
 ```roslaunch voxblox_ros cow_and_lady_dataset.launch```
 
 If you open rviz, you should be able to see the the mesh visualized on the `/voxblox_node/mesh` MarkerArray topic, in the `world` static frame, as shown below.
