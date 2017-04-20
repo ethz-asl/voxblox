@@ -181,10 +181,10 @@ class MergeIntegrator {
   }
 
  private:
-  static constexpr FloatingPoint kUnitCubeDiagonalLength;
+  static const FloatingPoint kUnitCubeDiagonalLength;
 };
 
-constexpr FloatingPoint MergeIntegrator::kUnitCubeDiagonalLength =
+const FloatingPoint MergeIntegrator::kUnitCubeDiagonalLength =
     std::sqrt(3.0);
 
 template <>
