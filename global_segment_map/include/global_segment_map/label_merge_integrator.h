@@ -1,7 +1,7 @@
 #ifndef GLOBAL_SEGMENT_MAP_LABEL_MERGE_INTEGRATOR_H_
 #define GLOBAL_SEGMENT_MAP_LABEL_MERGE_INTEGRATOR_H_
 
-#include <voxblox/intgrator/merge_integrator.h>
+#include <voxblox/integrator/merge_integrator.h>
 
 #include "global_segment_map/label_voxel.h"
 
