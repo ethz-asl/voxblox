@@ -165,11 +165,11 @@ class MergeIntegrator {
             T_out_in * block->computeCoordinatesFromLinearIndex(voxel_idx);
 
         // interpolate voxel
-        if(interpolator.getVoxel(voxel_center, &voxel, true)){
+        if (interpolator.getVoxel(voxel_center, &voxel, true)) {
           block->has_data() = true;
-        }
-        // if interpolated value fails use nearest
-        else if(interpolator.getVoxel(voxel_center, &voxel, false)){
+
+          // if interpolated value fails use nearest
+        } else if (interpolator.getVoxel(voxel_center, &voxel, false)) {
           block->has_data() = true;
         }
       }
@@ -181,8 +181,11 @@ class MergeIntegrator {
   }
 
  private:
-  static constexpr FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
+  static const FloatingPoint kUnitCubeDiagonalLength;
 };
+
+const FloatingPoint MergeIntegrator::kUnitCubeDiagonalLength =
+    std::sqrt(3.0);
 
 template <>
 void MergeIntegrator::mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A,
@@ -207,19 +210,6 @@ void MergeIntegrator::mergeVoxelAIntoVoxelB(const OccupancyVoxel& voxel_A,
   voxel_B->observed = voxel_B->observed || voxel_A.observed;
 }
 
-template <>
-void MergeIntegrator::mergeVoxelAIntoVoxelB(const LabelVoxel& voxel_A,
-                                            LabelVoxel* voxel_B) {
-  if (voxel_A.label == voxel_B->label) {
-    voxel_B->label_confidence += voxel_A.label_confidence;
-  } else if (voxel_A.label_confidence > voxel_B->label_confidence) {
-    voxel_B->label = voxel_A.label;
-    voxel_B->label_confidence =
-        voxel_A.label_confidence - voxel_B->label_confidence;
-  } else {
-    voxel_B->label_confidence -= voxel_A.label_confidence;
-  }
-}
 }  // namespace voxblox
 
 #endif  // VOXBLOX_INTEGRATOR_MERGE_INTEGRATOR_H_
