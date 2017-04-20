@@ -10,10 +10,20 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 ############
 # PROTOBUF #
 ############
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
-PROTOBUF_CATKIN_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
+
+# Horrible hack to fix mac mini build.
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARIES})
+else()
+  set(ADDITIONAL_LIBRARIES "")
+endif()
+
 
 #############
 # LIBRARIES #
@@ -27,6 +37,7 @@ cs_add_library(${PROJECT_NAME}
   src/utils/timing.cc
   ${PROTO_SRCS}
 )
+target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 
 #########
 # TESTS #
@@ -60,4 +71,5 @@ target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES}
 ##########
 cs_install()
 cs_export(INCLUDE_DIRS include ${CMAKE_CURRENT_BINARY_DIR}
-          CFG_EXTRAS voxblox-extras.cmake)
+          CFG_EXTRAS voxblox-extras.cmake
+          LIBRARIES ${ADDITIONAL_LIBRARIES})
