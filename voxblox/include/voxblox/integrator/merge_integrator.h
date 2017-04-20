@@ -165,11 +165,11 @@ class MergeIntegrator {
             T_out_in * block->computeCoordinatesFromLinearIndex(voxel_idx);
 
         // interpolate voxel
-        if(interpolator.getVoxel(voxel_center, &voxel, true)){
+        if (interpolator.getVoxel(voxel_center, &voxel, true)) {
           block->has_data() = true;
-        }
-        // if interpolated value fails use nearest
-        else if(interpolator.getVoxel(voxel_center, &voxel, false)){
+
+          // if interpolated value fails use nearest
+        } else if (interpolator.getVoxel(voxel_center, &voxel, false)) {
           block->has_data() = true;
         }
       }
@@ -181,8 +181,11 @@ class MergeIntegrator {
   }
 
  private:
-  static constexpr FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
+  static constexpr FloatingPoint kUnitCubeDiagonalLength;
 };
+
+constexpr FloatingPoint MergeIntegrator::kUnitCubeDiagonalLength =
+    std::sqrt(3.0);
 
 template <>
 void MergeIntegrator::mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A,
