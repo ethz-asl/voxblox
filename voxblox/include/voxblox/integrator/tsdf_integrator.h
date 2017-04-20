@@ -244,6 +244,7 @@ class TsdfIntegrator {
       const std::pair<AnyIndex, std::vector<size_t>>& kv,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
       std::queue<VoxelInfo>* voxel_update_queue) {
+
     if (kv.second.empty()) {
       return;
     }
@@ -330,13 +331,16 @@ class TsdfIntegrator {
       const BlockHashMapType<std::vector<size_t>>::type& clear_map,
       std::queue<VoxelInfo>* voxel_update_queue, size_t tid) {
     BlockHashMapType<std::vector<size_t>>::type::const_iterator it;
+    size_t map_size;
     if (clearing_ray) {
       it = clear_map.begin();
+      map_size = clear_map.size();
     } else {
       it = voxel_map.begin();
+      map_size = voxel_map.size();
     }
 
-    for (size_t i = 0; i < voxel_map.size(); ++i) {
+    for (size_t i = 0; i < map_size; ++i) {
       if (((i + tid + 1) % config_.integrator_threads) == 0) {
         integrateVoxel(T_G_C, points_C, colors, discard, clearing_ray, *it,
                        voxel_map, voxel_update_queue);
