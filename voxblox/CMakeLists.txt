@@ -55,14 +55,6 @@ cs_add_library(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 
-############
-# BINARIES #
-############
-cs_add_executable(voxblox_rox
-  src/voxblox.cc
-)
-target_link_libraries(voxblox_rox ${PROJECT_NAME})
-
 #########
 # TESTS #
 #########
