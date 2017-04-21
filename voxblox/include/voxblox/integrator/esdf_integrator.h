@@ -16,6 +16,8 @@
 
 namespace voxblox {
 
+// For a description of this algorithm, please see:
+// https://arxiv.org/abs/1611.03631
 class EsdfIntegrator {
  public:
   struct Config {

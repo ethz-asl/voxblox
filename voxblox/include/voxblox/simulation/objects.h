@@ -118,8 +118,6 @@ class Cube : public Object {
         std::max(std::max(center_.z() - size_.z() / 2.0 - point.z(), 0.0),
                  point.z() - center_.z() - size_.z() / 2.0);
 
-    // TODO(helenol): check if inside, and see if the 0s there are necessary.
-
     FloatingPoint distance = distance_vector.norm();
 
     // Basically 0... Means it's inside!
@@ -200,7 +198,9 @@ class Plane : public Object {
   Plane(const Point& center, const Point& normal)
       : Object(center, Type::kPlane), normal_(normal) {}
   Plane(const Point& center, const Point& normal, const Color& color)
-      : Object(center, Type::kPlane, color), normal_(normal) {}
+      : Object(center, Type::kPlane, color), normal_(normal) {
+    CHECK_NEAR(normal.norm(), 1.0, 1e-3);
+  }
 
   virtual FloatingPoint getDistanceToPoint(const Point& point) const {
     // Compute the 'd' in ax + by + cz + d = 0:
