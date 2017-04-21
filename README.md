@@ -16,7 +16,17 @@ A video showing sample output from voxblox can be seen [here](https://www.youtub
 A video of voxblox being used for online planning on-board a multicopter can be seen [here](https://youtu.be/lrGSwAPzMOQ).
 
 If using voxblox for scientific publications, please cite the following paper:
-TODO
+
+Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Building 3D Signed Distance Fields for Planning**”, *arXiv preprint arXiv:1611.03631*, 2016.
+
+```latex
+@article{oleynikova2016voxblox,
+  title={Voxblox: Building 3D Signed Distance Fields for Planning},
+  author={Oleynikova, Helen and Taylor, Zachary and Fehr, Marius and Nieto, Juan and Siegwart, Roland},
+  journal={arXiv preprint arXiv:1611.03631},
+  year={2016}
+}
+```
 
 # Installation
 To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) or [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu).
