@@ -332,10 +332,6 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
   esdf_timer.Stop();
 }
 
-inline bool EsdfIntegrator::isFixedOccupancy(FloatingPoint dist_m) const {
-  return dist_m < 0.0;
-}
-
 void EsdfIntegrator::updateFromTsdfBlocksAsOccupancy(
     const BlockIndexList& tsdf_blocks) {
   DCHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());

@@ -45,6 +45,7 @@ endif()
 cs_add_library(${PROJECT_NAME}
   src/core/block.cc
   src/core/esdf_map.cc
+  src/integrator/esdf_integrator.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
