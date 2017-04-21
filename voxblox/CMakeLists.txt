@@ -32,10 +32,7 @@ else()
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
   PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
-  # Horrible hack to fix mac mini build.
-  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARIES})
-  endif()
+  set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARIES})
 endif()
 
 
