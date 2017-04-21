@@ -12,6 +12,9 @@ EsdfIntegrator::EsdfIntegrator(const Config& config,
   esdf_voxels_per_side_ = esdf_layer_->voxels_per_side();
   esdf_voxel_size_ = esdf_layer_->voxel_size();
 
+  CHECK_EQ(esdf_layer_->voxels_per_side(), tsdf_layer_->voxels_per_side());
+  CHECK_NEAR(esdf_layer_->voxel_size(), tsdf_layer_->voxel_size(), 1e-6);
+
   open_.setNumBuckets(config_.num_buckets, config_.max_distance_m);
 }
 
@@ -85,7 +88,8 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
       }
     }
   }
-  VLOG(3) << "Cleared " << updated_blocks_.size() << " blocks.";
+  VLOG(3) << "Changed " << updated_blocks_.size()
+          << " blocks from unknown to free or occupied near the robot.";
   clear_timer.Stop();
 }
 
