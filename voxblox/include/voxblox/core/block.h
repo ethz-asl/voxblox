@@ -61,11 +61,13 @@ class Block {
         computeVoxelIndexFromCoordinates(coords));
   }
 
+  // Returns CENTER point of voxel.
   inline Point computeCoordinatesFromLinearIndex(size_t linear_index) const {
     return computeCoordinatesFromVoxelIndex(
         computeVoxelIndexFromLinearIndex(linear_index));
   }
 
+  // Returns CENTER point of voxel.
   inline Point computeCoordinatesFromVoxelIndex(const VoxelIndex& index) const {
     return origin_ + getCenterPointFromGridIndex(index, voxel_size_);
   }

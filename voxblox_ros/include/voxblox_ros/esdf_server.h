@@ -21,6 +21,7 @@ class EsdfServer : public TsdfServer {
                             std_srvs::Empty::Response& response);   // NOLINT
 
   virtual void updateMeshEvent(const ros::TimerEvent& event);
+  virtual void newPoseCallback(const Transformation& T_G_C);
 
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
@@ -39,6 +40,8 @@ class EsdfServer : public TsdfServer {
 
   // Services.
   ros::ServiceServer generate_esdf_srv_;
+
+  bool clear_sphere_for_planning_;
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;

@@ -313,6 +313,8 @@ class MeshIntegrator {
       // Otherwise the norm stays 0.
       if (interpolator.getGradient(pos, &grad, true)) {
         mesh->normals[i] = grad.normalized();
+      } else if (interpolator.getGradient(pos, &grad, false)) {
+        mesh->normals[i] = grad.normalized();
       }
     }
   }

@@ -40,6 +40,11 @@ cs_add_executable(esdf_server
 target_link_libraries(esdf_server ${PROJECT_NAME})
 
 
+cs_add_executable(simulation_eval
+  src/simulation_eval.cc
+)
+target_link_libraries(simulation_eval ${PROJECT_NAME})
+
 ##########
 # EXPORT #
 ##########

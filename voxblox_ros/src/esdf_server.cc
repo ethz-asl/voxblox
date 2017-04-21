@@ -6,7 +6,7 @@ namespace voxblox {
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private) {
+    : TsdfServer(nh, nh_private), clear_sphere_for_planning_(false) {
   esdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
                                                               1, true);
@@ -34,8 +34,9 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
 
   EsdfIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
-  esdf_integrator_config.min_distance_m =
-      tsdf_integrator_->getConfig().default_truncation_distance;
+  esdf_integrator_config.min_distance_m = esdf_config.esdf_voxel_size;
+  // esdf_integrator_config.min_distance_m =
+  //    tsdf_integrator_->getConfig().default_truncation_distance;
   nh_private_.param("esdf_max_distance_m",
                     esdf_integrator_config.max_distance_m,
                     esdf_integrator_config.max_distance_m);
@@ -46,6 +47,11 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                             tsdf_map_->getTsdfLayerPtr(),
                                             esdf_map_->getEsdfLayerPtr()));
+
+  // Whether to clear each new pose as it comes in, and then set a sphere
+  // around it to occupied.
+  nh_private_.param("clear_sphere_for_planning", clear_sphere_for_planning_,
+                    clear_sphere_for_planning_);
 }
 
 void EsdfServer::publishAllUpdatedEsdfVoxels() {
@@ -106,6 +112,12 @@ void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
   TsdfServer::updateMeshEvent(event);
 }
 
+void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
+  if (clear_sphere_for_planning_) {
+    esdf_integrator_->addNewRobotPosition(T_G_C.getPosition());
+  }
+}
+
 void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
   bool success =
       deserializeMsgToLayer<EsdfVoxel>(layer_msg, esdf_map_->getEsdfLayerPtr());
@@ -113,6 +125,7 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
   if (!success) {
     ROS_ERROR_THROTTLE(10, "Got an invalid ESDF map message!");
   } else {
+    ROS_INFO("Map callback.");
     publishAllUpdatedEsdfVoxels();
     publishSlices();
   }

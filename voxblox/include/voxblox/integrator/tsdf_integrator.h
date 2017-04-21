@@ -2,12 +2,14 @@
 #define VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
 
 #include <algorithm>
+#include <vector>
+#include <iostream>
 #include <queue>
 #include <thread>
-#include <vector>
+#include <utility>
 
-#include <glog/logging.h>
 #include <Eigen/Core>
+#include <glog/logging.h>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -26,6 +28,7 @@ class TsdfIntegrator {
     FloatingPoint max_ray_length_m = 5.0;
     bool use_const_weight = false;
     bool allow_clear = true;
+    bool use_weight_dropoff = true;
     size_t integrator_threads = std::thread::hardware_concurrency();
   };
 
@@ -76,20 +79,36 @@ class TsdfIntegrator {
                               const Color& color,
                               const float truncation_distance,
                               const float weight, TsdfVoxel* tsdf_voxel) {
-    Point voxel_direction = point_G - voxel_center;
-    Point ray_direction = point_G - origin;
+    // Figure out whether the voxel is behind or in front of the surface.
+    // To do this, project the voxel_center onto the ray from origin to point G.
+    // Then check if the the magnitude of the vector is smaller or greater than
+    // the original distance...
+    Point v_voxel_origin = voxel_center - origin;
+    Point v_point_origin = point_G - origin;
 
-    float sdf = static_cast<float>(voxel_direction.norm());
-    // Figure out if it's in front of the plane or behind.
-    if (voxel_direction.dot(ray_direction) < 0) {
-      sdf = -sdf;
+    FloatingPoint dist_G = v_point_origin.norm();
+    // projection of a (v_voxel_origin) onto b (v_point_origin)
+    FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
+
+    float sdf = static_cast<float>(dist_G - dist_G_V);
+
+    float updated_weight = weight;
+    // Compute updated weight in case we use weight dropoff. It's easier here
+    // that in getVoxelWeight as here we have the actual SDF for the voxel
+    // already computed.
+    const FloatingPoint dropoff_epsilon = voxel_size_;
+    if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
+      updated_weight = weight * (truncation_distance + sdf) /
+                       (truncation_distance - dropoff_epsilon);
+      updated_weight = std::max(updated_weight, 0.0f);
     }
 
-    const float new_weight = tsdf_voxel->weight + weight;
+    const float new_weight = tsdf_voxel->weight + updated_weight;
     tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, weight);
+        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
     const float new_sdf =
-        (sdf * weight + tsdf_voxel->distance * tsdf_voxel->weight) / new_weight;
+        (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
+        new_weight;
 
     tsdf_voxel->distance = (new_sdf > 0.0)
                                ? std::min(truncation_distance, new_sdf)
@@ -99,14 +118,14 @@ class TsdfIntegrator {
 
   inline float computeDistance(const Point& origin, const Point& point_G,
                                const Point& voxel_center) {
-    Point voxel_direction = point_G - voxel_center;
-    Point ray_direction = point_G - origin;
+    Point v_voxel_origin = voxel_center - origin;
+    Point v_point_origin = point_G - origin;
 
-    float sdf = static_cast<float>(voxel_direction.norm());
-    // Figure out if it's in front of the plane or behind.
-    if (voxel_direction.dot(ray_direction) < 0) {
-      sdf = -sdf;
-    }
+    FloatingPoint dist_G = v_point_origin.norm();
+    // projection of a (v_voxel_origin) onto b (v_point_origin)
+    FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
+
+    float sdf = static_cast<float>(dist_G - dist_G_V);
     return sdf;
   }
 
@@ -244,7 +263,6 @@ class TsdfIntegrator {
       const std::pair<AnyIndex, std::vector<size_t>>& kv,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
       std::queue<VoxelInfo>* voxel_update_queue) {
-
     if (kv.second.empty()) {
       return;
     }
@@ -359,12 +377,11 @@ class TsdfIntegrator {
 
     const Point& origin = T_G_C.getPosition();
 
-    //if only 1 thread just do function call, otherwise spawn threads
+    // if only 1 thread just do function call, otherwise spawn threads
     if (config_.integrator_threads == 1) {
       integrateVoxels(T_G_C, points_C, colors, discard, clearing_ray, voxel_map,
                       clear_map, &(voxel_update_queues[0]), 0);
-    }
-    else {
+    } else {
       std::vector<std::thread> integration_threads;
       for (size_t i = 0; i < config_.integrator_threads; ++i) {
         integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,

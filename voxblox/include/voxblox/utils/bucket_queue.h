@@ -34,6 +34,9 @@ class BucketQueue {
     }
     int bucket_index =
         std::floor(std::abs(value) / max_val_ * (num_buckets_ - 1));
+    if (bucket_index >= num_buckets_) {
+      bucket_index = num_buckets_ - 1;
+    }
     if (bucket_index < last_bucket_index_) {
       last_bucket_index_ = bucket_index;
     }

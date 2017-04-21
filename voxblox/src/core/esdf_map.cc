@@ -4,7 +4,7 @@ namespace voxblox {
 
 bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
                                     double* distance) const {
-  constexpr bool interpolate = true;
+  constexpr bool interpolate = false;
   FloatingPoint distance_fp;
   bool success = interpolator_.getDistance(position.cast<FloatingPoint>(),
                                            &distance_fp, interpolate);
