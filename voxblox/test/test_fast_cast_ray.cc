@@ -13,17 +13,15 @@ using namespace voxblox;  // NOLINT
 class FastTsdfCastRayTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    LOG(INFO) << "Setting up the test environment.";
-
     std::default_random_engine gen(kSeed);
     std::uniform_real_distribution<double> xy_dist(-1.0, 1.0);
     std::normal_distribution<double> z_dist(3.0, 0.5);
 
     for (size_t i = 0u; i < kNumPointsToGenerate; ++i) {
-        // Move first point forward and to the side.
+        // Move first point forward and to the side not to keep it at
+        // (0, 0, 0) constantly.
         Point point1(0.01 * i, 0.02 * i, 0.5 * i);
         points1_.push_back(point1);
-
 
         Point shift(xy_dist(gen), xy_dist(gen), z_dist(gen));
         Point point2 = point1 + shift;
