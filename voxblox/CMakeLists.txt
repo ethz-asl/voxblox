@@ -54,6 +54,15 @@ cs_add_library(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 
+##############
+# BENCHMARKS #
+##############
+
+catkin_add_gtest(bm_cast_ray
+  test/benchmark_cast_ray.cc
+)
+target_link_libraries(bm_cast_ray ${PROJECT_NAME} ${catkin_LIBRARIES})
+
 #########
 # TESTS #
 #########
