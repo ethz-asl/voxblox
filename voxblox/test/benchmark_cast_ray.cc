@@ -1,6 +1,7 @@
 #include <random>
 
 #include <benchmark/benchmark.h>
+#include <benchmark_helpers/benchmark_helpers.h>
 #include <eigen-checks/entrypoint.h>
 #include <eigen-checks/gtest.h>
 #include <gtest/gtest.h>
@@ -61,4 +62,4 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_castRay_fast)
 }
 BENCHMARK_REGISTER_F(CastRayBenchmark, BM_castRay_fast);
 
-BENCHMARK_MAIN();
+BENCHMARKING_ENTRY_POINT

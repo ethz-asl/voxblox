@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="2">
+  <name>benchmark_helpers</name>
+  <version>0.0.0</version>
+  <description>benchmark_catkin</description>
+  <maintainer email="schneith@ethz.ch">schneith</maintainer>
+
+  <license>See package</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+</package>
