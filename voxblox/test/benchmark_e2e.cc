@@ -1,4 +1,5 @@
 #include <benchmark/benchmark.h>
+#include <benchmark_helpers/benchmark_helpers.h>
 
 #include "voxblox/core/tsdf_map.h"
 #include "voxblox/integrator/tsdf_integrator.h"
@@ -23,4 +24,4 @@ BENCHMARK_DEFINE_F(E2EBenchmark, BM_TODO)(benchmark::State& state) {
 }
 BENCHMARK_REGISTER_F(E2EBenchmark, BM_TODO);
 
-BENCHMARK_MAIN();
+BENCHMARKING_ENTRY_POINT
