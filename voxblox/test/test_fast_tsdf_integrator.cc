@@ -1,3 +1,5 @@
+#include <random>
+
 #include <eigen-checks/gtest.h>
 #include <eigen-checks/entrypoint.h>
 #include <gtest/gtest.h>
