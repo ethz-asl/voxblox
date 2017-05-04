@@ -25,21 +25,25 @@ inline void castRay(
 
   constexpr FloatingPoint kTolerance = 1e-6;
 
-  AnyIndex start_index = getGridIndexFromPoint(start_scaled);
-  AnyIndex end_index = getGridIndexFromPoint(end_scaled);
+  const AnyIndex start_index = getGridIndexFromPoint(start_scaled);
+  const AnyIndex end_index = getGridIndexFromPoint(end_scaled);
+  if (start_index == end_index) {
+    return;
+  }
 
-  Ray ray_scaled = end_scaled - start_scaled;
 
-  AnyIndex ray_step_signs(signum(ray_scaled.x()), signum(ray_scaled.y()),
+  const Ray ray_scaled = end_scaled - start_scaled;
+
+  const AnyIndex ray_step_signs(signum(ray_scaled.x()), signum(ray_scaled.y()),
                           signum(ray_scaled.z()));
 
-  AnyIndex corrected_step(std::max(0, ray_step_signs.x()),
+  const AnyIndex corrected_step(std::max(0, ray_step_signs.x()),
                           std::max(0, ray_step_signs.y()),
                           std::max(0, ray_step_signs.z()));
 
-  Point start_scaled_shifted = start_scaled - start_index.cast<FloatingPoint>();
+  const Point start_scaled_shifted = start_scaled - start_index.cast<FloatingPoint>();
 
-  Ray distance_to_boundaries(corrected_step.cast<FloatingPoint>() -
+  const Ray distance_to_boundaries(corrected_step.cast<FloatingPoint>() -
                              start_scaled_shifted);
 
   Ray t_to_next_boundary((std::abs(ray_scaled.x()) < kTolerance)
@@ -52,13 +56,9 @@ inline void castRay(
                              ? 2.0
                              : distance_to_boundaries.z() / ray_scaled.z());
 
-  if (start_index == end_index) {
-    return;
-  }
-
   // Distance to cross one grid cell along the ray in t.
   // Same as absolute inverse value of delta_coord.
-  Ray t_step_size =
+  const Ray t_step_size =
       ray_step_signs.cast<FloatingPoint>().cwiseQuotient(ray_scaled);
 
   AnyIndex curr_index = start_index;
