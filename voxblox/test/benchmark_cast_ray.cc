@@ -11,9 +11,9 @@
 
 using namespace voxblox;  // NOLINT
 
-class CastRayBenchmarkSetup {
+class CastRayBenchmark : public ::benchmark::Fixture {
  public:
-  CastRayBenchmarkSetup() : points_1_(), points_2_() {
+  void SetUp(const ::benchmark::State& st) {
     std::default_random_engine gen(kSeed);
     std::uniform_real_distribution<double> xy_dist(-1.0, 1.0);
     std::normal_distribution<double> z_dist(3.0, 0.5);
@@ -30,6 +30,11 @@ class CastRayBenchmarkSetup {
     }
   }
 
+  void TearDown(const ::benchmark::State&) {
+    points_1_.clear();
+    points_2_.clear();
+  }
+
   static constexpr size_t kNumPointsToGenerate = 2000u;
   static constexpr size_t kSeed = 242u;
 
@@ -37,24 +42,23 @@ class CastRayBenchmarkSetup {
   std::vector<Point> points_2_;
 };
 
-static void BM_cast_ray(benchmark::State& state) {
-  CastRayBenchmarkSetup setup;
+BENCHMARK_DEFINE_F(CastRayBenchmark, BM_castRay)(benchmark::State& state) {
   while (state.KeepRunning())
-    for (size_t i = 0u; i < setup.kNumPointsToGenerate; ++i) {
+    for (size_t i = 0u; i < kNumPointsToGenerate; ++i) {
       std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> indices;
-      voxblox::castRay(setup.points_1_[i], setup.points_2_[i], &indices);
+      voxblox::castRay(points_1_[i], points_2_[i], &indices);
     }
 }
-BENCHMARK(BM_cast_ray);
+BENCHMARK_REGISTER_F(CastRayBenchmark, BM_castRay);
 
-static void BM_cast_ray_fast(benchmark::State& state) {
-  CastRayBenchmarkSetup setup;
+BENCHMARK_DEFINE_F(CastRayBenchmark, BM_castRay_fast)
+(benchmark::State& state) {
   while (state.KeepRunning())
-    for (size_t i = 0u; i < setup.kNumPointsToGenerate; ++i) {
+    for (size_t i = 0u; i < kNumPointsToGenerate; ++i) {
       std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> indices;
-      voxblox::castRay(setup.points_1_[i], setup.points_2_[i], &indices);
+      voxblox::fast::castRay(points_1_[i], points_2_[i], &indices);
     }
 }
-BENCHMARK(BM_cast_ray_fast);
+BENCHMARK_REGISTER_F(CastRayBenchmark, BM_castRay_fast);
 
 BENCHMARK_MAIN();
