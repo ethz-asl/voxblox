@@ -6,6 +6,7 @@
 
 #include "voxblox/integrator/tsdf_integrator.h"
 #include "voxblox/integrator/tsdf_integrator_fast.h"
+#include "voxblox/test/layer_test_utils.h"
 
 using namespace voxblox;  // NOLINT
 
@@ -59,6 +60,8 @@ class FastTsdfIntegratorTest : public ::testing::Test {
   Layer<TsdfVoxel> baseline_layer_;
   Layer<TsdfVoxel> fast_layer_;
 
+  voxblox::test::LayerTest<TsdfVoxel> layer_test_;
+
   std::vector<Transformation> T_G_C_;
   std::vector<Pointcloud> points_C_;
   std::vector<Colors> colors_;
@@ -68,9 +71,8 @@ TEST_F(FastTsdfIntegratorTest, CompareIntegratorWithBaseline) {
     for (size_t i = 0u; i < kNumCamerasToGenerate; ++i) {
       baseline_integrator_.integratePointCloud(T_G_C_[i], points_C_[i], colors_[i]);
       fast_integrator_.integratePointCloud(T_G_C_[i], points_C_[i], colors_[i]);
-
-      //ASSERT_EQ(indices_baseline, indices_fast);
     }
+    layer_test_.CompareLayers(baseline_layer_, fast_layer_);
 }
 
 int main(int argc, char** argv) {
