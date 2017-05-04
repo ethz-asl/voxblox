@@ -63,9 +63,19 @@ catkin_add_gtest(bm_cast_ray
 )
 target_link_libraries(bm_cast_ray ${PROJECT_NAME} ${catkin_LIBRARIES})
 
-#########
-# TESTS #
-#########
+catkin_add_gtest(bm_e2e
+  test/benchmark_e2e.cc
+)
+target_link_libraries(bm_e2e ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+catkin_add_gtest(bm_update_tsdf
+  test/benchmark_update_tsdf.cc
+)
+target_link_libraries(bm_update_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+# #########
+# # TESTS #
+# #########
 add_custom_target(test_data)
 add_custom_command(TARGET test_data
                   COMMAND rm -rf test_data
