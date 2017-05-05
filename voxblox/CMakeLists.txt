@@ -52,7 +52,7 @@ cs_add_library(${PROJECT_NAME}
   src/simulation/sphere_simulator.cc
   ${PROTO_SRCS}
 )
-target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 
 #########
 # TESTS #

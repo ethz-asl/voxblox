@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
 
   constexpr double kMean = 0;
   constexpr double kSigma = 0.05;
-  constexpr int kNumPoints = 100000000;
+  constexpr int kNumPoints = 1000000;
   constexpr double kRadius = 5.0;
 
   LOG(INFO) << "***Sphere Simulator Params***";
