@@ -95,15 +95,15 @@ catkin_add_gtest(test_tsdf_interpolator
 target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 # Fast code tests.
-catkin_add_gtest(test_fast_tsdf_integrator
-  test/test_fast_tsdf_integrator.cc
+catkin_add_gtest(test_fast_vs_baseline_e2e
+  test/test_fast_vs_baseline_e2e.cc
 )
-target_link_libraries(test_fast_tsdf_integrator ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_fast_vs_baseline_e2e ${PROJECT_NAME} ${catkin_LIBRARIES})
 
-catkin_add_gtest(test_fast_cast_ray
-  test/test_fast_cast_ray.cc
+catkin_add_gtest(test_fast_vs_baseline_cast_ray
+  test/test_fast_vs_baseline_cast_ray.cc
 )
-target_link_libraries(test_fast_cast_ray ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_fast_vs_baseline_cast_ray ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 
 ##########
