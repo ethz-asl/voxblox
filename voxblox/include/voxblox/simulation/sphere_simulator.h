@@ -6,8 +6,9 @@
 namespace voxblox {
 namespace sphere_sim {
 
-void createSphere(double dMu, double dSigma, double rad, size_t nval,
-                  Pointcloud* points);
+void createSphere(const double mean, const double variance,
+                  const double radius_m, const size_t num_points,
+                  Pointcloud* points_3D);
 
 }  // namespace sphere_sim
 }  // namespace voxblox

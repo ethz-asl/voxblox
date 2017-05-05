@@ -15,7 +15,8 @@ namespace voxblox {
 namespace sphere_sim {
 
 void createSphere(const double mean, const double variance,
-                  const double radius_m, size_t nval, Pointcloud* points_3D) {
+                  const double radius_m, const size_t num_points,
+                  Pointcloud* points_3D) {
   CHECK_NOTNULL(points_3D)->clear();
 
   typedef std::random_device RandomDevice;
@@ -27,7 +28,7 @@ void createSphere(const double mean, const double variance,
   Mt19937Distribution mt_distribution(random_device());
   NormalDistribution normal_distribution(mean, variance);
 
-  int n = nval - 2;            // 1 for top and bottom point
+  int n = num_points - 2;      // 1 for top and bottom point
   int s = round(sqrt(n - 1));  // sphere slices
   double step = 2 * radius_m / (static_cast<double>(s) + 1);
 
