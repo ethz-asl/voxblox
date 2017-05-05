@@ -35,7 +35,6 @@ else()
   set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARY})
 endif()
 
-
 #############
 # LIBRARIES #
 #############
@@ -50,6 +49,7 @@ cs_add_library(${PROJECT_NAME}
   src/simulation/simulation_world.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
+  src/simulation/sphere_simulator.cc
   ${PROTO_SRCS}
 )
 target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
