@@ -9,7 +9,6 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 #############
 # LIBRARIES #
 #############
-find_package(PCL 1.3 REQUIRED)
 
 cs_add_library(${PROJECT_NAME}
   src/transformer.cc
@@ -50,7 +49,7 @@ target_link_libraries(simulation_eval ${PROJECT_NAME})
 cs_add_executable(sphere_node
   src/sphere_node.cc
 )
-target_link_libraries(sphere_node ${PROJECT_NAME} ${PCL_LIBRARIES})
+target_link_libraries(sphere_node ${PROJECT_NAME})
 
 ##########
 # EXPORT #
