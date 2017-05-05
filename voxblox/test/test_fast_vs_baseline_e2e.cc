@@ -12,41 +12,58 @@
 
 using namespace voxblox;  // NOLINT
 
-class FastTsdfIntegratorTest : public ::testing::Test {
+static constexpr size_t kSeed = 242u;
+
+class FastE2ETest : public ::testing::Test {
+ public:
+  // Test data params.
+  static constexpr double kMean = 0;
+  static constexpr double kSigma = 0.05;
+  static constexpr int kNumPoints = 1000;
+  static constexpr double kRadius = 2.0;
+  static constexpr size_t kNumDifferentSpheres = 10u;
+
+  static constexpr double kVoxelSize = 0.01;
+  static constexpr size_t kVoxelsPerSide = 16u;
+
  protected:
   virtual void SetUp() {
+    std::default_random_engine gen(kSeed);
+    std::normal_distribution<double> translation_norm_dist(0.0, 2.0);
+    std::normal_distribution<double> angle_dist(0.0,
+                                                2.0 * 3.141592653589793238463);
+
     baseline_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
     fast_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
     baseline_integrator_.reset(
         new TsdfIntegrator(config_, baseline_layer_.get()));
     fast_integrator_.reset(
         new fast::TsdfIntegrator(fast_config_, fast_layer_.get()));
-    sphere_points_C.clear();
 
-    constexpr double kMean = 0;
-    constexpr double kSigma = 0.05;
-    constexpr int kNumPoints = 100;
-    constexpr double kRadius = 1.0;
+    T_G_C_vector_.clear();
+    colors_vector_.clear();
+    sphere_points_C_vector_.clear();
 
-    sphere_sim::createSphere(kMean, kSigma, kRadius, kNumPoints,
-                             &sphere_points_C);
+    T_G_C_vector_.resize(kNumDifferentSpheres);
+    colors_vector_.resize(kNumDifferentSpheres);
+    sphere_points_C_vector_.resize(kNumDifferentSpheres);
 
-    colors.clear();
-    colors.resize(sphere_points_C.size(), Color(128, 255, 0));
+    for (size_t sphere_idx = 0u; sphere_idx < kNumDifferentSpheres;
+         ++sphere_idx) {
+      sphere_sim::createSphere(kMean, kSigma, kRadius, kNumPoints,
+                               &(sphere_points_C_vector_[sphere_idx]));
 
-    T_G_C = Transformation();
+      colors_vector_[sphere_idx].resize(
+          sphere_points_C_vector_[sphere_idx].size(), Color(128, 255, 0));
+
+      T_G_C_vector_[sphere_idx].setRandom(translation_norm_dist(gen),
+                                          angle_dist(gen));
+    }
   }
 
-  Colors colors;
-  Pointcloud sphere_points_C;
-  Transformation T_G_C;
-
-  static constexpr size_t kNumCamerasToGenerate = 10u;
-  static constexpr size_t kNumPointsToGenerate = 200u;
-  static constexpr size_t kSeed = 242u;
-
-  static constexpr double kVoxelSize = 0.01;
-  static constexpr size_t kVoxelsPerSide = 16u;
+  std::vector<Colors> colors_vector_;
+  std::vector<Pointcloud> sphere_points_C_vector_;
+  std::vector<Transformation> T_G_C_vector_;
 
   TsdfIntegrator::Config config_;
   fast::TsdfIntegrator::Config fast_config_;
@@ -63,9 +80,16 @@ class FastTsdfIntegratorTest : public ::testing::Test {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-TEST_F(FastTsdfIntegratorTest, CompareIntegratorWithBaseline) {
-  baseline_integrator_->integratePointCloud(T_G_C, sphere_points_C, colors);
-  fast_integrator_->integratePointCloud(T_G_C, sphere_points_C, colors);
+TEST_F(FastE2ETest, CompareToBaseline) {
+  for (size_t sphere_idx = 0u; sphere_idx < kNumDifferentSpheres;
+       ++sphere_idx) {
+    baseline_integrator_->integratePointCloud(
+        T_G_C_vector_[sphere_idx], sphere_points_C_vector_[sphere_idx],
+        colors_vector_[sphere_idx]);
+    fast_integrator_->integratePointCloud(T_G_C_vector_[sphere_idx],
+                                          sphere_points_C_vector_[sphere_idx],
+                                          colors_vector_[sphere_idx]);
+  }
   layer_test_.CompareLayers(*baseline_layer_, *fast_layer_);
 }
 

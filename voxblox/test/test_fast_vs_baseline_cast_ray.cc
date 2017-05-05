@@ -11,45 +11,67 @@
 
 using namespace voxblox;  // NOLINT
 
-class FastTsdfCastRayTest : public ::testing::Test {
+static constexpr size_t kSeed = 242u;
+
+class FastCastRayTest : public ::testing::Test {
+ public:
+  // Test data params.
+  static constexpr double kMean = 0;
+  static constexpr double kSigma = 0.05;
+  static constexpr int kNumPoints = 1000;
+  static constexpr double kRadius = 2.0;
+  static constexpr size_t kNumDifferentSpheres = 10u;
+
  protected:
   virtual void SetUp() {
-    sphere_points.clear();
+    std::default_random_engine gen(kSeed);
+    std::normal_distribution<double> translation_norm_dist(0.0, 2.0);
+    std::normal_distribution<double> angle_dist(0.0,
+                                                2.0 * 3.141592653589793238463);
+    T_G_C_vector_.clear();
+    sphere_points_G_vector_.clear();
 
-    constexpr double kMean = 0;
-    constexpr double kSigma = 0.05;
-    constexpr int kNumPoints = 100;
-    constexpr double kRadius = 1.0;
+    T_G_C_vector_.resize(kNumDifferentSpheres);
+    sphere_points_G_vector_.resize(kNumDifferentSpheres);
 
-    sphere_sim::createSphere(kMean, kSigma, kRadius, kNumPoints,
-                             &sphere_points);
+    for (size_t sphere_idx = 0u; sphere_idx < kNumDifferentSpheres;
+         ++sphere_idx) {
+      sphere_sim::createSphere(kMean, kSigma, kRadius, kNumPoints,
+                               &(sphere_points_G_vector_[sphere_idx]));
 
-    origin = Point(0., 0., 0.);
+      T_G_C_vector_[sphere_idx].setRandom(translation_norm_dist(gen),
+                                          angle_dist(gen));
+
+      // Transform to global frame.
+      const Transformation& T_G_C = T_G_C_vector_[sphere_idx];
+      for (Point& point : sphere_points_G_vector_[sphere_idx]) {
+        point = T_G_C.transform(point);
+      }
+    }
   }
 
-  Pointcloud sphere_points;
-  Point origin;
-
-  static constexpr size_t kNumCamerasToGenerate = 10u;
-  static constexpr size_t kNumPointsToGenerate = 200u;
-
-  static constexpr double kVoxelSize = 0.01;
-  static constexpr size_t kVoxelsPerSide = 16u;
+  std::vector<Pointcloud> sphere_points_G_vector_;
+  std::vector<Transformation> T_G_C_vector_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-TEST_F(FastTsdfCastRayTest, CompareCastRayWithBaseline) {
+TEST_F(FastCastRayTest, CompareToBaseline) {
   std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> indices_baseline;
   std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> indices_fast;
-  for (const Point& sphere_point : sphere_points) {
-    indices_baseline.clear();
-    castRay(origin, sphere_point, &indices_baseline);
+  for (size_t sphere_idx = 0u; sphere_idx < kNumDifferentSpheres;
+       ++sphere_idx) {
+    const Point& origin = T_G_C_vector_[sphere_idx].getPosition();
 
-    indices_fast.clear();
-    fast::castRay(origin, sphere_point, &indices_fast);
-    ASSERT_EQ(indices_baseline, indices_fast);
+    for (const Point& sphere_point : sphere_points_G_vector_[sphere_idx]) {
+      indices_baseline.clear();
+      castRay(origin, sphere_point, &indices_baseline);
+
+      indices_fast.clear();
+      fast::castRay(origin, sphere_point, &indices_fast);
+      ASSERT_EQ(indices_baseline, indices_fast);
+    }
   }
 }
 
