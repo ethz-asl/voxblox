@@ -105,6 +105,10 @@ catkin_add_gtest(test_fast_vs_baseline_cast_ray
 )
 target_link_libraries(test_fast_vs_baseline_cast_ray ${PROJECT_NAME} ${catkin_LIBRARIES})
 
+catkin_add_gtest(test_fast_vs_baseline_update_tsdf
+  test/test_fast_vs_baseline_update_tsdf.cc
+)
+target_link_libraries(test_fast_vs_baseline_update_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 ##########
 # EXPORT #
