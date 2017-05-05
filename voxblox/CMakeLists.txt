@@ -54,9 +54,22 @@ cs_add_library(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 
-#########
-# TESTS #
-#########
+##############
+# BENCHMARKS #
+##############
+find_package(benchmark_helpers REQUIRED)
+add_benchmark(bm_cast_ray test/benchmark_cast_ray.cc)
+target_link_libraries(bm_cast_ray ${PROJECT_NAME})
+
+add_benchmark(bm_e2e test/benchmark_e2e.cc)
+target_link_libraries(bm_e2e ${PROJECT_NAME})
+
+add_benchmark(bm_update_tsdf test/benchmark_update_tsdf.cc)
+target_link_libraries(bm_update_tsdf ${PROJECT_NAME})
+
+# #########
+# # TESTS #
+# #########
 add_custom_target(test_data)
 add_custom_command(TARGET test_data
                   COMMAND rm -rf test_data
@@ -80,6 +93,18 @@ catkin_add_gtest(test_tsdf_interpolator
   test/test_tsdf_interpolator.cc
 )
 target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+# Fast code tests.
+catkin_add_gtest(test_fast_tsdf_integrator
+  test/test_fast_tsdf_integrator.cc
+)
+target_link_libraries(test_fast_tsdf_integrator ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+catkin_add_gtest(test_fast_cast_ray
+  test/test_fast_cast_ray.cc
+)
+target_link_libraries(test_fast_cast_ray ${PROJECT_NAME} ${catkin_LIBRARIES})
+
 
 ##########
 # EXPORT #
