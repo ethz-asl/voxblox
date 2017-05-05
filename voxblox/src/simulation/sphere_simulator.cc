@@ -82,8 +82,6 @@ void createSphere(const double mean, const double variance,
     point.z() = -radius_m;
     points_3D->push_back(point);
   }
-
-  LOG(INFO) << "Created sphere with " << points_3D->size() << " points.";
 }
 
 }  // namespace sphere_sim
