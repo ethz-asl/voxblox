@@ -1,5 +1,4 @@
-#include <benchmark/benchmark.h>
-#include <benchmark_helpers/benchmark_helpers.h>
+#include <benchmark_catkin/benchmark_entrypoint.h>
 
 #include "voxblox/core/tsdf_map.h"
 #include "voxblox/integrator/tsdf_integrator.h"
