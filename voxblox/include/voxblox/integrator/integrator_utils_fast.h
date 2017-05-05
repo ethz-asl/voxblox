@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
-#define VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
+#ifndef VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_FAST_H_
+#define VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_FAST_H_
 
 #include <algorithm>
 #include <vector>
@@ -10,7 +10,10 @@
 #include "voxblox/core/common.h"
 #include "voxblox/utils/timing.h"
 
+using namespace voxblox;
+
 namespace voxblox {
+namespace fast {
 
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
@@ -74,54 +77,7 @@ inline void castRay(
   }
 }
 
-
-// Takes start and end in WORLD COORDINATES, does all pre-scaling and
-// sorting into hierarhical index.
-inline void getHierarchicalIndexAlongRay(
-    const Point& start, const Point& end, size_t voxels_per_side,
-    FloatingPoint voxel_size, FloatingPoint truncation_distance,
-    bool voxel_carving_enabled, HierarchicalIndexMap* hierarchical_idx_map) {
-  hierarchical_idx_map->clear();
-
-  FloatingPoint voxels_per_side_inv = 1.0 / voxels_per_side;
-  FloatingPoint voxel_size_inv = 1.0 / voxel_size;
-
-  const Ray unit_ray = (end - start).normalized();
-
-  const Point ray_end = end + unit_ray * truncation_distance;
-  const Point ray_start =
-      voxel_carving_enabled ? start : (end - unit_ray * truncation_distance);
-
-  const Point start_scaled = ray_start * voxel_size_inv;
-  const Point end_scaled = ray_end * voxel_size_inv;
-
-  IndexVector global_voxel_index;
-  timing::Timer cast_ray_timer("integrate/cast_ray");
-  castRay(start_scaled, end_scaled, &global_voxel_index);
-  cast_ray_timer.Stop();
-
-  timing::Timer create_index_timer("integrate/create_hi_index");
-  for (const AnyIndex& global_voxel_idx : global_voxel_index) {
-    BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
-        global_voxel_idx, voxels_per_side_inv);
-    VoxelIndex local_voxel_idx =
-        getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side);
-
-    if (local_voxel_idx.x() < 0) {
-      local_voxel_idx.x() += voxels_per_side;
-    }
-    if (local_voxel_idx.y() < 0) {
-      local_voxel_idx.y() += voxels_per_side;
-    }
-    if (local_voxel_idx.z() < 0) {
-      local_voxel_idx.z() += voxels_per_side;
-    }
-
-    (*hierarchical_idx_map)[block_idx].push_back(local_voxel_idx);
-  }
-  create_index_timer.Stop();
-}
-
+}  // namespace fast
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
+#endif  // VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_FAST_H_
