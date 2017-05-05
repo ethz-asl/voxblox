@@ -7,9 +7,6 @@ catkin_simple()
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
-ADD_SUBDIRECTORY( include/voxblox )
-find_package(OpenCV REQUIRED)
-
 ############
 # PROTOBUF #
 ############
@@ -52,7 +49,7 @@ cs_add_library(${PROJECT_NAME}
   src/simulation/simulation_world.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
-  src/simulation/SphereSimulator.cc
+  src/simulation/sphere_simulator.cc
   ${PROTO_SRCS}
 )
 target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBRARIES})

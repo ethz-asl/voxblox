@@ -48,7 +48,7 @@ cs_add_executable(simulation_eval
 target_link_libraries(simulation_eval ${PROJECT_NAME})
 
 cs_add_executable(sphere_node
-  src/SphereNode.cc
+  src/sphere_node.cc
 )
 target_link_libraries(sphere_node ${PROJECT_NAME} ${PCL_LIBRARIES})
 

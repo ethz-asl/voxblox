@@ -1,0 +1,15 @@
+#ifndef SPHERESIMULATOR_H_
+#define SPHERESIMULATOR_H_
+
+#include "voxblox/core/common.h"
+
+namespace voxblox {
+namespace sphere_sim {
+
+void createSphere(double dMu, double dSigma, double rad, size_t nval,
+                  Pointcloud* points);
+
+}  // namespace sphere_sim
+}  // namespace voxblox
+
+#endif
