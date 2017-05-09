@@ -17,7 +17,7 @@ namespace sphere_sim {
 void createSphere(const double mean, const double variance,
                   const double radius_m, const size_t num_points,
                   Pointcloud* points_3D) {
-  CHECK_NOTNULL(points_3D)->clear();
+  CHECK_NOTNULL(points_3D)->resize(num_points);
 
   typedef std::random_device RandomDevice;
   typedef std::mt19937 Mt19937Distribution;
@@ -34,11 +34,10 @@ void createSphere(const double mean, const double variance,
 
   {
     // top point
-    Point point;
-    point.x() = 0.0;
-    point.y() = 0.0;
-    point.z() = radius_m;
-    points_3D->push_back(point);
+    Point& top_point = (*points_3D)[0];
+    top_point.x() = 0.0;
+    top_point.y() = 0.0;
+    top_point.z() = radius_m;
   }
 
   double SumA = 0;
@@ -67,20 +66,18 @@ void createSphere(const double mean, const double variance,
       y = ri * sin(a) + normal_distribution(mt_distribution);
       z = zi + normal_distribution(mt_distribution);
 
-      Point point;
+      Point& point = (*points_3D)[it];
       point.x() = x;
       point.y() = y;
       point.z() = z;
-      points_3D->push_back(point);
     }
   }
 
   {
-    Point point;
-    point.x() = 0.0;
-    point.y() = 0.0;
-    point.z() = -radius_m;
-    points_3D->push_back(point);
+    Point& bottom_point = (*points_3D)[num_points - 1u];
+    bottom_point.x() = 0.0;
+    bottom_point.y() = 0.0;
+    bottom_point.z() = -radius_m;
   }
 }
 

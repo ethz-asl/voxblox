@@ -11,7 +11,7 @@
 using namespace voxblox;  // NOLINT
 
 class E2EBenchmark : public ::benchmark::Fixture {
- public:
+ protected:
   void SetUp(const ::benchmark::State& /*state*/) {
     baseline_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
     fast_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
@@ -19,8 +19,6 @@ class E2EBenchmark : public ::benchmark::Fixture {
         new TsdfIntegrator(config_, baseline_layer_.get()));
     fast_integrator_.reset(
         new fast::TsdfIntegrator(fast_config_, fast_layer_.get()));
-
-    sphere_points_C.clear();
 
     constexpr double kMean = 0;
     constexpr double kSigma = 0.05;
@@ -65,6 +63,9 @@ class E2EBenchmark : public ::benchmark::Fixture {
 
   std::unique_ptr<Layer<TsdfVoxel>> baseline_layer_;
   std::unique_ptr<Layer<TsdfVoxel>> fast_layer_;
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 BENCHMARK_DEFINE_F(E2EBenchmark, BM_baseline)(benchmark::State& state) {
