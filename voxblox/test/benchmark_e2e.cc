@@ -70,8 +70,7 @@ class E2EBenchmark : public ::benchmark::Fixture {
 
 BENCHMARK_DEFINE_F(E2EBenchmark, BM_baseline)(benchmark::State& state) {
   const double radius = static_cast<double>(state.range(0)) / 2.0;
-  LOG(INFO) << "Radius: " << radius;
-  state.counters["radius"] = radius;
+  state.counters["radius"] = radius * 10;
   CreateSphere(radius);
   while (state.KeepRunning()) {
     baseline_integrator_->integratePointCloud(T_G_C, sphere_points_C, colors);
@@ -81,8 +80,7 @@ BENCHMARK_REGISTER_F(E2EBenchmark, BM_baseline)->DenseRange(1, 20, 1);
 
 BENCHMARK_DEFINE_F(E2EBenchmark, BM_fast)(benchmark::State& state) {
   const double radius = static_cast<double>(state.range(0)) / 2.0;
-  LOG(INFO) << "Radius: " << radius;
-  state.counters["radius"] = radius;
+  state.counters["radius"] = radius * 10;
   CreateSphere(radius);
   while (state.KeepRunning()) {
     fast_integrator_->integratePointCloud(T_G_C, sphere_points_C, colors);

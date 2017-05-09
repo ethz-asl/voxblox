@@ -32,28 +32,37 @@ def GeneratePerformancePlotOverParameters(benchmark_context, benchmark_data):
     if benchmark_context["library_build_type"] != "release":
         print "WARNING: Benchmarking was run on a non release build."
 
-    parameters = list()
-    cycles = list()
-    for item in benchmark_data:
-        print float(item["radius"])
-        parameters.append(item["radius"])
-        runtime_seconds = item["cpu_time"] * \
-            helpers.UnitToScaler(item["time_unit"])
-        cycles.append(runtime_seconds * benchmark_context["mhz_per_cpu"] * 1e6)
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
 
     # Plot stuff.
     rcParams['font.family'] = 'sans-serif'
     rcParams['font.sans-serif'] = ['Gill Sans MT']
 
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    plt.plot(parameters, cycles, marker='o', markeredgecolor='none', color='#FF4504', linewidth=2, markersize=6)
+    colors = ['#284910', '#C51929', '#ECC351']
+    idx = 0
+    for case_results in benchmark_data:
+        case_name = str.split(str(case_results[0]["name"]), '/')[1]
+        parameters = list()
+        cycles = list()
+        for item in case_results:
+            # Radii were multiplied by 10 to avoid casting the value to int
+            # while storing as JSON. Check and fix.
+            parameters.append(item["radius"] / 10.0)
+            runtime_seconds = item["cpu_time"] * \
+                helpers.UnitToScaler(item["time_unit"])
+            cycles.append(runtime_seconds * benchmark_context["mhz_per_cpu"] * 1e6)
+        plt.plot(parameters, cycles, marker='o', markeredgecolor='none', color=colors[idx], linewidth=2, markersize=6, label=case_name)
+        idx += 1
+
     ax.set_xlabel('n')
     ax.set_ylabel('Runtime [cycles]')
     ax.set_axis_bgcolor('#E2E2E2')
     ax.yaxis.grid(True, linestyle='-', color='white')
+    plt.legend(loc=0)
 
-    title = benchmark_data[0]["name"] # + " [iterations: " + str(benchmark_data["iterations"]) + "]"
+    benchmark_name = str.split(str(benchmark_data[0][0]["name"]), '/')[0]
+    title = 'Performance for ' + benchmark_name
     ax.set_title(title)
     return fig
 
@@ -66,14 +75,21 @@ def GeneratePlotsForBenchmarkFile(filename):
     results = defaultdict(list)
     for benchmark_data in json_data["benchmarks"]:
         name_string = unicodedata.normalize('NFKD', benchmark_data['name']).encode('ascii','ignore')
-        benchmark, case, number = str.split(name_string, '/')
+        split_name = str.split(name_string, '/')
+        if len(split_name) > 2:
+            split_name = split_name[0:2]
+
+        benchmark, case = split_name #str.split(name_string, '/')
         results[case].append(benchmark_data)
 
+    results_by_case = list()
     for key, value in results.items():
-        #TODO(schneith): Determine the type of benchmarking. e.g. parameter range and call
-        # specialized plotting functions.
-        fig = GeneratePerformancePlotOverParameters(benchmark_context, value)
-        figures.append(fig)
+        results_by_case.append(value)
+
+    #TODO(schneith): Determine the type of benchmarking. e.g. parameter range and call
+    # specialized plotting functions.
+    fig = GeneratePerformancePlotOverParameters(benchmark_context, results_by_case)
+    figures.append(fig)
 
     return figures
 
@@ -86,8 +102,8 @@ parser.add_argument('--show-on-screen', dest='show_on_screen', type=bool,
 parsed = parser.parse_args()
 
 # Build, run the benchmarks and collect the results.
-#assert(os.path.isdir(parsed.voxblox_workspace))
-#helpers.RunAllBenchmarksOfPackage(parsed.voxblox_workspace, "voxblox")
+assert(os.path.isdir(parsed.voxblox_workspace))
+helpers.RunAllBenchmarksOfPackage(parsed.voxblox_workspace, "voxblox")
 benchmark_files = helpers.GetAllBenchmarkingResultsOfPackage(
     parsed.voxblox_workspace, "voxblox")
 
