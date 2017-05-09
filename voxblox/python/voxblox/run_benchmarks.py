@@ -13,7 +13,6 @@ import os
 from pprint import pprint
 import shutil
 import sys
-import unicodedata
 
 def LoadGoogleBenchmarkJsonReportResults(filename):
     with open(filename) as data_file:
@@ -62,7 +61,7 @@ def GeneratePerformancePlotOverParameters(benchmark_context, benchmark_data):
     plt.legend(loc=0)
 
     benchmark_name = str.split(str(benchmark_data[0][0]["name"]), '/')[0]
-    title = 'Performance for ' + benchmark_name
+    title = 'Runtime for ' + benchmark_name
     ax.set_title(title)
     return fig
 
@@ -74,7 +73,7 @@ def GeneratePlotsForBenchmarkFile(filename):
     figures = list()
     results = defaultdict(list)
     for benchmark_data in json_data["benchmarks"]:
-        name_string = unicodedata.normalize('NFKD', benchmark_data['name']).encode('ascii','ignore')
+        name_string = str(benchmark_data['name'])
         split_name = str.split(name_string, '/')
         if len(split_name) > 2:
             split_name = split_name[0:2]
@@ -103,7 +102,7 @@ parsed = parser.parse_args()
 
 # Build, run the benchmarks and collect the results.
 assert(os.path.isdir(parsed.voxblox_workspace))
-helpers.RunAllBenchmarksOfPackage(parsed.voxblox_workspace, "voxblox")
+#helpers.RunAllBenchmarksOfPackage(parsed.voxblox_workspace, "voxblox")
 benchmark_files = helpers.GetAllBenchmarkingResultsOfPackage(
     parsed.voxblox_workspace, "voxblox")
 

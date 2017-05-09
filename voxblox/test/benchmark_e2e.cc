@@ -13,8 +13,8 @@ using namespace voxblox;  // NOLINT
 class E2EBenchmark : public ::benchmark::Fixture {
  public:
   void SetUp(const ::benchmark::State& /*state*/) {
-    config_.max_ray_length_m = 20.0;
-    fast_config_.max_ray_length_m = 20.0;
+    config_.max_ray_length_m = 50.0;
+    fast_config_.max_ray_length_m = 50.0;
 
     baseline_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
     fast_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
@@ -56,7 +56,7 @@ class E2EBenchmark : public ::benchmark::Fixture {
 
   static constexpr double kMean = 0;
   static constexpr double kSigma = 0.05;
-  static constexpr int kNumPoints = 100;
+  static constexpr int kNumPoints = 200;
 
   TsdfIntegrator::Config config_;
   fast::TsdfIntegrator::Config fast_config_;
@@ -76,7 +76,7 @@ BENCHMARK_DEFINE_F(E2EBenchmark, BM_baseline)(benchmark::State& state) {
     baseline_integrator_->integratePointCloud(T_G_C, sphere_points_C, colors);
   }
 }
-BENCHMARK_REGISTER_F(E2EBenchmark, BM_baseline)->DenseRange(1, 20, 1);
+BENCHMARK_REGISTER_F(E2EBenchmark, BM_baseline)->DenseRange(1, 30, 1);
 
 BENCHMARK_DEFINE_F(E2EBenchmark, BM_fast)(benchmark::State& state) {
   const double radius = static_cast<double>(state.range(0)) / 2.0;
@@ -86,6 +86,6 @@ BENCHMARK_DEFINE_F(E2EBenchmark, BM_fast)(benchmark::State& state) {
     fast_integrator_->integratePointCloud(T_G_C, sphere_points_C, colors);
   }
 }
-BENCHMARK_REGISTER_F(E2EBenchmark, BM_fast)->DenseRange(1, 20, 1);
+BENCHMARK_REGISTER_F(E2EBenchmark, BM_fast)->DenseRange(1, 30, 1);
 
 BENCHMARKING_ENTRY_POINT
