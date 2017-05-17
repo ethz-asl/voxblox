@@ -27,7 +27,7 @@ typedef AnyIndex BlockIndex;
 
 typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 
-typedef std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex> > IndexVector;
+typedef std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
@@ -43,7 +43,7 @@ typedef std::vector<Label> Labels;
 typedef size_t VertexIndex;
 typedef std::vector<VertexIndex> VertexIndexList;
 typedef Eigen::Matrix<FloatingPoint, 3, 3> Triangle;
-typedef std::vector<Triangle, Eigen::aligned_allocator<Triangle> >
+typedef std::vector<Triangle, Eigen::aligned_allocator<Triangle>>
     TriangleVector;
 
 // Transformation type for defining sensor orientation.
@@ -115,9 +115,10 @@ struct Color {
 // near the grid cell boundaries.
 inline AnyIndex getGridIndexFromPoint(const Point& point,
                                       const FloatingPoint grid_size_inv) {
-  return AnyIndex(std::floor(point.x() * grid_size_inv),
-                  std::floor(point.y() * grid_size_inv),
-                  std::floor(point.z() * grid_size_inv));
+  const FloatingPoint kEpsilon = 1e-6;
+  return AnyIndex(std::floor(point.x() * grid_size_inv + kEpsilon),
+                 std::floor(point.y() * grid_size_inv + kEpsilon),
+                 std::floor(point.z() * grid_size_inv + kEpsilon));
 }
 
 // IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this

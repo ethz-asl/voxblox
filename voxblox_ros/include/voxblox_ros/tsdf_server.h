@@ -53,6 +53,10 @@ class TsdfServer {
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
 
+  // Accessors for setting and getting parameters.
+  double getSliceLevel() const { return slice_level_; }
+  void setSliceLevel(double slice_level) { slice_level_ = slice_level; }
+
  protected:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
