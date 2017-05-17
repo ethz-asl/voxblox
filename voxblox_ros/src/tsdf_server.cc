@@ -96,7 +96,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   // Mesh settings.
   nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
-  std::string color_mode("lambert_color");
+  std::string color_mode("colors");
   nh_private_.param("color_mode", color_mode, color_mode);
   if (color_mode == "color" || color_mode == "colors") {
     color_mode_ = ColorMode::kColor;
