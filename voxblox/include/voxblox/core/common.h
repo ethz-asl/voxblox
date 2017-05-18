@@ -117,8 +117,8 @@ inline AnyIndex getGridIndexFromPoint(const Point& point,
                                       const FloatingPoint grid_size_inv) {
   const FloatingPoint kEpsilon = 1e-6;
   return AnyIndex(std::floor(point.x() * grid_size_inv + kEpsilon),
-                 std::floor(point.y() * grid_size_inv + kEpsilon),
-                 std::floor(point.z() * grid_size_inv + kEpsilon));
+                  std::floor(point.y() * grid_size_inv + kEpsilon),
+                  std::floor(point.z() * grid_size_inv + kEpsilon));
 }
 
 // IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
