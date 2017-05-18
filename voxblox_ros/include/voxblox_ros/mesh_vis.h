@@ -52,12 +52,13 @@ inline Point lambertShading(const Point& normal, const Point& light,
   return std::max<FloatingPoint>(normal.dot(light), 0.0f) * color;
 }
 
-inline void lambertColorFromNormal(const Point& normal,
-                                   std_msgs::ColorRGBA* color_msg) {
+inline void lambertColorFromColorAndNormal(const Color& color,
+                                           const Point& normal,
+                                           std_msgs::ColorRGBA* color_msg) {
   const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
   const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
   const Point ambient(0.2f, 0.2f, 0.2f);
-  const Point color_pt(0.5, 0.5, 0.5);
+  const Point color_pt(color.r / 255.0, color.g / 255.0, color.b / 255.0);
 
   Point lambert = lambertShading(normal, light_dir, color_pt) +
                   lambertShading(normal, light_dir2, color_pt) + ambient;
@@ -68,21 +69,9 @@ inline void lambertColorFromNormal(const Point& normal,
   color_msg->a = 1.0;
 }
 
-inline void lambertColorFromColorAndNormal(const Color& color,
-                                           const Point& normal,
-                                           std_msgs::ColorRGBA* color_msg) {
-  const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
-  const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
-  const Point ambient(0.2f, 0.2f, 0.2f);
-  const Point color_pt(color.r/255.0, color.g/255.0, color.b/255.0);
-
-  Point lambert = lambertShading(normal, light_dir, color_pt) +
-                  lambertShading(normal, light_dir2, color_pt) + ambient;
-
-  color_msg->r = std::min<FloatingPoint>(lambert.x(), 1.0);
-  color_msg->g = std::min<FloatingPoint>(lambert.y(), 1.0);
-  color_msg->b = std::min<FloatingPoint>(lambert.z(), 1.0);
-  color_msg->a = 1.0;
+inline void lambertColorFromNormal(const Point& normal,
+                                   std_msgs::ColorRGBA* color_msg) {
+  lambertColorFromColorAndNormal(Color(127, 127, 127), normal, color_msg);
 }
 
 inline void normalColorFromNormal(const Point& normal,
