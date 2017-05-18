@@ -142,6 +142,65 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
   }
 }
 
+inline void fillPointcloudWithMesh(const MeshLayer::ConstPtr& mesh_layer,
+                        ColorMode color_mode,
+                        pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
+  pointcloud->clear();
+
+  BlockIndexList mesh_indices;
+  mesh_layer->getAllAllocatedMeshes(&mesh_indices);
+
+  for (const BlockIndex& block_index : mesh_indices) {
+    Mesh::ConstPtr mesh = mesh_layer->getMeshPtrByIndex(block_index);
+
+    if (!mesh->hasVertices()) {
+      continue;
+    }
+    // Check that we can actually do the color stuff.
+    if (color_mode == kColor) {
+      CHECK(mesh->hasColors());
+    }
+    if (color_mode == kNormals || color_mode == kLambert) {
+      CHECK(mesh->hasNormals());
+    }
+
+    for (size_t i = 0u; i < mesh->vertices.size(); i++) {
+
+      pcl::PointXYZRGB point;
+      point.x = mesh->vertices[i].x();
+      point.y = mesh->vertices[i].y();
+      point.z = mesh->vertices[i].z();
+
+      std_msgs::ColorRGBA color_msg;
+      switch (color_mode) {
+        case kColor:
+          colorVoxbloxToMsg(mesh->colors[i], &color_msg);
+          break;
+        case kHeight:
+          heightColorFromVertex(mesh->vertices[i], &color_msg);
+          break;
+        case kNormals:
+          normalColorFromNormal(mesh->normals[i], &color_msg);
+          break;
+        case kLambert:
+          lambertColorFromNormal(mesh->normals[i], &color_msg);
+          break;
+        case kGray:
+          color_msg.r = color_msg.g = color_msg.b = 0.5;
+          break;
+      }
+      Color color;
+      colorMsgToVoxblox(color_msg, &color);
+      point.r = color.r;
+      point.g = color.g;
+      point.b = color.b;
+
+      pointcloud->push_back(point);
+    }
+  }
+}
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_ROS_MESH_VIS_H_
