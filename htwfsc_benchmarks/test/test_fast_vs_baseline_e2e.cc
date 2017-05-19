@@ -4,16 +4,21 @@
 #include <eigen-checks/gtest.h>
 #include <gtest/gtest.h>
 
-#include "../../htwfnc_benchmarks/include/voxblox/mesh/mesh_layer.h"
-#include "../../htwfsc_benchmarks/include/voxblox/core/tsdf_map.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/tsdf_integrator.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/tsdf_integrator_fast.h"
-#include "../../htwfsc_benchmarks/include/voxblox/io/mesh_ply.h"
-#include "../../htwfsc_benchmarks/include/voxblox/mesh/mesh_integrator.h"
-#include "../../htwfsc_benchmarks/include/voxblox/simulation/sphere_simulator.h"
-#include "../../htwfsc_benchmarks/include/voxblox/test/layer_test_utils.h"
+#include "voxblox/mesh/mesh_layer.h"
+#include "voxblox/core/tsdf_map.h"
+#include "voxblox/integrator/tsdf_integrator.h"
+#include "voxblox/io/mesh_ply.h"
+#include "voxblox/mesh/mesh_integrator.h"
+#include "voxblox/test/layer_test_utils.h"
 
-using namespace voxblox;  // NOLINT
+#include "voxblox_fast/mesh/mesh_layer.h"
+#include "voxblox_fast/core/tsdf_map.h"
+#include "voxblox_fast/integrator/tsdf_integrator.h"
+#include "voxblox_fast/io/mesh_ply.h"
+#include "voxblox_fast/mesh/mesh_integrator.h"
+
+#include "htwfsc_benchmarks/simulation/sphere_simulator.h"
+#include "htwfsc_benchmarks/test/layer_test_utils.h"
 
 static constexpr size_t kSeed = 242u;
 
@@ -36,62 +41,72 @@ class FastE2ETest : public ::testing::Test {
     std::normal_distribution<double> angle_dist(0.0,
                                                 2.0 * 3.141592653589793238463);
 
-    baseline_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
-    fast_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
+    baseline_layer_.reset(new voxblox::Layer<voxblox::TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
+    fast_layer_.reset(new voxblox_fast::Layer<voxblox_fast::TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
     baseline_integrator_.reset(
-        new TsdfIntegrator(config_, baseline_layer_.get()));
+        new voxblox::TsdfIntegrator(config_, baseline_layer_.get()));
     fast_integrator_.reset(
-        new fast::TsdfIntegrator(fast_config_, fast_layer_.get()));
+        new voxblox_fast::TsdfIntegrator(fast_config_, fast_layer_.get()));
 
     T_G_C_vector_.clear();
     colors_vector_.clear();
+    fast_colors_vector_.clear();
     sphere_points_C_vector_.clear();
 
     T_G_C_vector_.resize(kNumDifferentSpheres);
     colors_vector_.resize(kNumDifferentSpheres);
+    fast_colors_vector_.resize(kNumDifferentSpheres);
     sphere_points_C_vector_.resize(kNumDifferentSpheres);
 
     for (size_t sphere_idx = 0u; sphere_idx < kNumDifferentSpheres;
          ++sphere_idx) {
-      sphere_sim::createSphere(kMean, kSigma, kRadius, kNumPoints,
+      htwfsc_benchmarks::sphere_sim::createSphere(kMean, kSigma, kRadius, kNumPoints,
                                &(sphere_points_C_vector_[sphere_idx]));
 
       colors_vector_[sphere_idx].resize(
-          sphere_points_C_vector_[sphere_idx].size(), Color(128, 255, 0));
+          sphere_points_C_vector_[sphere_idx].size(), voxblox::Color(128, 255, 0));
+
+      fast_colors_vector_[sphere_idx].resize(
+          sphere_points_C_vector_[sphere_idx].size(), voxblox_fast::Color(128, 255, 0));
 
       T_G_C_vector_[sphere_idx].setRandom(translation_norm_dist(gen),
                                           angle_dist(gen));
     }
 
-    MeshIntegrator::Config config;
-    baseline_mesh_layer_.reset(new MeshLayer(kVoxelSize * kVoxelsPerSide));
-    baseline_mesh_integrator_.reset(new MeshIntegrator(
-        config, baseline_layer_.get(), baseline_mesh_layer_.get()));
+    voxblox::MeshIntegrator::Config baseline_config;
+    voxblox_fast::MeshIntegrator::Config fast_config;
 
-    fast_mesh_layer_.reset(new MeshLayer(kVoxelSize * kVoxelsPerSide));
+    baseline_mesh_layer_.reset(new voxblox::MeshLayer(kVoxelSize * kVoxelsPerSide));
+    baseline_mesh_integrator_.reset(new voxblox::MeshIntegrator(
+        baseline_config, baseline_layer_.get(), baseline_mesh_layer_.get()));
+
+    fast_mesh_layer_.reset(new voxblox_fast::MeshLayer(kVoxelSize * kVoxelsPerSide));
     fast_mesh_integrator_.reset(
-        new MeshIntegrator(config, fast_layer_.get(), fast_mesh_layer_.get()));
+        new voxblox_fast::MeshIntegrator(fast_config, fast_layer_.get(),
+                                         fast_mesh_layer_.get()));
   }
 
-  std::vector<Colors> colors_vector_;
-  std::vector<Pointcloud> sphere_points_C_vector_;
-  std::vector<Transformation> T_G_C_vector_;
+  std::vector<voxblox::Colors> colors_vector_;
+  std::vector<voxblox_fast::Colors> fast_colors_vector_;
 
-  TsdfIntegrator::Config config_;
-  fast::TsdfIntegrator::Config fast_config_;
+  std::vector<voxblox::Pointcloud> sphere_points_C_vector_;
+  std::vector<voxblox::Transformation> T_G_C_vector_;
 
-  std::unique_ptr<TsdfIntegrator> baseline_integrator_;
-  std::unique_ptr<fast::TsdfIntegrator> fast_integrator_;
+  voxblox::TsdfIntegrator::Config config_;
+  voxblox_fast::TsdfIntegrator::Config fast_config_;
 
-  std::unique_ptr<Layer<TsdfVoxel>> baseline_layer_;
-  std::unique_ptr<Layer<TsdfVoxel>> fast_layer_;
+  std::unique_ptr<voxblox::TsdfIntegrator> baseline_integrator_;
+  std::unique_ptr<voxblox_fast::TsdfIntegrator> fast_integrator_;
 
-  test::LayerTest<TsdfVoxel> layer_test_;
+  std::unique_ptr<voxblox::Layer<voxblox::TsdfVoxel>> baseline_layer_;
+  std::unique_ptr<voxblox_fast::Layer<voxblox_fast::TsdfVoxel>> fast_layer_;
 
-  std::unique_ptr<MeshIntegrator> baseline_mesh_integrator_;
-  std::unique_ptr<MeshLayer> baseline_mesh_layer_;
-  std::unique_ptr<MeshIntegrator> fast_mesh_integrator_;
-  std::unique_ptr<MeshLayer> fast_mesh_layer_;
+  htwfsc_benchmarks::test::LayerTest<voxblox::TsdfVoxel, voxblox_fast::TsdfVoxel> layer_test_;
+
+  std::unique_ptr<voxblox::MeshIntegrator> baseline_mesh_integrator_;
+  std::unique_ptr<voxblox::MeshLayer> baseline_mesh_layer_;
+  std::unique_ptr<voxblox_fast::MeshIntegrator> fast_mesh_integrator_;
+  std::unique_ptr<voxblox_fast::MeshLayer> fast_mesh_layer_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -105,7 +120,7 @@ TEST_F(FastE2ETest, CompareToBaseline) {
         colors_vector_[sphere_idx]);
     fast_integrator_->integratePointCloud(T_G_C_vector_[sphere_idx],
                                           sphere_points_C_vector_[sphere_idx],
-                                          colors_vector_[sphere_idx]);
+                                          fast_colors_vector_[sphere_idx]);
   }
   layer_test_.CompareLayers(*baseline_layer_, *fast_layer_);
 

@@ -3,14 +3,14 @@
 
 #include "voxblox/core/common.h"
 
-namespace voxblox {
+namespace htwfsc_benchmarks {
 namespace sphere_sim {
 
 void createSphere(const double mean, const double variance,
                   const double radius_m, const size_t num_points,
-                  Pointcloud* points_3D);
+                  voxblox::Pointcloud* points_3D);
 
 }  // namespace sphere_sim
-}  // namespace voxblox
+}  // namespace htwfsc_benchmarks
 
 #endif

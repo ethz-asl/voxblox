@@ -5,8 +5,8 @@
 #include <string>
 #include <utility>
 
-#include "./Block.pb.h"
-#include "./Layer.pb.h"
+#include "./FastBlock.pb.h"
+#include "./FastLayer.pb.h"
 #include "voxblox_fast/core/block.h"
 #include "voxblox_fast/core/block_hash.h"
 #include "voxblox_fast/core/common.h"

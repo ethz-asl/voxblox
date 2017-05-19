@@ -1,4 +1,4 @@
-#include "voxblox/simulation/sphere_simulator.h"
+#include "htwfsc_benchmarks/simulation/sphere_simulator.h"
 
 #include <cmath>
 #include <memory>
@@ -11,12 +11,12 @@
 
 #include <glog/logging.h>
 
-namespace voxblox {
+namespace htwfsc_benchmarks {
 namespace sphere_sim {
 
 void createSphere(const double mean, const double variance,
                   const double radius_m, const size_t num_points,
-                  Pointcloud* points_3D) {
+                  voxblox::Pointcloud* points_3D) {
   CHECK_NOTNULL(points_3D)->reserve(num_points);
 
   typedef std::random_device RandomDevice;
@@ -80,7 +80,7 @@ void createSphere(const double mean, const double variance,
     points_3D->emplace_back(0.0, 0.0, -radius_m);
   }
 
-  for (const Point& point : *points_3D) {
+  for (const voxblox::Point& point : *points_3D) {
     CHECK(point.norm() > (0.5 * radius_m));
     CHECK(!isnan(point.x()));
     CHECK(!isnan(point.y()));
@@ -89,4 +89,4 @@ void createSphere(const double mean, const double variance,
 }
 
 }  // namespace sphere_sim
-}  // namespace voxblox
+}  // namespace htwfsc_benchmarks

@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "./Block.pb.h"
+#include "./FastBlock.pb.h"
 #include "voxblox_fast/core/common.h"
 
 namespace voxblox_fast {

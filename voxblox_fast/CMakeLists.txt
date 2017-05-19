@@ -12,8 +12,8 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 ############
 # General idea: first check if we have protobuf catkin, then use that.
 # Otherwise use system protobuf.
-set(PROTO_DEFNS proto/voxblox_fast/Block.proto
-                proto/voxblox_fast/Layer.proto)
+set(PROTO_DEFNS proto/voxblox_fast/FastBlock.proto
+                proto/voxblox_fast/FastLayer.proto)
 set(ADDITIONAL_LIBRARIES "")
 
 find_package(protobuf_catkin QUIET)
@@ -49,7 +49,6 @@ cs_add_library(${PROJECT_NAME}
   src/simulation/simulation_world.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
-  src/simulation/sphere_simulator.cc
   ${PROTO_SRCS}
 )
 target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
@@ -86,5 +85,5 @@ target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES}
 ##########
 cs_install()
 cs_export(INCLUDE_DIRS include ${CMAKE_CURRENT_BINARY_DIR}
-          CFG_EXTRAS voxblox-extras.cmake
+          CFG_EXTRAS voxblox_fast-extras.cmake
           LIBRARIES ${ADDITIONAL_LIBRARIES})

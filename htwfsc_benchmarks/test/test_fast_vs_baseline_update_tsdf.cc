@@ -2,10 +2,6 @@
 #include <eigen-checks/gtest.h>
 #include <gtest/gtest.h>
 
-#include "../../htwfsc_benchmarks/include/voxblox/core/common.h"
-
-using namespace voxblox;  // NOLINT
-
 class FastUpdateTsdfTest : public ::testing::Test {
  protected:
   virtual void SetUp() {

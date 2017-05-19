@@ -1,10 +1,8 @@
 #include <benchmark/benchmark.h>
 #include <benchmark_catkin/benchmark_entrypoint.h>
 
-#include "../../htwfsc_benchmarks/include/voxblox/core/tsdf_map.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/tsdf_integrator.h"
-
-using namespace voxblox;  // NOLINT
+#include "voxblox/core/tsdf_map.h"
+#include "voxblox/integrator/tsdf_integrator.h"
 
 class UpdateTsdfBenchmark : public ::benchmark::Fixture {
  public:

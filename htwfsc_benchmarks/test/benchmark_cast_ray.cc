@@ -6,23 +6,24 @@
 #include <eigen-checks/gtest.h>
 #include <gtest/gtest.h>
 
-#include "../../htwfsc_benchmarks/include/voxblox/core/tsdf_map.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/integrator_utils.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/integrator_utils_fast.h"
-#include "../../htwfsc_benchmarks/include/voxblox/simulation/sphere_simulator.h"
+#include "voxblox/core/tsdf_map.h"
+#include "voxblox/integrator/integrator_utils.h"
 
-using namespace voxblox;  // NOLINT
+#include "voxblox_fast/core/tsdf_map.h"
+#include "voxblox_fast/integrator/integrator_utils.h"
+
+#include "htwfsc_benchmarks/simulation/sphere_simulator.h"
 
 class CastRayBenchmark : public ::benchmark::Fixture {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  protected:
-  void SetUp(const ::benchmark::State& st) { T_G_C_ = Transformation(); }
+  void SetUp(const ::benchmark::State& st) { T_G_C_ = voxblox::Transformation(); }
 
   void CreateSphere(const double radius, const size_t num_points) {
     sphere_points_G_.clear();
-    sphere_sim::createSphere(kMean, kSigma, radius, num_points,
-                             &sphere_points_G_);
+    htwfsc_benchmarks::sphere_sim::createSphere(kMean, kSigma, radius,
+                                                num_points, &sphere_points_G_);
   }
 
   void TearDown(const ::benchmark::State&) { sphere_points_G_.clear(); }
@@ -32,8 +33,8 @@ class CastRayBenchmark : public ::benchmark::Fixture {
   static constexpr size_t kNumPoints = 200u;
   static constexpr double kRadius = 2.0;
 
-  Pointcloud sphere_points_G_;
-  Transformation T_G_C_;
+  voxblox::Pointcloud sphere_points_G_;
+  voxblox::Transformation T_G_C_;
 };
 
 //////////////////////////////////////////////////////////////
@@ -46,10 +47,10 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline_radius)
   state.counters["radius_cm"] = radius * 100;
   CreateSphere(radius, kNumPoints);
   while (state.KeepRunning()) {
-    const Point& origin = T_G_C_.getPosition();
-    IndexVector indices;
-    for (const Point& point : sphere_points_G_) {
-      castRay(origin, point, &indices);
+    const voxblox::Point& origin = T_G_C_.getPosition();
+    voxblox::IndexVector indices;
+    for (const voxblox::Point& point : sphere_points_G_) {
+      voxblox::castRay(origin, point, &indices);
     }
   }
 }
@@ -61,10 +62,10 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast_radius)(benchmark::State& state) {
   state.counters["radius_cm"] = radius * 100;
   CreateSphere(radius, kNumPoints);
   while (state.KeepRunning()) {
-    const Point& origin = T_G_C_.getPosition();
-    IndexVector indices;
-    for (const Point& point : sphere_points_G_) {
-      fast::castRay(origin, point, &indices);
+    const voxblox::Point& origin = T_G_C_.getPosition();
+    voxblox::IndexVector indices;
+    for (const voxblox::Point& point : sphere_points_G_) {
+      voxblox_fast::castRay(origin, point, &indices);
     }
   }
 }
@@ -80,10 +81,10 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline_num_points)
   CreateSphere(kRadius, num_points);
   state.counters["num_points"] = sphere_points_G_.size();
   while (state.KeepRunning()) {
-    const Point& origin = T_G_C_.getPosition();
-    IndexVector indices;
-    for (const Point& point : sphere_points_G_) {
-      castRay(origin, point, &indices);
+    const voxblox::Point& origin = T_G_C_.getPosition();
+    voxblox::IndexVector indices;
+    for (const voxblox::Point& point : sphere_points_G_) {
+      voxblox::castRay(origin, point, &indices);
     }
   }
 }
@@ -96,10 +97,10 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast)(benchmark::State& state) {
   CreateSphere(kRadius, num_points);
   state.counters["num_points"] = sphere_points_G_.size();
   while (state.KeepRunning()) {
-    const Point& origin = T_G_C_.getPosition();
-    IndexVector indices;
-    for (const Point& point : sphere_points_G_) {
-      fast::castRay(origin, point, &indices);
+    const voxblox_fast::Point& origin = T_G_C_.getPosition();
+    voxblox_fast::IndexVector indices;
+    for (const voxblox::Point& point : sphere_points_G_) {
+      voxblox_fast::castRay(origin, point, &indices);
     }
   }
 }

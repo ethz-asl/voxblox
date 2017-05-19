@@ -7,6 +7,11 @@ catkin_simple()
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
+cs_add_library(${PROJECT_NAME}
+  src/simulation/sphere_simulator.cc
+)
+target_link_libraries(${PROJECT_NAME})
+
 ##############
 # BENCHMARKS #
 ##############

@@ -3,12 +3,13 @@
 #include <benchmark/benchmark.h>
 #include <benchmark_catkin/benchmark_entrypoint.h>
 
-#include "../../htwfsc_benchmarks/include/voxblox/core/tsdf_map.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/tsdf_integrator.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/tsdf_integrator_fast.h"
-#include "../../htwfsc_benchmarks/include/voxblox/simulation/sphere_simulator.h"
+#include "voxblox/core/tsdf_map.h"
+#include "voxblox/integrator/tsdf_integrator.h"
 
-using namespace voxblox;  // NOLINT
+#include "voxblox_fast/core/tsdf_map.h"
+#include "voxblox_fast/integrator/tsdf_integrator.h"
+
+#include "htwfsc_benchmarks/simulation/sphere_simulator.h"
 
 class E2EBenchmark : public ::benchmark::Fixture {
  public:
@@ -18,21 +19,23 @@ class E2EBenchmark : public ::benchmark::Fixture {
     config_.max_ray_length_m = 50.0;
     fast_config_.max_ray_length_m = 50.0;
 
-    baseline_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
-    fast_layer_.reset(new Layer<TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
+    baseline_layer_.reset(new voxblox::Layer<voxblox::TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
+    fast_layer_.reset(new voxblox_fast::Layer<voxblox_fast::TsdfVoxel>(kVoxelSize, kVoxelsPerSide));
     baseline_integrator_.reset(
-        new TsdfIntegrator(config_, baseline_layer_.get()));
+        new voxblox::TsdfIntegrator(config_, baseline_layer_.get()));
     fast_integrator_.reset(
-        new fast::TsdfIntegrator(fast_config_, fast_layer_.get()));
-    T_G_C = Transformation();
+        new voxblox_fast::TsdfIntegrator(fast_config_, fast_layer_.get()));
+    T_G_C = voxblox::Transformation();
   }
 
   void CreateSphere(const double radius, const size_t num_points) {
     sphere_points_C.clear();
-    sphere_sim::createSphere(kMean, kSigma, radius, num_points,
-                             &sphere_points_C);
+    htwfsc_benchmarks::sphere_sim::createSphere(kMean, kSigma, radius,
+                                                num_points, &sphere_points_C);
     colors_.clear();
-    colors_.resize(sphere_points_C.size(), Color(128, 255, 0));
+    colors_.resize(sphere_points_C.size(), voxblox::Color(128, 255, 0));
+    fast_colors_.clear();
+    fast_colors_.resize(sphere_points_C.size(), voxblox_fast::Color(128, 255, 0));
   }
 
   void TearDown(const ::benchmark::State& /*state*/) {
@@ -45,9 +48,10 @@ class E2EBenchmark : public ::benchmark::Fixture {
     colors_.clear();
   }
 
-  Colors colors_;
-  Pointcloud sphere_points_C;
-  Transformation T_G_C;
+  voxblox::Colors colors_;
+  voxblox_fast::Colors fast_colors_;
+  voxblox::Pointcloud sphere_points_C;
+  voxblox::Transformation T_G_C;
 
   static constexpr double kVoxelSize = 0.01;
   static constexpr size_t kVoxelsPerSide = 16u;
@@ -57,14 +61,14 @@ class E2EBenchmark : public ::benchmark::Fixture {
   static constexpr size_t kNumPoints = 200u;
   static constexpr double kRadius = 2.0;
 
-  TsdfIntegrator::Config config_;
-  fast::TsdfIntegrator::Config fast_config_;
+  voxblox::TsdfIntegrator::Config config_;
+  voxblox_fast::TsdfIntegrator::Config fast_config_;
 
-  std::unique_ptr<TsdfIntegrator> baseline_integrator_;
-  std::unique_ptr<fast::TsdfIntegrator> fast_integrator_;
+  std::unique_ptr<voxblox::TsdfIntegrator> baseline_integrator_;
+  std::unique_ptr<voxblox_fast::TsdfIntegrator> fast_integrator_;
 
-  std::unique_ptr<Layer<TsdfVoxel>> baseline_layer_;
-  std::unique_ptr<Layer<TsdfVoxel>> fast_layer_;
+  std::unique_ptr<voxblox::Layer<voxblox::TsdfVoxel>> baseline_layer_;
+  std::unique_ptr<voxblox_fast::Layer<voxblox_fast::TsdfVoxel>> fast_layer_;
 };
 
 //////////////////////////////////////////////////////////////
@@ -86,7 +90,7 @@ BENCHMARK_DEFINE_F(E2EBenchmark, BM_fast_radius)(benchmark::State& state) {
   state.counters["radius_cm"] = radius * 100;
   CreateSphere(radius, kNumPoints);
   while (state.KeepRunning()) {
-    fast_integrator_->integratePointCloud(T_G_C, sphere_points_C, colors_);
+    fast_integrator_->integratePointCloud(T_G_C, sphere_points_C, fast_colors_);
   }
 }
 BENCHMARK_REGISTER_F(E2EBenchmark, BM_fast_radius)->DenseRange(1, 10, 1);
@@ -113,7 +117,7 @@ BENCHMARK_DEFINE_F(E2EBenchmark, BM_fast_num_points)(benchmark::State& state) {
   CreateSphere(kRadius, num_points);
   state.counters["num_points"] = sphere_points_C.size();
   while (state.KeepRunning()) {
-    fast_integrator_->integratePointCloud(T_G_C, sphere_points_C, colors_);
+    fast_integrator_->integratePointCloud(T_G_C, sphere_points_C, fast_colors_);
   }
 }
 BENCHMARK_REGISTER_F(E2EBenchmark, BM_fast_num_points)
