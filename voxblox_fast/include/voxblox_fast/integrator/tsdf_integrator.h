@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_FAST_H_
-#define VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_FAST_H_
+#ifndef VOXBLOX_FAST_INTEGRATOR_TSDF_INTEGRATOR_H_
+#define VOXBLOX_FAST_INTEGRATOR_TSDF_INTEGRATOR_H_
 
 #include <algorithm>
 #include <vector>
@@ -11,15 +11,12 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
-#include "voxblox/core/layer.h"
-#include "voxblox/core/voxel.h"
-#include "voxblox/integrator/integrator_utils_fast.h"
-#include "voxblox/utils/timing.h"
+#include "voxblox_fast/core/layer.h"
+#include "voxblox_fast/core/voxel.h"
+#include "voxblox_fast/integrator/integrator_utils.h"
+#include "voxblox_fast/utils/timing.h"
 
-using namespace voxblox;
-
-namespace voxblox {
-namespace fast {
+namespace voxblox_fast {
 
 class TsdfIntegrator {
  public:
@@ -166,7 +163,7 @@ class TsdfIntegrator {
 
       IndexVector global_voxel_indices;
       timing::Timer cast_ray_timer("integrate/cast_ray");
-      voxblox::fast::castRay(start_scaled, end_scaled, &global_voxel_indices);
+      castRay(start_scaled, end_scaled, &global_voxel_indices);
       cast_ray_timer.Stop();
 
       timing::Timer update_voxels_timer("integrate/update_voxels");
@@ -319,7 +316,7 @@ class TsdfIntegrator {
 
     IndexVector global_voxel_index;
     timing::Timer cast_ray_timer("integrate/cast_ray");
-    voxblox::fast::castRay(start_scaled, end_scaled, &global_voxel_index);
+    castRay(start_scaled, end_scaled, &global_voxel_index);
     cast_ray_timer.Stop();
 
     timing::Timer update_voxels_timer("integrate/update_voxels");
@@ -451,7 +448,6 @@ class TsdfIntegrator {
   FloatingPoint block_size_inv_;
 };
 
-}  // namespace fast
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_FAST_H_
+#endif  // VOXBLOX_FAST_INTEGRATOR_TSDF_INTEGRATOR_H_

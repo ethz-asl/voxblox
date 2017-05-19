@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>voxblox</name>
+  <name>voxblox_fast</name>
   <version>0.0.0</version>
-  <description>Voxblox</description>
+  <description>voxblox_fast</description>
 
   <author email="helen.oleynikova@mavt.ethz.ch">Helen Oleynikova</author>
   <author email="marius.fehr@mavt.ethz.ch">Marius Fehr</author>
