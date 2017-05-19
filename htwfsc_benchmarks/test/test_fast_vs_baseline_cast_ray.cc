@@ -4,12 +4,13 @@
 #include <eigen-checks/gtest.h>
 #include <gtest/gtest.h>
 
-#include "../../htwfsc_benchmarks/include/voxblox/core/tsdf_map.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/integrator_utils.h"
-#include "../../htwfsc_benchmarks/include/voxblox/integrator/integrator_utils_fast.h"
-#include "../../htwfsc_benchmarks/include/voxblox/simulation/sphere_simulator.h"
+#include "voxblox/core/tsdf_map.h"
+#include "voxblox/integrator/integrator_utils.h"
 
-using namespace voxblox;  // NOLINT
+#include "voxblox_fast/core/tsdf_map.h"
+#include "voxblox_fast/integrator/integrator_utils.h"
+
+#include "htwfsc_benchmarks/simulation/sphere_simulator.h"
 
 static constexpr size_t kSeed = 242u;
 
@@ -36,40 +37,41 @@ class FastCastRayTest : public ::testing::Test {
 
     for (size_t sphere_idx = 0u; sphere_idx < kNumDifferentSpheres;
          ++sphere_idx) {
-      sphere_sim::createSphere(kMean, kSigma, kRadius, kNumPoints,
-                               &(sphere_points_G_vector_[sphere_idx]));
+      htwfsc_benchmarks::sphere_sim::createSphere(
+          kMean, kSigma, kRadius, kNumPoints,
+          &(sphere_points_G_vector_[sphere_idx]));
 
       T_G_C_vector_[sphere_idx].setRandom(translation_norm_dist(gen),
                                           angle_dist(gen));
 
       // Transform to global frame.
-      const Transformation& T_G_C = T_G_C_vector_[sphere_idx];
-      for (Point& point : sphere_points_G_vector_[sphere_idx]) {
+      const voxblox::Transformation& T_G_C = T_G_C_vector_[sphere_idx];
+      for (voxblox::Point& point : sphere_points_G_vector_[sphere_idx]) {
         point = T_G_C.transform(point);
       }
     }
   }
 
-  std::vector<Pointcloud> sphere_points_G_vector_;
-  std::vector<Transformation> T_G_C_vector_;
+  std::vector<voxblox::Pointcloud> sphere_points_G_vector_;
+  std::vector<voxblox::Transformation> T_G_C_vector_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 TEST_F(FastCastRayTest, CompareToBaseline) {
-  std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> indices_baseline;
-  std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> indices_fast;
+  std::vector<voxblox::AnyIndex, Eigen::aligned_allocator<voxblox::AnyIndex>> indices_baseline;
+  std::vector<voxblox::AnyIndex, Eigen::aligned_allocator<voxblox::AnyIndex>> indices_fast;
   for (size_t sphere_idx = 0u; sphere_idx < kNumDifferentSpheres;
        ++sphere_idx) {
-    const Point& origin = T_G_C_vector_[sphere_idx].getPosition();
+    const voxblox::Point& origin = T_G_C_vector_[sphere_idx].getPosition();
 
-    for (const Point& sphere_point : sphere_points_G_vector_[sphere_idx]) {
+    for (const voxblox::Point& sphere_point : sphere_points_G_vector_[sphere_idx]) {
       indices_baseline.clear();
-      castRay(origin, sphere_point, &indices_baseline);
+      voxblox::castRay(origin, sphere_point, &indices_baseline);
 
       indices_fast.clear();
-      fast::castRay(origin, sphere_point, &indices_fast);
+      voxblox_fast::castRay(origin, sphere_point, &indices_fast);
       ASSERT_EQ(indices_baseline, indices_fast);
     }
   }

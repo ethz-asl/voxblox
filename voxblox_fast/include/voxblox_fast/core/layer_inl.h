@@ -12,8 +12,8 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/message_lite.h>
 
-#include "./Block.pb.h"
-#include "./Layer.pb.h"
+#include "./FastBlock.pb.h"
+#include "./FastLayer.pb.h"
 #include "voxblox_fast/core/block.h"
 #include "voxblox_fast/core/voxel.h"
 #include "voxblox_fast/utils/protobuf_utils.h"

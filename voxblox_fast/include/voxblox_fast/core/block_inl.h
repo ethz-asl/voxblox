@@ -1,7 +1,7 @@
 #ifndef VOXBLOX_FAST_CORE_BLOCK_INL_H_
 #define VOXBLOX_FAST_CORE_BLOCK_INL_H_
 
-#include "./Block.pb.h"
+#include "./FastBlock.pb.h"
 
 #include <vector>
 
