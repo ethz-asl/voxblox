@@ -1,7 +1,6 @@
 #include <random>
 
-#include <benchmark/benchmark.h>
-#include <benchmark_helpers/benchmark_helpers.h>
+#include <benchmark_catkin/benchmark_entrypoint.h>
 #include <eigen-checks/entrypoint.h>
 #include <eigen-checks/gtest.h>
 #include <gtest/gtest.h>
