@@ -14,6 +14,8 @@
 using namespace voxblox;  // NOLINT
 
 class CastRayBenchmark : public ::benchmark::Fixture {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  protected:
   void SetUp(const ::benchmark::State& st) { T_G_C_ = Transformation(); }
 
@@ -32,9 +34,6 @@ class CastRayBenchmark : public ::benchmark::Fixture {
 
   Pointcloud sphere_points_G_;
   Transformation T_G_C_;
-
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //////////////////////////////////////////////////////////////

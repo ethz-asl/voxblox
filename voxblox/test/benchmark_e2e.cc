@@ -12,6 +12,8 @@ using namespace voxblox;  // NOLINT
 
 class E2EBenchmark : public ::benchmark::Fixture {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ protected:
   void SetUp(const ::benchmark::State& /*state*/) {
     config_.max_ray_length_m = 50.0;
     fast_config_.max_ray_length_m = 50.0;
