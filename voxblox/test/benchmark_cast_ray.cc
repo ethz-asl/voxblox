@@ -29,8 +29,8 @@ class CastRayBenchmark : public ::benchmark::Fixture {
 
   static constexpr double kMean = 0;
   static constexpr double kSigma = 0.05;
-  static constexpr int kNumPoints = 200;
-  static constexpr int kRadius = 2.0;
+  static constexpr size_t kNumPoints = 200u;
+  static constexpr double kRadius = 2.0;
 
   Pointcloud sphere_points_G_;
   Transformation T_G_C_;
@@ -54,7 +54,7 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline_radius)
   }
 }
 BENCHMARK_REGISTER_F(CastRayBenchmark, BM_baseline_radius)
-    ->DenseRange(1, 30, 1);
+    ->DenseRange(1, 10, 1);
 
 BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast_radius)(benchmark::State& state) {
   const double radius = static_cast<double>(state.range(0)) / 2.0;
@@ -68,7 +68,7 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast_radius)(benchmark::State& state) {
     }
   }
 }
-BENCHMARK_REGISTER_F(CastRayBenchmark, BM_fast_radius)->DenseRange(1, 30, 1);
+BENCHMARK_REGISTER_F(CastRayBenchmark, BM_fast_radius)->DenseRange(1, 10, 1);
 
 //////////////////////////////////////////////////////////////
 // BENCHMARK CONSTANT RADIUS WITH CHANGING NUMBER OF POINTS //
@@ -77,8 +77,8 @@ BENCHMARK_REGISTER_F(CastRayBenchmark, BM_fast_radius)->DenseRange(1, 30, 1);
 BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline_num_points)
 (benchmark::State& state) {
   const size_t num_points = static_cast<size_t>(state.range(0));
-  state.counters["num_points"] = num_points;
   CreateSphere(kRadius, num_points);
+  state.counters["num_points"] = sphere_points_G_.size();
   while (state.KeepRunning()) {
     const Point& origin = T_G_C_.getPosition();
     IndexVector indices;
@@ -93,8 +93,8 @@ BENCHMARK_REGISTER_F(CastRayBenchmark, BM_baseline_num_points)
 
 BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast)(benchmark::State& state) {
   const size_t num_points = static_cast<size_t>(state.range(0));
-  state.counters["num_points"] = num_points;
   CreateSphere(kRadius, num_points);
+  state.counters["num_points"] = sphere_points_G_.size();
   while (state.KeepRunning()) {
     const Point& origin = T_G_C_.getPosition();
     IndexVector indices;
