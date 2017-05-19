@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(voxblox)
+project(voxblox_fast)
 
 find_package(catkin_simple REQUIRED)
 catkin_simple()
@@ -12,8 +12,8 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 ############
 # General idea: first check if we have protobuf catkin, then use that.
 # Otherwise use system protobuf.
-set(PROTO_DEFNS proto/voxblox/Block.proto
-                proto/voxblox/Layer.proto)
+set(PROTO_DEFNS proto/voxblox_fast/Block.proto
+                proto/voxblox_fast/Layer.proto)
 set(ADDITIONAL_LIBRARIES "")
 
 find_package(protobuf_catkin QUIET)
