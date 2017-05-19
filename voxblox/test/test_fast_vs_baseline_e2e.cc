@@ -22,7 +22,7 @@ class FastE2ETest : public ::testing::Test {
   // Test data params.
   static constexpr double kMean = 0;
   static constexpr double kSigma = 0.01;
-  static constexpr int kNumPoints = 100000;
+  static constexpr int kNumPoints = 1000;
   static constexpr double kRadius = 0.5;
   static constexpr size_t kNumDifferentSpheres = 10u;
 
@@ -62,8 +62,6 @@ class FastE2ETest : public ::testing::Test {
       T_G_C_vector_[sphere_idx].setRandom(translation_norm_dist(gen),
                                           angle_dist(gen));
     }
-
-    // TODO(mfehr): REMOVE OR DISABLE BY DEFAULT
 
     MeshIntegrator::Config config;
     baseline_mesh_layer_.reset(new MeshLayer(kVoxelSize * kVoxelsPerSide));
