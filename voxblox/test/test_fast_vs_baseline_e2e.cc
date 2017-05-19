@@ -7,6 +7,9 @@
 #include "voxblox/core/tsdf_map.h"
 #include "voxblox/integrator/tsdf_integrator.h"
 #include "voxblox/integrator/tsdf_integrator_fast.h"
+#include "voxblox/io/mesh_ply.h"
+#include "voxblox/mesh/mesh_integrator.h"
+#include "voxblox/mesh/mesh_layer.h"
 #include "voxblox/simulation/sphere_simulator.h"
 #include "voxblox/test/layer_test_utils.h"
 
@@ -18,9 +21,9 @@ class FastE2ETest : public ::testing::Test {
  public:
   // Test data params.
   static constexpr double kMean = 0;
-  static constexpr double kSigma = 0.05;
+  static constexpr double kSigma = 0.01;
   static constexpr int kNumPoints = 1000;
-  static constexpr double kRadius = 2.0;
+  static constexpr double kRadius = 0.5;
   static constexpr size_t kNumDifferentSpheres = 10u;
 
   static constexpr double kVoxelSize = 0.01;
@@ -29,7 +32,7 @@ class FastE2ETest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     std::default_random_engine gen(kSeed);
-    std::normal_distribution<double> translation_norm_dist(0.0, 2.0);
+    std::normal_distribution<double> translation_norm_dist(0.0, 0.5);
     std::normal_distribution<double> angle_dist(0.0,
                                                 2.0 * 3.141592653589793238463);
 
@@ -59,6 +62,15 @@ class FastE2ETest : public ::testing::Test {
       T_G_C_vector_[sphere_idx].setRandom(translation_norm_dist(gen),
                                           angle_dist(gen));
     }
+
+    MeshIntegrator::Config config;
+    baseline_mesh_layer_.reset(new MeshLayer(kVoxelSize * kVoxelsPerSide));
+    baseline_mesh_integrator_.reset(new MeshIntegrator(
+        config, baseline_layer_.get(), baseline_mesh_layer_.get()));
+
+    fast_mesh_layer_.reset(new MeshLayer(kVoxelSize * kVoxelsPerSide));
+    fast_mesh_integrator_.reset(
+        new MeshIntegrator(config, fast_layer_.get(), fast_mesh_layer_.get()));
   }
 
   std::vector<Colors> colors_vector_;
@@ -76,6 +88,11 @@ class FastE2ETest : public ::testing::Test {
 
   test::LayerTest<TsdfVoxel> layer_test_;
 
+  std::unique_ptr<MeshIntegrator> baseline_mesh_integrator_;
+  std::unique_ptr<MeshLayer> baseline_mesh_layer_;
+  std::unique_ptr<MeshIntegrator> fast_mesh_integrator_;
+  std::unique_ptr<MeshLayer> fast_mesh_layer_;
+
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -91,6 +108,11 @@ TEST_F(FastE2ETest, CompareToBaseline) {
                                           colors_vector_[sphere_idx]);
   }
   layer_test_.CompareLayers(*baseline_layer_, *fast_layer_);
+
+  baseline_mesh_integrator_->generateWholeMesh();
+  CHECK(outputMeshLayerAsPly("baseline.ply", *baseline_mesh_layer_));
+  fast_mesh_integrator_->generateWholeMesh();
+  CHECK(outputMeshLayerAsPly("fast.ply", *fast_mesh_layer_));
 }
 
 int main(int argc, char** argv) {

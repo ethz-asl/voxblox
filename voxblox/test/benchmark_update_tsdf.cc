@@ -1,3 +1,4 @@
+#include <benchmark/benchmark.h>
 #include <benchmark_catkin/benchmark_entrypoint.h>
 
 #include "voxblox/core/tsdf_map.h"
@@ -7,6 +8,8 @@ using namespace voxblox;  // NOLINT
 
 class UpdateTsdfBenchmark : public ::benchmark::Fixture {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ protected:
   void SetUp(const ::benchmark::State& st) {
     // TODO(mfehr): IMPLEMENT
   }

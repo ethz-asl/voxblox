@@ -57,9 +57,8 @@ target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 ##############
 # BENCHMARKS #
 ##############
-#find_package(benchmark_helpers REQUIRED)
-#add_benchmark(bm_cast_ray test/benchmark_cast_ray.cc)
-#target_link_libraries(bm_cast_ray ${PROJECT_NAME})
+add_benchmark(bm_cast_ray test/benchmark_cast_ray.cc)
+target_link_libraries(bm_cast_ray ${PROJECT_NAME})
 
 add_benchmark(bm_e2e test/benchmark_e2e.cc)
 target_link_libraries(bm_e2e ${PROJECT_NAME})
