@@ -96,7 +96,6 @@ BENCHMARK_REGISTER_F(E2EBenchmark, BM_fast_radius)->DenseRange(1, 30, 1);
 BENCHMARK_DEFINE_F(E2EBenchmark, BM_baseline_num_points)
 (benchmark::State& state) {
   const size_t num_points = static_cast<double>(state.range(0));
-  LOG(INFO) << "num_points: " << num_points;
   state.counters["num_points"] = num_points;
   CreateSphere(kRadius, num_points);
   while (state.KeepRunning()) {
@@ -109,7 +108,6 @@ BENCHMARK_REGISTER_F(E2EBenchmark, BM_baseline_num_points)
 
 BENCHMARK_DEFINE_F(E2EBenchmark, BM_fast_num_points)(benchmark::State& state) {
   const size_t num_points = static_cast<double>(state.range(0));
-  LOG(INFO) << "num_points: " << num_points;
   state.counters["num_points"] = num_points;
   CreateSphere(kRadius, num_points);
   while (state.KeepRunning()) {
