@@ -1,5 +1,6 @@
 #include <random>
 
+#include <benchmark/benchmark.h>
 #include <benchmark_catkin/benchmark_entrypoint.h>
 #include <eigen-checks/entrypoint.h>
 #include <eigen-checks/gtest.h>
@@ -16,17 +17,18 @@ class CastRayBenchmark : public ::benchmark::Fixture {
  protected:
   void SetUp(const ::benchmark::State& st) { T_G_C_ = Transformation(); }
 
-  void generateSphere(const size_t num_points) {
-
-    constexpr double kMean = 0;
-    constexpr double kSigma = 0.05;
-    constexpr double kRadius = 1.0;
-
-    sphere_sim::createSphere(kMean, kSigma, kRadius, num_points,
+  void CreateSphere(const double radius, const size_t num_points) {
+    sphere_points_G_.clear();
+    sphere_sim::createSphere(kMean, kSigma, radius, num_points,
                              &sphere_points_G_);
   }
 
   void TearDown(const ::benchmark::State&) { sphere_points_G_.clear(); }
+
+  static constexpr double kMean = 0;
+  static constexpr double kSigma = 0.05;
+  static constexpr int kNumPoints = 200;
+  static constexpr int kRadius = 2.0;
 
   Pointcloud sphere_points_G_;
   Transformation T_G_C_;
@@ -35,34 +37,75 @@ class CastRayBenchmark : public ::benchmark::Fixture {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline)(benchmark::State& state) {
-  generateSphere(state.range(0));
+//////////////////////////////////////////////////////////////
+// BENCHMARK CONSTANT NUMBER OF POINTS WITH CHANGING RADIUS //
+//////////////////////////////////////////////////////////////
 
-  std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> indices;
+BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline_radius)
+(benchmark::State& state) {
+  const double radius = static_cast<double>(state.range(0)) / 2.0;
+  state.counters["radius_cm"] = radius * 100;
+  CreateSphere(radius, kNumPoints);
   while (state.KeepRunning()) {
     const Point& origin = T_G_C_.getPosition();
+    IndexVector indices;
     for (size_t i = 0u; i < state.range(0); ++i) {
       castRay(origin, sphere_points_G_[i], &indices);
     }
   }
 }
-BENCHMARK_REGISTER_F(CastRayBenchmark, BM_baseline)
-    ->RangeMultiplier(2)
-    ->Range(1, 8<<12);
+BENCHMARK_REGISTER_F(CastRayBenchmark, BM_baseline_radius)
+    ->DenseRange(1, 30, 1);
 
-BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast)(benchmark::State& state) {
-  generateSphere(state.range(0));
-
-  std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> indices;
+BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast_radius)(benchmark::State& state) {
+  const double radius = static_cast<double>(state.range(0)) / 2.0;
+  state.counters["radius_cm"] = radius * 100;
+  CreateSphere(radius, kNumPoints);
   while (state.KeepRunning()) {
     const Point& origin = T_G_C_.getPosition();
+    IndexVector indices;
+    for (size_t i = 0u; i < state.range(0); ++i) {
+      fast::castRay(origin, sphere_points_G_[i], &indices);
+    }
+  }
+}
+BENCHMARK_REGISTER_F(CastRayBenchmark, BM_fast_radius)->DenseRange(1, 30, 1);
+
+//////////////////////////////////////////////////////////////
+// BENCHMARK CONSTANT RADIUS WITH CHANGING NUMBER OF POINTS //
+//////////////////////////////////////////////////////////////
+
+BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline_num_points)
+(benchmark::State& state) {
+  const size_t num_points = static_cast<size_t>(state.range(0));
+  state.counters["num_points"] = num_points;
+  CreateSphere(kRadius, num_points);
+  while (state.KeepRunning()) {
+    const Point& origin = T_G_C_.getPosition();
+    IndexVector indices;
+    for (size_t i = 0u; i < state.range(0); ++i) {
+      castRay(origin, sphere_points_G_[i], &indices);
+    }
+  }
+}
+BENCHMARK_REGISTER_F(CastRayBenchmark, BM_baseline_num_points)
+    ->RangeMultiplier(2)
+    ->Range(1, 1e5);
+
+BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast)(benchmark::State& state) {
+  const size_t num_points = static_cast<size_t>(state.range(0));
+  state.counters["num_points"] = num_points;
+  CreateSphere(kRadius, num_points);
+  while (state.KeepRunning()) {
+    const Point& origin = T_G_C_.getPosition();
+    IndexVector indices;
     for (size_t i = 0u; i < state.range(0); ++i) {
       fast::castRay(origin, sphere_points_G_[i], &indices);
     }
   }
 }
 BENCHMARK_REGISTER_F(CastRayBenchmark, BM_fast)
-->RangeMultiplier(2)
-->Range(1, 8<<12);
+    ->RangeMultiplier(2)
+    ->Range(1, 1e5);
 
 BENCHMARKING_ENTRY_POINT
