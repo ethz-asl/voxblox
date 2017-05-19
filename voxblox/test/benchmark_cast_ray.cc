@@ -48,8 +48,8 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline_radius)
   while (state.KeepRunning()) {
     const Point& origin = T_G_C_.getPosition();
     IndexVector indices;
-    for (size_t i = 0u; i < state.range(0); ++i) {
-      castRay(origin, sphere_points_G_[i], &indices);
+    for (const Point& point : sphere_points_G_) {
+      castRay(origin, point, &indices);
     }
   }
 }
@@ -63,8 +63,8 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast_radius)(benchmark::State& state) {
   while (state.KeepRunning()) {
     const Point& origin = T_G_C_.getPosition();
     IndexVector indices;
-    for (size_t i = 0u; i < state.range(0); ++i) {
-      fast::castRay(origin, sphere_points_G_[i], &indices);
+    for (const Point& point : sphere_points_G_) {
+      fast::castRay(origin, point, &indices);
     }
   }
 }
@@ -82,8 +82,8 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_baseline_num_points)
   while (state.KeepRunning()) {
     const Point& origin = T_G_C_.getPosition();
     IndexVector indices;
-    for (size_t i = 0u; i < state.range(0); ++i) {
-      castRay(origin, sphere_points_G_[i], &indices);
+    for (const Point& point : sphere_points_G_) {
+      castRay(origin, point, &indices);
     }
   }
 }
@@ -98,8 +98,8 @@ BENCHMARK_DEFINE_F(CastRayBenchmark, BM_fast)(benchmark::State& state) {
   while (state.KeepRunning()) {
     const Point& origin = T_G_C_.getPosition();
     IndexVector indices;
-    for (size_t i = 0u; i < state.range(0); ++i) {
-      fast::castRay(origin, sphere_points_G_[i], &indices);
+    for (const Point& point : sphere_points_G_) {
+      fast::castRay(origin, point, &indices);
     }
   }
 }
