@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
-#define VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
+#ifndef VOXBLOX_FAST_INTEGRATOR_INTEGRATOR_UTILS_H_
+#define VOXBLOX_FAST_INTEGRATOR_INTEGRATOR_UTILS_H_
 
 #include <algorithm>
 #include <vector>
@@ -7,10 +7,10 @@
 #include <glog/logging.h>
 #include <Eigen/Core>
 
-#include "voxblox/core/common.h"
-#include "voxblox/utils/timing.h"
+#include "voxblox_fast/core/common.h"
+#include "voxblox_fast/utils/timing.h"
 
-namespace voxblox {
+namespace voxblox_fast {
 
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
@@ -124,4 +124,4 @@ inline void getHierarchicalIndexAlongRay(
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
+#endif  // VOXBLOX_FAST_INTEGRATOR_INTEGRATOR_UTILS_H_

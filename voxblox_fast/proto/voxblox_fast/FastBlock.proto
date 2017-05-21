@@ -1,0 +1,15 @@
+package voxblox_fast;
+
+message BlockProto {
+  optional int32 voxels_per_side = 1;
+ 
+  optional double voxel_size = 2;
+  
+  optional double origin_x = 3;
+  optional double origin_y = 4;
+  optional double origin_z = 5;
+
+  optional bool has_data = 6;
+  
+  repeated uint32 voxel_data = 7;
+}

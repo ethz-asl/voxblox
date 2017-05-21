@@ -9,6 +9,7 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 #############
 # LIBRARIES #
 #############
+
 cs_add_library(${PROJECT_NAME}
   src/transformer.cc
   src/tsdf_server.cc
@@ -44,6 +45,11 @@ cs_add_executable(simulation_eval
   src/simulation_eval.cc
 )
 target_link_libraries(simulation_eval ${PROJECT_NAME})
+
+cs_add_executable(sphere_node
+  src/sphere_node.cc
+)
+target_link_libraries(sphere_node ${PROJECT_NAME})
 
 ##########
 # EXPORT #
