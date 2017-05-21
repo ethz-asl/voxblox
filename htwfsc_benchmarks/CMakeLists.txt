@@ -12,6 +12,12 @@ cs_add_library(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME})
 
+#####################
+# APP FOR PROFILING #
+#####################
+cs_add_executable(vtune_profiling_e2e app/vtune_profiling_e2e.cc)
+target_link_libraries(vtune_profiling_e2e ${PROJECT_NAME})
+
 ##############
 # BENCHMARKS #
 ##############
