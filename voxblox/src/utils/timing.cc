@@ -153,27 +153,8 @@ double Timing::GetHz(size_t handle) {
 double Timing::GetHz(std::string const& tag) { return GetHz(GetHandle(tag)); }
 
 std::string Timing::SecondsToTimeString(double seconds) {
-  double secs = fmod(seconds, 60);
-  int minutes = (seconds / 60);
-  int hours = (seconds / 3600);
-  minutes = minutes - (hours * 60);
-
   char buffer[256];
-  snprintf(buffer, sizeof(buffer),
-#ifdef SM_TIMING_SHOW_HOURS
-           "%02d:"
-#endif
-#ifdef SM_TIMING_SHOW_MINUTES
-           "%02d:"
-#endif
-           "%09.6f",
-#ifdef SM_TIMING_SHOW_HOURS
-           hours,
-#endif
-#ifdef SM_TIMING_SHOW_MINUTES
-           minutes,
-#endif
-           secs);
+  snprintf(buffer, sizeof(buffer), "%09.6f", seconds);
   return buffer;
 }
 
