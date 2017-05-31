@@ -264,9 +264,27 @@ void TsdfServer::publishSlices() {
   tsdf_slice_pub_.publish(pointcloud);
 }
 
-bool TsdfServer::generateMeshCallback(
-    std_srvs::Empty::Request& request,
-    std_srvs::Empty::Response& response) {  // NOLINT
+void TsdfServer::updateMesh() {
+  if (verbose_) {
+    ROS_INFO("Updating mesh.");
+  }
+
+  timing::Timer generate_mesh_timer("mesh/update");
+  const bool clear_updated_flag = true;
+  mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+  generate_mesh_timer.Stop();
+
+  // TODO(helenol): also think about how to update markers incrementally?
+  timing::Timer publish_mesh_timer("mesh/publish");
+  visualization_msgs::MarkerArray marker_array;
+  marker_array.markers.resize(1);
+  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
+  marker_array.markers[0].header.frame_id = world_frame_;
+  mesh_pub_.publish(marker_array);
+  publish_mesh_timer.Stop();
+}
+
+bool TsdfServer::generateMesh() {
   timing::Timer generate_mesh_timer("mesh/generate");
   const bool clear_mesh = true;
   if (clear_mesh) {
@@ -300,6 +318,12 @@ bool TsdfServer::generateMeshCallback(
   return true;
 }
 
+bool TsdfServer::generateMeshCallback(
+    std_srvs::Empty::Request& request,
+    std_srvs::Empty::Response& response) {  // NOLINT
+  return generateMesh();
+}
+
 bool TsdfServer::saveMapCallback(
     voxblox_msgs::FilePath::Request& request,
     voxblox_msgs::FilePath::Response& response) {  // NOLINT
@@ -316,24 +340,6 @@ bool TsdfServer::loadMapCallback(
       tsdf_map_->getTsdfLayerPtr());
 }
 
-void TsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
-  if (verbose_) {
-    ROS_INFO("Updating mesh.");
-  }
-
-  timing::Timer generate_mesh_timer("mesh/update");
-  const bool clear_updated_flag = true;
-  mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
-  generate_mesh_timer.Stop();
-
-  // TODO(helenol): also think about how to update markers incrementally?
-  timing::Timer publish_mesh_timer("mesh/publish");
-  visualization_msgs::MarkerArray marker_array;
-  marker_array.markers.resize(1);
-  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
-  marker_array.markers[0].header.frame_id = world_frame_;
-  mesh_pub_.publish(marker_array);
-  publish_mesh_timer.Stop();
-}
+void TsdfServer::updateMeshEvent(const ros::TimerEvent& event) { updateMesh(); }
 
 }  // namespace voxblox

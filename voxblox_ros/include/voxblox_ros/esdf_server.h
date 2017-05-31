@@ -20,7 +20,7 @@ class EsdfServer : public TsdfServer {
   bool generateEsdfCallback(std_srvs::Empty::Request& request,      // NOLINT
                             std_srvs::Empty::Response& response);   // NOLINT
 
-  virtual void updateMeshEvent(const ros::TimerEvent& event);
+  virtual void updateMesh();
   virtual void newPoseCallback(const Transformation& T_G_C);
 
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);

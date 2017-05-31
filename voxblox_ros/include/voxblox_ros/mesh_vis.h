@@ -123,10 +123,11 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
       continue;
     }
     // Check that we can actually do the color stuff.
-    if (color_mode == kColor) {
+    if (color_mode == kColor || color_mode == kLambertColor) {
       CHECK(mesh->hasColors());
     }
-    if (color_mode == kNormals || color_mode == kLambert) {
+    if (color_mode == kNormals || color_mode == kLambert ||
+        color_mode == kLambertColor) {
       CHECK(mesh->hasNormals());
     }
 
@@ -178,10 +179,11 @@ inline void fillPointcloudWithMesh(
       continue;
     }
     // Check that we can actually do the color stuff.
-    if (color_mode == kColor) {
+    if (color_mode == kColor || color_mode == kLambertColor) {
       CHECK(mesh->hasColors());
     }
-    if (color_mode == kNormals || color_mode == kLambert) {
+    if (color_mode == kNormals || color_mode == kLambert ||
+        color_mode == kLambertColor) {
       CHECK(mesh->hasNormals());
     }
 

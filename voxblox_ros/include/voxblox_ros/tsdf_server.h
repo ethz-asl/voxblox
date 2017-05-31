@@ -40,7 +40,10 @@ class TsdfServer {
   void publishAllUpdatedTsdfVoxels();
   void publishTsdfSurfacePoints();
   void publishTsdfOccupiedNodes();
+
   virtual void publishSlices();
+  virtual void updateMesh();    // Incremental update.
+  virtual bool generateMesh();  // Batch update.
 
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
@@ -49,7 +52,7 @@ class TsdfServer {
   bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
                             std_srvs::Empty::Response& response);    // NOLINT
 
-  virtual void updateMeshEvent(const ros::TimerEvent& event);
+  void updateMeshEvent(const ros::TimerEvent& event);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
 

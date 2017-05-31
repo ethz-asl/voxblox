@@ -92,7 +92,7 @@ bool EsdfServer::generateEsdfCallback(
   return true;
 }
 
-void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
+void EsdfServer::updateMesh() {
   // Also update the ESDF now, if there's any blocks in the TSDF.
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = false;
@@ -109,7 +109,7 @@ void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
     esdf_map_pub_.publish(layer_msg);
   }
 
-  TsdfServer::updateMeshEvent(event);
+  TsdfServer::updateMesh();
 }
 
 void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
