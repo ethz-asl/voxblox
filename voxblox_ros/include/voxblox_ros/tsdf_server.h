@@ -35,6 +35,9 @@ class TsdfServer {
 
   virtual void insertPointcloud(
       const sensor_msgs::PointCloud2::Ptr& pointcloud);
+
+  void integratePointcloud(const Transformation& T_G_C,
+                           const Pointcloud& ptcloud_C, const Colors& colors);
   virtual void newPoseCallback(const Transformation& new_pose) {}
 
   void publishAllUpdatedTsdfVoxels();
@@ -59,6 +62,9 @@ class TsdfServer {
   // Accessors for setting and getting parameters.
   double getSliceLevel() const { return slice_level_; }
   void setSliceLevel(double slice_level) { slice_level_ = slice_level; }
+
+  // CLEARS THE ENTIRE MAP!
+  virtual void clear();
 
  protected:
   ros::NodeHandle nh_;

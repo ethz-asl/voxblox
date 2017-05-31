@@ -69,7 +69,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   integrator_config.voxel_carving_enabled = true;
   // Used to be * 4 according to Marius's experience, now * 2.
   // This should be made bigger again if behind-surface weighting is improved.
-  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 2;
+  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 4;
 
   double truncation_distance = integrator_config.default_truncation_distance;
   double max_weight = integrator_config.max_weight;
@@ -192,17 +192,7 @@ void TsdfServer::insertPointcloud(
       ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
     }
     ros::WallTime start = ros::WallTime::now();
-    if (method_ == Method::kMerged) {
-      bool discard = false;
-      tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
-                                                  discard);
-    } else if (method_ == Method::kMergedDiscard) {
-      bool discard = true;
-      tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
-                                                  discard);
-    } else {
-      tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
-    }
+    integratePointcloud(T_G_C, points_C, colors);
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
       ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
@@ -221,6 +211,22 @@ void TsdfServer::insertPointcloud(
     if (verbose_) {
       ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
     }
+  }
+}
+
+void TsdfServer::integratePointcloud(const Transformation& T_G_C,
+                                     const Pointcloud& ptcloud_C,
+                                     const Colors& colors) {
+  if (method_ == Method::kMerged) {
+    bool discard = false;
+    tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
+                                                discard);
+  } else if (method_ == Method::kMergedDiscard) {
+    bool discard = true;
+    tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
+                                                discard);
+  } else {
+    tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors);
   }
 }
 
@@ -341,5 +347,10 @@ bool TsdfServer::loadMapCallback(
 }
 
 void TsdfServer::updateMeshEvent(const ros::TimerEvent& event) { updateMesh(); }
+
+void TsdfServer::clear() {
+  tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
+  mesh_layer_->clear();
+}
 
 }  // namespace voxblox

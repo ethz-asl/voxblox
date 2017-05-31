@@ -125,8 +125,10 @@ inline AnyIndex getGridIndexFromPoint(const Point& point,
 // function doesn't always compute the correct grid index for coordinates
 // near the grid cell boundaries.
 inline AnyIndex getGridIndexFromPoint(const Point& scaled_point) {
-  return AnyIndex(std::floor(scaled_point.x()), std::floor(scaled_point.y()),
-                  std::floor(scaled_point.z()));
+  const FloatingPoint kEpsilon = 1e-6;
+  return AnyIndex(std::floor(scaled_point.x() + kEpsilon),
+                  std::floor(scaled_point.y() + kEpsilon),
+                  std::floor(scaled_point.z() + kEpsilon));
 }
 
 inline AnyIndex getGridIndexFromOriginPoint(const Point& point,

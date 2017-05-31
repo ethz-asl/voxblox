@@ -55,8 +55,15 @@ inline void castRay(
 
   // Distance to cross one grid cell along the ray in t.
   // Same as absolute inverse value of delta_coord.
-  Ray t_step_size =
-      ray_step_signs.cast<FloatingPoint>().cwiseQuotient(ray_scaled);
+  /* Ray t_step_size =
+      ray_step_signs.cast<FloatingPoint>().cwiseQuotient(ray_scaled); */
+  Ray t_step_size(
+      (std::abs(ray_scaled.x()) < kTolerance) ? 2.0 : ray_step_signs.x() /
+                                                          ray_scaled.x(),
+      (std::abs(ray_scaled.y()) < kTolerance) ? 2.0 : ray_step_signs.y() /
+                                                          ray_scaled.y(),
+      (std::abs(ray_scaled.z()) < kTolerance) ? 2.0 : ray_step_signs.z() /
+                                                          ray_scaled.z());
 
   AnyIndex curr_index = start_index;
   indices->push_back(curr_index);
@@ -69,6 +76,13 @@ inline void castRay(
 
     curr_index[t_min_idx] += ray_step_signs[t_min_idx];
     t_to_next_boundary[t_min_idx] += t_step_size[t_min_idx];
+
+    /* LOG(INFO) << "Start index: " << start_index.transpose()
+              << " current_index: " << curr_index.transpose()
+              << " end index: " << end_index.transpose()
+              << "\nt min index: " << t_min_idx
+              << " t_step_size: " << t_step_size.transpose()
+              << " ray scaled: " << ray_scaled.transpose(); */
 
     indices->push_back(curr_index);
   }

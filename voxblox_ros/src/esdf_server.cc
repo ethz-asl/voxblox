@@ -131,4 +131,10 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
   }
 }
 
+void EsdfServer::clear() {
+  esdf_map_->getEsdfLayerPtr()->removeAllBlocks();
+
+  TsdfServer::clear();
+}
+
 }  // namespace voxblox

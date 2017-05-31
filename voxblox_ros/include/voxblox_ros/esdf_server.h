@@ -17,8 +17,8 @@ class EsdfServer : public TsdfServer {
   void publishAllUpdatedEsdfVoxels();
   virtual void publishSlices();
 
-  bool generateEsdfCallback(std_srvs::Empty::Request& request,      // NOLINT
-                            std_srvs::Empty::Response& response);   // NOLINT
+  bool generateEsdfCallback(std_srvs::Empty::Request& request,     // NOLINT
+                            std_srvs::Empty::Response& response);  // NOLINT
 
   virtual void updateMesh();
   virtual void newPoseCallback(const Transformation& T_G_C);
@@ -26,6 +26,13 @@ class EsdfServer : public TsdfServer {
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
   std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
+
+  bool getClearSphere() const { return clear_sphere_for_planning_; }
+  void setClearSphere(bool clear_sphere_for_planning) {
+    clear_sphere_for_planning_ = clear_sphere_for_planning;
+  }
+
+  virtual void clear();
 
  protected:
   // Publish markers for visualization.
