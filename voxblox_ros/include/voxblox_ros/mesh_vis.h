@@ -24,15 +24,15 @@
 #ifndef VOXBLOX_ROS_MESH_VIS_H_
 #define VOXBLOX_ROS_MESH_VIS_H_
 
-#include <algorithm>
-#include <visualization_msgs/Marker.h>
 #include <eigen_conversions/eigen_msg.h>
+#include <visualization_msgs/Marker.h>
+#include <algorithm>
 
 #include <voxblox/core/common.h>
+#include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/mesh/mesh.h>
 #include <voxblox/mesh/mesh_layer.h>
-#include <voxblox/integrator/tsdf_integrator.h>
-#include <voxblox/integrator/esdf_integrator.h>
 
 #include "voxblox_ros/conversions.h"
 
@@ -46,7 +46,7 @@ inline Point lambertShading(const Point& normal, const Point& light) {
 }
 
 inline void lambertColorFromNormal(const Point& normal,
-                            std_msgs::ColorRGBA* color_msg) {
+                                   std_msgs::ColorRGBA* color_msg) {
   static const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
   static const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
   static const Point ambient(0.2f, 0.2f, 0.2f);
@@ -61,7 +61,7 @@ inline void lambertColorFromNormal(const Point& normal,
 }
 
 inline void normalColorFromNormal(const Point& normal,
-                           std_msgs::ColorRGBA* color_msg) {
+                                  std_msgs::ColorRGBA* color_msg) {
   // Normals should be in the scale -1 to 1, so we need to shift them to
   // 0 -> 1 range.
   color_msg->r = normal.x() * 0.5 + 0.5;
@@ -71,7 +71,7 @@ inline void normalColorFromNormal(const Point& normal,
 }
 
 inline void heightColorFromVertex(const Point& vertex,
-                           std_msgs::ColorRGBA* color_msg) {
+                                  std_msgs::ColorRGBA* color_msg) {
   // TODO(helenol): figure out a nicer way to do this without hard-coded
   // constants.
   const double min_z = -1;
@@ -83,8 +83,8 @@ inline void heightColorFromVertex(const Point& vertex,
 }
 
 inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
-                        ColorMode color_mode,
-                        visualization_msgs::Marker* marker) {
+                               ColorMode color_mode,
+                               visualization_msgs::Marker* marker) {
   CHECK_NOTNULL(marker);
   marker->header.stamp = ros::Time::now();
   marker->ns = "mesh";
@@ -142,9 +142,9 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
   }
 }
 
-inline void fillPointcloudWithMesh(const MeshLayer::ConstPtr& mesh_layer,
-                        ColorMode color_mode,
-                        pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
+inline void fillPointcloudWithMesh(
+    const MeshLayer::ConstPtr& mesh_layer, ColorMode color_mode,
+    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   pointcloud->clear();
 
@@ -166,7 +166,6 @@ inline void fillPointcloudWithMesh(const MeshLayer::ConstPtr& mesh_layer,
     }
 
     for (size_t i = 0u; i < mesh->vertices.size(); i++) {
-
       pcl::PointXYZRGB point;
       point.x = mesh->vertices[i].x();
       point.y = mesh->vertices[i].y();
