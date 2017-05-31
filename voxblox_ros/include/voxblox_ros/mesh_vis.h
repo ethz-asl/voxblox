@@ -205,6 +205,10 @@ inline void fillPointcloudWithMesh(
         case kLambert:
           lambertColorFromNormal(mesh->normals[i], &color_msg);
           break;
+        case kLambertColor:
+          lambertColorFromColorAndNormal(mesh->colors[i], mesh->normals[i],
+                                         &color_msg);
+          break;
         case kGray:
           color_msg.r = color_msg.g = color_msg.b = 0.5;
           break;
