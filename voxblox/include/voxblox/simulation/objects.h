@@ -325,42 +325,50 @@ class Cylinder : public Object {
 
     // Great, now we got some ts, time to figure out whether we hit the cylinder
     // or the endcaps.
-    FloatingPoint t = 0.0;
+    FloatingPoint t = max_dist;
 
     FloatingPoint z1 = vector_E.z() + t1 * vector_D.z();
     FloatingPoint z2 = vector_E.z() + t2 * vector_D.z();
-    bool z1_valid = t1 >= 0.0 && z1 >= -height_ / 2.0 && z1 <= height_ / 2.0;
-    bool z2_valid = t2 >= 0.0 && z2 >= -height_ / 2.0 && z2 <= height_ / 2.0;
-    if (z1_valid && z2_valid) {
-      t = std::min(t1, t2);
-    } else if (z1_valid) {
-      t = t1;
-    } else if (z2_valid) {
-      t = t2;
-    } else {
-      // Check end-cap intersections now... :(
-      // Make sure we don't divide by 0.
-      if (std::abs(vector_D.z()) < 1e-6) {
-        return false;
-      }
-      FloatingPoint t3 = (-height_ / 2.0 - vector_E.z()) / vector_D.z();
-      FloatingPoint t4 = (height_ / 2.0 - vector_E.z()) / vector_D.z();
+    bool t1_valid = t1 >= 0.0 && z1 >= -height_ / 2.0 && z1 <= height_ / 2.0;
+    bool t2_valid = t2 >= 0.0 && z2 >= -height_ / 2.0 && z2 <= height_ / 2.0;
 
-      bool t3_valid = t3 >= 0.0;
-      bool t4_valid = t4 >= 0.0;
-      if (t3_valid && t4_valid) {
-        t = std::min(t3, t4);
-      } else if (t3_valid) {
-        t = t3;
-      } else if (t4_valid) {
-        t = t4;
-      } else {
-        return false;
-      }
+    // Get the endcaps and their validity.
+    // Check end-cap intersections now... :(
+    FloatingPoint t3, t4;
+    bool t3_valid = false, t4_valid = false;
+
+    // Make sure we don't divide by 0.
+    if (std::abs(vector_D.z()) > 1e-6) {
+      // t3 is the bottom end-cap, t4 is the top.
+      t3 = (-height_ / 2.0 - vector_E.z()) / vector_D.z();
+      t4 = (height_ / 2.0 - vector_E.z()) / vector_D.z();
+
+      Point q3 = vector_E + t3 * vector_D;
+      Point q4 = vector_E + t4 * vector_D;
+
+      t3_valid = t3 >= 0.0 && q3.head<2>().norm() < radius_;
+      t4_valid = t4 >= 0.0 && q4.head<2>().norm() < radius_;
     }
+
+    if (!(t1_valid || t2_valid || t3_valid || t4_valid)) {
+      return false;
+    }
+    if (t1_valid) {
+      t = std::min(t, t1);
+    }
+    if (t2_valid) {
+      t = std::min(t, t2);
+    }
+    if (t3_valid) {
+      t = std::min(t, t3);
+    }
+    if (t4_valid) {
+      t = std::min(t, t4);
+    }
+
     // Intersection greater than max dist, so no intersection in the sensor
     // range.
-    if (t > max_dist) {
+    if (t >= max_dist) {
       return false;
     }
 
