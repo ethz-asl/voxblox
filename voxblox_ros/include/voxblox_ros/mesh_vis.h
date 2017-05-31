@@ -55,6 +55,8 @@ inline Point lambertShading(const Point& normal, const Point& light,
 inline void lambertColorFromColorAndNormal(const Color& color,
                                            const Point& normal,
                                            std_msgs::ColorRGBA* color_msg) {
+  // These are just some arbitrary light directions, I believe taken from
+  // OpenChisel.
   const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
   const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
   const Point ambient(0.2f, 0.2f, 0.2f);
