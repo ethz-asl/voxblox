@@ -37,8 +37,13 @@ void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
         layer->allocateBlockPtrByIndex(block_index);
     for (size_t i = 0; i < block->num_voxels(); ++i) {
       VoxelType& voxel = block->getVoxelByLinearIndex(i);
-      Point coords =
-          block->computeCoordinatesFromLinearIndex(i);
+      Point coords = block->computeCoordinatesFromLinearIndex(i);
+      // Check that it's in bounds, otherwise skip it.
+      if (!(coords.x() >= min_bound_.x() && coords.x() <= max_bound_.x() &&
+            coords.y() >= min_bound_.y() && coords.y() <= max_bound_.y() &&
+            coords.z() >= min_bound_.z() && coords.z() <= max_bound_.z())) {
+        continue;
+      }
 
       // Iterate over all objects and get distances to this thing.
       FloatingPoint voxel_dist = max_dist;

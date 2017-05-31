@@ -24,9 +24,9 @@
 #ifndef VOXBLOX_ROS_MESH_VIS_H_
 #define VOXBLOX_ROS_MESH_VIS_H_
 
+#include <algorithm>
 #include <eigen_conversions/eigen_msg.h>
 #include <visualization_msgs/Marker.h>
-#include <algorithm>
 
 #include <voxblox/core/common.h>
 #include <voxblox/integrator/esdf_integrator.h>
@@ -38,26 +38,42 @@
 
 namespace voxblox {
 
-enum ColorMode { kColor = 0, kHeight, kNormals, kGray, kLambert };
+enum ColorMode {
+  kColor = 0,
+  kHeight,
+  kNormals,
+  kGray,
+  kLambert,
+  kLambertColor
+};
 
-inline Point lambertShading(const Point& normal, const Point& light) {
-  return std::max<FloatingPoint>(normal.dot(light), 0.0f) *
-         Point(0.5, 0.5, 0.5);
+inline Point lambertShading(const Point& normal, const Point& light,
+                            const Point& color) {
+  return std::max<FloatingPoint>(normal.dot(light), 0.0f) * color;
 }
 
-inline void lambertColorFromNormal(const Point& normal,
-                                   std_msgs::ColorRGBA* color_msg) {
-  static const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
-  static const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
-  static const Point ambient(0.2f, 0.2f, 0.2f);
+inline void lambertColorFromColorAndNormal(const Color& color,
+                                           const Point& normal,
+                                           std_msgs::ColorRGBA* color_msg) {
+  // These are just some arbitrary light directions, I believe taken from
+  // OpenChisel.
+  const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
+  const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
+  const Point ambient(0.2f, 0.2f, 0.2f);
+  const Point color_pt(color.r / 255.0, color.g / 255.0, color.b / 255.0);
 
-  Point lambert = lambertShading(normal, light_dir) +
-                  lambertShading(normal, light_dir2) + ambient;
+  Point lambert = lambertShading(normal, light_dir, color_pt) +
+                  lambertShading(normal, light_dir2, color_pt) + ambient;
 
   color_msg->r = std::min<FloatingPoint>(lambert.x(), 1.0);
   color_msg->g = std::min<FloatingPoint>(lambert.y(), 1.0);
   color_msg->b = std::min<FloatingPoint>(lambert.z(), 1.0);
   color_msg->a = 1.0;
+}
+
+inline void lambertColorFromNormal(const Point& normal,
+                                   std_msgs::ColorRGBA* color_msg) {
+  lambertColorFromColorAndNormal(Color(127, 127, 127), normal, color_msg);
 }
 
 inline void normalColorFromNormal(const Point& normal,
@@ -132,6 +148,10 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
         case kLambert:
           lambertColorFromNormal(mesh->normals[i], &color_msg);
           break;
+        case kLambertColor:
+          lambertColorFromColorAndNormal(mesh->colors[i], mesh->normals[i],
+                                         &color_msg);
+          break;
         case kGray:
           color_msg.r = color_msg.g = color_msg.b = 0.5;
           break;
@@ -184,6 +204,10 @@ inline void fillPointcloudWithMesh(
           break;
         case kLambert:
           lambertColorFromNormal(mesh->normals[i], &color_msg);
+          break;
+        case kLambertColor:
+          lambertColorFromColorAndNormal(mesh->colors[i], mesh->normals[i],
+                                         &color_msg);
           break;
         case kGray:
           color_msg.r = color_msg.g = color_msg.b = 0.5;

@@ -106,6 +106,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     color_mode_ = ColorMode::kNormals;
   } else if (color_mode == "lambert") {
     color_mode_ = ColorMode::kLambert;
+  } else if (color_mode == "lambert_color") {
+    color_mode_ = ColorMode::kLambertColor;
   } else {  // Default case is gray.
     color_mode_ = ColorMode::kGray;
   }

@@ -17,7 +17,19 @@ void SimulationWorld::addGroundLevel(FloatingPoint height) {
 void SimulationWorld::addPlaneBoundaries(FloatingPoint x_min,
                                          FloatingPoint x_max,
                                          FloatingPoint y_min,
-                                         FloatingPoint y_max) {}
+                                         FloatingPoint y_max) {
+  // X planes:
+  objects_.emplace_back(
+      new Plane(Point(x_min, 0.0, 0.0), Point(1.0, 0.0, 0.0)));
+  objects_.emplace_back(
+      new Plane(Point(x_max, 0.0, 0.0), Point(-1.0, 0.0, 0.0)));
+
+  // Y planes:
+  objects_.emplace_back(
+      new Plane(Point(0.0, y_min, 0.0), Point(0.0, 1.0, 0.0)));
+  objects_.emplace_back(
+      new Plane(Point(0.0, y_max, 0.0), Point(0.0, -1.0, 0.0)));
+}
 
 void SimulationWorld::clear() { objects_.clear(); }
 
