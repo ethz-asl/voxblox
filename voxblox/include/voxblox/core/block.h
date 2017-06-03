@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "./Block.pb.h"
+#include "./Volume.pb.h"
 #include "voxblox/core/common.h"
 
 namespace voxblox {
@@ -31,6 +32,7 @@ class Block {
   }
 
   explicit Block(const BlockProto& proto);
+  explicit Block(const tsdf2::VolumeProto& proto);
 
   ~Block() {}
 
@@ -159,6 +161,7 @@ class Block {
 
  private:
   void deserializeProto(const BlockProto& proto);
+  void deserializeProto(const tsdf2::VolumeProto& proto);
   void serializeProto(BlockProto* proto) const;
 
   // Base parameters.

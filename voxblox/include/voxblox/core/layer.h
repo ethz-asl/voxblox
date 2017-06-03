@@ -7,12 +7,26 @@
 
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
+#include "./MapHeader.pb.h"
+#include "./Volume.pb.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/block_hash.h"
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
+
+template<typename VoxelType>
+using GenericLayerProto = LayerProto
+
+template<typename TangoTsdfVoxel>
+using GenericLayerProto = tsdf2::MapHeaderProto
+
+template<typename VoxelType>
+using GenericBlockProto = BlockProto
+
+template<typename TangoTsdfVoxel>
+using GenericLayerProto = tsdf2::VolumeProto
 
 template <typename VoxelType>
 class Layer {
@@ -32,7 +46,7 @@ class Layer {
   }
 
   // Create the layer from protobuf layer header.
-  explicit Layer(const LayerProto& proto);
+  explicit Layer(const GenericLayerProto& proto);
 
   virtual ~Layer() {}
 
@@ -197,14 +211,14 @@ class Layer {
   size_t voxels_per_side() const { return voxels_per_side_; }
 
   // Serialization tools.
-  void getProto(LayerProto* proto) const;
-  bool isCompatible(const LayerProto& layer_proto) const;
-  bool isCompatible(const BlockProto& layer_proto) const;
+  void getProto(GenericLayerProto* proto) const;
+  bool isCompatible(const GenericLayerProto& layer_proto) const;
+  bool isCompatible(const GenericBlockProto& layer_proto) const;
   bool saveToFile(const std::string& file_path) const;
   bool saveSubsetToFile(const std::string& file_path,
                         BlockIndexList blocks_to_include,
                         bool include_all_blocks) const;
-  bool addBlockFromProto(const BlockProto& block_proto,
+  bool addBlockFromProto(const GenericBlockProto& block_proto,
                          BlockMergingStrategy strategy);
 
   size_t getMemorySize() const;

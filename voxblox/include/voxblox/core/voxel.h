@@ -8,6 +8,12 @@
 
 namespace voxblox {
 
+struct TangoTsdfVoxel {
+  float distance = 0.0f;
+  float weight = 0.0f;
+  Color color;
+};
+
 struct TsdfVoxel {
   float distance = 0.0f;
   float weight = 0.0f;
@@ -34,6 +40,7 @@ struct OccupancyVoxel {
 // Used for serialization only.
 namespace voxel_types {
   const std::string kNotSerializable = "not_serializable";
+  const std::string kTangoTsdf = "";
   const std::string kTsdf = "tsdf";
   const std::string kEsdf = "esdf";
   const std::string kOccupancy = "occupancy";
@@ -42,6 +49,11 @@ namespace voxel_types {
 template <typename Type>
 std::string getVoxelType() {
   return voxel_types::kNotSerializable;
+}
+
+template <>
+inline std::string getVoxelType<TangoTsdfVoxel>() {
+  return voxel_types::kTangoTsdf;
 }
 
 template <>

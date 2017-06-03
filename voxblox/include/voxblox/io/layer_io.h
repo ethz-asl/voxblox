@@ -7,6 +7,8 @@
 
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
+#include "./MapHeader.pb.h"
+#include "./Volume.pb.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/utils/protobuf_utils.h"
@@ -44,7 +46,8 @@ bool LoadLayer(const std::string& file_path,
   }
 
   // Get header and create the layer if compatible
-  LayerProto layer_proto;
+  // mereweth@jpl.nasa.gov - see above for template alias
+  GenericLayerProto layer_proto;
   if (!utils::readProtoMsgFromStream(&proto_file, &layer_proto,
                                      &tmp_byte_offset)) {
     LOG(ERROR) << "Could not read layer protobuf message.";
@@ -56,7 +59,8 @@ bool LoadLayer(const std::string& file_path,
   // Read all blocks and add them to the layer.
   const size_t num_blocks = num_protos - 1;
   for (uint32_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
-    BlockProto block_proto;
+    // mereweth@jpl.nasa.gov - see above for template alias
+    GenericBlockProto block_proto;
     if (!utils::readProtoMsgFromStream(&proto_file, &block_proto,
                                        &tmp_byte_offset)) {
       LOG(ERROR) << "Could not read block protobuf message number "

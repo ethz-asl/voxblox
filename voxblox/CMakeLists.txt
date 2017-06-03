@@ -13,7 +13,9 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 # General idea: first check if we have protobuf catkin, then use that.
 # Otherwise use system protobuf.
 set(PROTO_DEFNS proto/voxblox/Block.proto
-                proto/voxblox/Layer.proto)
+                proto/voxblox/Layer.proto
+                proto/tsdf2/MapHeader.proto
+                proto/tsdf2/Volume.proto)
 set(ADDITIONAL_LIBRARIES "")
 
 find_package(protobuf_catkin QUIET)
@@ -53,6 +55,15 @@ cs_add_library(${PROJECT_NAME}
   ${PROTO_SRCS}
 )
 target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
+
+############
+# BINARIES #
+############
+
+add_executable(inspect_protobuf
+  test/inspect_protobuf.cc
+)
+target_link_libraries(inspect_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 #########
 # TESTS #

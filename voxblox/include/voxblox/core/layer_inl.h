@@ -14,6 +14,8 @@
 
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
+#include "./MapHeader.pb.h"
+#include "./Volume.pb.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/utils/protobuf_utils.h"
@@ -28,6 +30,18 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
       << "Incorrect voxel type, proto type: " << proto.type()
       << " layer type: " << getType();
 
+  // Derived config parameter.
+  block_size_ = voxel_size_ * voxels_per_side_;
+  block_size_inv_ = 1.0 / block_size_;
+
+  CHECK_GT(proto.voxel_size(), 0.0);
+  CHECK_GT(proto.voxels_per_side(), 0u);
+}
+
+template <>
+Layer<TangoTsdfVoxel>::Layer(const MapHeaderProto& proto)
+    : voxel_size_(proto.voxel_size()),
+      voxels_per_side_(proto.voxels_per_volume_side ()) {
   // Derived config parameter.
   block_size_ = voxel_size_ * voxels_per_side_;
   block_size_inv_ = 1.0 / block_size_;
