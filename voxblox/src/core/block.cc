@@ -34,7 +34,7 @@ Eigen::Vector3i deserializeDirection(uint8_t data) {
 template <>
 void Block<TangoTsdfVoxel>::deserializeFromIntegers(
     const std::vector<uint32_t>& data) {
-  constexpr size_t kNumDataPacketsPerVoxel = 3u;
+  constexpr size_t kNumDataPacketsPerVoxel = 2u;
   const size_t num_data_packets = data.size();
 
   CHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
@@ -43,24 +43,24 @@ void Block<TangoTsdfVoxel>::deserializeFromIntegers(
        ++voxel_idx, data_idx += kNumDataPacketsPerVoxel) {
     const uint32_t bytes_1 = data[data_idx];
     const uint32_t bytes_2 = data[data_idx + 1u];
-    const uint32_t bytes_3 = data[data_idx + 2u];
 
     TangoTsdfVoxel& voxel = voxels_[voxel_idx];
 
     // TODO(mfehr, helenol): find a better way to do this!
+    // TODO(mereweth@jpl.nasa.gov) - is this actually fine?
 
-    memcpy(&(voxel.distance), &bytes_1, sizeof(bytes_1));
-    memcpy(&(voxel.weight), &bytes_2, sizeof(bytes_2));
+    voxel.distance = static_cast<uint32_t>(bytes_1 >> 16);
+    voxel.weight = static_cast<uint32_t>(bytes_1 & 0x0000FFFF);
 
-    voxel.color.r = static_cast<uint8_t>(bytes_3 >> 24);
-    voxel.color.g = static_cast<uint8_t>((bytes_3 & 0x00FF0000) >> 16);
-    voxel.color.b = static_cast<uint8_t>((bytes_3 & 0x0000FF00) >> 8);
-    voxel.color.a = static_cast<uint8_t>(bytes_3 & 0x000000FF);
+    voxel.color.r = static_cast<uint8_t>(bytes_2 >> 24);
+    voxel.color.g = static_cast<uint8_t>((bytes_2 & 0x00FF0000) >> 16);
+    voxel.color.b = static_cast<uint8_t>((bytes_2 & 0x0000FF00) >> 8);
+    voxel.color.a = static_cast<uint8_t>(bytes_2 & 0x000000FF);
   }
 }
 
 template <>
-void Block<tsdf2::TsdfVoxel>::deserializeFromIntegers(
+void Block<TsdfVoxel>::deserializeFromIntegers(
     const std::vector<uint32_t>& data) {
   constexpr size_t kNumDataPacketsPerVoxel = 3u;
   const size_t num_data_packets = data.size();

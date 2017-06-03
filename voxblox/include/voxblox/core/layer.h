@@ -16,17 +16,41 @@
 
 namespace voxblox {
 
-template<typename VoxelType>
-using GenericLayerProto = LayerProto
+/* Can't specialize an alias template; have to implement workaround
+ * template<typename VoxelType>
+ * using GenericLayerProto = LayerProto;
+ *
+ * template<>
+ * using GenericLayerProto<TangoTsdfVoxel> = tsdf2::MapHeaderProto;
+ */
+template <typename VoxelType>
+struct LayerProtoType
+  { typedef LayerProto type; };
 
-template<typename TangoTsdfVoxel>
-using GenericLayerProto = tsdf2::MapHeaderProto
+template <>
+struct LayerProtoType<TangoTsdfVoxel>
+  { typedef tsdf2::MapHeaderProto type; };
 
-template<typename VoxelType>
-using GenericBlockProto = BlockProto
+template <typename VoxelType>
+using GenericLayerProto = typename LayerProtoType<VoxelType>::type;
 
-template<typename TangoTsdfVoxel>
-using GenericLayerProto = tsdf2::VolumeProto
+/* Can't specialize an alias template; have to implement workaround
+ * template<typename VoxelType>
+ * using GenericBlockProto = BlockProto;
+ *
+ * template<>
+ * using GenericBlockProto<TangoTsdfVoxel> = tsdf2::VolumeProto;
+ */
+template <typename VoxelType>
+struct BlockProtoType
+ { typedef BlockProto type; };
+
+template <>
+struct BlockProtoType<TangoTsdfVoxel>
+ { typedef tsdf2::VolumeProto type; };
+
+template <typename VoxelType>
+using GenericBlockProto = typename BlockProtoType<VoxelType>::type;
 
 template <typename VoxelType>
 class Layer {
@@ -46,7 +70,8 @@ class Layer {
   }
 
   // Create the layer from protobuf layer header.
-  explicit Layer(const GenericLayerProto& proto);
+  explicit Layer(const LayerProto& proto);
+  explicit Layer(const tsdf2::MapHeaderProto& proto);
 
   virtual ~Layer() {}
 
@@ -211,14 +236,18 @@ class Layer {
   size_t voxels_per_side() const { return voxels_per_side_; }
 
   // Serialization tools.
-  void getProto(GenericLayerProto* proto) const;
-  bool isCompatible(const GenericLayerProto& layer_proto) const;
-  bool isCompatible(const GenericBlockProto& layer_proto) const;
+  void getProto(LayerProto* proto) const;
+  bool isCompatible(const LayerProto& layer_proto) const;
+  bool isCompatible(const tsdf2::MapHeaderProto& layer_proto) const;
+  /* Tango TSDF Block isCompatible has same implementation =>
+   * use GenericBlockProto
+   */
+  bool isCompatible(const GenericBlockProto<VoxelType>& layer_proto) const;
   bool saveToFile(const std::string& file_path) const;
   bool saveSubsetToFile(const std::string& file_path,
                         BlockIndexList blocks_to_include,
                         bool include_all_blocks) const;
-  bool addBlockFromProto(const GenericBlockProto& block_proto,
+  bool addBlockFromProto(const GenericBlockProto<VoxelType>& block_proto,
                          BlockMergingStrategy strategy);
 
   size_t getMemorySize() const;

@@ -38,16 +38,29 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
   CHECK_GT(proto.voxels_per_side(), 0u);
 }
 
-template <>
-Layer<TangoTsdfVoxel>::Layer(const MapHeaderProto& proto)
+// Only Tango TSDF Layer can be constructed from MapHeaderProto
+/*template <typename VoxelType>
+Layer<VoxelType>::Layer(const tsdf2::MapHeaderProto& proto)
     : voxel_size_(proto.voxel_size()),
-      voxels_per_side_(proto.voxels_per_volume_side ()) {
+      voxels_per_side_(proto.voxels_per_volume_side()) {
   // Derived config parameter.
   block_size_ = voxel_size_ * voxels_per_side_;
   block_size_inv_ = 1.0 / block_size_;
 
   CHECK_GT(proto.voxel_size(), 0.0);
-  CHECK_GT(proto.voxels_per_side(), 0u);
+  CHECK_GT(proto.voxels_per_volume_side(), 0u);
+}*/
+
+template <>
+inline Layer<TangoTsdfVoxel>::Layer(const tsdf2::MapHeaderProto& proto)
+    : voxel_size_(proto.voxel_size()),
+      voxels_per_side_(proto.voxels_per_volume_side()) {
+  // Derived config parameter.
+  block_size_ = voxel_size_ * voxels_per_side_;
+  block_size_inv_ = 1.0 / block_size_;
+
+  CHECK_GT(proto.voxel_size(), 0.0);
+  CHECK_GT(proto.voxels_per_volume_side(), 0u);
 }
 
 template <typename VoxelType>
@@ -152,9 +165,13 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
   return true;
 }
 
+/* TODO (mereweth@jpl.nasa.gov) - do we need this function?
+ * Should we specialize or use GenericBlockProto<VoxelType>?
+ */
 template <typename VoxelType>
-bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
-                                         BlockMergingStrategy strategy) {
+bool Layer<VoxelType> ::
+    addBlockFromProto(const GenericBlockProto<VoxelType>& block_proto,
+                      BlockMergingStrategy strategy) {
   CHECK_NE(getType().compare(voxel_types::kNotSerializable), 0)
       << "The voxel type of this layer is not serializable!";
 
@@ -206,8 +223,24 @@ bool Layer<VoxelType>::isCompatible(const LayerProto& layer_proto) const {
   return compatible;
 }
 
+// Tango TSDF Layer only compatible with itself for now
 template <typename VoxelType>
-bool Layer<VoxelType>::isCompatible(const BlockProto& block_proto) const {
+bool Layer<VoxelType>::isCompatible(const tsdf2::MapHeaderProto& layer_proto) const {
+  return false;
+}
+
+template <>
+inline bool Layer<TangoTsdfVoxel>::isCompatible(const tsdf2::MapHeaderProto& layer_proto) const {
+  bool compatible = true;
+  compatible &= (layer_proto.voxel_size() == voxel_size_);
+  compatible &= (layer_proto.voxels_per_volume_side() == voxels_per_side_);
+  return compatible;
+}
+
+template <typename VoxelType>
+bool Layer<VoxelType> ::
+    isCompatible(const GenericBlockProto<VoxelType>& block_proto) const {
+
   bool compatible = true;
   compatible &= (block_proto.voxel_size() == voxel_size_);
   compatible &= (block_proto.voxels_per_side() == voxels_per_side_);

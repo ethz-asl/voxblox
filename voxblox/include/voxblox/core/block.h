@@ -7,6 +7,7 @@
 #include "./Block.pb.h"
 #include "./Volume.pb.h"
 #include "voxblox/core/common.h"
+#include "voxblox/core/voxel.h"
 
 namespace voxblox {
 
@@ -182,6 +183,10 @@ class Block {
 
   std::unique_ptr<VoxelType[]> voxels_;
 };
+
+template <>
+void Block<TangoTsdfVoxel>::deserializeFromIntegers(
+    const std::vector<uint32_t>& data);
 
 }  // namespace voxblox
 

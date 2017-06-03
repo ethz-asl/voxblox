@@ -2,7 +2,8 @@
 // CONFIDENTIAL. AUTHORIZED USE ONLY. DO NOT REDISTRIBUTE.
 package tsdf2;
 
-import "engine_data_proto/Vector3d.proto";
+// TODO(mereweth@jpl.nasa.gov) - include this or verify ok to omit
+//import "engine_data_proto/Vector3d.proto";
 
 message VolumeProto {
   message GridIndex {
@@ -10,6 +11,13 @@ message VolumeProto {
     required int32 y = 2;
     required int32 z = 3;
   };
+
+  // TODO(mereweth@jpl.nasa.gov) - include this or verify ok to omit
+  message Vector3dProto {
+    required double x = 1;
+    required double y = 2;
+    required double z = 3;
+  }
 
   // Number of voxels per each dimension.
   optional int32 voxels_per_side = 1;
@@ -20,8 +28,10 @@ message VolumeProto {
   // Maximum voxel weight
   optional uint32 max_ntsdf_voxel_weight = 3;
 
+  // TODO(mereweth@jpl.nasa.gov) - include this or verify ok to omit
   // DEPRECATED: The origin of the volume, in meters.
-  optional engine_data_proto.Vector3dProto origin = 4 [deprecated=true];
+  //optional engine_data_proto.Vector3dProto origin = 4 [deprecated=true];
+  optional Vector3dProto origin = 4 [deprecated=true];
 
   // The grid index of the volume.
   optional GridIndex index = 8;

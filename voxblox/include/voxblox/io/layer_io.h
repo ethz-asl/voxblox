@@ -46,8 +46,7 @@ bool LoadLayer(const std::string& file_path,
   }
 
   // Get header and create the layer if compatible
-  // mereweth@jpl.nasa.gov - see above for template alias
-  GenericLayerProto layer_proto;
+  GenericLayerProto<VoxelType> layer_proto;
   if (!utils::readProtoMsgFromStream(&proto_file, &layer_proto,
                                      &tmp_byte_offset)) {
     LOG(ERROR) << "Could not read layer protobuf message.";
@@ -59,8 +58,7 @@ bool LoadLayer(const std::string& file_path,
   // Read all blocks and add them to the layer.
   const size_t num_blocks = num_protos - 1;
   for (uint32_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
-    // mereweth@jpl.nasa.gov - see above for template alias
-    GenericBlockProto block_proto;
+    GenericBlockProto<VoxelType> block_proto;
     if (!utils::readProtoMsgFromStream(&proto_file, &block_proto,
                                        &tmp_byte_offset)) {
       LOG(ERROR) << "Could not read block protobuf message number "
@@ -110,7 +108,7 @@ bool LoadBlocksFromFile(
   }
 
   // Get header and check if it is compatible with existing layer.
-  LayerProto layer_proto;
+  GenericLayerProto<VoxelType> layer_proto;
   if (!utils::readProtoMsgFromStream(&proto_file, &layer_proto,
                                      &tmp_byte_offset)) {
     LOG(ERROR) << "Could not read layer protobuf message.";
@@ -125,7 +123,7 @@ bool LoadBlocksFromFile(
   // Read all blocks and add them to the layer.
   const size_t num_blocks = num_protos - 1;
   for (uint32_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
-    BlockProto block_proto;
+    GenericBlockProto<VoxelType> block_proto;
     if (!utils::readProtoMsgFromStream(&proto_file, &block_proto,
                                        &tmp_byte_offset)) {
       LOG(ERROR) << "Could not read block protobuf message number "
@@ -133,6 +131,7 @@ bool LoadBlocksFromFile(
       return false;
     }
 
+    //TODO(mereweth@jpl.nasa.gov) - implement this for Tango tsdf2::VolumeProto
     if (!layer_ptr->addBlockFromProto(block_proto, strategy)) {
       LOG(ERROR) << "Could not add the block protobuf message to the layer!";
       return false;
