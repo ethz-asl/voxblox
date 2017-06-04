@@ -39,25 +39,18 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
 }
 
 // Only Tango TSDF Layer can be constructed from MapHeaderProto
-/*template <typename VoxelType>
-Layer<VoxelType>::Layer(const tsdf2::MapHeaderProto& proto)
-    : voxel_size_(proto.voxel_size()),
-      voxels_per_side_(proto.voxels_per_volume_side()) {
-  // Derived config parameter.
-  block_size_ = voxel_size_ * voxels_per_side_;
-  block_size_inv_ = 1.0 / block_size_;
-
-  CHECK_GT(proto.voxel_size(), 0.0);
-  CHECK_GT(proto.voxels_per_volume_side(), 0u);
-}*/
-
 template <>
 inline Layer<TangoTsdfVoxel>::Layer(const tsdf2::MapHeaderProto& proto)
     : voxel_size_(proto.voxel_size()),
-      voxels_per_side_(proto.voxels_per_volume_side()) {
+      voxels_per_side_(proto.voxels_per_volume_side()),
+      max_ntsdf_voxel_weight_(proto.max_ntsdf_voxel_weight()),
+      meters_to_ntsdf_(proto.meters_to_ntsdf()) {
   // Derived config parameter.
   block_size_ = voxel_size_ * voxels_per_side_;
   block_size_inv_ = 1.0 / block_size_;
+
+  LOG(INFO) << "Meters to NTSDF: " << meters_to_ntsdf_ << "\t"
+            << "Max NTSDF voxel weight: " << max_ntsdf_voxel_weight_ << "\n";
 
   CHECK_GT(proto.voxel_size(), 0.0);
   CHECK_GT(proto.voxels_per_volume_side(), 0u);
@@ -165,18 +158,68 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
   return true;
 }
 
-/* TODO (mereweth@jpl.nasa.gov) - do we need this function?
- * Should we specialize or use GenericBlockProto<VoxelType>?
- */
 template <typename VoxelType>
 bool Layer<VoxelType> ::
-    addBlockFromProto(const GenericBlockProto<VoxelType>& block_proto,
+    addBlockFromProto(const BlockProto& block_proto,
                       BlockMergingStrategy strategy) {
   CHECK_NE(getType().compare(voxel_types::kNotSerializable), 0)
       << "The voxel type of this layer is not serializable!";
 
   if (isCompatible(block_proto)) {
     typename BlockType::Ptr block_ptr(new BlockType(block_proto));
+    const BlockIndex block_index =
+        getGridIndexFromOriginPoint(block_ptr->origin(), block_size_inv_);
+    switch (strategy) {
+      case BlockMergingStrategy::kProhibit:
+        CHECK_EQ(block_map_.count(block_index), 0u)
+            << "Block collision at index: " << block_index;
+        block_map_[block_index] = block_ptr;
+      break;
+      case BlockMergingStrategy::kReplace:
+        block_map_[block_index] = block_ptr;
+        break;
+      case BlockMergingStrategy::kDiscard:
+        block_map_.insert(std::make_pair(block_index, block_ptr));
+        break;
+      case BlockMergingStrategy::kMerge: {
+        typename BlockHashMap::iterator it = block_map_.find(block_index);
+        if (it == block_map_.end()) {
+          block_map_[block_index] = block_ptr;
+        } else {
+          it->second->mergeBlock(*block_ptr);
+        }
+      } break;
+      default:
+        LOG(FATAL) << "Unknown BlockMergingStrategy: "
+                   << static_cast<int>(strategy);
+        return false;
+    }
+    // Mark that this block has been updated.
+    block_map_[block_index]->updated() = true;
+  } else {
+    LOG(ERROR)
+        << "The blocks from this protobuf are not compatible with this layer!";
+    return false;
+  }
+  return true;
+}
+
+/* TODO (mereweth@jpl.nasa.gov) - needed to change the signature of BlockType
+ * constructor (which is just Block<VoxelType> constructor, typedef-ed)
+ * is this the best way?
+ */
+template <>
+inline bool Layer<TangoTsdfVoxel> ::
+    addBlockFromProto(const tsdf2::VolumeProto& block_proto,
+                      BlockMergingStrategy strategy) {
+  CHECK_EQ(getType().compare(voxel_types::kTangoTsdf), 0)
+      << "The voxel type of this layer is not TangoTsdfVoxel!";
+
+  if (isCompatible(block_proto)) {
+    typename BlockType::Ptr block_ptr(new BlockType(block_proto,
+                                                    max_ntsdf_voxel_weight_,
+                                                    meters_to_ntsdf_));
+
     const BlockIndex block_index =
         getGridIndexFromOriginPoint(block_ptr->origin(), block_size_inv_);
     switch (strategy) {
@@ -224,6 +267,9 @@ bool Layer<VoxelType>::isCompatible(const LayerProto& layer_proto) const {
 }
 
 // Tango TSDF Layer only compatible with itself for now
+/* TODO(mereweth@jpl.nasa.gov) - better to warn at compile time by commenting
+ * this out?
+ */
 template <typename VoxelType>
 bool Layer<VoxelType>::isCompatible(const tsdf2::MapHeaderProto& layer_proto) const {
   return false;

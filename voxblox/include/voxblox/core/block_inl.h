@@ -26,9 +26,13 @@ Block<VoxelType>::Block(const BlockProto& proto)
 }
 
 template <>
-inline Block<TangoTsdfVoxel>::Block(const tsdf2::VolumeProto& proto)
+inline Block<TangoTsdfVoxel>::Block(const tsdf2::VolumeProto& proto,
+                                    unsigned int max_ntsdf_voxel_weight,
+                                    FloatingPoint meters_to_ntsdf)
     : Block(proto.voxels_per_side(), proto.voxel_size(),
-            Point(proto.origin().x(), proto.origin().y(), proto.origin().z())) {
+            Point(proto.origin().x(), proto.origin().y(), proto.origin().z()),
+            max_ntsdf_voxel_weight,
+            meters_to_ntsdf) {
             // Point(proto.index().x() * proto.voxel_size() * proto.voxels_per_side(),
             // proto.origin().y() * proto.voxel_size() * proto.voxels_per_side(),
             // proto.origin().z() * proto.voxel_size() * proto.voxels_per_side())) {

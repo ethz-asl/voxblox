@@ -1,6 +1,8 @@
 #include "voxblox/core/block.h"
 #include "voxblox/core/voxel.h"
 
+#include <cstdint>
+
 namespace voxblox {
 
 // Hidden serialization helpers:
@@ -47,10 +49,15 @@ void Block<TangoTsdfVoxel>::deserializeFromIntegers(
     TangoTsdfVoxel& voxel = voxels_[voxel_idx];
 
     // TODO(mfehr, helenol): find a better way to do this!
+
     // TODO(mereweth@jpl.nasa.gov) - is this actually fine?
 
-    voxel.distance = static_cast<uint32_t>(bytes_1 >> 16);
-    voxel.weight = static_cast<uint32_t>(bytes_1 & 0x0000FFFF);
+    voxel.distance = static_cast<int16_t>(bytes_1 >> 16)
+                     * meters_to_ntsdf_;
+
+    voxel.weight = static_cast<float>(max_ntsdf_voxel_weight_)
+                   / static_cast<float>(UINT16_MAX)
+                   * static_cast<uint16_t>(bytes_1 & 0x0000FFFF);
 
     voxel.color.r = static_cast<uint8_t>(bytes_2 >> 24);
     voxel.color.g = static_cast<uint8_t>((bytes_2 & 0x00FF0000) >> 16);
