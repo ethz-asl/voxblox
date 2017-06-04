@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
 
   if (argc != 3) {
-    throw std::runtime_error("Enter filename to load, followed by filename to save to");
+    throw std::runtime_error("Args: filename to load, followed by filename to save to");
   }
 
   const std::string file = argv[1];
@@ -33,17 +33,14 @@ int main(int argc, char** argv) {
   std::unique_ptr<MeshIntegrator<TangoTsdfVoxel> > mesh_integrator_;
 
   mesh_layer_.reset(new MeshLayer(layer_from_file->block_size()));
-
   mesh_integrator_.reset(new MeshIntegrator<TangoTsdfVoxel>(
       mesh_config, layer_from_file.get(), mesh_layer_.get()));
 
   mesh_integrator_->generateWholeMesh();
-
   std::cout << "Number of meshes: " << mesh_layer_->getNumberOfAllocatedMeshes() << "\n";
+  bool meshSuccess = outputMeshLayerAsPly(argv[2], *mesh_layer_);
 
-  bool success = outputMeshLayerAsPly(argv[2], *mesh_layer_);
-
-  if (success == false) {
+  if (meshSuccess == false) {
     throw std::runtime_error("Failed to save mesh");
   }
 

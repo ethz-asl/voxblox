@@ -60,10 +60,15 @@ target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 # BINARIES #
 ############
 
-add_executable(inspect_protobuf
-  test/inspect_protobuf.cc
+add_executable(mesh_tango_tsdf
+  test/mesh_tango_tsdf.cc
 )
-target_link_libraries(inspect_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(mesh_tango_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+add_executable(tango_tsdf_to_esdf
+  test/tango_tsdf_to_esdf.cc
+)
+target_link_libraries(tango_tsdf_to_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 #########
 # TESTS #
