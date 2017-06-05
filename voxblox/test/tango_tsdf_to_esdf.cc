@@ -37,6 +37,8 @@ int main(int argc, char** argv) {
 
   // Same number of voxels per side for ESDF as with TSDF
   esdf_config.esdf_voxels_per_side = layer_from_file->voxels_per_side();
+  // Same voxel size for ESDF as with TSDF
+  esdf_config.esdf_voxel_size = layer_from_file->voxel_size();
   esdf_map_.reset(new EsdfMap(esdf_config));
   EsdfTangoIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
@@ -48,7 +50,11 @@ int main(int argc, char** argv) {
                                                  esdf_map_->getEsdfLayerPtr()));
   esdf_integrator_->updateFromTsdfLayerBatch();
 
-  io::SaveLayer(esdf_map_->getEsdfLayer(), argv[2]);
+  bool esdfSuccess = io::SaveLayer(esdf_map_->getEsdfLayer(), argv[2]);
+
+  if (esdfSuccess == false) {
+    throw std::runtime_error("Failed to save ESDF");
+  }
 
   return 0;
 }
