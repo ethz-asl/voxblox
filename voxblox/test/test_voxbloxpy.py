@@ -15,9 +15,15 @@ query = np.matrix([[0,0,0.1],
                    [0.1,0.1,0],
                    [0,0.1,0]], dtype='double').T
 
-obs = np.matrix(np.zeros(np.shape(query)[1], dtype='int32')).T
+grad = np.matrix(np.zeros(np.shape(query), dtype='double'))
+
+dist = np.matrix(np.zeros((np.shape(query)[1], 1), dtype='double'))
+
+obs = np.matrix(np.zeros((np.shape(query)[1], 1), dtype='int32'))
+
 map.isObserved(query, obs)
-obs
+map.getDistanceAtPosition(query, dist, obs)
+map.getDistanceAndGradientAtPosition(query, dist, grad, obs)
 
 try:
   import IPython; IPython.embed()
