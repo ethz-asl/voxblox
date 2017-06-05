@@ -67,17 +67,20 @@ class EsdfMap {
   using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
   template <typename MatrixType> using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
 
-  std::vector<bool> batchGetDistanceAtPosition(
+  void batchGetDistanceAtPosition(
     EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    std::vector<double> distances) const;
+    Eigen::Ref<Eigen::VectorXd> distances,
+    Eigen::Ref<Eigen::VectorXi> observed) const;
 
-  std::vector<bool> batchGetDistanceAndGradientAtPosition(
+  void batchGetDistanceAndGradientAtPosition(
     EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    std::vector<double> distances,
-    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients) const;
+    Eigen::Ref<Eigen::VectorXd> distances,
+    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients,
+    Eigen::Ref<Eigen::VectorXi> observed) const;
 
-  std::vector<bool> batchIsObserved(
-    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions) const;
+  void batchIsObserved(
+    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    Eigen::Ref<Eigen::VectorXi> observed) const;
 
  protected:
   FloatingPoint block_size_;
