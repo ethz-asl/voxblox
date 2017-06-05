@@ -10,6 +10,8 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/interpolator/interpolator.h"
 
+#include "voxblox/io/layer_io.h"
+
 namespace voxblox {
 
 class EsdfMap {
@@ -26,6 +28,14 @@ class EsdfMap {
                                          config.esdf_voxels_per_side)),
         interpolator_(esdf_layer_.get()) {
     block_size_ = config.esdf_voxel_size * config.esdf_voxels_per_side;
+  }
+
+  EsdfMap(const std::string& file_path)
+      : interpolator_(esdf_layer_.get()) {
+    io::LoadLayer<EsdfVoxel>(file_path, &esdf_layer_);
+    interpolator_ = Interpolator<EsdfVoxel>(esdf_layer_.get());
+
+    block_size_ = esdf_layer_->block_size();
   }
 
   virtual ~EsdfMap() {}
