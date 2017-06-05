@@ -152,7 +152,7 @@ class VoxbloxNode {
   std::shared_ptr<OccupancyIntegrator> occupancy_integrator_;
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;
-  std::shared_ptr<MeshIntegrator> mesh_integrator_;
+  std::shared_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
 
   // Transform queue, used only when use_tf_transforms is false.
   std::deque<geometry_msgs::TransformStamped> transform_queue_;
@@ -333,13 +333,13 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     color_mode_ = ColorMode::kGray;
   }
 
-  MeshIntegrator::Config mesh_config;
+  MeshIntegrator<TsdfVoxel>::Config mesh_config;
   nh_private_.param("mesh_min_weight", mesh_config.min_weight,
                     mesh_config.min_weight);
 
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
-  mesh_integrator_.reset(new MeshIntegrator(
+  mesh_integrator_.reset(new MeshIntegrator<TsdfVoxel>(
       mesh_config, tsdf_map_->getTsdfLayerPtr(), mesh_layer_.get()));
 
   // Advertise services.
