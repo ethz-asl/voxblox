@@ -57,6 +57,28 @@ class EsdfMap {
 
   bool isObserved(const Eigen::Vector3d& position) const;
 
+  // Convenience functions for querying many points at once from Python
+
+  // TODO(mereweth@jpl.nasa.gov) - double check that position can not be mutated
+  // EigenDRef is fully dynamic stride type alias for Numpy array slices
+  // Use column-major matrices; column-by-column traversal is faster
+
+  // convenience alias borrowed from pybind11
+  using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+  template <typename MatrixType> using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
+
+  std::vector<bool> batchGetDistanceAtPosition(
+    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    std::vector<double> distances) const;
+
+  std::vector<bool> batchGetDistanceAndGradientAtPosition(
+    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    std::vector<double> distances,
+    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients) const;
+
+  std::vector<bool> batchIsObserved(
+    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions) const;
+
  protected:
   FloatingPoint block_size_;
 
