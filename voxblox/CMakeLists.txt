@@ -67,6 +67,8 @@ target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
 ###################
 # PYTHON BINDINGS #
 ###################
+catkin_python_setup()
+
 # TODO(mereweth@jpl.nasa.gov) - how to tell pybind11 about an existing library?
 # or should we just use the pybind library for everything?
 add_subdirectory(pybind11)
@@ -77,6 +79,14 @@ pybind11_add_module(voxbloxpy
   src/pybind11/esdf_map_bind.cc)
 set_target_properties(voxbloxpy PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(voxbloxpy PUBLIC ${PROTOBUF_LIBRARIES} ${catkin_LIBRARIES})
+
+# TODO(mereweth@jpl.nasa.gov) - is there a better way to make this importable?
+#cs_add_targets_to_package(voxbloxpy)
+
+# TODO(mereweth@jpl.nasa.gov) - this is a bit hacky but it works
+set_target_properties(voxbloxpy
+  PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+  ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}/../)
 
 ############
 # BINARIES #
