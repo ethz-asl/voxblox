@@ -2,6 +2,7 @@
 #define VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <queue>
@@ -29,6 +30,8 @@ class TsdfIntegrator {
     bool use_const_weight = false;
     bool allow_clear = true;
     bool use_weight_dropoff = true;
+    bool use_sparsity_compensation_factor = false;
+    float sparsity_compensation_factor = 1.0f;
     size_t integrator_threads = std::thread::hardware_concurrency();
   };
 
@@ -101,6 +104,18 @@ class TsdfIntegrator {
       updated_weight = weight * (truncation_distance + sdf) /
                        (truncation_distance - dropoff_epsilon);
       updated_weight = std::max(updated_weight, 0.0f);
+    }
+
+    // Compute the updated weight in case we compensate for sparsity. By
+    // multiplicating the weight of occupied areas (|sdf| < truncation distance)
+    // by a factor, we prevent to easily fade out these areas with the free
+    // space parts of other rays which pass through the corresponding voxels.
+    // This can be useful for creating a TSDF map from sparse sensor data (e.g.
+    // visual features from a SLAM system). By default, this option is disabled.
+    if (config_.use_sparsity_compensation_factor) {
+      if (std::abs(sdf) < config_.default_truncation_distance) {
+        updated_weight *= config_.sparsity_compensation_factor;
+      }
     }
 
     const float new_weight = tsdf_voxel->weight + updated_weight;
