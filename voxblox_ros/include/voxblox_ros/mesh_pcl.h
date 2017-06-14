@@ -31,18 +31,6 @@
 #include <voxblox/core/common.h>
 #include <voxblox/mesh/mesh_layer.h>
 
-/*#include <algorithm>
-#include <eigen_conversions/eigen_msg.h>
-#include <visualization_msgs/Marker.h>
-
-#include <voxblox/core/common.h>
-#include <voxblox/integrator/esdf_integrator.h>
-#include <voxblox/integrator/tsdf_integrator.h>
-#include <voxblox/mesh/mesh.h>
-#include <voxblox/mesh/mesh_layer.h>
-
-#include "voxblox_ros/conversions.h"*/
-
 namespace voxblox {
 
 inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
