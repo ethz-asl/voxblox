@@ -112,6 +112,13 @@ void EsdfServer::updateMesh() {
   TsdfServer::updateMesh();
 }
 
+void EsdfServer::updateEsdf() {
+  if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+    const bool clear_updated_flag_esdf = true;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+  }
+}
+
 void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
   if (clear_sphere_for_planning_) {
     esdf_integrator_->addNewRobotPosition(T_G_C.getPosition());
@@ -133,6 +140,7 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
 
 void EsdfServer::clear() {
   esdf_map_->getEsdfLayerPtr()->removeAllBlocks();
+  esdf_integrator_->clear();
 
   TsdfServer::clear();
 }

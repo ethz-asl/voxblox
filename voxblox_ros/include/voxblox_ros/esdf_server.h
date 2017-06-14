@@ -23,6 +23,10 @@ class EsdfServer : public TsdfServer {
   virtual void updateMesh();
   virtual void newPoseCallback(const Transformation& T_G_C);
 
+  // Call updateMesh if you want everything updated; call this specifically
+  // if you don't want the mesh or visualization.
+  void updateEsdf();
+
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
   std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
