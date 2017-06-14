@@ -1,4 +1,3 @@
-#include <deque>
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_xml.h>
@@ -12,6 +11,7 @@
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <deque>
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>
@@ -23,9 +23,9 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
+#include <voxblox_msgs/FilePath.h>
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
-#include <voxblox_msgs/FilePath.h>
 
 namespace voxblox {
 
@@ -36,7 +36,9 @@ class VoxbloxNode {
 
   VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
-  void insertPointcloudWithTf(const sensor_msgs::PointCloud2::Ptr& pointcloud);
+  void insertPointcloudWithTf(
+      const sensor_msgs::PointCloud2::ConstPtr& pointcloud,
+      const bool freespace);
 
   bool lookupTransform(const std::string& from_frame,
                        const std::string& to_frame, const ros::Time& timestamp,
@@ -113,7 +115,8 @@ class VoxbloxNode {
 
   // Keep track of these for throttling.
   ros::Duration min_time_between_msgs_;
-  ros::Time last_msg_time_;
+  ros::Time last_msg_time_points_;
+  ros::Time last_msg_time_freespace_;
 
   // To be replaced (at least optionally) with odometry + static transform
   // from IMU to visual frame.
@@ -121,6 +124,7 @@ class VoxbloxNode {
 
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
+  ros::Subscriber freespace_pointcloud_sub_;
   // Only used if use_tf_transforms_ set to false.
   ros::Subscriber transform_sub_;
 
@@ -186,7 +190,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Determine which parts to generate.
   nh_private_.param("generate_esdf", generate_esdf_, generate_esdf_);
   nh_private_.param("output_mesh_as_pointcloud", output_mesh_as_pointcloud_,
-                  output_mesh_as_pointcloud_);
+                    output_mesh_as_pointcloud_);
   nh_private_.param("slice_level", slice_level_, slice_level_);
   nh_private_.param("world_frame", world_frame_, world_frame_);
   nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
@@ -195,26 +199,25 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   mesh_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
   surface_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
           "surface_pointcloud", 1, true);
-  tsdf_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
-                                                              1, true);
+  tsdf_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+      "tsdf_pointcloud", 1, true);
 
   if (output_mesh_as_pointcloud_) {
     mesh_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
             "mesh_pointcloud", 1, true);
   }
 
-  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
       "tsdf_slice", 1, true);
 
   if (generate_esdf_) {
     esdf_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
             "esdf_pointcloud", 1, true);
-    esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+    esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
         "esdf_slice", 1, true);
   }
 
@@ -231,8 +234,15 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size,
                     pointcloud_queue_size);
 
-  pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size,
-                                  &VoxbloxNode::insertPointcloudWithTf, this);
+  pointcloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
+      "pointcloud", pointcloud_queue_size,
+      boost::bind(&VoxbloxNode::insertPointcloudWithTf, this, _1, false));
+
+  // points that are not inside an object, but may also not be on a surface.
+  // These will only be used to mark freespace beyond the truncation distance.
+  freespace_pointcloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
+      "freespace_pointcloud", pointcloud_queue_size,
+      boost::bind(&VoxbloxNode::insertPointcloudWithTf, this, _1, true));
 
   nh_private_.param("verbose", verbose_, verbose_);
   nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
@@ -424,12 +434,20 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
 }
 
 void VoxbloxNode::insertPointcloudWithTf(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg,
+    const bool freespace) {
   // Figure out if we should insert this.
-  if (pointcloud_msg->header.stamp - last_msg_time_ < min_time_between_msgs_) {
+  ros::Time* last_msg_time;
+  if (freespace) {
+    last_msg_time = &last_msg_time_freespace_;
+  } else {
+    last_msg_time = &last_msg_time_points_;
+  }
+
+  if (pointcloud_msg->header.stamp - *last_msg_time < min_time_between_msgs_) {
     return;
   }
-  last_msg_time_ = pointcloud_msg->header.stamp;
+  *last_msg_time = pointcloud_msg->header.stamp;
 
   // Look up transform from sensor frame to world frame.
   Transformation T_G_C;
@@ -438,11 +456,11 @@ void VoxbloxNode::insertPointcloudWithTf(
     // Convert the PCL pointcloud into our awesome format.
     // TODO(helenol): improve...
     // Horrible hack fix to fix color parsing colors in PCL.
-    for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
+    /*for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
       if (pointcloud_msg->fields[d].name == std::string("rgb")) {
         pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
       }
-    }
+    }*/
 
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
@@ -482,17 +500,23 @@ void VoxbloxNode::insertPointcloudWithTf(
     if (method_ == Method::kMerged) {
       bool discard = false;
       tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
-                                                  discard);
+                                                  discard, freespace);
     } else if (method_ == Method::kMergedDiscard) {
       bool discard = true;
       tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
-                                                  discard);
+                                                  discard, freespace);
     } else {
-      tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
+      // ray clearing is not currently used by non-merge integrator
+      if (!freespace) {
+        tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
+      }
     }
 
     if (generate_occupancy_) {
-      occupancy_integrator_->integratePointCloud(T_G_C, points_C);
+      // ray clearing is not currently used by non-merge integrator
+      if (!freespace) {
+        occupancy_integrator_->integratePointCloud(T_G_C, points_C);
+      }
     }
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
@@ -721,7 +745,7 @@ bool VoxbloxNode::generateMeshCallback(
   marker_array.markers[0].header.frame_id = world_frame_;
   mesh_pub_.publish(marker_array);
 
-  if(output_mesh_as_pointcloud_){
+  if (output_mesh_as_pointcloud_) {
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
     fillPointcloudWithMesh(mesh_layer_, color_mode_, &pointcloud);
     pointcloud.header.frame_id = world_frame_;
@@ -802,13 +826,13 @@ void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
   marker_array.markers[0].header.frame_id = world_frame_;
   mesh_pub_.publish(marker_array);
 
-  if(output_mesh_as_pointcloud_){
+  if (output_mesh_as_pointcloud_) {
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
     fillPointcloudWithMesh(mesh_layer_, color_mode_, &pointcloud);
     pointcloud.header.frame_id = world_frame_;
     mesh_pointcloud_pub_.publish(pointcloud);
   }
-  
+
   publish_mesh_timer.Stop();
 }
 

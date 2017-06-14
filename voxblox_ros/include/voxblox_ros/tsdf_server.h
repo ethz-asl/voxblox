@@ -34,7 +34,7 @@ class TsdfServer {
   virtual ~TsdfServer() {}
 
   virtual void insertPointcloud(
-      const sensor_msgs::PointCloud2::Ptr& pointcloud);
+      const sensor_msgs::PointCloud2::ConstPtr& pointcloud, const bool freespace);
   virtual void newPoseCallback(const Transformation& new_pose) {}
 
   void publishAllUpdatedTsdfVoxels();
@@ -81,10 +81,12 @@ class TsdfServer {
 
   // Keep track of these for throttling.
   ros::Duration min_time_between_msgs_;
-  ros::Time last_msg_time_;
+  ros::Time last_msg_time_points_;
+  ros::Time last_msg_time_freespace_;
 
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
+  ros::Subscriber freespace_pointcloud_sub_;
 
   // Publish markers for visualization.
   ros::Publisher mesh_pub_;

@@ -314,7 +314,7 @@ void SimulationServer::generateSDF() {
     // Put into the real map.
     bool discard = false;
     tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
-                                                discard);
+                                                discard, false);
 
     if (generate_occupancy_) {
       occ_integrator_->integratePointCloud(T_G_C, ptcloud_C);

@@ -3,14 +3,14 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
 #include <iostream>
 #include <queue>
 #include <thread>
 #include <utility>
+#include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -119,8 +119,14 @@ class TsdfIntegrator {
     }
 
     const float new_weight = tsdf_voxel->weight + updated_weight;
-    tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+
+    // color blending is surprisingly expensive so only do it inside the
+    // truncation distance
+    if (std::abs(sdf) < truncation_distance) {
+      tsdf_voxel->color = Color::blendTwoColors(
+          tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+    }
+
     const float new_sdf =
         (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
         new_weight;
@@ -315,7 +321,12 @@ class TsdfIntegrator {
 
     Point ray_end, ray_start;
     if (clearing_ray) {
-      ray_end = origin + unit_ray * config_.max_ray_length_m;
+      // allow for clearing rays that are not the max_ray_length
+      FloatingPoint ray_length =
+          std::min(config_.max_ray_length_m,
+                   (voxel_info.point_G - origin).norm() -
+                       config_.default_truncation_distance);
+      ray_end = origin + unit_ray * ray_length;
       ray_start = origin;
     } else {
       ray_end =
@@ -419,7 +430,8 @@ class TsdfIntegrator {
 
   void integratePointCloudMerged(const Transformation& T_G_C,
                                  const Pointcloud& points_C,
-                                 const Colors& colors, bool discard) {
+                                 const Colors& colors, const bool discard,
+                                 const bool freespace) {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
@@ -432,7 +444,9 @@ class TsdfIntegrator {
 
     bundleRays(T_G_C, points_C, &voxel_map, &clear_map);
 
-    integrateRays(T_G_C, points_C, colors, discard, false, voxel_map,
+    // if pointcloud marks points in freespace rays can only be used for
+    // clearing
+    integrateRays(T_G_C, points_C, colors, discard, freespace, voxel_map,
                   clear_map);
 
     timing::Timer clear_timer("integrate/clear");

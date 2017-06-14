@@ -24,20 +24,28 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   mesh_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
   surface_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
           "surface_pointcloud", 1, true);
-  tsdf_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
-                                                              1, true);
+  tsdf_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+      "tsdf_pointcloud", 1, true);
 
-  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
       "tsdf_slice", 1, true);
 
   int pointcloud_queue_size = 1;
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size,
                     pointcloud_queue_size);
-  pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size,
-                                  &TsdfServer::insertPointcloud, this);
+
+  auto func = boost::bind(&TsdfServer::insertPointcloud, this, _1, false);
+  pointcloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
+      "pointcloud", pointcloud_queue_size,
+      boost::bind(&TsdfServer::insertPointcloud, this, _1, false));
+
+  // points that are not inside an object, but may also not be on a surface.
+  // These will only be used to mark freespace beyond the truncation distance.
+  freespace_pointcloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
+      "freespace_pointcloud", pointcloud_queue_size,
+      boost::bind(&TsdfServer::insertPointcloud, this, _1, true));
 
   nh_private_.param("verbose", verbose_, verbose_);
   std::string method("merged");
@@ -142,12 +150,19 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 }
 
 void TsdfServer::insertPointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg, const bool freespace) {
   // Figure out if we should insert this.
-  if (pointcloud_msg->header.stamp - last_msg_time_ < min_time_between_msgs_) {
+  ros::Time* last_msg_time;
+  if (freespace) {
+    last_msg_time = &last_msg_time_freespace_;
+  } else {
+    last_msg_time = &last_msg_time_points_;
+  }
+
+  if (pointcloud_msg->header.stamp - *last_msg_time < min_time_between_msgs_) {
     return;
   }
-  last_msg_time_ = pointcloud_msg->header.stamp;
+  *last_msg_time = pointcloud_msg->header.stamp;
 
   // Look up transform from sensor frame to world frame.
   Transformation T_G_C;
@@ -157,11 +172,11 @@ void TsdfServer::insertPointcloud(
     // Convert the PCL pointcloud into our awesome format.
     // TODO(helenol): improve...
     // Horrible hack fix to fix color parsing colors in PCL.
-    for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
+    /*for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
       if (pointcloud_msg->fields[d].name == std::string("rgb")) {
         pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
       }
-    }
+    }*/
 
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
@@ -195,13 +210,16 @@ void TsdfServer::insertPointcloud(
     if (method_ == Method::kMerged) {
       bool discard = false;
       tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
-                                                  discard);
+                                                  discard, freespace);
     } else if (method_ == Method::kMergedDiscard) {
       bool discard = true;
       tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
-                                                  discard);
+                                                  discard, freespace);
     } else {
-      tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
+      //clearing rays are currently not implemented for non-merged clouds
+      if(!freespace){
+        tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
+      }
     }
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
