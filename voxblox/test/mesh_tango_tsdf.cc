@@ -23,6 +23,11 @@ int main(int argc, char** argv) {
   const std::string file = argv[1];
 
   Layer<TangoTsdfVoxel>::Ptr layer_from_file;
+  /* io::LoadLayerHeader<TangoTsdfVoxel>(file, &layer_from_file);
+   * io::LoadBlocksFromFile<TangoTsdfVoxel>(file,
+   *     Layer<TangoTsdfVoxel>::BlockMergingStrategy::kReplace, layer_from_file.get());
+   */
+
   io::LoadLayer<TangoTsdfVoxel>(file, &layer_from_file);
 
   std::cout << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";

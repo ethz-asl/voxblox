@@ -30,13 +30,25 @@ inline Block<TangoTsdfVoxel>::Block(const tsdf2::VolumeProto& proto,
                                     unsigned int max_ntsdf_voxel_weight,
                                     FloatingPoint meters_to_ntsdf)
     : Block(proto.voxels_per_side(), proto.voxel_size(),
-            Point(proto.origin().x(), proto.origin().y(), proto.origin().z()),
+            proto.has_origin() ?
+            Point(proto.origin().x(), proto.origin().y(), proto.origin().z()) :
+            /* NOTE(mereweth@jpl.nasa.gov) - origin field seems to be deprecated
+             * as of 2017/06/15
+             * Without it, loading of old TSDF2 dumps is broken, so we
+             * pass it if present in the protobuf dump
+             */
+            Point(proto.index().x() * proto.voxel_size() * proto.voxels_per_side(),
+                  proto.index().y() * proto.voxel_size() * proto.voxels_per_side(),
+                  proto.index().z() * proto.voxel_size() * proto.voxels_per_side()),
             max_ntsdf_voxel_weight,
             meters_to_ntsdf) {
-            // Point(proto.index().x() * proto.voxel_size() * proto.voxels_per_side(),
-            // proto.origin().y() * proto.voxel_size() * proto.voxels_per_side(),
-            // proto.origin().z() * proto.voxel_size() * proto.voxels_per_side())) {
+
   has_data_ = proto.has_data();
+
+  /* TODO(mereweth@jpl.nasa.gov) - remove debug
+   * LOG(WARNING) << "Has data: " << has_data_;
+   * LOG(WARNING) << "Origin: " << origin_;
+   */
 
   // Convert the data into a vector of integers.
   std::vector<uint32_t> data;

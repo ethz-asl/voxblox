@@ -35,7 +35,8 @@ class Block {
   }
 
   // Construct from Tango TSDF format
-  Block(size_t voxels_per_side, FloatingPoint voxel_size, const Point& origin,
+  Block(size_t voxels_per_side, FloatingPoint voxel_size,
+                                          const Point& origin,
                                           unsigned int max_ntsdf_voxel_weight,
                                           FloatingPoint meters_to_ntsdf)
       : voxels_per_side_(voxels_per_side),
@@ -45,6 +46,7 @@ class Block {
         updated_(false),
         max_ntsdf_voxel_weight_(max_ntsdf_voxel_weight),
         meters_to_ntsdf_(meters_to_ntsdf) {
+
     num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_ = voxels_per_side_ * voxel_size_;
