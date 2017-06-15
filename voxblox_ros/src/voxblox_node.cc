@@ -7,6 +7,7 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
+#include <pcl_msgs/PolygonMesh.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
@@ -24,6 +25,7 @@
 #include <voxblox/mesh/mesh_integrator.h>
 
 #include "voxblox_ros/mesh_vis.h"
+#include "voxblox_ros/mesh_pcl.h"
 #include "voxblox_ros/ptcloud_vis.h"
 #include <voxblox_msgs/FilePath.h>
 
@@ -86,6 +88,7 @@ class VoxbloxNode {
   bool generate_occupancy_;
 
   bool output_mesh_as_pointcloud_;
+  bool output_mesh_as_pcl_mesh_;
 
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
@@ -127,6 +130,7 @@ class VoxbloxNode {
   // Publish markers for visualization.
   ros::Publisher mesh_pub_;
   ros::Publisher mesh_pointcloud_pub_;
+  ros::Publisher mesh_pcl_mesh_pub_;
   ros::Publisher tsdf_pointcloud_pub_;
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
@@ -170,6 +174,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       generate_esdf_(false),
       generate_occupancy_(false),
       output_mesh_as_pointcloud_(false),
+      output_mesh_as_pcl_mesh_(false),
       world_frame_("world"),
       sensor_frame_(""),
       use_tf_transforms_(true),
@@ -186,7 +191,9 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Determine which parts to generate.
   nh_private_.param("generate_esdf", generate_esdf_, generate_esdf_);
   nh_private_.param("output_mesh_as_pointcloud", output_mesh_as_pointcloud_,
-                  output_mesh_as_pointcloud_);
+                    output_mesh_as_pointcloud_);
+  nh_private_.param("output_mesh_as_pcl_mesh", output_mesh_as_pcl_mesh_,
+                    output_mesh_as_pcl_mesh_);
   nh_private_.param("slice_level", slice_level_, slice_level_);
   nh_private_.param("world_frame", world_frame_, world_frame_);
   nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
@@ -205,6 +212,11 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     mesh_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
             "mesh_pointcloud", 1, true);
+  }
+
+  if (output_mesh_as_pcl_mesh_) {
+    mesh_pcl_mesh_pub_ =
+        nh_private_.advertise<pcl_msgs::PolygonMesh>("pcl_mesh", 1, true);
   }
 
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
@@ -728,6 +740,15 @@ bool VoxbloxNode::generateMeshCallback(
     mesh_pointcloud_pub_.publish(pointcloud);
   }
   publish_mesh_timer.Stop();
+
+  if (output_mesh_as_pcl_mesh_) {
+    pcl::PolygonMesh polygon_mesh;
+    toPCLPolygonMesh(*mesh_layer_, world_frame_, &polygon_mesh);
+    pcl_msgs::PolygonMesh mesh_msg;
+    pcl_conversions::fromPCL(polygon_mesh, mesh_msg);
+    mesh_msg.header.stamp = ros::Time::now();
+    mesh_pcl_mesh_pub_.publish(mesh_msg);
+  }
 
   if (!mesh_filename_.empty()) {
     timing::Timer output_mesh_timer("mesh/output");
