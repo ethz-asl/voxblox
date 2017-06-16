@@ -62,7 +62,6 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
 
     for (const VoxelIndex& voxel_index : kv.second) {
       if (!block_ptr->isValidVoxelIndex(voxel_index)) {
-        std::cout << "WTF!!!!\n";
         continue;
       }
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
