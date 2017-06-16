@@ -2,11 +2,12 @@
 #define VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
 
 #include <algorithm>
-#include <vector>
+#include <cmath>
 #include <iostream>
 #include <queue>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 #include <glog/logging.h>
@@ -29,6 +30,8 @@ class TsdfIntegrator {
     bool use_const_weight = false;
     bool allow_clear = true;
     bool use_weight_dropoff = true;
+    bool use_sparsity_compensation_factor = false;
+    float sparsity_compensation_factor = 1.0f;
     size_t integrator_threads = std::thread::hardware_concurrency();
   };
 
@@ -62,8 +65,7 @@ class TsdfIntegrator {
     }
   }
 
-  float getVoxelWeight(const Point& point_C, const Point& point_G,
-                       const Point& origin, const Point& voxel_center) const {
+  float getVoxelWeight(const Point& point_C) const {
     if (config_.use_const_weight) {
       return 1.0;
     }
@@ -74,9 +76,8 @@ class TsdfIntegrator {
     return 0.0;
   }
 
-  inline void updateTsdfVoxel(const Point& origin, const Point& point_C,
-                              const Point& point_G, const Point& voxel_center,
-                              const Color& color,
+  inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
+                              const Point& voxel_center, const Color& color,
                               const float truncation_distance,
                               const float weight, TsdfVoxel* tsdf_voxel) {
     // Figure out whether the voxel is behind or in front of the surface.
@@ -101,6 +102,18 @@ class TsdfIntegrator {
       updated_weight = weight * (truncation_distance + sdf) /
                        (truncation_distance - dropoff_epsilon);
       updated_weight = std::max(updated_weight, 0.0f);
+    }
+
+    // Compute the updated weight in case we compensate for sparsity. By
+    // multiplicating the weight of occupied areas (|sdf| < truncation distance)
+    // by a factor, we prevent to easily fade out these areas with the free
+    // space parts of other rays which pass through the corresponding voxels.
+    // This can be useful for creating a TSDF map from sparse sensor data (e.g.
+    // visual features from a SLAM system). By default, this option is disabled.
+    if (config_.use_sparsity_compensation_factor) {
+      if (std::abs(sdf) < config_.default_truncation_distance) {
+        updated_weight *= config_.sparsity_compensation_factor;
+      }
     }
 
     const float new_weight = tsdf_voxel->weight + updated_weight;
@@ -197,9 +210,8 @@ class TsdfIntegrator {
             block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
         TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
 
-        const float weight =
-            getVoxelWeight(point_C, point_G, origin, voxel_center_G);
-        updateTsdfVoxel(origin, point_C, point_G, voxel_center_G, color,
+        const float weight = getVoxelWeight(point_C);
+        updateTsdfVoxel(origin, point_G, voxel_center_G, color,
                         truncation_distance, weight, &tsdf_voxel);
       }
       update_voxels_timer.Stop();
@@ -251,9 +263,8 @@ class TsdfIntegrator {
     TsdfVoxel& tsdf_voxel =
         block->getVoxelByVoxelIndex(voxel_info.local_voxel_idx);
 
-    updateTsdfVoxel(origin, voxel_info.point_C, voxel_info.point_G,
-                    voxel_center_G, voxel_info.voxel.color,
-                    config_.default_truncation_distance,
+    updateTsdfVoxel(origin, voxel_info.point_G, voxel_center_G,
+                    voxel_info.voxel.color, config_.default_truncation_distance,
                     voxel_info.voxel.weight, &tsdf_voxel);
   }
 
@@ -279,9 +290,7 @@ class TsdfIntegrator {
       const Point& point_C = points_C[pt_idx];
       const Color& color = colors[pt_idx];
 
-      float point_weight = getVoxelWeight(
-          point_C, T_G_C * point_C, origin,
-          (kv.first.cast<FloatingPoint>() + voxel_center_offset) * voxel_size_);
+      float point_weight = getVoxelWeight(point_C);
       voxel_info.point_C = (voxel_info.point_C * voxel_info.voxel.weight +
                             point_C * point_weight) /
                            (voxel_info.voxel.weight + point_weight);
