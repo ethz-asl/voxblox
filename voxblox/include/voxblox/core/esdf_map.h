@@ -88,6 +88,15 @@ class EsdfMap {
     EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
     Eigen::Ref<Eigen::VectorXi> observed) const;
 
+  unsigned int coordPlaneSliceGetCount(unsigned int free_plane_index,
+                                       double free_plane_val) const;
+
+  unsigned int coordPlaneSliceGetDistance(
+    unsigned int free_plane_index,
+    double free_plane_val,
+    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    Eigen::Ref<Eigen::VectorXd> distances) const;
+
  protected:
   FloatingPoint block_size_;
 

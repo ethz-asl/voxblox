@@ -109,6 +109,11 @@ add_executable(tango_tsdf_to_esdf
 )
 target_link_libraries(tango_tsdf_to_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
+add_executable(tsdf_to_esdf
+  test/tsdf_to_esdf.cc
+)
+target_link_libraries(tsdf_to_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+
 add_executable(test_load_esdf
   test/test_load_esdf.cc
 )

@@ -129,7 +129,7 @@ typename Layer<VoxelType>::Ptr LoadOrCreateLayerHeader(
     layer_ptr = aligned_shared<Layer<VoxelType> >(layer_proto);
   }
   else {
-    layer_ptr = std::make_shared<Layer<VoxelType> >(0.2, 16u);
+    layer_ptr = std::make_shared<Layer<VoxelType> >(voxel_size, voxels_per_side);
   }
   CHECK(layer_ptr);
 
