@@ -3,10 +3,15 @@
 import sys;
 sys.path.append('/Users/mereweth/snappy/tsdf_catkin_ws/devel/.private/voxblox/lib/')
 
-import voxbloxpy
-dir(voxbloxpy.EsdfMap)
+import voxblox
+dir(voxblox.EsdfMap)
 
-map = voxbloxpy.EsdfMap('/Users/mereweth/Desktop/esdf_map.proto')
+try:
+    map = voxblox.EsdfMap('THIS_DOES_NOT_EXIST')
+except RuntimeError as e:
+    print(e)
+
+map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella_esdf.proto')
 
 import numpy as np
 

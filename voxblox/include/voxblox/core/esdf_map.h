@@ -31,10 +31,16 @@ class EsdfMap {
   }
 
   EsdfMap(const std::string& file_path)
-      : interpolator_(esdf_layer_.get()) {
-    io::LoadLayer<EsdfVoxel>(file_path, &esdf_layer_);
-    interpolator_ = Interpolator<EsdfVoxel>(esdf_layer_.get());
-
+      : esdf_layer_(io::LoadOrCreateLayerHeader<EsdfVoxel>(file_path,
+                                                           0.2,
+                                                           16u)),
+        interpolator_(esdf_layer_.get()) {
+    if (!io::LoadBlocksFromFile<EsdfVoxel>(file_path,
+                                           Layer<EsdfVoxel>::BlockMergingStrategy::kProhibit,
+                                           esdf_layer_.get())) {
+      // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
+      throw std::runtime_error(std::string("Invalid file path: ") + file_path);
+    }
     block_size_ = esdf_layer_->block_size();
   }
 
