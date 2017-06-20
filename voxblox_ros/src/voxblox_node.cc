@@ -230,10 +230,10 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
         "esdf_slice", 1, true);
   }
 
-  if (generate_occupancy_) {
-    occupancy_marker_pub_ =
+  occupancy_marker_pub_ =
         nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
                                                                1, true);
+  if (generate_occupancy_) {
     occupancy_layer_pub_ =
         nh_private_.advertise<visualization_msgs::MarkerArray>(
             "occupancy_layer", 1, true);
