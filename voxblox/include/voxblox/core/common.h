@@ -108,6 +108,10 @@ struct Color {
   static const Color Pink() { return Color(255, 0, 127); }
 };
 
+// Constants used across the library.
+constexpr FloatingPoint kEpsilon = 1e-6;  // Used for coordinates.
+constexpr float kFloatEpsilon = 1e-6;     // Used for weights.
+
 // Grid <-> point conversion functions.
 
 // IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
@@ -115,7 +119,6 @@ struct Color {
 // near the grid cell boundaries.
 inline AnyIndex getGridIndexFromPoint(const Point& point,
                                       const FloatingPoint grid_size_inv) {
-  const FloatingPoint kEpsilon = 1e-6;
   return AnyIndex(std::floor(point.x() * grid_size_inv + kEpsilon),
                   std::floor(point.y() * grid_size_inv + kEpsilon),
                   std::floor(point.z() * grid_size_inv + kEpsilon));
@@ -125,8 +128,9 @@ inline AnyIndex getGridIndexFromPoint(const Point& point,
 // function doesn't always compute the correct grid index for coordinates
 // near the grid cell boundaries.
 inline AnyIndex getGridIndexFromPoint(const Point& scaled_point) {
-  return AnyIndex(std::floor(scaled_point.x()), std::floor(scaled_point.y()),
-                  std::floor(scaled_point.z()));
+  return AnyIndex(std::floor(scaled_point.x() + kEpsilon),
+                  std::floor(scaled_point.y() + kEpsilon),
+                  std::floor(scaled_point.z() + kEpsilon));
 }
 
 inline AnyIndex getGridIndexFromOriginPoint(const Point& point,

@@ -70,7 +70,7 @@ class TsdfIntegrator {
       return 1.0;
     }
     FloatingPoint dist_z = std::abs(point_C.z());
-    if (dist_z > 1e-6) {
+    if (dist_z > kEpsilon) {
       return 1.0 / (dist_z * dist_z);
     }
     return 0.0;

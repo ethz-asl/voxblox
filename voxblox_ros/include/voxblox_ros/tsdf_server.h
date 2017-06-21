@@ -35,12 +35,18 @@ class TsdfServer {
 
   virtual void insertPointcloud(
       const sensor_msgs::PointCloud2::Ptr& pointcloud);
+
+  void integratePointcloud(const Transformation& T_G_C,
+                           const Pointcloud& ptcloud_C, const Colors& colors);
   virtual void newPoseCallback(const Transformation& new_pose) {}
 
   void publishAllUpdatedTsdfVoxels();
   void publishTsdfSurfacePoints();
   void publishTsdfOccupiedNodes();
+
   virtual void publishSlices();
+  virtual void updateMesh();    // Incremental update.
+  virtual bool generateMesh();  // Batch update.
 
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
@@ -49,13 +55,16 @@ class TsdfServer {
   bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
                             std_srvs::Empty::Response& response);    // NOLINT
 
-  virtual void updateMeshEvent(const ros::TimerEvent& event);
+  void updateMeshEvent(const ros::TimerEvent& event);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
 
   // Accessors for setting and getting parameters.
   double getSliceLevel() const { return slice_level_; }
   void setSliceLevel(double slice_level) { slice_level_ = slice_level; }
+
+  // CLEARS THE ENTIRE MAP!
+  virtual void clear();
 
  protected:
   ros::NodeHandle nh_;

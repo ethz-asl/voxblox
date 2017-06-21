@@ -92,7 +92,7 @@ bool EsdfServer::generateEsdfCallback(
   return true;
 }
 
-void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
+void EsdfServer::updateMesh() {
   // Also update the ESDF now, if there's any blocks in the TSDF.
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = false;
@@ -109,7 +109,14 @@ void EsdfServer::updateMeshEvent(const ros::TimerEvent& event) {
     esdf_map_pub_.publish(layer_msg);
   }
 
-  TsdfServer::updateMeshEvent(event);
+  TsdfServer::updateMesh();
+}
+
+void EsdfServer::updateEsdf() {
+  if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+    const bool clear_updated_flag_esdf = true;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+  }
 }
 
 void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
@@ -129,6 +136,13 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
     publishAllUpdatedEsdfVoxels();
     publishSlices();
   }
+}
+
+void EsdfServer::clear() {
+  esdf_map_->getEsdfLayerPtr()->removeAllBlocks();
+  esdf_integrator_->clear();
+
+  TsdfServer::clear();
 }
 
 }  // namespace voxblox
