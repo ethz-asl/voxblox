@@ -165,8 +165,7 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
         if (it == block_map_.end()) {
           block_map_[block_index] = block_ptr;
         } else {
-          CHECK(it->second->mergeBlock(*block_ptr)) << "Block merging not "
-                                                       "implemented.";
+          it->second->mergeBlock(*block_ptr);
         }
       } break;
       default:
