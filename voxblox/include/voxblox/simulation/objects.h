@@ -121,7 +121,7 @@ class Cube : public Object {
     FloatingPoint distance = distance_vector.norm();
 
     // Basically 0... Means it's inside!
-    if (distance < 1e-6) {
+    if (distance < kEpsilon) {
       distance_vector.x() = std::max(center_.x() - size_.x() / 2.0 - point.x(),
                                      point.x() - center_.x() - size_.x() / 2.0);
       distance_vector.y() = std::max(center_.y() - size_.y() / 2.0 - point.y(),
@@ -222,7 +222,7 @@ class Plane : public Object {
     // x = o + dl is the ray equation
     // n = normal, c = plane 'origin'
     FloatingPoint denominator = ray_direction.dot(normal_);
-    if (std::abs(denominator) < 1e-6) {
+    if (std::abs(denominator) < kEpsilon) {
       // Lines are parallel, no intersection.
       return false;
     }
@@ -306,7 +306,7 @@ class Cylinder : public Object {
     FloatingPoint t2 = -1.0;
 
     // Make sure we don't divide by 0.
-    if (std::abs(a) < 1e-6) {
+    if (std::abs(a) < kEpsilon) {
       return false;
     }
 
@@ -314,7 +314,7 @@ class Cylinder : public Object {
     if (under_square_root < 0) {
       return false;
     }
-    if (under_square_root <= 1e-6) {
+    if (under_square_root <= kEpsilon) {
       t1 = -b / (2 * a);
       // Just keep t2 at invalid default value.
     } else {
@@ -338,7 +338,7 @@ class Cylinder : public Object {
     bool t3_valid = false, t4_valid = false;
 
     // Make sure we don't divide by 0.
-    if (std::abs(vector_D.z()) > 1e-6) {
+    if (std::abs(vector_D.z()) > kEpsilon) {
       // t3 is the bottom end-cap, t4 is the top.
       t3 = (-height_ / 2.0 - vector_E.z()) / vector_D.z();
       t4 = (height_ / 2.0 - vector_E.z()) / vector_D.z();
