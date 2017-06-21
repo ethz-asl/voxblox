@@ -38,6 +38,9 @@ class EsdfMap {
 
   // Specific accessor functions for esdf maps.
   // Returns true if the point exists in the map AND is observed.
+  // These accessors use Vector3d and doubles explicitly rather than
+  // FloatingPoint to have a standard, cast-free interface to planning
+  // functions.
   bool getDistanceAtPosition(const Eigen::Vector3d& position,
                              double* distance) const;
 
