@@ -196,7 +196,8 @@ template <typename VoxelType>
 bool Layer<VoxelType>::isCompatible(const BlockProto& block_proto) const {
   bool compatible = true;
   compatible &= (block_proto.voxel_size() == voxel_size_);
-  compatible &= (block_proto.voxels_per_side() == voxels_per_side_);
+  compatible &=
+      (block_proto.voxels_per_side() == static_cast<int>(voxels_per_side_));
   return compatible;
 }
 
