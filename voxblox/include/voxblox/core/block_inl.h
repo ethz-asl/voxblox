@@ -45,11 +45,6 @@ inline Block<TangoTsdfVoxel>::Block(const tsdf2::VolumeProto& proto,
 
   has_data_ = proto.has_data();
 
-  /* TODO(mereweth@jpl.nasa.gov) - remove debug
-   * LOG(WARNING) << "Has data: " << has_data_;
-   * LOG(WARNING) << "Origin: " << origin_;
-   */
-
   // Convert the data into a vector of integers.
   std::vector<uint32_t> data;
   data.reserve(proto.ntsdf_voxels_size());

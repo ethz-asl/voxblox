@@ -109,13 +109,28 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
     // Iterate over all voxels in said blocks.
     const Block<EsdfVoxel>& block = esdf_layer_->getBlockByIndex(index);
 
+    Point origin = block.origin();
+    if (std::abs(origin(free_plane_index) - free_plane_val)
+                                        > block.block_size() / 2.0) {
+                                        //> esdf_layer_->block_size() / 2.0) {
+      continue;
+    }
+
     for (size_t linear_index = 0; linear_index < num_voxels_per_block;
          ++linear_index) {
       Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
       const EsdfVoxel& voxel = block.getVoxelByLinearIndex(linear_index);
-      if ((std::abs(coord(free_plane_index) - free_plane_val)
-                                          <= esdf_layer_->voxel_size() / 2.0)
-                                          && voxel.observed) {
+      if (std::abs(coord(free_plane_index) - free_plane_val)
+                                          <= voxel.voxel_size() / 2.0) {
+                                          //<= esdf_layer_->voxel_size() / 2.0) {
+        double distance;
+        if (voxel.observed) {
+          distance = voxel.distance;
+        }
+        else {
+          distance = -1;
+        }
+
         if (count < positions.cols()) {
           positions.col(count) = Eigen::Vector3d(coord.x(), coord.y(), coord.z());
         }
@@ -123,7 +138,7 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
           did_all_fit = false;
         }
         if (count < distances.size()) {
-          distances(count) = voxel.distance;
+          distances(count) = distance;
         }
         else {
           did_all_fit = false;
