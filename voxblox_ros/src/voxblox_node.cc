@@ -107,6 +107,9 @@ class VoxbloxNode {
   // Pointcloud visualization settings.
   double slice_level_;
 
+  // If the system should subscribe to a pointcloud giving points in freespace
+  bool use_freespace_pointcloud_;
+
   // Mesh output settings. Mesh is only written to file if mesh_filename_ is
   // not empty.
   std::string mesh_filename_;
@@ -176,6 +179,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       output_mesh_as_pointcloud_(false),
       world_frame_("world"),
       sensor_frame_(""),
+      use_freespace_pointcloud_(false),
       use_tf_transforms_(true),
       // 10 ms here:
       timestamp_tolerance_ns_(10000000),
@@ -238,11 +242,16 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       "pointcloud", pointcloud_queue_size,
       boost::bind(&VoxbloxNode::insertPointcloudWithTf, this, _1, false));
 
-  // points that are not inside an object, but may also not be on a surface.
-  // These will only be used to mark freespace beyond the truncation distance.
-  freespace_pointcloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
-      "freespace_pointcloud", pointcloud_queue_size,
-      boost::bind(&VoxbloxNode::insertPointcloudWithTf, this, _1, true));
+  nh_private_.param("use_freespace_pointcloud", use_freespace_pointcloud_,
+                    use_freespace_pointcloud_);
+
+  if (use_freespace_pointcloud_) {
+    // points that are not inside an object, but may also not be on a surface.
+    // These will only be used to mark freespace beyond the truncation distance.
+    freespace_pointcloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
+        "freespace_pointcloud", pointcloud_queue_size,
+        boost::bind(&VoxbloxNode::insertPointcloudWithTf, this, _1, true));
+  }
 
   nh_private_.param("verbose", verbose_, verbose_);
   nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
@@ -455,12 +464,6 @@ void VoxbloxNode::insertPointcloudWithTf(
                       pointcloud_msg->header.stamp, &T_G_C)) {
     // Convert the PCL pointcloud into our awesome format.
     // TODO(helenol): improve...
-    // Horrible hack fix to fix color parsing colors in PCL.
-    /*for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
-      if (pointcloud_msg->fields[d].name == std::string("rgb")) {
-        pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
-      }
-    }*/
 
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:

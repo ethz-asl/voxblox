@@ -9,8 +9,8 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
-#include <string>
 #include <visualization_msgs/MarkerArray.h>
+#include <string>
 
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/tsdf_integrator.h>
@@ -34,7 +34,8 @@ class TsdfServer {
   virtual ~TsdfServer() {}
 
   virtual void insertPointcloud(
-      const sensor_msgs::PointCloud2::ConstPtr& pointcloud, const bool freespace);
+      const sensor_msgs::PointCloud2::ConstPtr& pointcloud,
+      const bool freespace);
   virtual void newPoseCallback(const Transformation& new_pose) {}
 
   void publishAllUpdatedTsdfVoxels();
@@ -72,6 +73,9 @@ class TsdfServer {
 
   // Pointcloud visualization settings.
   double slice_level_;
+
+  // If the system should subscribe to a pointcloud giving points in freespace
+  bool use_freespace_pointcloud_;
 
   // Mesh output settings. Mesh is only written to file if mesh_filename_ is
   // not empty.

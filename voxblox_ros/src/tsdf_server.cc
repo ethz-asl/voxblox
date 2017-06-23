@@ -7,6 +7,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     : nh_(nh),
       nh_private_(nh_private),
       verbose_(true),
+      use_freespace_pointcloud_(false),
       world_frame_("world"),
       slice_level_(0.5),
       transformer_(nh, nh_private) {
@@ -41,11 +42,16 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "pointcloud", pointcloud_queue_size,
       boost::bind(&TsdfServer::insertPointcloud, this, _1, false));
 
-  // points that are not inside an object, but may also not be on a surface.
-  // These will only be used to mark freespace beyond the truncation distance.
-  freespace_pointcloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
-      "freespace_pointcloud", pointcloud_queue_size,
-      boost::bind(&TsdfServer::insertPointcloud, this, _1, true));
+  nh_private_.param("use_freespace_pointcloud", use_freespace_pointcloud_,
+                    use_freespace_pointcloud_);
+
+  if (use_freespace_pointcloud_) {
+    // points that are not inside an object, but may also not be on a surface.
+    // These will only be used to mark freespace beyond the truncation distance.
+    freespace_pointcloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
+        "freespace_pointcloud", pointcloud_queue_size,
+        boost::bind(&TsdfServer::insertPointcloud, this, _1, true));
+  }
 
   nh_private_.param("verbose", verbose_, verbose_);
   std::string method("merged");
@@ -150,7 +156,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 }
 
 void TsdfServer::insertPointcloud(
-    const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg, const bool freespace) {
+    const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg,
+    const bool freespace) {
   // Figure out if we should insert this.
   ros::Time* last_msg_time;
   if (freespace) {
@@ -216,8 +223,8 @@ void TsdfServer::insertPointcloud(
       tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
                                                   discard, freespace);
     } else {
-      //clearing rays are currently not implemented for non-merged clouds
-      if(!freespace){
+      // clearing rays are currently not implemented for non-merged clouds
+      if (!freespace) {
         tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
       }
     }
