@@ -111,7 +111,8 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
 
     Point origin = block.origin();
     if (std::abs(origin(free_plane_index) - free_plane_val)
-                                        > block.block_size() / 2.0) {
+                                        > block.block_size()) {
+                                        //> block.block_size() / 2.0) {
                                         //> esdf_layer_->block_size() / 2.0) {
       continue;
     }
@@ -121,16 +122,20 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
       Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
       const EsdfVoxel& voxel = block.getVoxelByLinearIndex(linear_index);
       if (std::abs(coord(free_plane_index) - free_plane_val)
-                                          <= voxel.voxel_size() / 2.0) {
+                                          <= block.voxel_size()) {
+                                          //<= block.voxel_size() / 2.0) {
                                           //<= esdf_layer_->voxel_size() / 2.0) {
         double distance;
         if (voxel.observed) {
           distance = voxel.distance;
         }
         else {
-          distance = -1;
+          continue;
+          // TODO(mereweth@jpl.nasa.gov) - how to indicate unobserved?
+          //distance = 0;
         }
 
+        // TODO(mereweth@jpl.nasa.gov) - implement max points to return
         if (count < positions.cols()) {
           positions.col(count) = Eigen::Vector3d(coord.x(), coord.y(), coord.z());
         }
