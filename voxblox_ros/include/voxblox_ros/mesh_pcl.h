@@ -39,35 +39,30 @@ inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
   // Constructing the vertices pointcloud
   pcl::PointCloud<pcl::PointXYZ> pointcloud;
   std::vector<pcl::Vertices> polygons;
-  BlockIndexList mesh_indices;
-  mesh_layer.getAllAllocatedMeshes(&mesh_indices);
-  // Looping over the block indices and adding the pointcloud
-  for (const BlockIndex& block_index : mesh_indices) {
-    // Getting the mesh triangles in this block
-    const Mesh& mesh = mesh_layer.getMeshByIndex(block_index);
-    // Looping over vertices in this mesh
-    for (const Point& point : mesh.vertices) {
-      pointcloud.push_back(pcl::PointXYZ(static_cast<float>(point[0]),
-                                         static_cast<float>(point[1]),
-                                         static_cast<float>(point[2])));
-    }
-    // Adding the triangles
-    VertexIndex last_biggest_index;
-    if (!polygons.empty()) {
-      last_biggest_index = polygons.back().vertices.back();
-    } else {
-      last_biggest_index = -1;
-    }
-    for (size_t start_idx = 0; start_idx < mesh.indices.size();
-         start_idx += 3) {
-      pcl::Vertices vertices;
-      for (int vertex_idx = 0; vertex_idx < 3; vertex_idx++) {
-        vertices.vertices.push_back(
-            last_biggest_index + mesh.indices.at(start_idx + vertex_idx) + 1);
-      }
-      polygons.push_back(vertices);
+
+  Mesh::Ptr mesh =
+      std::make_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
+  mesh_layer.combineMesh(mesh);
+
+  // add points
+  pointcloud.reserve(mesh->vertices.size());
+  for (const Point& point : mesh->vertices) {
+    pointcloud.push_back(pcl::PointXYZ(static_cast<float>(point[0]),
+                                       static_cast<float>(point[1]),
+                                       static_cast<float>(point[2])));
+  }
+  // add triangles
+  pcl::Vertices vertices_idx;
+  polygons.reserve(mesh->indices.size()/3);
+  for (const VertexIndex& idx : mesh->indices) {
+    vertices_idx.vertices.push_back(idx);
+
+    if (vertices_idx.vertices.size() == 3) {
+      polygons.push_back(vertices_idx);
+      vertices_idx.vertices.clear();
     }
   }
+
   // Converting to the pointcloud binary
   pcl::PCLPointCloud2 pointcloud2;
   pcl::toPCLPointCloud2(pointcloud, pointcloud2);
