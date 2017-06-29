@@ -112,7 +112,7 @@ A summary of the user setable voxblox_node parameters:
 | `sensor_frame` | The sensor frame used when looking up tf transforms. | "" |
 | `pointcloud_queue_size` | The size of the queue used to subscribe to pointclouds. | 1 |
 | `verbose` | Prints additional debug and timing information. | true |
-| `color_ptcloud_by_weight` | ??????? | false |
+| `color_ptcloud_by_weight` | If the pointcloud should be colored by the voxel weighting | false |
 | `method` | Method to use for integrating new readings into the tsdf. Options are "merged", "simple" and "merged_discard" | "merged" |
 | `tsdf_voxel_size` | The size of the tsdf voxels | 0.2 |
 | `tsdf_voxels_per_side` | TSDF voxels per side of an allocated block | 16 |
@@ -127,8 +127,13 @@ A summary of the user setable voxblox_node parameters:
 | `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
 | `mesh_filename` | Filename output mesh will be saved to, leave blank if no file should be generated | "" |
 | `color_mode` | The method that will be used for coloring the mesh. Options are "color", "height", "normals" and "lambert". | "color" |
-| `mesh_min_weight` | The minimum weighting needed for a point to be included in the mesh | `1e-4` |
-
+| `mesh_min_weight` | The minimum weighting needed for a point to be included in the mesh | 1e-4 |
+| `update_mesh_every_n_sec` | Rate at which the mesh topic will be published to, a value of 0 disables. Note, this will not trigger any other mesh operations, such as generating a ply file. | 0.0 |
+| `use_tf_transforms` | If true the ros tf tree will be used to get the pose of the sensor relative to the world (`sensor_frame` and `world_frame` will be used). If false the pose must be given via the `transform` topic. | true |
+| `T_B_D` | A static transformation from the base to the dynamic system that will be applied | N/A |
+| `invert_T_B_D` | If the given `T_B_D` should be inverted before it is used | false |
+| `T_B_C` | A static transformation from the base to the sensor that will be applied | N/A |
+| `invert_T_B_C` | If the given `T_B_C` should be inverted before it is used | false |
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
