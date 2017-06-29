@@ -26,8 +26,8 @@ namespace voxblox {
 
 bool outputMeshLayerAsPly(const std::string& filename,
                           const MeshLayer& mesh_layer) {
-  
-  Mesh::Ptr combined_mesh;
+  Mesh::Ptr combined_mesh =
+      std::make_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
   mesh_layer.combineMesh(combined_mesh);
 
   bool success = outputMeshAsPly(filename, *combined_mesh);
@@ -59,7 +59,6 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
   stream << "element face " << mesh.indices.size() / 3 << std::endl;
   stream << "property list uchar int vertex_index" << std::endl;
   stream << "end_header" << std::endl;
-
   size_t vert_idx = 0;
   for (const Point& vert : mesh.vertices) {
     stream << vert(0) << " " << vert(1) << " " << vert(2);
@@ -76,8 +75,7 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
     stream << std::endl;
     vert_idx++;
   }
-
-  /*for (size_t i = 0; i < mesh.indices.size(); i += 3) {
+  for (size_t i = 0; i < mesh.indices.size(); i += 3) {
     stream << "3 ";
 
     for (int j = 0; j < 3; j++) {
@@ -85,8 +83,7 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
     }
 
     stream << std::endl;
-  }*/
-
+  }
   return true;
 }
 

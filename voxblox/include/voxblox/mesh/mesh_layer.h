@@ -125,10 +125,12 @@ class MeshLayer {
   }
 
   void combineMesh(Mesh::Ptr combined_mesh) const {
-    combined_mesh = Mesh::Ptr(new Mesh(block_size(), Point::Zero()));
-
     // Used to prevent double ups in vertices
     BlockHashMapType<IndexElement>::type uniques;
+
+    // Some triangles will have zero area we store them here first then filter
+    // them
+    VertexIndexList temp_indices;
 
     // If two vertices closer than (voxel_size / key_multiplication_factor) then
     // the second vertice will be discarded and the first one used in its place
@@ -140,26 +142,40 @@ class MeshLayer {
     getAllAllocatedMeshes(&mesh_indices);
     for (const BlockIndex& block_index : mesh_indices) {
       Mesh::ConstPtr mesh = getMeshPtrByIndex(block_index);
-      for (const Point& vert : mesh->vertices) {
+
+      for (size_t i = 0; i < mesh->vertices.size(); ++i) {
         // convert from 3D point to key
-        //BlockIndex vert_key = (key_multiplication_factor * vert / block_size())
-        //                          .cast<IndexElement>();
-        //if (uniques.find(vert_key) == uniques.end()) {
-        //  uniques[vert_key] = v;
-          combined_mesh->vertices.push_back(vert);
-          combined_mesh->indices.push_back(v);
+        BlockIndex vert_key =
+            (key_multiplication_factor * mesh->vertices[i] / block_size())
+                .cast<IndexElement>();
+        if (uniques.find(vert_key) == uniques.end()) {
+          uniques[vert_key] = v;
+          combined_mesh->vertices.push_back(mesh->vertices[i]);
+
+          if (mesh->hasColors()) {
+            combined_mesh->colors.push_back(mesh->colors[i]);
+          }
+          if (mesh->hasNormals()) {
+            combined_mesh->normals.push_back(mesh->normals[i]);
+          }
+
+          temp_indices.push_back(v);
           v++;
-        //} else {
-        //  combined_mesh->indices.push_back(uniques[vert_key]);
-        //}
+        } else {
+          temp_indices.push_back(uniques[vert_key]);
+        }
       }
+    }
 
-      for (const Color& color : mesh->colors) {
-        combined_mesh->colors.push_back(color);
-      }
-
-      for (const Point& normal : mesh->normals) {
-        combined_mesh->normals.push_back(normal);
+    // extract indices of triangles with non-zero area
+    for (size_t i = 0; i < temp_indices.size(); i += 3) {
+      // check that corners of triangles have not been merged
+      if ((temp_indices[i] != temp_indices[i + 1]) &&
+          (temp_indices[i] != temp_indices[i + 2]) &&
+          (temp_indices[i + 1] != temp_indices[i + 2])) {
+        combined_mesh->indices.push_back(temp_indices[i]);
+        combined_mesh->indices.push_back(temp_indices[i + 1]);
+        combined_mesh->indices.push_back(temp_indices[i + 2]);
       }
     }
   }

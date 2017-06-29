@@ -40,7 +40,8 @@ inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
   pcl::PointCloud<pcl::PointXYZ> pointcloud;
   std::vector<pcl::Vertices> polygons;
 
-  Mesh::Ptr mesh;
+  Mesh::Ptr mesh =
+      std::make_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
   mesh_layer.combineMesh(mesh);
 
   // add points
