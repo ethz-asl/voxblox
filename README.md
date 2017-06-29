@@ -97,6 +97,39 @@ The mesh only updates once per second (this is a setting in the launch file).
 
 The rest of the commonly-used settings are parameters in the launch file.
 
+# Parameters
+------
+A summary of the user setable voxblox_node parameters:
+
+| Parameter | Description | Default |
+| --------------------  |:-----------:| :-------:|
+| `min_time_between_msgs_sec` |  Minimum time to wait after integrating a message before accepting a new one. | 0 |
+| `generate_esdf` |  If the eucliden signed distance field should be generated. | false |
+| `output_mesh_as_pointcloud` | If true the verticies of the generated mesh will be ouput as a pointcloud on the topic `mesh_pointcloud` whenever the generate_mesh service is called. | false |
+| `output_mesh_as_pcl_mesh` | If true the generated mesh will be ouput as a pcl::PolygonMesh on the topic `mesh_pcl` whenever the generate_mesh service is called. | false |
+| `slice_level` | The height at which generated tsdf and esdf slices will be made. | 0.5 |
+| `world_frame` | The base frame used when looking up tf transforms. This is also the frame that most outputs are given in. | "world" |
+| `sensor_frame` | The sensor frame used when looking up tf transforms. | "" |
+| `pointcloud_queue_size` | The size of the queue used to subscribe to pointclouds. | 1 |
+| `verbose` | Prints additional debug and timing information. | true |
+| `color_ptcloud_by_weight` | ??????? | false |
+| `method` | Method to use for integrating new readings into the tsdf. Options are "merged", "simple" and "merged_discard" | "merged" |
+| `tsdf_voxel_size` | The size of the tsdf voxels | 0.2 |
+| `tsdf_voxels_per_side` | TSDF voxels per side of an allocated block | 16 |
+| `voxel_carving_enabled` | If true, the entire length of a ray is integrated, if false only the region inside the trunaction distance is used. | true |
+| `truncation_distance` | The truncation distance for the TSDF | 2`tsdf_voxel_size` |
+| `max_ray_length_m` | The maximum range out to which a ray will be cast | 5.0 |
+| `min_ray_length_m` | The point at which the ray casting will start | 0.1 |
+| `max_weight` | The upper limit for the weight assigned to a voxel | 10000.0 |
+| `use_const_weight` | If true all points along a ray have equal weighting | false |
+| `allow_clear` | If true points beyond the `max_ray_length_m` will be integrated up to this distance | true |
+| `esdf_max_distance_m` | The maximum distance that the esdf will be calculated out to | 2.0 |
+| `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
+| `mesh_filename` | Filename output mesh will be saved to, leave blank if no file should be generated | "" |
+| `color_mode` | The method that will be used for coloring the mesh. Options are "color", "height", "normals" and "lambert". | "color" |
+| `mesh_min_weight` | The minimum weighting needed for a point to be included in the mesh | `1e-4` |
+
+
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
 
