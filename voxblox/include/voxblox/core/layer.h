@@ -7,50 +7,12 @@
 
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
-#include "./MapHeader.pb.h"
-#include "./Volume.pb.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/block_hash.h"
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
-
-/* Can't specialize an alias template; have to implement workaround
- * template<typename VoxelType>
- * using GenericLayerProto = LayerProto;
- *
- * template<>
- * using GenericLayerProto<TangoTsdfVoxel> = tsdf2::MapHeaderProto;
- */
-template <typename VoxelType>
-struct LayerProtoType
-  { typedef LayerProto type; };
-
-template <>
-struct LayerProtoType<TangoTsdfVoxel>
-  { typedef tsdf2::MapHeaderProto type; };
-
-template <typename VoxelType>
-using GenericLayerProto = typename LayerProtoType<VoxelType>::type;
-
-/* Can't specialize an alias template; have to implement workaround
- * template<typename VoxelType>
- * using GenericBlockProto = BlockProto;
- *
- * template<>
- * using GenericBlockProto<TangoTsdfVoxel> = tsdf2::VolumeProto;
- */
-template <typename VoxelType>
-struct BlockProtoType
- { typedef BlockProto type; };
-
-template <>
-struct BlockProtoType<TangoTsdfVoxel>
- { typedef tsdf2::VolumeProto type; };
-
-template <typename VoxelType>
-using GenericBlockProto = typename BlockProtoType<VoxelType>::type;
 
 template <typename VoxelType>
 class Layer {
@@ -71,9 +33,6 @@ class Layer {
 
   // Create the layer from protobuf layer header.
   explicit Layer(const LayerProto& proto);
-
-  // Only defined for TangoTsdfVoxel
-  explicit Layer(const tsdf2::MapHeaderProto& proto);
 
   virtual ~Layer() {}
 
@@ -240,20 +199,12 @@ class Layer {
   // Serialization tools.
   void getProto(LayerProto* proto) const;
   bool isCompatible(const LayerProto& layer_proto) const;
-  bool isCompatible(const tsdf2::MapHeaderProto& layer_proto) const;
-  
-  /* Tango TSDF Block isCompatible has same implementation =>
-   * use GenericBlockProto
-   */
-  bool isCompatible(const GenericBlockProto<VoxelType>& layer_proto) const;
+  bool isCompatible(const BlockProto& layer_proto) const;
   bool saveToFile(const std::string& file_path) const;
   bool saveSubsetToFile(const std::string& file_path,
                         BlockIndexList blocks_to_include,
                         bool include_all_blocks) const;
   bool addBlockFromProto(const BlockProto& block_proto,
-                         BlockMergingStrategy strategy);
-
-  bool addBlockFromProto(const tsdf2::VolumeProto& block_proto,
                          BlockMergingStrategy strategy);
 
   size_t getMemorySize() const;
@@ -264,10 +215,6 @@ class Layer {
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;
   FloatingPoint block_size_;
-
-  // Specific to Tango NTSDF
-  unsigned int max_ntsdf_voxel_weight_;
-  FloatingPoint meters_to_ntsdf_;
 
   // Derived types.
   FloatingPoint block_size_inv_;
