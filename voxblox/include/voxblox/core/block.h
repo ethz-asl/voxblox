@@ -5,9 +5,7 @@
 #include <vector>
 
 #include "./Block.pb.h"
-#include "./Volume.pb.h"
 #include "voxblox/core/common.h"
-#include "voxblox/core/voxel.h"
 
 namespace voxblox {
 
@@ -24,29 +22,7 @@ class Block {
         voxel_size_(voxel_size),
         origin_(origin),
         has_data_(false),
-        updated_(false),
-        max_ntsdf_voxel_weight_(0),
-        meters_to_ntsdf_(0.0) {
-    num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
-    voxel_size_inv_ = 1.0 / voxel_size_;
-    block_size_ = voxels_per_side_ * voxel_size_;
-    block_size_inv_ = 1.0 / block_size_;
-    voxels_.reset(new VoxelType[num_voxels_]);
-  }
-
-  // Construct from Tango TSDF format
-  Block(size_t voxels_per_side, FloatingPoint voxel_size,
-                                          const Point& origin,
-                                          unsigned int max_ntsdf_voxel_weight,
-                                          FloatingPoint meters_to_ntsdf)
-      : voxels_per_side_(voxels_per_side),
-        voxel_size_(voxel_size),
-        origin_(origin),
-        has_data_(false),
-        updated_(false),
-        max_ntsdf_voxel_weight_(max_ntsdf_voxel_weight),
-        meters_to_ntsdf_(meters_to_ntsdf) {
-
+        updated_(false) {
     num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_ = voxels_per_side_ * voxel_size_;
@@ -55,11 +31,6 @@ class Block {
   }
 
   explicit Block(const BlockProto& proto);
-
-  // Only defined for TangoTsdfVoxel
-  explicit Block(const tsdf2::VolumeProto& proto,
-                 unsigned int max_ntsdf_voxel_weight,
-                 FloatingPoint meters_to_ntsdf);
 
   ~Block() {}
 
@@ -188,17 +159,12 @@ class Block {
 
  private:
   void deserializeProto(const BlockProto& proto);
-  void deserializeProto(const tsdf2::VolumeProto& proto);
   void serializeProto(BlockProto* proto) const;
 
   // Base parameters.
   const size_t voxels_per_side_;
   const FloatingPoint voxel_size_;
   const Point origin_;
-
-  // Specific to Tango NTSDF
-  const unsigned int max_ntsdf_voxel_weight_;
-  const FloatingPoint meters_to_ntsdf_;
 
   // Derived, cached parameters.
   size_t num_voxels_;
@@ -213,10 +179,6 @@ class Block {
 
   std::unique_ptr<VoxelType[]> voxels_;
 };
-
-template <>
-void Block<TangoTsdfVoxel>::deserializeFromIntegers(
-    const std::vector<uint32_t>& data);
 
 }  // namespace voxblox
 

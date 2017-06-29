@@ -18,9 +18,7 @@ endif()
 # General idea: first check if we have protobuf catkin, then use that.
 # Otherwise use system protobuf.
 set(PROTO_DEFNS proto/voxblox/Block.proto
-                proto/voxblox/Layer.proto
-                proto/tsdf2/MapHeader.proto
-                proto/tsdf2/Volume.proto)
+                proto/voxblox/Layer.proto)
 set(ADDITIONAL_LIBRARIES "")
 
 find_package(protobuf_catkin QUIET)
@@ -50,7 +48,6 @@ set("${PROJECT_NAME}_SRCS"
   src/core/block.cc
   src/core/esdf_map.cc
   src/integrator/esdf_integrator.cc
-  src/integrator/esdf_tango_integrator.cc
   src/integrator/esdf_occ_integrator.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
@@ -98,16 +95,6 @@ endif()
 ############
 # BINARIES #
 ############
-
-add_executable(mesh_tango_tsdf
-  test/mesh_tango_tsdf.cc
-)
-target_link_libraries(mesh_tango_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
-
-add_executable(tango_tsdf_to_esdf
-  test/tango_tsdf_to_esdf.cc
-)
-target_link_libraries(tango_tsdf_to_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_executable(tsdf_to_esdf
   test/tsdf_to_esdf.cc

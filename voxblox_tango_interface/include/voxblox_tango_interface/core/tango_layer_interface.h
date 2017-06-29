@@ -10,7 +10,7 @@ namespace voxblox {
 
 class TangoLayerInterface : public Layer<TsdfVoxel> {
 public:
-  Layer(const tsdf2::MapHeaderProto& proto);
+  TangoLayerInterface(const tsdf2::MapHeaderProto& proto);
 
   bool isCompatible(const tsdf2::MapHeaderProto& layer_proto) const;
   bool isCompatible(const tsdf2::VolumeProto& block_proto) const;
