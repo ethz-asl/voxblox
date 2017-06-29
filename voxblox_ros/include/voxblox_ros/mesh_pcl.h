@@ -45,6 +45,7 @@ inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
   mesh_layer.combineMesh(mesh);
 
   // add points
+  pointcloud.reserve(mesh->vertices.size());
   for (const Point& point : mesh->vertices) {
     pointcloud.push_back(pcl::PointXYZ(static_cast<float>(point[0]),
                                        static_cast<float>(point[1]),
@@ -52,6 +53,7 @@ inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
   }
   // add triangles
   pcl::Vertices vertices_idx;
+  polygons.reserve(mesh->indices.size()/3);
   for (const VertexIndex& idx : mesh->indices) {
     vertices_idx.vertices.push_back(idx);
 
