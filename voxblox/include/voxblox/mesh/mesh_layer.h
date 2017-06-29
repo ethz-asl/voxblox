@@ -98,8 +98,8 @@ class MeshLayer {
     auto insert_status = mesh_map_.insert(std::make_pair(
         index, std::shared_ptr<Mesh>(new Mesh(
                    block_size_, index.cast<FloatingPoint>() * block_size_))));
-    DCHECK(insert_status.second) << "Mesh already exists when allocating at "
-                                 << index.transpose();
+    DCHECK(insert_status.second)
+        << "Mesh already exists when allocating at " << index.transpose();
     DCHECK(insert_status.first->second);
     DCHECK_EQ(insert_status.first->first, index);
     return insert_status.first->second;
@@ -121,6 +121,46 @@ class MeshLayer {
     for (const std::pair<const BlockIndex, typename Mesh::Ptr>& kv :
          mesh_map_) {
       meshes->emplace_back(kv.first);
+    }
+  }
+
+  void combineMesh(Mesh::Ptr combined_mesh) const {
+    combined_mesh = Mesh::Ptr(new Mesh(block_size(), Point::Zero()));
+
+    // Used to prevent double ups in vertices
+    BlockHashMapType<IndexElement>::type uniques;
+
+    // If two vertices closer than (voxel_size / key_multiplication_factor) then
+    // the second vertice will be discarded and the first one used in its place
+    constexpr FloatingPoint key_multiplication_factor = 100;
+
+    // Combine everything in the layer into one giant combined mesh.
+    size_t v = 0;
+    BlockIndexList mesh_indices;
+    getAllAllocatedMeshes(&mesh_indices);
+    for (const BlockIndex& block_index : mesh_indices) {
+      Mesh::ConstPtr mesh = getMeshPtrByIndex(block_index);
+      for (const Point& vert : mesh->vertices) {
+        // convert from 3D point to key
+        //BlockIndex vert_key = (key_multiplication_factor * vert / block_size())
+        //                          .cast<IndexElement>();
+        //if (uniques.find(vert_key) == uniques.end()) {
+        //  uniques[vert_key] = v;
+          combined_mesh->vertices.push_back(vert);
+          combined_mesh->indices.push_back(v);
+          v++;
+        //} else {
+        //  combined_mesh->indices.push_back(uniques[vert_key]);
+        //}
+      }
+
+      for (const Color& color : mesh->colors) {
+        combined_mesh->colors.push_back(color);
+      }
+
+      for (const Point& normal : mesh->normals) {
+        combined_mesh->normals.push_back(normal);
+      }
     }
   }
 

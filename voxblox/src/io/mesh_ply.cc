@@ -26,31 +26,11 @@ namespace voxblox {
 
 bool outputMeshLayerAsPly(const std::string& filename,
                           const MeshLayer& mesh_layer) {
-  Mesh::Ptr combined_mesh(new Mesh(mesh_layer.block_size(), Point::Zero()));
-  // Combine everything in the layer into one giant combined mesh.
-  size_t v = 0;
-  BlockIndexList mesh_indices;
-  mesh_layer.getAllAllocatedMeshes(&mesh_indices);
-  for (const BlockIndex& block_index : mesh_indices) {
-    Mesh::ConstPtr mesh = mesh_layer.getMeshPtrByIndex(block_index);
-    for (const Point& vert : mesh->vertices) {
-      combined_mesh->vertices.push_back(vert);
-      combined_mesh->indices.push_back(v);
-      v++;
-    }
+  
+  Mesh::Ptr combined_mesh;
+  mesh_layer.combineMesh(combined_mesh);
 
-    for (const Color& color : mesh->colors) {
-      combined_mesh->colors.push_back(color);
-    }
-
-    for (const Point& normal : mesh->normals) {
-      combined_mesh->normals.push_back(normal);
-    }
-  }
-
-  LOG(INFO) << "Full mesh has " << v << " verts";
   bool success = outputMeshAsPly(filename, *combined_mesh);
-
   if (!success) {
     LOG(WARNING) << "Saving to PLY failed!";
   }
@@ -76,7 +56,7 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
     stream << "property uchar green" << std::endl;
     stream << "property uchar blue" << std::endl;
   }
-  stream << "element face " << num_points / 3 << std::endl;
+  stream << "element face " << mesh.indices.size() / 3 << std::endl;
   stream << "property list uchar int vertex_index" << std::endl;
   stream << "end_header" << std::endl;
 
@@ -97,7 +77,7 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
     vert_idx++;
   }
 
-  for (size_t i = 0; i < mesh.indices.size(); i += 3) {
+  /*for (size_t i = 0; i < mesh.indices.size(); i += 3) {
     stream << "3 ";
 
     for (int j = 0; j < 3; j++) {
@@ -105,7 +85,7 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
     }
 
     stream << std::endl;
-  }
+  }*/
 
   return true;
 }

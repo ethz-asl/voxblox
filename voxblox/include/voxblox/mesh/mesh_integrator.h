@@ -26,15 +26,15 @@
 #include <algorithm>
 #include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/interpolator/interpolator.h"
 #include "voxblox/mesh/marching_cubes.h"
 #include "voxblox/mesh/mesh_layer.h"
 #include "voxblox/utils/timing.h"
-#include "voxblox/interpolator/interpolator.h"
 
 namespace voxblox {
 
