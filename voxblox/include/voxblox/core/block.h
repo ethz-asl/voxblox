@@ -157,6 +157,15 @@ class Block {
 
   size_t getMemorySize() const;
 
+protected:
+  std::unique_ptr<VoxelType[]> voxels_;
+
+  // Derived, cached parameters.
+  size_t num_voxels_;
+
+  // Is set to true if any one of the voxels in this block received an update.
+  bool has_data_;
+
  private:
   void deserializeProto(const BlockProto& proto);
   void serializeProto(BlockProto* proto) const;
@@ -167,17 +176,12 @@ class Block {
   const Point origin_;
 
   // Derived, cached parameters.
-  size_t num_voxels_;
   FloatingPoint voxel_size_inv_;
   FloatingPoint block_size_;
   FloatingPoint block_size_inv_;
 
-  // Is set to true if any one of the voxels in this block received an update.
-  bool has_data_;
   // Is set to true when data is updated.
   bool updated_;
-
-  std::unique_ptr<VoxelType[]> voxels_;
 };
 
 }  // namespace voxblox

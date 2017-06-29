@@ -16,7 +16,7 @@ void TangoBlockInterface::deserializeFromIntegers(
     const uint32_t bytes_1 = data[data_idx];
     const uint32_t bytes_2 = data[data_idx + 1u];
 
-    TangoTsdfVoxel& voxel = voxels_[voxel_idx];
+    TsdfVoxel& voxel = voxels_[voxel_idx];
 
     // TODO(mereweth@jpl.nasa.gov) - is this the best way to unpack NTSDF?
 

@@ -209,9 +209,7 @@ class Layer {
 
   size_t getMemorySize() const;
 
- private:
-  std::string getType() const;
-
+protected:
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;
   FloatingPoint block_size_;
@@ -219,6 +217,8 @@ class Layer {
   // Derived types.
   FloatingPoint block_size_inv_;
   FloatingPoint voxels_per_side_inv_;
+
+  std::string getType() const;
 
   BlockHashMap block_map_;
 };

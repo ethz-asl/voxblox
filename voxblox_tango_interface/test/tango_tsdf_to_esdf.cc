@@ -1,18 +1,10 @@
 #include <iostream>  // NOLINT
 
-#include "./Block.pb.h"
-#include "./Layer.pb.h"
-#include "voxblox/core/block.h"
-#include "voxblox/core/layer.h"
-#include "voxblox/core/voxel.h"
-#include "voxblox/io/layer_io.h"
-#include "voxblox/test/layer_test_utils.h"
-
-#include <voxblox/io/mesh_ply.h>
-#include <voxblox/mesh/mesh_integrator.h>
-
 #include <voxblox/core/esdf_map.h>
-#include <voxblox/integrator/esdf_tango_integrator.h>
+#include <voxblox/integrator/esdf_integrator.h>
+
+#include "voxblox_tango_interface/io/tango_layer_io.h"
+#include "voxblox_tango_interface/core/tango_layer_interface.h"
 
 using namespace voxblox;  // NOLINT
 
@@ -25,27 +17,27 @@ int main(int argc, char** argv) {
 
   const std::string file = argv[1];
 
-  Layer<TangoTsdfVoxel>::Ptr layer_from_file;
-  io::LoadLayer<TangoTsdfVoxel>(file, &layer_from_file);
+  TangoLayerInterface::Ptr layer_from_file;
+  io::TangoLoadLayer(file, &layer_from_file);
 
   std::cout << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
 
   // ESDF maps.
   EsdfMap::Config esdf_config;
   std::shared_ptr<EsdfMap> esdf_map_;
-  std::unique_ptr<EsdfTangoIntegrator> esdf_integrator_;
+  std::unique_ptr<EsdfIntegrator> esdf_integrator_;
 
   // Same number of voxels per side for ESDF as with TSDF
   esdf_config.esdf_voxels_per_side = layer_from_file->voxels_per_side();
   // Same voxel size for ESDF as with TSDF
   esdf_config.esdf_voxel_size = layer_from_file->voxel_size();
   esdf_map_.reset(new EsdfMap(esdf_config));
-  EsdfTangoIntegrator::Config esdf_integrator_config;
+  EsdfIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
   esdf_integrator_config.min_distance_m = esdf_config.esdf_voxel_size;
   // esdf_integrator_config.min_distance_m =
   //    tsdf_integrator_->getConfig().default_truncation_distance;
-  esdf_integrator_.reset(new EsdfTangoIntegrator(esdf_integrator_config,
+  esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                                  layer_from_file.get(),
                                                  esdf_map_->getEsdfLayerPtr()));
   esdf_integrator_->updateFromTsdfLayerBatch();

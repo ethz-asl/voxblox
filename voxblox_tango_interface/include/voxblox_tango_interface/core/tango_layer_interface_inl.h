@@ -6,9 +6,8 @@
 
 namespace voxblox {
 
-inline TangoLayerInterface::Layer(const tsdf2::MapHeaderProto& proto)
-    : voxel_size_(proto.voxel_size()),
-      voxels_per_side_(proto.voxels_per_volume_side()),
+inline TangoLayerInterface::TangoLayerInterface(const tsdf2::MapHeaderProto& proto)
+    : Layer<TsdfVoxel>(proto.voxel_size(), proto.voxels_per_volume_side()),
       max_ntsdf_voxel_weight_(proto.max_ntsdf_voxel_weight()),
       meters_to_ntsdf_(proto.meters_to_ntsdf()) {
   // Derived config parameter.
@@ -27,30 +26,30 @@ inline TangoLayerInterface::Layer(const tsdf2::MapHeaderProto& proto)
  */
 inline bool TangoLayerInterface ::
     addBlockFromProto(const tsdf2::VolumeProto& block_proto,
-                      BlockMergingStrategy strategy) {
+                      TangoLayerInterface::BlockMergingStrategy strategy) {
   CHECK_EQ(getType().compare(voxel_types::kTsdf), 0)
       << "The voxel type of this layer is not TsdfVoxel!";
 
   if (isCompatible(block_proto)) {
-    typename BlockType::Ptr block_ptr(new BlockType(block_proto,
+    TangoBlockInterface::Ptr block_ptr(new TangoBlockInterface(block_proto,
                                                     max_ntsdf_voxel_weight_,
                                                     meters_to_ntsdf_));
 
     const BlockIndex block_index =
         getGridIndexFromOriginPoint(block_ptr->origin(), block_size_inv_);
     switch (strategy) {
-      case BlockMergingStrategy::kProhibit:
+      case TangoLayerInterface::BlockMergingStrategy::kProhibit:
         CHECK_EQ(block_map_.count(block_index), 0u)
             << "Block collision at index: " << block_index;
         block_map_[block_index] = block_ptr;
       break;
-      case BlockMergingStrategy::kReplace:
+      case TangoLayerInterface::BlockMergingStrategy::kReplace:
         block_map_[block_index] = block_ptr;
         break;
-      case BlockMergingStrategy::kDiscard:
+      case TangoLayerInterface::BlockMergingStrategy::kDiscard:
         block_map_.insert(std::make_pair(block_index, block_ptr));
         break;
-      case BlockMergingStrategy::kMerge: {
+      case TangoLayerInterface::BlockMergingStrategy::kMerge: {
         typename BlockHashMap::iterator it = block_map_.find(block_index);
         if (it == block_map_.end()) {
           block_map_[block_index] = block_ptr;

@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_TANGO_INTERFACE_CORE_BLOCK_H_
 #define VOXBLOX_TANGO_INTERFACE_CORE_BLOCK_H_
 
+#include "voxblox/core/voxel.h"
 #include "voxblox/core/block.h"
 
 #include "./Volume.pb.h"
@@ -13,19 +14,9 @@ public:
                                           const Point& origin,
                                           unsigned int max_ntsdf_voxel_weight,
                                           FloatingPoint meters_to_ntsdf)
-      : voxels_per_side_(voxels_per_side),
-        voxel_size_(voxel_size),
-        origin_(origin),
-        has_data_(false),
-        updated_(false),
+      : Block<TsdfVoxel>(voxels_per_side, voxel_size, origin),
         max_ntsdf_voxel_weight_(max_ntsdf_voxel_weight),
-        meters_to_ntsdf_(meters_to_ntsdf) {
-    num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
-    voxel_size_inv_ = 1.0 / voxel_size_;
-    block_size_ = voxels_per_side_ * voxel_size_;
-    block_size_inv_ = 1.0 / block_size_;
-    voxels_.reset(new VoxelType[num_voxels_]);
-  }
+        meters_to_ntsdf_(meters_to_ntsdf) {  }
 
   TangoBlockInterface(const tsdf2:: VolumeProto& proto,
                       unsigned int max_ntsdf_voxel_weight,
@@ -40,5 +31,7 @@ private:
 };
 
 }  // namespace voxblox
+
+#include "voxblox_tango_interface/core/tango_block_interface_inl.h"
 
 #endif  // VOXBLOX_TANGO_INTERFACE_CORE_BLOCK_H_
