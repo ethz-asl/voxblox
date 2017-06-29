@@ -16,7 +16,7 @@ namespace voxblox {
 class Object {
  public:
   // A wall is an infinite plane.
-  enum Type { kSphere = 0, kCube, kPlane };
+  enum Type { kSphere = 0, kCube, kPlane, kCylinder };
 
   Object(const Point& center, Type type)
       : Object(center, type, Color::White()) {}
@@ -121,7 +121,7 @@ class Cube : public Object {
     FloatingPoint distance = distance_vector.norm();
 
     // Basically 0... Means it's inside!
-    if (distance < 1e-6) {
+    if (distance < kEpsilon) {
       distance_vector.x() = std::max(center_.x() - size_.x() / 2.0 - point.x(),
                                      point.x() - center_.x() - size_.x() / 2.0);
       distance_vector.y() = std::max(center_.y() - size_.y() / 2.0 - point.y(),
@@ -222,7 +222,7 @@ class Plane : public Object {
     // x = o + dl is the ray equation
     // n = normal, c = plane 'origin'
     FloatingPoint denominator = ray_direction.dot(normal_);
-    if (std::abs(denominator) < 1e-6) {
+    if (std::abs(denominator) < kEpsilon) {
       // Lines are parallel, no intersection.
       return false;
     }
@@ -240,6 +240,147 @@ class Plane : public Object {
 
  protected:
   Point normal_;
+};
+
+class Cylinder : public Object {
+ public:
+  Cylinder(const Point& center, FloatingPoint radius, FloatingPoint height)
+      : Object(center, Type::kCylinder), radius_(radius), height_(height) {}
+  Cylinder(const Point& center, FloatingPoint radius, FloatingPoint height,
+           const Color& color)
+      : Object(center, Type::kCylinder, color),
+        radius_(radius),
+        height_(height) {}
+
+  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
+    // From: https://math.stackexchange.com/questions/2064745/
+    // 3 cases, depending on z of point.
+    // First case: in plane with the cylinder. This also takes care of inside
+    // case.
+    FloatingPoint distance = 0.0;
+
+    FloatingPoint min_z_limit = center_.z() - height_ / 2.0;
+    FloatingPoint max_z_limit = center_.z() + height_ / 2.0;
+    if (point.z() >= min_z_limit && point.z() <= max_z_limit) {
+      distance = (point.head<2>() - center_.head<2>()).norm() - radius_;
+    } else if (point.z() > max_z_limit) {
+      // Case 2: above the cylinder.
+      distance = std::sqrt(
+          std::max((point.head<2>() - center_.head<2>()).squaredNorm() -
+                       radius_ * radius_,
+                   0.0) +
+          (point.z() - max_z_limit) * (point.z() - max_z_limit));
+    } else {
+      // Case 3: below cylinder.
+      distance = std::sqrt(
+          std::max((point.head<2>() - center_.head<2>()).squaredNorm() -
+                       radius_ * radius_,
+                   0.0) +
+          (point.z() - min_z_limit) * (point.z() - min_z_limit));
+    }
+    return distance;
+  }
+
+  virtual bool getRayIntersection(const Point& ray_origin,
+                                  const Point& ray_direction,
+                                  FloatingPoint max_dist,
+                                  Point* intersect_point,
+                                  FloatingPoint* intersect_dist) const {
+    // From http://woo4.me/wootracer/cylinder-intersection/
+    // and http://www.cl.cam.ac.uk/teaching/1999/AGraphHCI/SMAG/node2.html
+    // Define ray as P = E + tD, where E is ray_origin and D is ray_direction.
+    // We define our cylinder as centered in the xy coordinate system, so
+    // E in this case is actually ray_origin - center_.
+    Point vector_E = ray_origin - center_;
+    Point vector_D = ray_direction;  // Axis aligned.
+
+    FloatingPoint a = vector_D.x() * vector_D.x() + vector_D.y() * vector_D.y();
+    FloatingPoint b =
+        2 * vector_E.x() * vector_D.x() + 2 * vector_E.y() * vector_D.y();
+    FloatingPoint c = vector_E.x() * vector_E.x() +
+                      vector_E.y() * vector_E.y() - radius_ * radius_;
+
+    // t = (-b +- sqrt(b^2 - 4ac))/2a
+    // t only has solutions if b^2 - 4ac >= 0
+    FloatingPoint t1 = -1.0;
+    FloatingPoint t2 = -1.0;
+
+    // Make sure we don't divide by 0.
+    if (std::abs(a) < kEpsilon) {
+      return false;
+    }
+
+    FloatingPoint under_square_root = b * b - 4 * a * c;
+    if (under_square_root < 0) {
+      return false;
+    }
+    if (under_square_root <= kEpsilon) {
+      t1 = -b / (2 * a);
+      // Just keep t2 at invalid default value.
+    } else {
+      // 2 ts.
+      t1 = (-b + std::sqrt(under_square_root)) / (2 * a);
+      t2 = (-b - std::sqrt(under_square_root)) / (2 * a);
+    }
+
+    // Great, now we got some ts, time to figure out whether we hit the cylinder
+    // or the endcaps.
+    FloatingPoint t = max_dist;
+
+    FloatingPoint z1 = vector_E.z() + t1 * vector_D.z();
+    FloatingPoint z2 = vector_E.z() + t2 * vector_D.z();
+    bool t1_valid = t1 >= 0.0 && z1 >= -height_ / 2.0 && z1 <= height_ / 2.0;
+    bool t2_valid = t2 >= 0.0 && z2 >= -height_ / 2.0 && z2 <= height_ / 2.0;
+
+    // Get the endcaps and their validity.
+    // Check end-cap intersections now... :(
+    FloatingPoint t3, t4;
+    bool t3_valid = false, t4_valid = false;
+
+    // Make sure we don't divide by 0.
+    if (std::abs(vector_D.z()) > kEpsilon) {
+      // t3 is the bottom end-cap, t4 is the top.
+      t3 = (-height_ / 2.0 - vector_E.z()) / vector_D.z();
+      t4 = (height_ / 2.0 - vector_E.z()) / vector_D.z();
+
+      Point q3 = vector_E + t3 * vector_D;
+      Point q4 = vector_E + t4 * vector_D;
+
+      t3_valid = t3 >= 0.0 && q3.head<2>().norm() < radius_;
+      t4_valid = t4 >= 0.0 && q4.head<2>().norm() < radius_;
+    }
+
+    if (!(t1_valid || t2_valid || t3_valid || t4_valid)) {
+      return false;
+    }
+    if (t1_valid) {
+      t = std::min(t, t1);
+    }
+    if (t2_valid) {
+      t = std::min(t, t2);
+    }
+    if (t3_valid) {
+      t = std::min(t, t3);
+    }
+    if (t4_valid) {
+      t = std::min(t, t4);
+    }
+
+    // Intersection greater than max dist, so no intersection in the sensor
+    // range.
+    if (t >= max_dist) {
+      return false;
+    }
+
+    // Back to normal coordinates now.
+    *intersect_point = ray_origin + t * ray_direction;
+    *intersect_dist = t;
+    return true;
+  }
+
+ protected:
+  FloatingPoint radius_;
+  FloatingPoint height_;
 };
 
 }  // namespace voxblox

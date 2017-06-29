@@ -25,34 +25,45 @@
 #define VOXBLOX_ROS_MESH_VIS_H_
 
 #include <algorithm>
-#include <visualization_msgs/Marker.h>
 #include <eigen_conversions/eigen_msg.h>
+#include <visualization_msgs/Marker.h>
 
 #include <voxblox/core/common.h>
+#include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/mesh/mesh.h>
 #include <voxblox/mesh/mesh_layer.h>
-#include <voxblox/integrator/tsdf_integrator.h>
-#include <voxblox/integrator/esdf_integrator.h>
 
 #include "voxblox_ros/conversions.h"
 
 namespace voxblox {
 
-enum ColorMode { kColor = 0, kHeight, kNormals, kGray, kLambert };
+enum ColorMode {
+  kColor = 0,
+  kHeight,
+  kNormals,
+  kGray,
+  kLambert,
+  kLambertColor
+};
 
-inline Point lambertShading(const Point& normal, const Point& light) {
-  return std::max<FloatingPoint>(normal.dot(light), 0.0f) *
-         Point(0.5, 0.5, 0.5);
+inline Point lambertShading(const Point& normal, const Point& light,
+                            const Point& color) {
+  return std::max<FloatingPoint>(normal.dot(light), 0.0f) * color;
 }
 
-inline void lambertColorFromNormal(const Point& normal,
-                            std_msgs::ColorRGBA* color_msg) {
-  static const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
-  static const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
-  static const Point ambient(0.2f, 0.2f, 0.2f);
+inline void lambertColorFromColorAndNormal(const Color& color,
+                                           const Point& normal,
+                                           std_msgs::ColorRGBA* color_msg) {
+  // These are just some arbitrary light directions, I believe taken from
+  // OpenChisel.
+  const Point light_dir = Point(0.8f, -0.2f, 0.7f).normalized();
+  const Point light_dir2 = Point(-0.5f, 0.2f, 0.2f).normalized();
+  const Point ambient(0.2f, 0.2f, 0.2f);
+  const Point color_pt(color.r / 255.0, color.g / 255.0, color.b / 255.0);
 
-  Point lambert = lambertShading(normal, light_dir) +
-                  lambertShading(normal, light_dir2) + ambient;
+  Point lambert = lambertShading(normal, light_dir, color_pt) +
+                  lambertShading(normal, light_dir2, color_pt) + ambient;
 
   color_msg->r = std::min<FloatingPoint>(lambert.x(), 1.0);
   color_msg->g = std::min<FloatingPoint>(lambert.y(), 1.0);
@@ -60,8 +71,13 @@ inline void lambertColorFromNormal(const Point& normal,
   color_msg->a = 1.0;
 }
 
+inline void lambertColorFromNormal(const Point& normal,
+                                   std_msgs::ColorRGBA* color_msg) {
+  lambertColorFromColorAndNormal(Color(127, 127, 127), normal, color_msg);
+}
+
 inline void normalColorFromNormal(const Point& normal,
-                           std_msgs::ColorRGBA* color_msg) {
+                                  std_msgs::ColorRGBA* color_msg) {
   // Normals should be in the scale -1 to 1, so we need to shift them to
   // 0 -> 1 range.
   color_msg->r = normal.x() * 0.5 + 0.5;
@@ -71,7 +87,7 @@ inline void normalColorFromNormal(const Point& normal,
 }
 
 inline void heightColorFromVertex(const Point& vertex,
-                           std_msgs::ColorRGBA* color_msg) {
+                                  std_msgs::ColorRGBA* color_msg) {
   // TODO(helenol): figure out a nicer way to do this without hard-coded
   // constants.
   const double min_z = -1;
@@ -83,8 +99,8 @@ inline void heightColorFromVertex(const Point& vertex,
 }
 
 inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
-                        ColorMode color_mode,
-                        visualization_msgs::Marker* marker) {
+                               ColorMode color_mode,
+                               visualization_msgs::Marker* marker) {
   CHECK_NOTNULL(marker);
   marker->header.stamp = ros::Time::now();
   marker->ns = "mesh";
@@ -107,10 +123,11 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
       continue;
     }
     // Check that we can actually do the color stuff.
-    if (color_mode == kColor) {
+    if (color_mode == kColor || color_mode == kLambertColor) {
       CHECK(mesh->hasColors());
     }
-    if (color_mode == kNormals || color_mode == kLambert) {
+    if (color_mode == kNormals || color_mode == kLambert ||
+        color_mode == kLambertColor) {
       CHECK(mesh->hasNormals());
     }
 
@@ -132,12 +149,79 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
         case kLambert:
           lambertColorFromNormal(mesh->normals[i], &color_msg);
           break;
+        case kLambertColor:
+          lambertColorFromColorAndNormal(mesh->colors[i], mesh->normals[i],
+                                         &color_msg);
+          break;
         case kGray:
           color_msg.r = color_msg.g = color_msg.b = 0.5;
           break;
       }
       color_msg.a = 1.0;
       marker->colors.push_back(color_msg);
+    }
+  }
+}
+
+inline void fillPointcloudWithMesh(
+    const MeshLayer::ConstPtr& mesh_layer, ColorMode color_mode,
+    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
+  pointcloud->clear();
+
+  BlockIndexList mesh_indices;
+  mesh_layer->getAllAllocatedMeshes(&mesh_indices);
+
+  for (const BlockIndex& block_index : mesh_indices) {
+    Mesh::ConstPtr mesh = mesh_layer->getMeshPtrByIndex(block_index);
+
+    if (!mesh->hasVertices()) {
+      continue;
+    }
+    // Check that we can actually do the color stuff.
+    if (color_mode == kColor || color_mode == kLambertColor) {
+      CHECK(mesh->hasColors());
+    }
+    if (color_mode == kNormals || color_mode == kLambert ||
+        color_mode == kLambertColor) {
+      CHECK(mesh->hasNormals());
+    }
+
+    for (size_t i = 0u; i < mesh->vertices.size(); i++) {
+      pcl::PointXYZRGB point;
+      point.x = mesh->vertices[i].x();
+      point.y = mesh->vertices[i].y();
+      point.z = mesh->vertices[i].z();
+
+      std_msgs::ColorRGBA color_msg;
+      switch (color_mode) {
+        case kColor:
+          colorVoxbloxToMsg(mesh->colors[i], &color_msg);
+          break;
+        case kHeight:
+          heightColorFromVertex(mesh->vertices[i], &color_msg);
+          break;
+        case kNormals:
+          normalColorFromNormal(mesh->normals[i], &color_msg);
+          break;
+        case kLambert:
+          lambertColorFromNormal(mesh->normals[i], &color_msg);
+          break;
+        case kLambertColor:
+          lambertColorFromColorAndNormal(mesh->colors[i], mesh->normals[i],
+                                         &color_msg);
+          break;
+        case kGray:
+          color_msg.r = color_msg.g = color_msg.b = 0.5;
+          break;
+      }
+      Color color;
+      colorMsgToVoxblox(color_msg, &color);
+      point.r = color.r;
+      point.g = color.g;
+      point.b = color.b;
+
+      pointcloud->push_back(point);
     }
   }
 }

@@ -26,15 +26,15 @@
 #include <algorithm>
 #include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/interpolator/interpolator.h"
 #include "voxblox/mesh/marching_cubes.h"
 #include "voxblox/mesh/mesh_layer.h"
 #include "voxblox/utils/timing.h"
-#include "voxblox/interpolator/interpolator.h"
 
 namespace voxblox {
 
@@ -277,26 +277,18 @@ class MeshIntegrator {
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
       const Point& vertex = mesh->vertices[i];
       VoxelIndex voxel_index = block.computeVoxelIndexFromCoordinates(vertex);
-      const Point voxel_center =
-          block.computeCoordinatesFromVoxelIndex(voxel_index);
-
-      // Should be within half a voxel of the voxel center in all dimensions, or
-      // it belongs in the other one.
-      const Point dist_from_center = vertex - voxel_center;
-      for (unsigned int j = 0; j < 3; ++j) {
-        if (std::abs(dist_from_center(j)) > voxel_size_ / 2.0) {
-          voxel_index(j) += signum(dist_from_center(j));
-        }
-      }
-
       if (block.isValidVoxelIndex(voxel_index)) {
-        mesh->colors[i] = block.getVoxelByVoxelIndex(voxel_index).color;
+        const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
+
+        if (voxel.weight >= config_.min_weight) {
+          mesh->colors[i] = voxel.color;
+        }
       } else {
-        // Get the nearest block.
-        const typename Block<VoxelType>::ConstPtr neighbor_block =
+        const Block<VoxelType>::ConstPtr neighbor_block =
             tsdf_layer_->getBlockPtrByCoordinates(vertex);
-        if (neighbor_block) {
-          mesh->colors[i] = neighbor_block->getVoxelByCoordinates(vertex).color;
+        const VoxelType& voxel = neighbor_block->getVoxelByCoordinates(vertex);
+        if (voxel.weight >= config_.min_weight) {
+          mesh->colors[i] = voxel.color;
         }
       }
     }

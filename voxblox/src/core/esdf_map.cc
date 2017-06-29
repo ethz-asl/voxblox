@@ -19,9 +19,18 @@ bool EsdfMap::getDistanceAndGradientAtPosition(
     Eigen::Vector3d* gradient) const {
   FloatingPoint distance_fp;
   Point gradient_fp = Point::Zero();
-
-  bool success = interpolator_.getAdaptiveDistanceAndGradient(
-      position.cast<FloatingPoint>(), &distance_fp, &gradient_fp);
+  bool interpolate = true;
+  bool use_adaptive = false;
+  bool success = false;
+  if (use_adaptive) {
+    success = interpolator_.getAdaptiveDistanceAndGradient(
+        position.cast<FloatingPoint>(), &distance_fp, &gradient_fp);
+  } else {
+    success = interpolator_.getDistance(position.cast<FloatingPoint>(),
+                                        &distance_fp, interpolate);
+    success &= interpolator_.getGradient(position.cast<FloatingPoint>(),
+                                         &gradient_fp, interpolate);
+  }
 
   *distance = static_cast<double>(distance_fp);
   *gradient = gradient_fp.cast<double>();

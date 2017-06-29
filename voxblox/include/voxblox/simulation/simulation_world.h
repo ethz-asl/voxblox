@@ -49,6 +49,12 @@ class SimulationWorld {
   FloatingPoint getDistanceToPoint(const Point& coords,
                                    FloatingPoint max_dist) const;
 
+  // Set and get the map generation and display bounds.
+  void setBounds(const Point& min_bound, const Point& max_bound) {
+    min_bound_ = min_bound;
+    max_bound_ = max_bound;
+  }
+
   Point getMinBound() const { return min_bound_; }
   Point getMaxBound() const { return max_bound_; }
 

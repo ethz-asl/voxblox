@@ -116,6 +116,13 @@ class EsdfIntegrator {
     return dist_m < 0.0;
   }
 
+  // Clears the state of the integrator, in case robot pose clearance is used.
+  void clear() {
+    updated_blocks_.clear();
+    open_.clear();
+    raise_ = std::queue<VoxelKey>();
+  }
+
  protected:
   // Convenience functions for planning.
   typedef BlockHashMapType<VoxelIndexList>::type BlockVoxelListMap;

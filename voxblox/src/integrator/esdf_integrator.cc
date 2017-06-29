@@ -1,5 +1,7 @@
 #include "voxblox/integrator/esdf_integrator.h"
 
+#include <iostream>
+
 namespace voxblox {
 
 EsdfIntegrator::EsdfIntegrator(const Config& config,
@@ -59,6 +61,9 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_layer_->allocateBlockPtrByIndex(kv.first);
 
     for (const VoxelIndex& voxel_index : kv.second) {
+      if (!block_ptr->isValidVoxelIndex(voxel_index)) {
+        continue;
+      }
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
       if (!esdf_voxel.observed) {
         esdf_voxel.distance = config_.default_distance_m;
@@ -127,7 +132,9 @@ void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
 
   if (clear_updated_flag) {
     for (const BlockIndex& block_index : tsdf_blocks) {
-      tsdf_layer_->getBlockByIndex(block_index).updated() = false;
+      if (tsdf_layer_->hasBlock(block_index)) {
+        tsdf_layer_->getBlockByIndex(block_index).updated() = false;
+      }
     }
   }
 }
@@ -537,6 +544,9 @@ void EsdfIntegrator::processOpenSet() {
 
     Block<EsdfVoxel>::Ptr esdf_block =
         esdf_layer_->getBlockPtrByIndex(kv.first);
+    if (!esdf_block) {
+      continue;
+    }
     EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
     // Again, no point updating unobserved voxels.

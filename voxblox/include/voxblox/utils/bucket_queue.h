@@ -14,7 +14,10 @@ class BucketQueue {
  public:
   BucketQueue() : last_bucket_index_(0) {}
   explicit BucketQueue(int num_buckets, double max_val)
-      : num_buckets_(num_buckets), max_val_(max_val), last_bucket_index_(0) {
+      : num_buckets_(num_buckets),
+        max_val_(max_val),
+        last_bucket_index_(0),
+        num_elements_(0) {
     buckets_.resize(num_buckets_);
   }
 
@@ -69,6 +72,13 @@ class BucketQueue {
   }
 
   bool empty() { return num_elements_ == 0; }
+
+  void clear() {
+    buckets_.clear();
+    buckets_.resize(num_buckets_);
+    last_bucket_index_ = 0;
+    num_elements_ = 0;
+  }
 
  private:
   int num_buckets_;
