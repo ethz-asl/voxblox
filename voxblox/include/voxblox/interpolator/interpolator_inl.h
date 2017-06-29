@@ -341,12 +341,6 @@ bool Interpolator<VoxelType>::getNearestDistanceAndWeight(
 
 // Specializations for TSDF and ESDF voxels.
 template <>
-inline FloatingPoint Interpolator<TangoTsdfVoxel>::getVoxelDistance(
-    const TangoTsdfVoxel& voxel) {
-  return voxel.distance;
-}
-
-template <>
 inline FloatingPoint Interpolator<TsdfVoxel>::getVoxelDistance(
     const TsdfVoxel& voxel) {
   return voxel.distance;
@@ -359,11 +353,6 @@ inline FloatingPoint Interpolator<EsdfVoxel>::getVoxelDistance(
 }
 
 template <>
-inline float Interpolator<TangoTsdfVoxel>::getVoxelWeight(const TangoTsdfVoxel& voxel) {
-  return voxel.weight;
-}
-
-template <>
 inline float Interpolator<TsdfVoxel>::getVoxelWeight(const TsdfVoxel& voxel) {
   return voxel.weight;
 }
@@ -371,11 +360,6 @@ inline float Interpolator<TsdfVoxel>::getVoxelWeight(const TsdfVoxel& voxel) {
 template <>
 inline float Interpolator<EsdfVoxel>::getVoxelWeight(const EsdfVoxel& voxel) {
   return voxel.observed ? 1.0f : 0.0f;
-}
-
-template <>
-inline bool Interpolator<TangoTsdfVoxel>::isVoxelValid(const TangoTsdfVoxel& voxel) {
-  return voxel.weight > 0.0;
 }
 
 template <>
@@ -419,7 +403,7 @@ inline FloatingPoint Interpolator<VoxelType>::interpMember(
   }
   /*
     The paper (http://spie.org/samples/PM159.pdf) has a different
-    order than us for the data. The table below is therefore a
+    order than us for the data. The table below is therefore a 
     permuted version of the table in the paper.
 
     Current data order

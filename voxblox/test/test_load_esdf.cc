@@ -11,9 +11,6 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
-#include <voxblox/core/esdf_map.h>
-#include <voxblox/integrator/esdf_tango_integrator.h>
-
 using namespace voxblox;  // NOLINT
 
 int main(int argc, char** argv) {
