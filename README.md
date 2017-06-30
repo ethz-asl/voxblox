@@ -11,6 +11,9 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
  * Easily extensible with whatever integrators you want
  * Features an implementation of building Euclidean Signed Distance Fields (ESDFs, EDTs) directly from TSDFs.
 
+# Table of Contents
+* [Paper and Video](README.md#paper-and-video)
+
 # Paper and Video
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
 A video of voxblox being used for online planning on-board a multicopter can be seen [here](https://youtu.be/lrGSwAPzMOQ).
