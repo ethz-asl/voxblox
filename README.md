@@ -168,7 +168,7 @@ A summary of the user setable voxblox_node parameters:
 | `esdf_max_distance_m` | The maximum distance that the esdf will be calculated out to | 2.0 |
 | `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
 | `mesh_filename` | Filename output mesh will be saved to, leave blank if no file should be generated | "" |
-| `color_mode` | The method that will be used for coloring the mesh. Options are "color", "height", "normals" and "lambert". | "color" |
+| `color_mode` | The method that will be used for coloring the mesh. Options are "color", "height", "normals", "lambert" and "gray". | "color" |
 | `mesh_min_weight` | The minimum weighting needed for a point to be included in the mesh | 1e-4 |
 | `update_mesh_every_n_sec` | Rate at which the mesh topic will be published to, a value of 0 disables. Note, this will not trigger any other mesh operations, such as generating a ply file. | 0.0 |
 | `use_tf_transforms` | If true the ros tf tree will be used to get the pose of the sensor relative to the world (`sensor_frame` and `world_frame` will be used). If false the pose must be given via the `transform` topic. | true |
