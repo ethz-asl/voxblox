@@ -61,6 +61,11 @@ add_executable(mesh_tango_tsdf
 )
 target_link_libraries(mesh_tango_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
+add_executable(tango_tsdf_resize
+  test/tango_tsdf_resize.cc
+)
+target_link_libraries(tango_tsdf_resize ${PROJECT_NAME} ${catkin_LIBRARIES})
+
 add_executable(tango_tsdf_to_esdf
   test/tango_tsdf_to_esdf.cc
 )

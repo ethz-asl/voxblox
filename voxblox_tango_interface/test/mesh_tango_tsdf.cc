@@ -20,7 +20,9 @@ int main(int argc, char** argv) {
   TangoLayerInterface::Ptr layer_from_file;
   io::TangoLoadLayer(file, &layer_from_file);
 
-  std::cout << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
+  LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
+  LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size() << "\n";
+  LOG(WARNING) << "Layer voxels per side: " << layer_from_file->voxels_per_side() << "\n";
 
   // Mesh accessories.
   MeshIntegrator<TsdfVoxel>::Config mesh_config;
@@ -32,7 +34,7 @@ int main(int argc, char** argv) {
       mesh_config, layer_from_file.get(), mesh_layer_.get()));
 
   mesh_integrator_->generateWholeMesh();
-  std::cout << "Number of meshes: " << mesh_layer_->getNumberOfAllocatedMeshes() << "\n";
+  LOG(WARNING) << "Number of meshes: " << mesh_layer_->getNumberOfAllocatedMeshes() << "\n";
   bool meshSuccess = outputMeshLayerAsPly(argv[2], *mesh_layer_);
 
   if (meshSuccess == false) {

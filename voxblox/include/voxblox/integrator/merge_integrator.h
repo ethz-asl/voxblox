@@ -17,7 +17,7 @@ namespace voxblox {
 class MergeIntegrator {
  public:
   // all methods are static so the class does not need a constructor
-  MergeIntegrator() = delete;
+  //MergeIntegrator() = delete;
 
   template <typename VoxelType>
   static void mergeVoxelAIntoVoxelB(const VoxelType& voxel_A,
@@ -51,10 +51,12 @@ class MergeIntegrator {
   template <typename VoxelType>
   static void MergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
                                     Layer<VoxelType>* layer_B) {
+    CHECK_NOTNULL(layer_B);
     // if voxel layout is different resample layer A to match B
     const Layer<VoxelType>* layer_A_ptr;
     Layer<VoxelType> layer_A_resampled(layer_B->voxel_size(),
                                        layer_B->voxels_per_side());
+
     if ((layer_A.voxel_size() != layer_B->voxel_size()) ||
         (layer_A.voxels_per_side() != layer_B->voxels_per_side())) {
       resampleLayer(layer_A, &layer_A_resampled);
@@ -76,7 +78,12 @@ class MergeIntegrator {
         block_B_ptr = layer_B->allocateBlockPtrByIndex(block_idx);
       }
 
-      MergeBlockAIntoBlockB(*block_A_ptr, block_B_ptr.get());
+      //CHECK_NOTNULL(block_A_ptr);
+      //CHECK_NOTNULL(block_B_ptr);
+      if ((block_A_ptr != nullptr) &&
+          (block_B_ptr != nullptr)){
+        MergeBlockAIntoBlockB(*block_A_ptr, block_B_ptr.get());
+      }
     }
   }
 

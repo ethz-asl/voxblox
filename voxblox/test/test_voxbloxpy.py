@@ -13,8 +13,12 @@ try:
 except RuntimeError as e:
     print(e)
 
-map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella/terra_bella_esdf.proto')
+#map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
+map = voxblox.EsdfMap('/Users/mereweth/Desktop/drl_munich_depth_motion_stereo/drl_munich_depth_motion_stereo.esdf.proto')
 #map = voxblox.EsdfMap('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady_esdf.proto')
+
+print map.voxel_size
+print map.block_size
 
 import numpy as np
 
@@ -43,7 +47,7 @@ def interp_fun():
 interp_duration = timeit.timeit(interp_fun, number=10) / 10.0
 print(interp_duration)
 
-num_pts = 20480
+num_pts = 1000 * 1000
 slice_pos = np.matrix(np.zeros((3, num_pts)))
 slice_dist = np.matrix(np.zeros((np.shape(slice_pos)[1], 1), dtype='double'))
 

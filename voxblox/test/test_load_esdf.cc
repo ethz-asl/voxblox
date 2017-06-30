@@ -25,7 +25,9 @@ int main(int argc, char** argv) {
   Layer<EsdfVoxel>::Ptr layer_from_file;
   io::LoadLayer<EsdfVoxel>(file, &layer_from_file);
 
-  std::cout << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
+  LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
+  LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size() << "\n";
+  LOG(WARNING) << "Layer voxels per side: " << layer_from_file->voxels_per_side() << "\n";
 
   return 0;
 }

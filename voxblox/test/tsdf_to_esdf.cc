@@ -28,7 +28,9 @@ int main(int argc, char** argv) {
   Layer<TsdfVoxel>::Ptr layer_from_file;
   io::LoadLayer<TsdfVoxel>(file, &layer_from_file);
 
-  std::cout << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
+  LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
+  LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size() << "\n";
+  LOG(WARNING) << "Layer voxels per side: " << layer_from_file->voxels_per_side() << "\n";
 
   // ESDF maps.
   EsdfMap::Config esdf_config;
@@ -48,7 +50,8 @@ int main(int argc, char** argv) {
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                                  layer_from_file.get(),
                                                  esdf_map_->getEsdfLayerPtr()));
-  esdf_integrator_->updateFromTsdfLayerBatch();
+  //esdf_integrator_->updateFromTsdfLayerBatch();
+  esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
 
   bool esdfSuccess = io::SaveLayer(esdf_map_->getEsdfLayer(), argv[2]);
 
