@@ -284,7 +284,7 @@ class MeshIntegrator {
           mesh->colors[i] = voxel.color;
         }
       } else {
-        const Block<VoxelType>::ConstPtr neighbor_block =
+        const typename Block<VoxelType>::ConstPtr neighbor_block =
             tsdf_layer_->getBlockPtrByCoordinates(vertex);
         const VoxelType& voxel = neighbor_block->getVoxelByCoordinates(vertex);
         if (voxel.weight >= config_.min_weight) {

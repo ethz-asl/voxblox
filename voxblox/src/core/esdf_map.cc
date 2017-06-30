@@ -54,11 +54,20 @@ void EsdfMap::batchGetDistanceAtPosition(
           EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
           Eigen::Ref<Eigen::VectorXd> distances,
           Eigen::Ref<Eigen::VectorXi> observed) const {
-  /* TODO(mereweth@jpl.nasa.gov) - this looks like it gets truncated on return
-   * to Python anyway. Throw std::runtime_error here if too small?
+  /* NOTE(mereweth@jpl.nasa.gov) - this looks like it gets truncated on return
+   * to Python anyway. Throw std::runtime_error here if too small
    */
-  distances.resize(positions.cols());
-  observed.resize(positions.cols());
+  //distances.resize(positions.cols());
+  //observed.resize(positions.cols());
+
+  if (distances.size() < positions.cols()) {
+    throw std::runtime_error("Distances array smaller than number of queries");
+  }
+
+  if (observed.size() < positions.cols()) {
+    throw std::runtime_error("Observed array smaller than number of queries");
+  }
+
   for (int i = 0; i < positions.cols(); i++) {
     observed[i] = getDistanceAtPosition(positions.col(i), &distances[i]);
   }
@@ -69,12 +78,18 @@ void EsdfMap::batchGetDistanceAndGradientAtPosition(
           Eigen::Ref<Eigen::VectorXd> distances,
           EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients,
           Eigen::Ref<Eigen::VectorXi> observed) const {
-  /* TODO(mereweth@jpl.nasa.gov) - this looks like it gets truncated on return
-   * to Python anyway. Throw std::runtime_error here if too small?
-   */
-  distances.resize(positions.cols());
-  gradients.resize(3, positions.cols());
-  observed.resize(positions.cols());
+  if (distances.size() < positions.cols()) {
+    throw std::runtime_error("Distances array smaller than number of queries");
+  }
+
+  if (observed.size() < positions.cols()) {
+    throw std::runtime_error("Observed array smaller than number of queries");
+  }
+
+  if (gradients.cols() < positions.cols()) {
+    throw std::runtime_error("Gradients matrix smaller than number of queries");
+  }
+
   for (int i = 0; i < positions.cols(); i++) {
     Eigen::Vector3d gradient;
     observed[i] = getDistanceAndGradientAtPosition(positions.col(i),
@@ -88,10 +103,10 @@ void EsdfMap::batchGetDistanceAndGradientAtPosition(
 void EsdfMap::batchIsObserved(
           EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
           Eigen::Ref<Eigen::VectorXi> observed) const {
-  /* TODO(mereweth@jpl.nasa.gov) - this looks like it gets truncated on return
-   * to Python anyway. Throw std::runtime_error here if too small?
-   */
-  observed.resize(positions.cols());
+  if (observed.size() < positions.cols()) {
+    throw std::runtime_error("Observed array smaller than number of queries");
+  }
+  
   for (int i = 0; i < positions.cols(); i++) {
     observed[i] = isObserved(positions.col(i));
   }
