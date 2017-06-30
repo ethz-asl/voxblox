@@ -116,6 +116,15 @@ The voxblox_node publishes and subscribes to the following topics:
   - **`transform`** of type `geometry_msgs::TransformStamped`. Only appears if `use_tf_transforms` is false. The transformation from the world frame to the current sensor frame.
   - **`pointcloud`** of type `sensor_msgs::PointCloud2`. The input pointcloud to be integrated.
 
+# Services
+
+The voxblox_node has the following services:
+
+  - **`generate_mesh`** This service has an empty request and response. Calling this service will generate a new mesh. The mesh will be saved as a ply file unless `mesh_filename` is set to "". The mesh will also be output on the `mesh_pointcloud` topic if `output_mesh_as_pointcloud` is true and on the `mesh_pcl` topic if `output_mesh_as_pcl_mesh` is true.
+  - **`generate_esdf`** This service has an empty request and response. It can be used to trigger an esdf map update.
+  - **`save_map`** This service has a `voxblox_msgs::FilePath::Request` and `voxblox_msgs::FilePath::Response`. The service call saves the tsdf layer to a .vxblx file.
+  - **`load_map`** This service has a `voxblox_msgs::FilePath::Request` and `voxblox_msgs::FilePath::Response`. The service call loads the tsdf layer from a .vxblx file.
+  
 # Parameters
 ------
 A summary of the user setable voxblox_node parameters:
