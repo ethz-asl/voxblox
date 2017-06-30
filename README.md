@@ -16,7 +16,12 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 * [Credits](README.md#credits)
 * [Installation](README.md#installation)
 * [Running Voxblox](README.md#running-voxblox)
-* [Published and Subscribed Topics](README.md#published-and-subscribed-topics)
+* [Voxblox Node](README.md#voxblox-node)
+  * [Published and Subscribed Topics](README.md#published-and-subscribed-topics)
+  * [Services](README.md#Services)
+  * [Parameters](README.md#parameters)
+* [Modifying Voxblox](README.md#modifying-voxblox)
+  * [Serialization](README.md#serialization)
 
 # Paper and Video
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
