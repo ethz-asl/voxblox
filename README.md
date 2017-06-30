@@ -13,6 +13,10 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 
 # Table of Contents
 * [Paper and Video](README.md#paper-and-video)
+* [Credits](README.md#credits)
+* [Installation](README.md#installation)
+* [Running Voxblox](README.md#running-voxblox)
+* [Published and Subscribed Topics](README.md#published-and-subscribed-topics)
 
 # Paper and Video
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
@@ -100,7 +104,9 @@ The mesh only updates once per second (this is a setting in the launch file).
 
 The rest of the commonly-used settings are parameters in the launch file.
 
-# Published and subscribed topics
+# Voxblox Node
+
+## Published and Subscribed Topics
 
 The voxblox_node publishes and subscribes to the following topics:
 
@@ -119,7 +125,7 @@ The voxblox_node publishes and subscribes to the following topics:
   - **`transform`** of type `geometry_msgs::TransformStamped`. Only appears if `use_tf_transforms` is false. The transformation from the world frame to the current sensor frame.
   - **`pointcloud`** of type `sensor_msgs::PointCloud2`. The input pointcloud to be integrated.
 
-# Services
+## Services
 
 The voxblox_node has the following services:
 
@@ -128,7 +134,7 @@ The voxblox_node has the following services:
   - **`save_map`** This service has a `voxblox_msgs::FilePath::Request` and `voxblox_msgs::FilePath::Response`. The service call saves the tsdf layer to a .vxblx file.
   - **`load_map`** This service has a `voxblox_msgs::FilePath::Request` and `voxblox_msgs::FilePath::Response`. The service call loads the tsdf layer from a .vxblx file.
   
-# Parameters
+## Parameters
 ------
 A summary of the user setable voxblox_node parameters:
 
