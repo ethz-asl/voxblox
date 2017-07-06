@@ -1,6 +1,3 @@
-#ifndef VOXBLOX_PYBIND_ESDF_MAP_BIND_H_
-#define VOXBLOX_PYBIND_ESDF_MAP_BIND_H_
-
 #include "voxblox/core/esdf_map.h"
 
 #include <pybind11/pybind11.h>
@@ -15,13 +12,17 @@ PYBIND11_MODULE(voxbloxpy, m) {
         .def_property_readonly("block_size", &EsdfMap::block_size)
         .def_property_readonly("voxel_size", &EsdfMap::voxel_size)
 
-        .def("getDistanceAtPosition", &voxblox::EsdfMap::batchGetDistanceAtPosition)
-        .def("getDistanceAndGradientAtPosition", &voxblox::EsdfMap::batchGetDistanceAndGradientAtPosition)
-        .def("isObserved", &voxblox::EsdfMap::batchIsObserved)
+        .def("getDistanceAtPosition", &EsdfMap::batchGetDistanceAtPosition)
+        .def("getDistanceAndGradientAtPosition", &EsdfMap::batchGetDistanceAndGradientAtPosition)
+        .def("isObserved", &EsdfMap::batchIsObserved)
 
-        .def("coordPlaneSliceGetDistance", &voxblox::EsdfMap::coordPlaneSliceGetDistance)
+        .def("coordPlaneSliceGetDistance", &EsdfMap::coordPlaneSliceGetDistance,
+             "Evaluate distances at all allocated voxels along an axis-aligned slice",
+             py::arg("free_plane_index"),
+             py::arg("free_plane_val"),
+             py::arg("positions"),
+             py::arg("distances"),
+             py::arg("max_points") = 100000)
 
         ;
 }
-
-#endif // VOXBLOX_PYBIND_ESDF_MAP_BIND_H_

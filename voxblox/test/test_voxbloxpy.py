@@ -13,9 +13,9 @@ try:
 except RuntimeError as e:
     print(e)
 
-#map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
-map = voxblox.EsdfMap('/Users/mereweth/Desktop/drl_munich_depth_motion_stereo/drl_munich_depth_motion_stereo.esdf.proto')
-#map = voxblox.EsdfMap('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady_esdf.proto')
+map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
+#map = voxblox.EsdfMap('/Users/mereweth/Desktop/drl_munich_depth_motion_stereo/drl_munich_depth_motion_stereo.esdf.proto')
+#map = voxblox.EsdfMap('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
 
 print map.voxel_size
 print map.block_size
@@ -42,6 +42,8 @@ obs = np.matrix(np.zeros((np.shape(query)[1], 1), dtype='int32'))
 map.isObserved(query, obs)
 map.getDistanceAtPosition(query, dist, obs)
 
+import pdb; pdb.set_trace()
+
 def interp_fun():
     map.getDistanceAndGradientAtPosition(query, dist, grad, obs)
 interp_duration = timeit.timeit(interp_fun, number=10) / 10.0
@@ -55,7 +57,8 @@ def no_interp_fun():
     map.coordPlaneSliceGetDistance(2, # xy plane
                                    0.5, # z
                                    slice_pos,
-                                   slice_dist)
+                                   slice_dist,
+                                   num_pts)
 no_interp_duration = timeit.timeit(no_interp_fun, number=10) / 10.0
 print(no_interp_duration)
 

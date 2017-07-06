@@ -11,14 +11,28 @@ using namespace voxblox;  // NOLINT
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
 
-  if (argc != 3) {
-    throw std::runtime_error("Args: filename to load, followed by filename to save to");
+  if (argc != 7) {
+    throw std::runtime_error(std::string("Args: filename to load, filename to save to")
+                             + ", min weight, min fixed distance"
+                             + ", max esdf distance, default esdf distance");
   }
 
   const std::string file = argv[1];
+  FloatingPoint min_weight = std::stof(argv[3]);
+  FloatingPoint min_distance_m = std::stof(argv[4]);
+  FloatingPoint max_distance_m = std::stof(argv[5]);
+  FloatingPoint default_distance_m = std::stof(argv[6]);
 
   TangoLayerInterface::Ptr layer_from_file;
   io::TangoLoadLayer(file, &layer_from_file);
+
+  // TODO(mereweth@jpl.nasa.gov) - can we get truncation distance from ntsdf proto?
+  if (min_distance_m > layer_from_file->block_size()) {
+    // Make sure that this is the same as the truncation distance OR SMALLER!
+    min_distance_m = layer_from_file->block_size();
+    // esdf_integrator_config.min_distance_m =
+    //    tsdf_integrator_->getConfig().default_truncation_distance;
+  }
 
   LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
   LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size() << "\n";
@@ -35,13 +49,13 @@ int main(int argc, char** argv) {
   esdf_config.esdf_voxel_size = layer_from_file->voxel_size();
   esdf_map_.reset(new EsdfMap(esdf_config));
   EsdfIntegrator::Config esdf_integrator_config;
-  // Make sure that this is the same as the truncation distance OR SMALLER!
-  esdf_integrator_config.min_distance_m = esdf_config.esdf_voxel_size;
-  // esdf_integrator_config.min_distance_m =
-  //    tsdf_integrator_->getConfig().default_truncation_distance;
+  esdf_integrator_config.min_weight = min_weight;
+  esdf_integrator_config.min_distance_m = min_distance_m;
+  esdf_integrator_config.max_distance_m = max_distance_m;
+  esdf_integrator_config.default_distance_m = default_distance_m;
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
-                                                 layer_from_file.get(),
-                                                 esdf_map_->getEsdfLayerPtr()));
+                                            layer_from_file.get(),
+                                            esdf_map_->getEsdfLayerPtr()));
   //esdf_integrator_->updateFromTsdfLayerBatch();
   esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
 

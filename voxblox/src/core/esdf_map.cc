@@ -106,7 +106,7 @@ void EsdfMap::batchIsObserved(
   if (observed.size() < positions.cols()) {
     throw std::runtime_error("Observed array smaller than number of queries");
   }
-  
+
   for (int i = 0; i < positions.cols(); i++) {
     observed[i] = isObserved(positions.col(i));
   }
@@ -116,7 +116,8 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
                 unsigned int free_plane_index,
                 double free_plane_val,
                 EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-                Eigen::Ref<Eigen::VectorXd> distances) const {
+                Eigen::Ref<Eigen::VectorXd> distances,
+                unsigned int max_points) const {
   BlockIndexList blocks;
   esdf_layer_->getAllAllocatedBlocks(&blocks);
 
@@ -128,7 +129,15 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
   bool did_all_fit = true;
   unsigned int count = 0;
 
-  // Iterate over all blocks.
+  /* TODO(mereweth@jpl.nasa.gov) - store min/max index (per axis) allocated in Layer
+   * This extra bookeeping will make this much faster
+   * // Iterate over all blocks corresponding to slice plane
+   * Point on_slice_plane(0, 0, 0);
+   * on_slice_plane(free_plane_index) = free_plane_val;
+   * BlockIndex block_index =
+   *   esdf_layer_->computeBlockIndexFromCoordinates(on_slice_plane);
+   */
+
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     const Block<EsdfVoxel>& block = esdf_layer_->getBlockByIndex(index);
@@ -159,7 +168,6 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
           //distance = 0;
         }
 
-        // TODO(mereweth@jpl.nasa.gov) - implement max points to return
         if (count < positions.cols()) {
           positions.col(count) = Eigen::Vector3d(coord.x(), coord.y(), coord.z());
         }
@@ -173,6 +181,9 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
           did_all_fit = false;
         }
         count++;
+        if (count >= max_points) {
+          return count;
+        }
       }
     }
   }

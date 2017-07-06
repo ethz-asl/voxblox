@@ -7,6 +7,11 @@ catkin_simple()
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
+if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../pybind11/CMakeLists.txt")
+  set(HAVE_PYBIND11 TRUE)
+  message(STATUS "Found pybind11; generating Python bindings")
+endif()
+
 ############
 # PROTOBUF #
 ############
@@ -46,11 +51,55 @@ set("${PROJECT_NAME}_SRCS"
 #############
 # LIBRARIES #
 #############
-cs_add_library(${PROJECT_NAME}
-  ${${PROJECT_NAME}_SRCS}
+# NOTE(mereweth@jpl.nasa.gov) - Be careful when compiling Proto cc files. It is
+# best to do so only once (make a shared library for each set of Proto files.
+# Otherwise, at some point, you will get errors from double-adding protobuf
+# formats, of the following form:
+# [libprotobuf ERROR google/protobuf/descriptor_database.cc:57]
+# File already exists in database: Block.proto
+
+# Avoid having multiple compiled copies of the same .pb.cc
+# file sharing a single copy of libprotobuf.so
+cs_add_library(${PROJECT_NAME}_proto
   ${PROTO_SRCS}
 )
-target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES})
+
+cs_add_library(${PROJECT_NAME}
+  ${${PROJECT_NAME}_SRCS}
+)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES})
+
+###################
+# PYTHON BINDINGS #
+###################
+
+if(HAVE_PYBIND11)
+  # We conditionally import voxblox_tango_interfacepy from voxblox
+  # So no need to make this a python package
+  #catkin_python_setup()
+
+  # TODO(mereweth@jpl.nasa.gov) - how to tell pybind11 about an existing library?
+  # or should we just use the pybind library for everything?
+  add_subdirectory(../pybind11 pybind11)
+  message("Building Python bindings for voxblox")
+  pybind11_add_module(voxblox_tango_interfacepy
+    ${${PROJECT_NAME}_SRCS}
+    src/pybind11/tango_layer_interface_bind.cc)
+  set_target_properties(voxblox_tango_interfacepy PROPERTIES LINKER_LANGUAGE CXX)
+  target_link_libraries(voxblox_tango_interfacepy PUBLIC ${PROJECT_NAME}_proto
+                                                         ${PROTOBUF_LIBRARIES}
+                                                         ${catkin_LIBRARIES})
+
+  # TODO(mereweth@jpl.nasa.gov) - is there a better way to make this importable?
+  #cs_add_targets_to_package(voxbloxpy)
+
+  # TODO(mereweth@jpl.nasa.gov) - this is a bit hacky but it works
+  set_target_properties(voxblox_tango_interfacepy
+    PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+    ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}/../
+  )
+endif()
 
 ############
 # BINARIES #
@@ -61,10 +110,10 @@ add_executable(mesh_tango_tsdf
 )
 target_link_libraries(mesh_tango_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
-add_executable(tango_tsdf_resize
-  test/tango_tsdf_resize.cc
+add_executable(tango_tsdf_resize_to_tsdf
+  test/tango_tsdf_resize_to_tsdf.cc
 )
-target_link_libraries(tango_tsdf_resize ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(tango_tsdf_resize_to_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_executable(tango_tsdf_to_esdf
   test/tango_tsdf_to_esdf.cc

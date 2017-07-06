@@ -10,17 +10,28 @@
 
 namespace voxblox {
 
-class TangoLayerInterface : public Layer<TsdfVoxel> {
+class TangoLayerInterface : public Layer<TsdfVoxel> {/*,
+                            public std::enable_shared_from_this<TangoLayerInterface> {*/
 public:
   // NOTE(mereweth@jpl.nasa.gov) - need this typedef
   typedef std::shared_ptr<TangoLayerInterface> Ptr;
 
   explicit TangoLayerInterface(const tsdf2::MapHeaderProto& proto);
 
+  explicit TangoLayerInterface(FloatingPoint voxel_size,
+                               size_t voxels_per_side,
+                               unsigned int max_ntsdf_voxel_weight,
+                               FloatingPoint meters_to_ntsdf)
+      : Layer<TsdfVoxel>(voxel_size, voxels_per_side),
+        max_ntsdf_voxel_weight_(max_ntsdf_voxel_weight),
+        meters_to_ntsdf_(meters_to_ntsdf)
+    { }
+
   bool isCompatible(const tsdf2::MapHeaderProto& layer_proto) const;
   bool isCompatible(const tsdf2::VolumeProto& block_proto) const;
   bool addBlockFromProto(const tsdf2::VolumeProto& block_proto,
                          TangoLayerInterface::BlockMergingStrategy strategy);
+
 private:
   unsigned int max_ntsdf_voxel_weight_;
   FloatingPoint meters_to_ntsdf_;
