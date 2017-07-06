@@ -105,6 +105,11 @@ endif()
 # BINARIES #
 ############
 
+add_executable(test_tango_layer_interface_constructor
+  test/test_tango_layer_interface_constructor.cc
+)
+target_link_libraries(test_tango_layer_interface_constructor ${PROJECT_NAME} ${catkin_LIBRARIES})
+
 add_executable(mesh_tango_tsdf
   test/mesh_tango_tsdf.cc
 )

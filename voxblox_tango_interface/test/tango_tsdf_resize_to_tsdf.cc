@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
 
   TangoLayerInterface::Ptr layer_from_file;
   io::TangoLoadLayer(file, &layer_from_file);
+
   LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
   LOG(WARNING) << "Old layer voxel size: " << layer_from_file->voxel_size() << "\n";
   LOG(WARNING) << "Old layer voxels per side: " << layer_from_file->voxels_per_side() << "\n";

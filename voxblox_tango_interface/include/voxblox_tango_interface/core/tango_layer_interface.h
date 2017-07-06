@@ -18,6 +18,12 @@ public:
 
   explicit TangoLayerInterface(const tsdf2::MapHeaderProto& proto);
 
+  // TODO(mereweth@jpl.nasa.gov) - best way to check not null?
+  explicit TangoLayerInterface(std::shared_ptr<TangoLayerInterface> tango_layer_interface)
+      : TangoLayerInterface(tango_layer_interface ? *tango_layer_interface :
+                            TangoLayerInterface(0.2, 16u, 1, 1.0))
+    { }
+
   explicit TangoLayerInterface(FloatingPoint voxel_size,
                                size_t voxels_per_side,
                                unsigned int max_ntsdf_voxel_weight,

@@ -47,14 +47,14 @@ class MeshIntegrator {
     float min_weight = 1e-4;
   };
 
-  MeshIntegrator(const Config& config, Layer<VoxelType>* tsdf_layer,
+  MeshIntegrator(const Config& config, Layer<VoxelType>* voxel_layer,
                  MeshLayer* mesh_layer)
       : config_(config),
-        tsdf_layer_(CHECK_NOTNULL(tsdf_layer)),
+        voxel_layer_(CHECK_NOTNULL(voxel_layer)),
         mesh_layer_(CHECK_NOTNULL(mesh_layer)) {
-    voxel_size_ = tsdf_layer_->voxel_size();
-    block_size_ = tsdf_layer_->block_size();
-    voxels_per_side_ = tsdf_layer_->voxels_per_side();
+    voxel_size_ = voxel_layer_->voxel_size();
+    block_size_ = voxel_layer_->block_size();
+    voxels_per_side_ = voxel_layer_->voxels_per_side();
 
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_inv_ = 1.0 / block_size_;
@@ -64,14 +64,14 @@ class MeshIntegrator {
         0, 0, 1, 1, 1, 1;
   }
 
-  // Generates mesh for the entire tsdf layer from scratch.
+  // Generates mesh for the entire layer from scratch.
   void generateWholeMesh() {
     mesh_layer_->clear();
-    // Get all of the blocks in the TSDF layer, and mesh each one.
-    BlockIndexList all_tsdf_blocks;
-    tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
+    // Get all of the blocks in the layer, and mesh each one.
+    BlockIndexList all_blocks;
+    voxel_layer_->getAllAllocatedBlocks(&all_blocks);
 
-    for (const BlockIndex& block_index : all_tsdf_blocks) {
+    for (const BlockIndex& block_index : all_blocks) {
       updateMeshForBlock(block_index);
     }
   }
@@ -80,12 +80,12 @@ class MeshIntegrator {
     // Only update parts of the mesh for blocks that have updated.
     // clear_updated_flag decides whether to reset 'updated' after updating the
     // mesh.
-    BlockIndexList all_tsdf_blocks;
-    tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
+    BlockIndexList all_blocks;
+    voxel_layer_->getAllAllocatedBlocks(&all_blocks);
 
-    for (const BlockIndex& block_index : all_tsdf_blocks) {
+    for (const BlockIndex& block_index : all_blocks) {
       typename Block<VoxelType>::Ptr block =
-          tsdf_layer_->getBlockPtrByIndex(block_index);
+          voxel_layer_->getBlockPtrByIndex(block_index);
       if (block->updated()) {
         updateMeshForBlock(block_index);
         if (clear_updated_flag) {
@@ -148,7 +148,7 @@ class MeshIntegrator {
     // This block should already exist, otherwise it makes no sense to update
     // the mesh for it. ;)
     typename Block<VoxelType>::ConstPtr block =
-        tsdf_layer_->getBlockPtrByIndex(block_index);
+        voxel_layer_->getBlockPtrByIndex(block_index);
 
     if (!block) {
       LOG(ERROR) << "Trying to mesh a non-existent block at index: "
@@ -241,9 +241,9 @@ class MeshIntegrator {
 
         BlockIndex neighbor_index = block.block_index() + block_offset;
 
-        if (tsdf_layer_->hasBlock(neighbor_index)) {
+        if (voxel_layer_->hasBlock(neighbor_index)) {
           const Block<VoxelType>& neighbor_block =
-              tsdf_layer_->getBlockByIndex(neighbor_index);
+              voxel_layer_->getBlockByIndex(neighbor_index);
 
           CHECK(neighbor_block.isValidVoxelIndex(corner_index));
           const VoxelType& voxel =
@@ -285,7 +285,7 @@ class MeshIntegrator {
         }
       } else {
         const typename Block<VoxelType>::ConstPtr neighbor_block =
-            tsdf_layer_->getBlockPtrByCoordinates(vertex);
+            voxel_layer_->getBlockPtrByCoordinates(vertex);
         const VoxelType& voxel = neighbor_block->getVoxelByCoordinates(vertex);
         if (voxel.weight >= config_.min_weight) {
           mesh->colors[i] = voxel.color;
@@ -298,7 +298,7 @@ class MeshIntegrator {
     mesh->normals.clear();
     mesh->normals.resize(mesh->indices.size(), Point::Zero());
 
-    Interpolator<VoxelType> interpolator(tsdf_layer_);
+    Interpolator<VoxelType> interpolator(voxel_layer_);
 
     Point grad;
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
@@ -315,7 +315,7 @@ class MeshIntegrator {
  protected:
   Config config_;
 
-  Layer<VoxelType>* tsdf_layer_;
+  Layer<VoxelType>* voxel_layer_;
   MeshLayer* mesh_layer_;
 
   // Cached map config.

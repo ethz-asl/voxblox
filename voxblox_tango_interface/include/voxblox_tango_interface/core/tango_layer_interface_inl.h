@@ -4,6 +4,10 @@
 #include "./MapHeader.pb.h"
 #include "./Volume.pb.h"
 
+/* TODO(mereweth@jpl.nasa.gov) - this is not a template class, so no need to have
+ * these definitions here
+ */
+
 namespace voxblox {
 
 inline TangoLayerInterface::TangoLayerInterface(const tsdf2::MapHeaderProto& proto)
