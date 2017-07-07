@@ -6,12 +6,14 @@ namespace py = pybind11;
 using voxblox::TsdfVoxel;
 using voxblox::EsdfVoxel;
 
+using voxblox::TsdfVoxel;
+using voxblox::EsdfVoxel;
+using TsdfLayer = voxblox::Layer<TsdfVoxel>;
+using EsdfLayer = voxblox::Layer<EsdfVoxel>;
+
 void layer_io_bind(py::module &m) {
-    m.def("loadTsdfLayer", &voxblox::io::LoadLayer<TsdfVoxel>);
+    // NOTE (mereweth@jpl.nasa.gov) - provide function signature for overloaded method
+    m.def("loadTsdfLayer", (TsdfLayer (*)(const std::string &)) &voxblox::io::LoadLayer<TsdfVoxel>);
 
-    m.def("loadEsdfLayer", &voxblox::io::LoadLayer<EsdfVoxel>);
-
-    m.def("loadOrCreateTsdfLayer", &voxblox::io::LoadOrCreateLayer<TsdfVoxel>);
-
-    m.def("loadOrCreateEsdfLayer", &voxblox::io::LoadOrCreateLayer<EsdfVoxel>);
+    m.def("loadEsdfLayer", (EsdfLayer (*)(const std::string &)) &voxblox::io::LoadLayer<EsdfVoxel>);
 }

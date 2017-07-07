@@ -14,9 +14,16 @@ void esdf_map_bind(py::module &m) {
    * Python reference counting?
    */
 
+    py::class_<EsdfMap::Config>(m, "EsdfMapConfig")
+        .def(py::init<>())
+        .def_readwrite("voxel_size", &EsdfMap::Config::esdf_voxel_size)
+        .def_readwrite("voxels_per_side", &EsdfMap::Config::esdf_voxels_per_side)
+
+    ;
+
     py::class_<EsdfMap, std::shared_ptr<EsdfMap> >(m, "EsdfMap")
+        .def(py::init<const EsdfMap::Config &>())
         .def(py::init<EsdfLayer::Ptr>())
-        .def(py::init<const std::string &>())
         .def_property_readonly("block_size", &EsdfMap::block_size)
         .def_property_readonly("voxel_size", &EsdfMap::voxel_size)
 

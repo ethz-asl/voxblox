@@ -30,6 +30,7 @@ class EsdfMap {
     block_size_ = config.esdf_voxel_size * config.esdf_voxels_per_side;
   }
 
+  // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
   EsdfMap(Layer<EsdfVoxel>::Ptr esdf_layer)
      : esdf_layer_(esdf_layer),
        interpolator_(esdf_layer_.get()) {
@@ -37,23 +38,6 @@ class EsdfMap {
       // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
       throw std::runtime_error(std::string("Null Layer<EsdfVoxel>::Ptr") +
                                " in EsdfMap constructor");
-    }
-    block_size_ = esdf_layer_->block_size();
-  }
-
-  /* TODO(mereweth@jpl.nasa.gov) - remove this constructor if you can construct
-   * from Layer<EsdfVoxel> in Python
-   */
-  EsdfMap(const std::string& file_path)
-      : esdf_layer_(io::LoadOrCreateLayerHeader<EsdfVoxel>(file_path,
-                                                           0.2,
-                                                           16u)),
-        interpolator_(esdf_layer_.get()) {
-    if (!io::LoadBlocksFromFile<EsdfVoxel>(file_path,
-                                           Layer<EsdfVoxel>::BlockMergingStrategy::kProhibit,
-                                           esdf_layer_.get())) {
-      // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
-      throw std::runtime_error(std::string("Invalid file path: ") + file_path);
     }
     block_size_ = esdf_layer_->block_size();
   }

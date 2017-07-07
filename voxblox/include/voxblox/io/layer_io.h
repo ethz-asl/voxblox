@@ -137,85 +137,22 @@ bool LoadBlocksFromFile(
   return true;
 }
 
-/*TODO(mereweth@jpl.nasa.gov) - change this to throw exception if can't load
- */
+// NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
 template <typename VoxelType>
-Layer<VoxelType> LoadOrCreateLayer(const std::string& file_path,
-                                   FloatingPoint voxel_size,
-                                   size_t voxels_per_side) {
-
+Layer<VoxelType> LoadLayer(const std::string& file_path) {
   bool success = true;
   typename Layer<VoxelType>::Ptr layer_ptr;
 
   if (!success ||
       !LoadLayer<VoxelType>(file_path, &layer_ptr)) {
-    LOG(ERROR) << "Could not load layer from: " << file_path;
-    layer_ptr = std::make_shared<Layer<VoxelType> >(voxel_size,
-                                                    voxels_per_side);
+    // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
+    throw std::runtime_error(std::string("Could not load layer from: ")
+                             + file_path);
   }
 
   CHECK(layer_ptr);
 
   return *layer_ptr;
-}
-
-/* TODO(mereweth@jpl.nasa.gov) - remove this function if you can construct
- * from Layer<EsdfVoxel> in Python
- */
-template <typename VoxelType>
-typename Layer<VoxelType>::Ptr LoadOrCreateLayerHeader(
-                                                const std::string& file_path,
-                                                FloatingPoint voxel_size,
-                                                size_t voxels_per_side) {
-
-  bool success = true;
-
-  // Open and check the file
-  std::fstream proto_file;
-  proto_file.open(file_path, std::fstream::in);
-  if (!success ||
-      !proto_file.is_open()) {
-    LOG(ERROR) << "Could not open protobuf file to load layer: " << file_path;
-    success = false;
-  }
-
-  // Unused byte offset result.
-  uint32_t tmp_byte_offset;
-
-  // Get number of messages
-  uint32_t num_protos;
-  if (!success ||
-      !utils::readProtoMsgCountToStream(&proto_file, &num_protos,
-                                        &tmp_byte_offset)) {
-    LOG(ERROR) << "Could not read number of messages.";
-    success = false;
-  }
-
-  if (!success ||
-      (num_protos == 0u)) {
-    LOG(WARNING) << "Empty protobuf file!";
-    success = false;
-  }
-
-  // Get header and create the layer if compatible
-  LayerProto layer_proto;
-  if (!success ||
-      !utils::readProtoMsgFromStream(&proto_file, &layer_proto,
-                                     &tmp_byte_offset)) {
-    LOG(ERROR) << "Could not read layer protobuf message.";
-    success = false;
-  }
-
-  typename Layer<VoxelType>::Ptr layer_ptr;
-  if (success) {
-    layer_ptr = aligned_shared<Layer<VoxelType> >(layer_proto);
-  }
-  else {
-    layer_ptr = std::make_shared<Layer<VoxelType> >(voxel_size, voxels_per_side);
-  }
-  CHECK(layer_ptr);
-
-  return layer_ptr;
 }
 
 template <typename VoxelType>

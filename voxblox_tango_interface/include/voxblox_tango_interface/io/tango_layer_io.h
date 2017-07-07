@@ -157,27 +157,17 @@ inline bool TangoLoadBlocksFromFile(
   return true;
 }
 
-/*TODO(mereweth@jpl.nasa.gov) - best name for this function?
- * This function may be useful when debugging a malformed protobuf dump
- * Also prevents segfaulting Python using file_path TangoLayerInterface constructor
- */
-inline TangoLayerInterface TangoLoadOrCreateLayer(
-                                                const std::string& file_path,
-                                                FloatingPoint voxel_size,
-                                                size_t voxels_per_side,
-                                                unsigned int max_ntsdf_voxel_weight,
-                                                FloatingPoint meters_to_ntsdf) {
+// NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
+inline TangoLayerInterface TangoLoadLayer(const std::string& file_path) {
 
   bool success = true;
   TangoLayerInterface::Ptr layer_ptr;
 
   if (!success ||
       !TangoLoadLayer(file_path, &layer_ptr)) {
-    LOG(ERROR) << "Could not load Tango layer from: " << file_path;
-    layer_ptr = std::make_shared<TangoLayerInterface>(voxel_size,
-                                                      voxels_per_side,
-                                                      max_ntsdf_voxel_weight,
-                                                      meters_to_ntsdf);
+    // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
+    throw std::runtime_error(std::string("Could not load layer from: ")
+                             + file_path);
   }
 
   CHECK(layer_ptr);

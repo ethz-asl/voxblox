@@ -9,15 +9,15 @@ import voxblox
 dir(voxblox.EsdfMap)
 
 try:
-    map = voxblox.EsdfMap('THIS_DOES_NOT_EXIST')
+    layer = voxblox.loadEsdfLayer('THIS_DOES_NOT_EXIST')
 except RuntimeError as e:
     print(e)
 
-layer = voxblox.EsdfLayer('/home/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
+layer = voxblox.loadEsdfLayer('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
 assert(layer is not None)
 map = voxblox.EsdfMap(layer)
 #map = voxblox.EsdfMap('/Users/mereweth/Desktop/drl_munich_depth_motion_stereo/drl_munich_depth_motion_stereo.esdf.proto')
-#map = voxblox.EsdfMap('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
+#map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
 
 print map.voxel_size
 print map.block_size
