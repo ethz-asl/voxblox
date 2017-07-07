@@ -3,7 +3,7 @@
 import timeit
 
 import sys;
-sys.path.append('/Users/mereweth/snappy/tsdf_catkin_ws/devel/.private/voxblox/lib/')
+sys.path.append('/home/mereweth/snappy/torq_gcs_catkin_ws/devel/.private/voxblox/lib/')
 
 import voxblox
 dir(voxblox.EsdfMap)
@@ -13,7 +13,7 @@ try:
 except RuntimeError as e:
     print(e)
 
-map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
+map = voxblox.EsdfMap('/home/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
 #map = voxblox.EsdfMap('/Users/mereweth/Desktop/drl_munich_depth_motion_stereo/drl_munich_depth_motion_stereo.esdf.proto')
 #map = voxblox.EsdfMap('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
 

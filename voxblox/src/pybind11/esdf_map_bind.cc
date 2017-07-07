@@ -6,8 +6,12 @@ namespace py = pybind11;
 
 using voxblox::EsdfMap;
 
-PYBIND11_MODULE(voxbloxpy, m) {
-    py::class_<EsdfMap>(m, "EsdfMap")
+void esdf_map_bind(py::module &m) {
+  /* TODO(mereweth@jpl.nasa.gov) - use shared_ptr or default unique_ptr for
+   * Python reference counting?
+   */
+
+    py::class_<EsdfMap, std::shared_ptr<EsdfMap> >(m, "EsdfMap")
         .def(py::init<const std::string &>())
         .def_property_readonly("block_size", &EsdfMap::block_size)
         .def_property_readonly("voxel_size", &EsdfMap::voxel_size)

@@ -92,7 +92,10 @@ if(HAVE_PYBIND11)
   pybind11_add_module(voxbloxpy
     ${${PROJECT_NAME}_SRCS}
     src/pybind11/esdf_map_bind.cc
-    src/pybind11/layer_bind.cc)
+    src/pybind11/layer_bind.cc
+    src/pybind11/block_bind.cc
+    src/pybind11/layer_io_bind.cc
+    src/pybind11/bind.cc)
   set_target_properties(voxbloxpy PROPERTIES LINKER_LANGUAGE CXX)
   target_link_libraries(voxbloxpy PUBLIC ${PROJECT_NAME}_proto
                                          ${PROTOBUF_LIBRARIES}

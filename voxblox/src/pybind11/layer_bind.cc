@@ -10,11 +10,11 @@ using voxblox::LayerProto;
 using TsdfLayer = voxblox::Layer<TsdfVoxel>;
 using EsdfLayer = voxblox::Layer<EsdfVoxel>;
 
-PYBIND11_MODULE(voxblox, m) {
+void layer_bind(py::module &m) {
   /* TODO(mereweth@jpl.nasa.gov) - use shared_ptr instead of default unique_ptr
    * for Python reference counting?
    */
-    py::class_<TsdfLayer>(m, "TsdfLayer")
+    py::class_<TsdfLayer> (m, "TsdfLayer")
     //py::class_<TsdfLayer, std::shared_ptr<TsdfLayer> >(m, "TsdfLayer")
         .def(py::init<const LayerProto&>())
 
@@ -22,7 +22,8 @@ PYBIND11_MODULE(voxblox, m) {
         .def_property_readonly("voxel_size", &TsdfLayer::voxel_size)
         .def_property_readonly("voxels_per_side", &TsdfLayer::voxels_per_side)
 
-        .def("saveToFile", &TsdfLayer::saveToFile)
+        // TODO(mereweth@jpl.nasa.gov) - can cause segfault
+        //.def("saveToFile", &TsdfLayer::saveToFile)
 
         ;
 
@@ -34,7 +35,8 @@ PYBIND11_MODULE(voxblox, m) {
         .def_property_readonly("voxel_size", &EsdfLayer::voxel_size)
         .def_property_readonly("voxels_per_side", &EsdfLayer::voxels_per_side)
 
-        .def("saveToFile", &EsdfLayer::saveToFile)
+        // TODO(mereweth@jpl.nasa.gov) - can cause segfault
+        //.def("saveToFile", &EsdfLayer::saveToFile)
 
         ;
 }
