@@ -13,7 +13,9 @@ try:
 except RuntimeError as e:
     print(e)
 
-map = voxblox.EsdfMap('/home/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
+layer = voxblox.EsdfLayer('/home/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
+assert(layer is not None)
+map = voxblox.EsdfMap(layer)
 #map = voxblox.EsdfMap('/Users/mereweth/Desktop/drl_munich_depth_motion_stereo/drl_munich_depth_motion_stereo.esdf.proto')
 #map = voxblox.EsdfMap('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
 

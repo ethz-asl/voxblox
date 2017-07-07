@@ -137,9 +137,7 @@ bool LoadBlocksFromFile(
   return true;
 }
 
-/*TODO(mereweth@jpl.nasa.gov) - best name for this function?
- * This function may be useful when debugging a malformed protobuf dump
- * Also prevents segfaulting Python using file_path Layer<VoxelType> constructor
+/*TODO(mereweth@jpl.nasa.gov) - change this to throw exception if can't load
  */
 template <typename VoxelType>
 Layer<VoxelType> LoadOrCreateLayer(const std::string& file_path,
@@ -163,11 +161,6 @@ Layer<VoxelType> LoadOrCreateLayer(const std::string& file_path,
 
 /* TODO(mereweth@jpl.nasa.gov) - remove this function if you can construct
  * from Layer<EsdfVoxel> in Python
- */
-// deprecate this
-/*TODO(mereweth@jpl.nasa.gov) - best name for this function?
- * This function may be useful when debugging a malformed protobuf dump
- * Also prevents segfaulting Python using file_path EsdfMap constructor
  */
 template <typename VoxelType>
 typename Layer<VoxelType>::Ptr LoadOrCreateLayerHeader(
