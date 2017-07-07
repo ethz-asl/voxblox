@@ -11,7 +11,7 @@ void layer_io_bind(py::module &m) {
 
     m.def("loadEsdfLayer", &voxblox::io::LoadLayer<EsdfVoxel>);
 
-    m.def("loadOrCreateTsdfLayerHeader", &voxblox::io::LoadOrCreateLayerHeader<TsdfVoxel>);
+    m.def("loadOrCreateTsdfLayer", &voxblox::io::LoadOrCreateLayer<TsdfVoxel>);
 
-    m.def("loadOrCreateEsdfLayerHeader", &voxblox::io::LoadOrCreateLayerHeader<EsdfVoxel>);
+    m.def("loadOrCreateEsdfLayer", &voxblox::io::LoadOrCreateLayer<EsdfVoxel>);
 }

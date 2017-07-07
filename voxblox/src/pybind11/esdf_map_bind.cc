@@ -1,10 +1,13 @@
 #include "voxblox/core/esdf_map.h"
+#include "voxblox/core/layer.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 namespace py = pybind11;
 
 using voxblox::EsdfMap;
+using voxblox::EsdfVoxel;
+using EsdfLayer = voxblox::Layer<EsdfVoxel>;
 
 void esdf_map_bind(py::module &m) {
   /* TODO(mereweth@jpl.nasa.gov) - use shared_ptr or default unique_ptr for
@@ -12,6 +15,7 @@ void esdf_map_bind(py::module &m) {
    */
 
     py::class_<EsdfMap, std::shared_ptr<EsdfMap> >(m, "EsdfMap")
+        .def(py::init<EsdfLayer::Ptr>())
         .def(py::init<const std::string &>())
         .def_property_readonly("block_size", &EsdfMap::block_size)
         .def_property_readonly("voxel_size", &EsdfMap::voxel_size)

@@ -14,8 +14,8 @@ void layer_bind(py::module &m) {
   /* TODO(mereweth@jpl.nasa.gov) - use shared_ptr instead of default unique_ptr
    * for Python reference counting?
    */
-    py::class_<TsdfLayer> (m, "TsdfLayer")
-    //py::class_<TsdfLayer, std::shared_ptr<TsdfLayer> >(m, "TsdfLayer")
+    //py::class_<TsdfLayer> (m, "TsdfLayer")
+    py::class_<TsdfLayer, std::shared_ptr<TsdfLayer> >(m, "TsdfLayer")
         .def(py::init<const LayerProto&>())
 
         .def_property_readonly("block_size", &TsdfLayer::block_size)
@@ -27,8 +27,8 @@ void layer_bind(py::module &m) {
 
         ;
 
-    py::class_<EsdfLayer>(m, "EsdfLayer")
-    //py::class_<EsdfLayer, std::shared_ptr<EsdfLayer> >(m, "EsdfLayer")
+    //py::class_<EsdfLayer>(m, "EsdfLayer")
+    py::class_<EsdfLayer, std::shared_ptr<EsdfLayer> >(m, "EsdfLayer")
         .def(py::init<const LayerProto&>())
 
         .def_property_readonly("block_size", &EsdfLayer::block_size)
