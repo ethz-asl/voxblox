@@ -13,10 +13,32 @@ try:
 except RuntimeError as e:
     print(e)
 
+# make sure this throws an exception rather than segfaulting
+#try:
+    #voxblox_tango_interfacepy.tangoLoadLayer("/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.tsdf.proto")
+#except RuntimeError as e:
+    #print(e)
+
+# convert Tango TSDF to TSDF and serialize
+#ntl = voxblox_tango_interfacepy.tangoLoadLayer("/Users/mereweth/Desktop/terra_bella/terra_bella.ntsdf.proto")
+#ntl.saveToFile("/Users/mereweth/Desktop/_test_terra_bella.tsdf.proto")
+
+# make sure this throws an exception rather than segfaulting
+try:
+    voxblox.loadTsdfLayer("/Users/mereweth/Desktop/terra_bella/terra_bella.ntsdf.proto")
+except RuntimeError as e:
+    print(e)
+
+tl = voxblox.loadTsdfLayer("/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.tsdf.proto")
+el = voxblox.EsdfLayer(tl.voxel_size, tl.voxels_per_side)
+m = voxblox.EsdfMap(el)
+i = voxblox.EsdfIntegrator(voxblox.EsdfIntegratorConfig(), tl, el)
+i.updateFromTsdfLayerBatch()
+el.saveToFile("/Users/mereweth/Desktop/_test_cow_and_lady.esdf.proto")
+
 layer = voxblox.loadEsdfLayer('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
 assert(layer is not None)
 map = voxblox.EsdfMap(layer)
-#map = voxblox.EsdfMap('/Users/mereweth/Desktop/drl_munich_depth_motion_stereo/drl_munich_depth_motion_stereo.esdf.proto')
 #map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
 
 print map.voxel_size

@@ -6,7 +6,8 @@ namespace py = pybind11;
 
 using voxblox::TsdfVoxel;
 using voxblox::EsdfVoxel;
-using voxblox::BlockProto;
+using voxblox::FloatingPoint;
+using voxblox::Point;
 
 using TsdfBlock = voxblox::Block<TsdfVoxel>;
 using EsdfBlock = voxblox::Block<EsdfVoxel>;
@@ -17,7 +18,7 @@ void block_bind(py::module &m) {
    */
     py::class_<TsdfBlock>(m, "TsdfBlock")
     //py::class_<TsdfBlock, std::shared_ptr<TsdfBlock> >(m, "TsdfBlock")
-        .def(py::init<const BlockProto&>())
+        .def(py::init<size_t, FloatingPoint, const Point&>())
 
         .def_property_readonly("block_size", &TsdfBlock::block_size)
         .def_property_readonly("num_voxels", &TsdfBlock::num_voxels)
@@ -28,7 +29,7 @@ void block_bind(py::module &m) {
 
     py::class_<EsdfBlock>(m, "EsdfBlock")
     //py::class_<EsdfBlock, std::shared_ptr<EsdfBlock> >(m, "EsdfBlock")
-        .def(py::init<const BlockProto&>())
+        .def(py::init<size_t, FloatingPoint, const Point&>())
 
         .def_property_readonly("block_size", &EsdfBlock::block_size)
         .def_property_readonly("num_voxels", &TsdfBlock::num_voxels)

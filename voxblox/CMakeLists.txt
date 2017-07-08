@@ -92,6 +92,7 @@ if(HAVE_PYBIND11)
   pybind11_add_module(voxbloxpy
     ${${PROJECT_NAME}_SRCS}
     src/pybind11/esdf_map_bind.cc
+    src/pybind11/esdf_integrator_bind.cc
     src/pybind11/layer_bind.cc
     src/pybind11/block_bind.cc
     src/pybind11/layer_io_bind.cc

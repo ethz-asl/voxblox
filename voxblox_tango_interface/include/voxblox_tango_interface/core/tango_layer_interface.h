@@ -10,19 +10,12 @@
 
 namespace voxblox {
 
-class TangoLayerInterface : public Layer<TsdfVoxel> {/*,
-                            public std::enable_shared_from_this<TangoLayerInterface> {*/
+class TangoLayerInterface : public Layer<TsdfVoxel> {
 public:
   // NOTE(mereweth@jpl.nasa.gov) - need this typedef
   typedef std::shared_ptr<TangoLayerInterface> Ptr;
 
   explicit TangoLayerInterface(const tsdf2::MapHeaderProto& proto);
-
-  // TODO(mereweth@jpl.nasa.gov) - best way to check not null?
-  explicit TangoLayerInterface(std::shared_ptr<TangoLayerInterface> tango_layer_interface)
-      : TangoLayerInterface(tango_layer_interface ? *tango_layer_interface :
-                            TangoLayerInterface(0.2, 16u, 1, 1.0))
-    { }
 
   explicit TangoLayerInterface(FloatingPoint voxel_size,
                                size_t voxels_per_side,

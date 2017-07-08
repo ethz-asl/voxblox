@@ -27,6 +27,10 @@ void esdf_map_bind(py::module &m) {
         .def_property_readonly("block_size", &EsdfMap::block_size)
         .def_property_readonly("voxel_size", &EsdfMap::voxel_size)
 
+        .def("getEsdfLayer", &EsdfMap::getEsdfLayer)
+        //TODO(mereweth@jpl.nasa.gov) - these don't seem to bind differently
+        //.def("getEsdfLayerPtr", &EsdfMap::getEsdfLayerPtr)
+
         .def("getDistanceAtPosition", &EsdfMap::batchGetDistanceAtPosition)
         .def("getDistanceAndGradientAtPosition", &EsdfMap::batchGetDistanceAndGradientAtPosition)
         .def("isObserved", &EsdfMap::batchIsObserved)

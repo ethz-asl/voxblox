@@ -50,6 +50,14 @@ bool LoadLayer(const std::string& file_path,
     LOG(ERROR) << "Could not read layer protobuf message.";
     return false;
   }
+
+  if ((layer_proto.voxel_size()      <= 0) ||
+      (layer_proto.voxels_per_side() <= 0) ||
+      (getVoxelType<VoxelType>().compare(layer_proto.type()))) {
+    LOG(ERROR) << "Invalid parameter in layer protobuf message. Check the format.";
+    return false;
+  }
+
   *layer_ptr = aligned_shared<Layer<VoxelType> >(layer_proto);
   CHECK(*layer_ptr);
 

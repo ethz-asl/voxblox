@@ -74,6 +74,9 @@ target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES
 # PYTHON BINDINGS #
 ###################
 
+# TODO(mereweth@jpl.nasa.gov) - how to deal with voxbloxpy.TsdfLayer vs
+# voxblox_tango_interfacepy.TsdfLayer? One option is to only use
+# voxblox_tango_interfacepy for conversion and serialization
 if(HAVE_PYBIND11)
   # We conditionally import voxblox_tango_interfacepy from voxblox
   # So no need to make this a python package
@@ -109,11 +112,6 @@ endif()
 ############
 # BINARIES #
 ############
-
-add_executable(test_tango_layer_interface_constructor
-  test/test_tango_layer_interface_constructor.cc
-)
-target_link_libraries(test_tango_layer_interface_constructor ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_executable(mesh_tango_tsdf
   test/mesh_tango_tsdf.cc
