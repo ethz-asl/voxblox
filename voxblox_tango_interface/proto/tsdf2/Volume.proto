@@ -1,0 +1,49 @@
+package tsdf2;
+
+// TODO(mereweth@jpl.nasa.gov) - include this or verify ok to omit
+//import "engine_data_proto/Vector3d.proto";
+
+message VolumeProto {
+  message GridIndex {
+    required int32 x = 1;
+    required int32 y = 2;
+    required int32 z = 3;
+  };
+
+  // TODO(mereweth@jpl.nasa.gov) - include this or verify ok to omit
+  message Vector3dProto {
+    required double x = 1;
+    required double y = 2;
+    required double z = 3;
+  }
+
+  // Number of voxels per each dimension.
+  optional int32 voxels_per_side = 1;
+
+  // Size of each voxel, in meters.
+  optional double voxel_size = 2;
+
+  // Maximum voxel weight
+  optional uint32 max_ntsdf_voxel_weight = 3;
+
+  // TODO(mereweth@jpl.nasa.gov) - include this or verify ok to omit
+  // DEPRECATED: The origin of the volume, in meters.
+  //optional engine_data_proto.Vector3dProto origin = 4 [deprecated=true];
+  optional Vector3dProto origin = 4 [deprecated=true];
+
+  // The grid index of the volume.
+  optional GridIndex index = 8;
+
+  // If the volume has received at least one update.
+  optional bool has_data = 5;
+
+  // Voxel data is in x -> y -> z major order.
+  // The first 16 bits of the voxel are its signed distance function, the
+  // second 16 bits are its weight.
+  repeated uint32 ntsdf_voxels = 6 [packed=true];
+
+  // Color data is in x -> y -> z major order.
+  // The first 24 bits are red, green and blue bytes. The last 8 bits are a
+  // weight.
+  repeated uint32 color_voxels = 7 [packed=true];
+}

@@ -1,6 +1,6 @@
 <launch>
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="/Users/helen/data/lady_cow_dataset/data.bag"/>
+  <arg name="bag_file" default="/Users/mereweth/snappy/tsdf_resources/cow_and_lady.bag"/>
   <arg name="voxel_size" default="0.10"/>
   <arg name="generate_esdf" default="false" />
 

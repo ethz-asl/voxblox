@@ -472,9 +472,9 @@ void SimulationServer::visualize() {
 
   if (generate_mesh_) {
     // Generate TSDF GT mesh.
-    MeshIntegrator::Config mesh_config;
+    MeshIntegrator<TsdfVoxel>::Config mesh_config;
     MeshLayer::Ptr mesh(new MeshLayer(tsdf_gt_->block_size()));
-    MeshIntegrator mesh_integrator(mesh_config, tsdf_gt_.get(), mesh.get());
+    MeshIntegrator<TsdfVoxel> mesh_integrator(mesh_config, tsdf_gt_.get(), mesh.get());
     mesh_integrator.generateWholeMesh();
     visualization_msgs::MarkerArray marker_array;
     marker_array.markers.resize(1);
@@ -485,7 +485,7 @@ void SimulationServer::visualize() {
 
     // Also generate test mesh
     MeshLayer::Ptr mesh_test(new MeshLayer(tsdf_test_->block_size()));
-    MeshIntegrator mesh_integrator_test(mesh_config, tsdf_test_.get(),
+    MeshIntegrator<TsdfVoxel> mesh_integrator_test(mesh_config, tsdf_test_.get(),
                                         mesh_test.get());
     mesh_integrator_test.generateWholeMesh();
     marker_array.markers.clear();

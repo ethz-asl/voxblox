@@ -7,6 +7,11 @@ catkin_simple()
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
+if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/pybind11/CMakeLists.txt")
+  set(HAVE_PYBIND11 TRUE)
+  message(STATUS "Found pybind11; generating Python bindings")
+endif()
+
 ############
 # PROTOBUF #
 ############
@@ -35,11 +40,11 @@ else()
   set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARY})
 endif()
 
+####################
+# SET SOURCE FILES #
+####################
 
-#############
-# LIBRARIES #
-#############
-cs_add_library(${PROJECT_NAME}
+set("${PROJECT_NAME}_SRCS"
   src/core/block.cc
   src/core/esdf_map.cc
   src/integrator/esdf_integrator.cc
@@ -50,9 +55,56 @@ cs_add_library(${PROJECT_NAME}
   src/simulation/simulation_world.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
+)
+
+#############
+# LIBRARIES #
+#############
+cs_add_library(${PROJECT_NAME}
+  ${${PROJECT_NAME}_SRCS}
   ${PROTO_SRCS}
 )
 target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
+
+###################
+# PYTHON BINDINGS #
+###################
+if(HAVE_PYBIND11)
+  catkin_python_setup()
+
+  # TODO(mereweth@jpl.nasa.gov) - how to tell pybind11 about an existing library?
+  # or should we just use the pybind library for everything?
+  add_subdirectory(pybind11)
+  message("Building Python bindings for voxblox")
+  pybind11_add_module(voxbloxpy
+    ${${PROJECT_NAME}_SRCS}
+    ${PROTO_SRCS}
+    src/pybind11/esdf_map_bind.cc)
+  set_target_properties(voxbloxpy PROPERTIES LINKER_LANGUAGE CXX)
+  target_link_libraries(voxbloxpy PUBLIC ${PROTOBUF_LIBRARIES} ${catkin_LIBRARIES})
+
+  # TODO(mereweth@jpl.nasa.gov) - is there a better way to make this importable?
+  #cs_add_targets_to_package(voxbloxpy)
+
+  # TODO(mereweth@jpl.nasa.gov) - this is a bit hacky but it works
+  set_target_properties(voxbloxpy
+    PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+  ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}/../)
+endif()
+
+############
+# BINARIES #
+############
+
+add_executable(tsdf_to_esdf
+  test/tsdf_to_esdf.cc
+)
+target_link_libraries(tsdf_to_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+add_executable(test_load_esdf
+  test/test_load_esdf.cc
+)
+target_link_libraries(test_load_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 #########
 # TESTS #
