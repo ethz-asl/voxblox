@@ -34,6 +34,13 @@ el = voxblox.EsdfLayer(tl.voxel_size, tl.voxels_per_side)
 m = voxblox.EsdfMap(el)
 i = voxblox.EsdfIntegrator(voxblox.EsdfIntegratorConfig(), tl, el)
 i.updateFromTsdfLayerBatch()
+
+b = tl.allocateBlockPtrByCoordinates(np.array([0, 0, 0.5], dtype='double'))
+v = b.getVoxelByCoordinates(np.array([0, 0, 0.5], dtype='double'))
+
+v.distance = 0.3
+b.set_updated(True)
+
 el.saveToFile("/Users/mereweth/Desktop/_test_cow_and_lady.esdf.proto")
 
 layer = voxblox.loadEsdfLayer('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')

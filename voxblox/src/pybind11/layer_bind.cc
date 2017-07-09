@@ -1,6 +1,7 @@
 #include "voxblox/core/layer.h"
 
 #include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
 namespace py = pybind11;
 
 using voxblox::TsdfVoxel;
@@ -25,6 +26,8 @@ void layer_bind(py::module &m) {
         // TODO(mereweth@jpl.nasa.gov) - can cause segfault
         .def("saveToFile", &TsdfLayer::saveToFile)
 
+        .def("allocateBlockPtrByCoordinates", &TsdfLayer::allocateBlockPtrByCoordinates)
+
         ;
 
     //py::class_<EsdfLayer>(m, "EsdfLayer")
@@ -37,6 +40,8 @@ void layer_bind(py::module &m) {
 
         // TODO(mereweth@jpl.nasa.gov) - can cause segfault
         .def("saveToFile", &EsdfLayer::saveToFile)
+
+        .def("allocateBlockPtrByCoordinates", &EsdfLayer::allocateBlockPtrByCoordinates)
 
         ;
 }

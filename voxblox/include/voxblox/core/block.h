@@ -111,6 +111,11 @@ class Block {
     return voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
+  // NOTE(mereweth@jpl.nasa.gov) - convenience function for Python bindings
+  inline VoxelType* getVoxelPtrByCoordinates(const Point& coords) {
+    return &voxels_[computeLinearIndexFromCoordinates(coords)];
+  }
+
   inline bool isValidVoxelIndex(const VoxelIndex& index) const {
     if (index.x() < 0 || index.x() >= voxels_per_side_) {
       return false;
@@ -147,6 +152,10 @@ class Block {
 
   bool& updated() { return updated_; }
   bool& has_data() { return has_data_; }
+
+  // NOTE(mereweth@jpl.nasa.gov) - convenience function for Python bindings
+  void set_updated(bool updated) { updated_ = updated; }
+  void set_has_data(bool has_data) { has_data_ = has_data; }
 
   // Serialization.
   void getProto(BlockProto* proto) const;
