@@ -27,6 +27,7 @@ void layer_bind(py::module &m) {
         .def("saveToFile", &TsdfLayer::saveToFile)
 
         .def("allocateBlockPtrByCoordinates", &TsdfLayer::allocateBlockPtrByCoordinates)
+        .def("removeBlockByCoordinates", &TsdfLayer::removeBlockByCoordinates)
 
         ;
 
@@ -42,6 +43,7 @@ void layer_bind(py::module &m) {
         .def("saveToFile", &EsdfLayer::saveToFile)
 
         .def("allocateBlockPtrByCoordinates", &EsdfLayer::allocateBlockPtrByCoordinates)
+        .def("removeBlockByCoordinates", &EsdfLayer::removeBlockByCoordinates)
 
         ;
 }
