@@ -17,7 +17,6 @@ void block_bind(py::module &m) {
   /* TODO(mereweth@jpl.nasa.gov) - use shared_ptr instead of default unique_ptr
    * for Python reference counting?
    */
-    //py::class_<TsdfBlock>(m, "TsdfBlock")
     py::class_<TsdfBlock, std::shared_ptr<TsdfBlock> >(m, "TsdfBlock")
         .def(py::init<size_t, FloatingPoint, const Point&>())
 
@@ -33,11 +32,8 @@ void block_bind(py::module &m) {
         .def("set_has_data", &TsdfBlock::set_has_data)
         .def("getVoxelByCoordinates",
              (TsdfVoxel* (TsdfBlock::*)(const Point& coords)) &TsdfBlock::getVoxelPtrByCoordinates,
-              py::return_value_policy::reference_internal)
+              py::return_value_policy::reference_internal);
 
-        ;
-
-    //py::class_<EsdfBlock>(m, "EsdfBlock")
     py::class_<EsdfBlock, std::shared_ptr<EsdfBlock> >(m, "EsdfBlock")
         .def(py::init<size_t, FloatingPoint, const Point&>())
 
@@ -53,7 +49,5 @@ void block_bind(py::module &m) {
         .def("set_has_data", &EsdfBlock::set_has_data)
         .def("getVoxelByCoordinates",
              (EsdfVoxel* (EsdfBlock::*)(const Point& coords)) &EsdfBlock::getVoxelPtrByCoordinates,
-              py::return_value_policy::reference_internal)
-
-        ;
+              py::return_value_policy::reference_internal);
 }

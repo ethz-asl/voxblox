@@ -12,15 +12,11 @@ using TsdfLayer = voxblox::Layer<TsdfVoxel>;
 
 void tsdf_integrator_bind(py::module &m) {
     py::class_<TsdfIntegrator::Config>(m, "TsdfIntegratorConfig")
-        .def(py::init<>())
-
-    ;
+        .def(py::init<>());
 
     py::class_<TsdfIntegrator>(m, "TsdfIntegrator")
         .def(py::init<const TsdfIntegrator::Config &, TsdfLayer* >())
 
         .def("clearSphereAroundPoint", &TsdfIntegrator::clearSphereAroundPoint)
-        .def("fillSphereAroundPoint", &TsdfIntegrator::fillSphereAroundPoint)
-
-        ;
+        .def("fillSphereAroundPoint", &TsdfIntegrator::fillSphereAroundPoint);
 }

@@ -30,8 +30,6 @@ int main(int argc, char** argv) {
   if (min_distance_m > layer_from_file->block_size()) {
     // Make sure that this is the same as the truncation distance OR SMALLER!
     min_distance_m = layer_from_file->block_size();
-    // esdf_integrator_config.min_distance_m =
-    //    tsdf_integrator_->getConfig().default_truncation_distance;
   }
 
   LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
@@ -56,7 +54,6 @@ int main(int argc, char** argv) {
                                  layer_from_file.get(),
                                  esdf_map.getEsdfLayerPtr());
 
-  //esdf_integrator_->updateFromTsdfLayerBatch();
   esdf_integrator.updateFromTsdfLayerBatchFullEuclidean();
 
   bool esdfSuccess = io::SaveLayer(esdf_map.getEsdfLayer(), argv[2]);

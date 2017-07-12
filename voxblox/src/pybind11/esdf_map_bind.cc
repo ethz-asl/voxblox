@@ -17,9 +17,7 @@ void esdf_map_bind(py::module &m) {
     py::class_<EsdfMap::Config>(m, "EsdfMapConfig")
         .def(py::init<>())
         .def_readwrite("voxel_size", &EsdfMap::Config::esdf_voxel_size)
-        .def_readwrite("voxels_per_side", &EsdfMap::Config::esdf_voxels_per_side)
-
-    ;
+        .def_readwrite("voxels_per_side", &EsdfMap::Config::esdf_voxels_per_side);
 
     py::class_<EsdfMap, std::shared_ptr<EsdfMap> >(m, "EsdfMap")
         .def(py::init<const EsdfMap::Config &>())
@@ -28,8 +26,6 @@ void esdf_map_bind(py::module &m) {
         .def_property_readonly("voxel_size", &EsdfMap::voxel_size)
 
         .def("getEsdfLayer", &EsdfMap::getEsdfLayer)
-        //TODO(mereweth@jpl.nasa.gov) - these don't seem to bind differently
-        //.def("getEsdfLayerPtr", &EsdfMap::getEsdfLayerPtr)
 
         .def("getDistanceAtPosition", &EsdfMap::batchGetDistanceAtPosition)
         .def("getDistanceAndGradientAtPosition", &EsdfMap::batchGetDistanceAndGradientAtPosition)
@@ -41,7 +37,5 @@ void esdf_map_bind(py::module &m) {
              py::arg("free_plane_val"),
              py::arg("positions"),
              py::arg("distances"),
-             py::arg("max_points") = 100000)
-
-        ;
+             py::arg("max_points") = 100000);
 }

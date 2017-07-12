@@ -78,9 +78,7 @@ target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES
 # voxblox_tango_interfacepy.TsdfLayer? One option is to only use
 # voxblox_tango_interfacepy for conversion and serialization
 if(HAVE_PYBIND11)
-  # We conditionally import voxblox_tango_interfacepy from voxblox
-  # So no need to make this a python package
-  #catkin_python_setup()
+  catkin_python_setup()
 
   # TODO(mereweth@jpl.nasa.gov) - how to tell pybind11 about an existing library?
   # or should we just use the pybind library for everything?

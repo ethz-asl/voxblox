@@ -50,16 +50,14 @@ bool EsdfMap::isObserved(const Eigen::Vector3d& position) const {
   return false;
 }
 
+/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for Python bindings.
+ * std::exceptions are bound to Python exceptions by pybind11, allowing them to be handled
+ * in Python code idiomatically.
+ */
 void EsdfMap::batchGetDistanceAtPosition(
           EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
           Eigen::Ref<Eigen::VectorXd> distances,
           Eigen::Ref<Eigen::VectorXi> observed) const {
-  /* NOTE(mereweth@jpl.nasa.gov) - this looks like it gets truncated on return
-   * to Python anyway. Throw std::runtime_error here if too small
-   */
-  //distances.resize(positions.cols());
-  //observed.resize(positions.cols());
-
   if (distances.size() < positions.cols()) {
     throw std::runtime_error("Distances array smaller than number of queries");
   }
@@ -73,6 +71,10 @@ void EsdfMap::batchGetDistanceAtPosition(
   }
 }
 
+/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for Python bindings.
+ * std::exceptions are bound to Python exceptions by pybind11, allowing them to be handled
+ * in Python code idiomatically.
+ */
 void EsdfMap::batchGetDistanceAndGradientAtPosition(
           EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
           Eigen::Ref<Eigen::VectorXd> distances,
@@ -100,6 +102,10 @@ void EsdfMap::batchGetDistanceAndGradientAtPosition(
   }
 }
 
+/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for Python bindings.
+ * std::exceptions are bound to Python exceptions by pybind11, allowing them to be handled
+ * in Python code idiomatically.
+ */
 void EsdfMap::batchIsObserved(
           EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
           Eigen::Ref<Eigen::VectorXi> observed) const {
@@ -112,6 +118,10 @@ void EsdfMap::batchIsObserved(
   }
 }
 
+/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for Python bindings.
+ * std::exceptions are bound to Python exceptions by pybind11, allowing them to be handled
+ * in Python code idiomatically.
+ */
 unsigned int EsdfMap::coordPlaneSliceGetDistance(
                 unsigned int free_plane_index,
                 double free_plane_val,
@@ -145,8 +155,6 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
     Point origin = block.origin();
     if (std::abs(origin(free_plane_index) - free_plane_val)
                                         > block.block_size()) {
-                                        //> block.block_size() / 2.0) {
-                                        //> esdf_layer_->block_size() / 2.0) {
       continue;
     }
 
@@ -156,16 +164,12 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
       const EsdfVoxel& voxel = block.getVoxelByLinearIndex(linear_index);
       if (std::abs(coord(free_plane_index) - free_plane_val)
                                           <= block.voxel_size()) {
-                                          //<= block.voxel_size() / 2.0) {
-                                          //<= esdf_layer_->voxel_size() / 2.0) {
         double distance;
         if (voxel.observed) {
           distance = voxel.distance;
         }
         else {
           continue;
-          // TODO(mereweth@jpl.nasa.gov) - how to indicate unobserved?
-          //distance = 0;
         }
 
         if (count < positions.cols()) {

@@ -22,9 +22,7 @@ void esdf_integrator_bind(py::module &m) {
         .def_readwrite("min_weight", &EsdfIntegrator::Config::min_weight)
         .def_readwrite("num_buckets", &EsdfIntegrator::Config::num_buckets)
         .def_readwrite("clear_sphere_radius", &EsdfIntegrator::Config::clear_sphere_radius)
-        .def_readwrite("occupied_sphere_radius", &EsdfIntegrator::Config::occupied_sphere_radius)
-
-    ;
+        .def_readwrite("occupied_sphere_radius", &EsdfIntegrator::Config::occupied_sphere_radius);
 
     py::class_<EsdfIntegrator>(m, "EsdfIntegrator")
         .def(py::init<const EsdfIntegrator::Config &, TsdfLayer*, EsdfLayer* >())
@@ -32,7 +30,5 @@ void esdf_integrator_bind(py::module &m) {
         .def("updateFromTsdfLayerBatch", &EsdfIntegrator::updateFromTsdfLayerBatch)
         .def("updateFromTsdfLayerBatchOccupancy", &EsdfIntegrator::updateFromTsdfLayerBatchOccupancy)
         .def("updateFromTsdfLayerBatchFullEuclidean", &EsdfIntegrator::updateFromTsdfLayerBatchFullEuclidean)
-        .def("updateFromTsdfLayer", &EsdfIntegrator::updateFromTsdfLayer)
-
-        ;
+        .def("updateFromTsdfLayer", &EsdfIntegrator::updateFromTsdfLayer);
 }

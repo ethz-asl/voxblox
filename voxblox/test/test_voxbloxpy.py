@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import numpy as np
+
 import timeit
 
 import sys;

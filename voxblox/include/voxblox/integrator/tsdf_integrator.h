@@ -442,7 +442,6 @@ class TsdfIntegrator {
   const Config& getConfig() const { return config_; }
 
   void fillSphereAroundPoint(const Point& center, FloatingPoint radius,
-                             FloatingPoint min_distance,
                              FloatingPoint weight) const {
     // search a cube with side length 2*radius
     for (FloatingPoint x = -radius; x <= radius; x += voxel_size_) {
@@ -483,7 +482,6 @@ class TsdfIntegrator {
   // TODO(mereweth@jpl.nasa.gov) - make a version of this that only allocates or
   // increases the free radius
   void clearSphereAroundPoint(const Point& center, FloatingPoint radius,
-                              FloatingPoint min_distance,
                               FloatingPoint weight) const {
     // search a cube with side length 2*radius
     for (FloatingPoint x = -radius; x <= radius; x += voxel_size_) {
