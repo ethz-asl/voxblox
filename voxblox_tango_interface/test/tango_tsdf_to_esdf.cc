@@ -35,8 +35,6 @@ int main(int argc, char** argv) {
   EsdfIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
   esdf_integrator_config.min_distance_m = esdf_config.esdf_voxel_size;
-  // esdf_integrator_config.min_distance_m =
-  //    tsdf_integrator_->getConfig().default_truncation_distance;
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                                  layer_from_file.get(),
                                                  esdf_map_->getEsdfLayerPtr()));

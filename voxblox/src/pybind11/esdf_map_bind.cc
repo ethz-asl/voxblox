@@ -19,9 +19,7 @@ PYBIND11_MODULE(voxbloxpy, m) {
         .def("getDistanceAndGradientAtPosition", &voxblox::EsdfMap::batchGetDistanceAndGradientAtPosition)
         .def("isObserved", &voxblox::EsdfMap::batchIsObserved)
 
-        .def("coordPlaneSliceGetDistance", &voxblox::EsdfMap::coordPlaneSliceGetDistance)
-
-        ;
+        .def("coordPlaneSliceGetDistance", &voxblox::EsdfMap::coordPlaneSliceGetDistance);
 }
 
 #endif // VOXBLOX_PYBIND_ESDF_MAP_BIND_H_

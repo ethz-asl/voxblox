@@ -137,10 +137,15 @@ bool LoadBlocksFromFile(
   return true;
 }
 
-/*TODO(mereweth@jpl.nasa.gov) - best name for this function?
- * This function may be useful when debugging a malformed protobuf dump
- * Also prevents segfaulting Python using file_path EsdfMap constructor
+/*NOTE(mereweth@jpl.nasa.gov) - This function is for use with Python bindings
+ * for EsdfMap, so that trying to load a nonexistent file does not cause
+ * an assert in the C++ code.
+ *
+ * An upcoming PR will replace this function with a better-engineered overload
+ * for LoadLayer, specifically for Python bindings.
  */
+
+// If opening the file at file_path fails, create an empty layer
 template <typename VoxelType>
 typename Layer<VoxelType>::Ptr LoadOrCreateLayerHeader(
                                                 const std::string& file_path,

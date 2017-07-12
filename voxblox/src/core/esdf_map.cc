@@ -97,6 +97,10 @@ void EsdfMap::batchIsObserved(
   }
 }
 
+/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for Python bindings.
+ * std::exceptions are bound to Python exceptions by pybind11, allowing them to be handled
+ * in Python code idiomatically.
+ */
 unsigned int EsdfMap::coordPlaneSliceGetDistance(
                 unsigned int free_plane_index,
                 double free_plane_val,
@@ -121,8 +125,6 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
     Point origin = block.origin();
     if (std::abs(origin(free_plane_index) - free_plane_val)
                                         > block.block_size()) {
-                                        //> block.block_size() / 2.0) {
-                                        //> esdf_layer_->block_size() / 2.0) {
       continue;
     }
 
@@ -132,16 +134,12 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
       const EsdfVoxel& voxel = block.getVoxelByLinearIndex(linear_index);
       if (std::abs(coord(free_plane_index) - free_plane_val)
                                           <= block.voxel_size()) {
-                                          //<= block.voxel_size() / 2.0) {
-                                          //<= esdf_layer_->voxel_size() / 2.0) {
         double distance;
         if (voxel.observed) {
           distance = voxel.distance;
         }
         else {
           continue;
-          // TODO(mereweth@jpl.nasa.gov) - how to indicate unobserved?
-          //distance = 0;
         }
 
         // TODO(mereweth@jpl.nasa.gov) - implement max points to return

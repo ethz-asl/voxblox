@@ -13,7 +13,7 @@ try:
 except RuntimeError as e:
     print(e)
 
-map = voxblox.EsdfMap('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady_esdf.proto')
+map = voxblox.EsdfMap('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
 
 import numpy as np
 
