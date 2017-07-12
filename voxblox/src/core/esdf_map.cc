@@ -51,9 +51,9 @@ bool EsdfMap::isObserved(const Eigen::Vector3d& position) const {
 }
 
 void EsdfMap::batchGetDistanceAtPosition(
-          EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-          Eigen::Ref<Eigen::VectorXd> distances,
-          Eigen::Ref<Eigen::VectorXi> observed) const {
+    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    Eigen::Ref<Eigen::VectorXd> distances,
+    Eigen::Ref<Eigen::VectorXi> observed) const {
   /* TODO(mereweth@jpl.nasa.gov) - this looks like it gets truncated on return
    * to Python anyway. Throw std::runtime_error here if too small?
    */
@@ -65,10 +65,10 @@ void EsdfMap::batchGetDistanceAtPosition(
 }
 
 void EsdfMap::batchGetDistanceAndGradientAtPosition(
-          EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-          Eigen::Ref<Eigen::VectorXd> distances,
-          EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients,
-          Eigen::Ref<Eigen::VectorXi> observed) const {
+    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    Eigen::Ref<Eigen::VectorXd> distances,
+    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients,
+    Eigen::Ref<Eigen::VectorXi> observed) const {
   /* TODO(mereweth@jpl.nasa.gov) - this looks like it gets truncated on return
    * to Python anyway. Throw std::runtime_error here if too small?
    */
@@ -78,16 +78,15 @@ void EsdfMap::batchGetDistanceAndGradientAtPosition(
   for (int i = 0; i < positions.cols(); i++) {
     Eigen::Vector3d gradient;
     observed[i] = getDistanceAndGradientAtPosition(positions.col(i),
-                                                   &distances[i],
-                                                   &gradient);
+                                                   &distances[i], &gradient);
 
     gradients.col(i) = gradient;
   }
 }
 
 void EsdfMap::batchIsObserved(
-          EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-          Eigen::Ref<Eigen::VectorXi> observed) const {
+    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    Eigen::Ref<Eigen::VectorXi> observed) const {
   /* TODO(mereweth@jpl.nasa.gov) - this looks like it gets truncated on return
    * to Python anyway. Throw std::runtime_error here if too small?
    */
@@ -97,15 +96,14 @@ void EsdfMap::batchIsObserved(
   }
 }
 
-/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for Python bindings.
- * std::exceptions are bound to Python exceptions by pybind11, allowing them to be handled
- * in Python code idiomatically.
+/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
+ * Python bindings. std::exceptions are bound to Python exceptions by pybind11,
+ * allowing them to be handled in Python code idiomatically.
  */
 unsigned int EsdfMap::coordPlaneSliceGetDistance(
-                unsigned int free_plane_index,
-                double free_plane_val,
-                EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-                Eigen::Ref<Eigen::VectorXd> distances) const {
+    unsigned int free_plane_index, double free_plane_val,
+    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    Eigen::Ref<Eigen::VectorXd> distances) const {
   BlockIndexList blocks;
   esdf_layer_->getAllAllocatedBlocks(&blocks);
 
@@ -123,8 +121,8 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
     const Block<EsdfVoxel>& block = esdf_layer_->getBlockByIndex(index);
 
     Point origin = block.origin();
-    if (std::abs(origin(free_plane_index) - free_plane_val)
-                                        > block.block_size()) {
+    if (std::abs(origin(free_plane_index) - free_plane_val) >
+        block.block_size()) {
       continue;
     }
 
@@ -132,27 +130,25 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
          ++linear_index) {
       Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
       const EsdfVoxel& voxel = block.getVoxelByLinearIndex(linear_index);
-      if (std::abs(coord(free_plane_index) - free_plane_val)
-                                          <= block.voxel_size()) {
+      if (std::abs(coord(free_plane_index) - free_plane_val) <=
+          block.voxel_size()) {
         double distance;
         if (voxel.observed) {
           distance = voxel.distance;
-        }
-        else {
+        } else {
           continue;
         }
 
         // TODO(mereweth@jpl.nasa.gov) - implement max points to return
         if (count < positions.cols()) {
-          positions.col(count) = Eigen::Vector3d(coord.x(), coord.y(), coord.z());
-        }
-        else {
+          positions.col(count) =
+              Eigen::Vector3d(coord.x(), coord.y(), coord.z());
+        } else {
           did_all_fit = false;
         }
         if (count < distances.size()) {
           distances(count) = distance;
-        }
-        else {
+        } else {
           did_all_fit = false;
         }
         count++;
@@ -161,7 +157,8 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
   }
 
   if (!did_all_fit) {
-    throw std::runtime_error(std::string("Unable to store ") + std::to_string(count) + " values.");
+    throw std::runtime_error(std::string("Unable to store ") +
+                             std::to_string(count) + " values.");
   }
 
   return count;

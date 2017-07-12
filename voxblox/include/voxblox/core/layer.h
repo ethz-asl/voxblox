@@ -209,7 +209,7 @@ class Layer {
 
   size_t getMemorySize() const;
 
-protected:
+ protected:
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;
   FloatingPoint block_size_;
