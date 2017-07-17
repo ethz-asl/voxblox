@@ -54,6 +54,14 @@ int System::extendTo(State& state_from_in, State& state_towards_in,
   return 1;
 }
 
+int System::getStateKey(State& state_in, double* state_key) {
+  for (int i = 0; i < getNumDimensions(); i++) {
+    state_key[i] = state_in[i];
+  }
+
+  return 1;
+}
+
 double System::evaluateExtensionCost(State& state_from_in,
                                      State& state_towards_in,
                                      bool& exact_connection_out) {
