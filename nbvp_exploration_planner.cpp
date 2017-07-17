@@ -36,6 +36,9 @@ bool NbvpExplorationPlanner::getNextWaypoint(
     return false;
   }
 
+  double best_gain = 0.0;
+  VertexType* best_vertex;
+
   // Otherwise iterate over all vertices and find the best branch.
   for (std::list<VertexType*>::iterator iter =
            rrt_planner_.listVertices.begin();
@@ -55,7 +58,35 @@ bool NbvpExplorationPlanner::getNextWaypoint(
               << " yaw: " << current_state.getYaw()
               << " gain: " << current_state.getGain()
               << " total branch gain: " << current_gain << std::endl;
+
+    if (current_gain > best_gain) {
+      best_vertex = &current_vertex;
+    }
   }
+
+  // Get the first waypoint in this vertex chain. Basically trace back until
+  // the one before the first (hopefully the very first vertex in the chain is
+  // the start vertex).
+  VertexType* first_best_vertex;
+  VertexType* best_vertex_parent = best_vertex->getParentPtr();
+  // This makes 0 sense since then the best vertex is actually just the first...
+  // But I guess no other choice in this case!
+  if (best_vertex_parent == NULL) {
+    first_best_vertex = best_vertex;
+    // Otherwise find the vertex who's parents parent is null (2nd in the
+    // chain).
+  } else if (best_vertex_parent->getParentPtr() == NULL) {
+    first_best_vertex = best_vertex;
+  } else {
+    while (best_vertex_parent->getParentPtr() != NULL) {
+      if (best_vertex_parent->getParentPtr()->getParentPtr() == NULL) {
+        first_best_vertex = best_vertex_parent;
+        break;
+      }
+      best_vertex_parent = best_vertex_parent->getParentPtr();
+    }
+  }
+
   return true;
 }
 
