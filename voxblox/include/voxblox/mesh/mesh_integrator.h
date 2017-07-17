@@ -38,6 +38,7 @@
 
 namespace voxblox {
 
+template <typename VoxelType>
 class MeshIntegrator {
  public:
   struct Config {
@@ -46,7 +47,7 @@ class MeshIntegrator {
     float min_weight = 1e-4;
   };
 
-  MeshIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
+  MeshIntegrator(const Config& config, Layer<VoxelType>* tsdf_layer,
                  MeshLayer* mesh_layer)
       : config_(config),
         tsdf_layer_(CHECK_NOTNULL(tsdf_layer)),
@@ -83,7 +84,7 @@ class MeshIntegrator {
     tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
 
     for (const BlockIndex& block_index : all_tsdf_blocks) {
-      Block<TsdfVoxel>::Ptr block =
+      typename Block<VoxelType>::Ptr block =
           tsdf_layer_->getBlockPtrByIndex(block_index);
       if (block->updated()) {
         updateMeshForBlock(block_index);
@@ -94,7 +95,7 @@ class MeshIntegrator {
     }
   }
 
-  void extractBlockMesh(Block<TsdfVoxel>::ConstPtr block, Mesh::Ptr mesh) {
+  void extractBlockMesh(typename Block<VoxelType>::ConstPtr block, Mesh::Ptr mesh) {
     size_t vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
@@ -146,7 +147,7 @@ class MeshIntegrator {
     mesh->clear();
     // This block should already exist, otherwise it makes no sense to update
     // the mesh for it. ;)
-    Block<TsdfVoxel>::ConstPtr block =
+    typename Block<VoxelType>::ConstPtr block =
         tsdf_layer_->getBlockPtrByIndex(block_index);
 
     if (!block) {
@@ -167,7 +168,7 @@ class MeshIntegrator {
     }
   }
 
-  void extractMeshInsideBlock(const Block<TsdfVoxel>& block,
+  void extractMeshInsideBlock(const Block<VoxelType>& block,
                               const VoxelIndex& index, const Point& coords,
                               VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK_NOTNULL(next_mesh_index);
@@ -180,7 +181,7 @@ class MeshIntegrator {
 
     for (unsigned int i = 0; i < 8; ++i) {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
-      const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(corner_index);
+      const VoxelType& voxel = block.getVoxelByVoxelIndex(corner_index);
 
       // Do not extract a mesh here if one of the corner is unobserved and
       // outside the truncation region.
@@ -200,7 +201,7 @@ class MeshIntegrator {
     }
   }
 
-  void extractMeshOnBorder(const Block<TsdfVoxel>& block,
+  void extractMeshOnBorder(const Block<VoxelType>& block,
                            const VoxelIndex& index, const Point& coords,
                            VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK_NOTNULL(mesh);
@@ -216,7 +217,7 @@ class MeshIntegrator {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
 
       if (block.isValidVoxelIndex(corner_index)) {
-        const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(corner_index);
+        const VoxelType& voxel = block.getVoxelByVoxelIndex(corner_index);
 
         if (voxel.weight <= config_.min_weight) {
           all_neighbors_observed = false;
@@ -241,11 +242,11 @@ class MeshIntegrator {
         BlockIndex neighbor_index = block.block_index() + block_offset;
 
         if (tsdf_layer_->hasBlock(neighbor_index)) {
-          const Block<TsdfVoxel>& neighbor_block =
+          const Block<VoxelType>& neighbor_block =
               tsdf_layer_->getBlockByIndex(neighbor_index);
 
           CHECK(neighbor_block.isValidVoxelIndex(corner_index));
-          const TsdfVoxel& voxel =
+          const VoxelType& voxel =
               neighbor_block.getVoxelByVoxelIndex(corner_index);
 
           if (voxel.weight <= config_.min_weight) {
@@ -266,7 +267,7 @@ class MeshIntegrator {
     }
   }
 
-  void updateMeshColor(const Block<TsdfVoxel>& block, Mesh* mesh) {
+  void updateMeshColor(const Block<VoxelType>& block, Mesh* mesh) {
     CHECK_NOTNULL(mesh);
 
     mesh->colors.clear();
@@ -277,15 +278,15 @@ class MeshIntegrator {
       const Point& vertex = mesh->vertices[i];
       VoxelIndex voxel_index = block.computeVoxelIndexFromCoordinates(vertex);
       if (block.isValidVoxelIndex(voxel_index)) {
-        const TsdfVoxel& voxel = block.getVoxelByVoxelIndex(voxel_index);
+        const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
         if (voxel.weight >= config_.min_weight) {
           mesh->colors[i] = voxel.color;
         }
       } else {
-        const Block<TsdfVoxel>::ConstPtr neighbor_block =
+        const typename Block<VoxelType>::ConstPtr neighbor_block =
             tsdf_layer_->getBlockPtrByCoordinates(vertex);
-        const TsdfVoxel& voxel = neighbor_block->getVoxelByCoordinates(vertex);
+        const VoxelType& voxel = neighbor_block->getVoxelByCoordinates(vertex);
         if (voxel.weight >= config_.min_weight) {
           mesh->colors[i] = voxel.color;
         }
@@ -293,11 +294,11 @@ class MeshIntegrator {
     }
   }
 
-  void computeMeshNormals(const Block<TsdfVoxel>& block, Mesh* mesh) {
+  void computeMeshNormals(const Block<VoxelType>& block, Mesh* mesh) {
     mesh->normals.clear();
     mesh->normals.resize(mesh->indices.size(), Point::Zero());
 
-    Interpolator<TsdfVoxel> interpolator(tsdf_layer_);
+    Interpolator<VoxelType> interpolator(tsdf_layer_);
 
     Point grad;
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
@@ -314,7 +315,7 @@ class MeshIntegrator {
  protected:
   Config config_;
 
-  Layer<TsdfVoxel>* tsdf_layer_;
+  Layer<VoxelType>* tsdf_layer_;
   MeshLayer* mesh_layer_;
 
   // Cached map config.

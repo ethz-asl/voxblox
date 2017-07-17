@@ -72,7 +72,7 @@ class VoxbloxEvaluator {
 
   // Mesh visualization.
   std::shared_ptr<MeshLayer> mesh_layer_;
-  std::shared_ptr<MeshIntegrator> mesh_integrator_;
+  std::shared_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
 };
 
 VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
@@ -225,10 +225,10 @@ void VoxbloxEvaluator::evaluate() {
 
 void VoxbloxEvaluator::visualize() {
   // Generate the mesh.
-  MeshIntegrator::Config mesh_config;
+  MeshIntegrator<TsdfVoxel>::Config mesh_config;
   mesh_layer_.reset(new MeshLayer(tsdf_layer_->block_size()));
   mesh_integrator_.reset(
-      new MeshIntegrator(mesh_config, tsdf_layer_.get(), mesh_layer_.get()));
+      new MeshIntegrator<TsdfVoxel>(mesh_config, tsdf_layer_.get(), mesh_layer_.get()));
   mesh_integrator_->generateWholeMesh();
 
   // Publish mesh.

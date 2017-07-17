@@ -1,0 +1,10 @@
+package tsdf2;
+
+message MapHeaderProto {
+  optional double voxel_size = 1;
+  optional double voxels_per_volume_side = 2;
+  optional uint32 max_ntsdf_voxel_weight = 3;
+  optional bool use_color = 4;
+  optional double meters_to_ntsdf = 5;
+  optional uint32 num_volumes = 6;
+}
