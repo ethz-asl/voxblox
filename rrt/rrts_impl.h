@@ -1,7 +1,3 @@
-/*!
- * \file rrts.hpp
- */
-
 #ifndef NBVP_VOXBLOX_RRT_RTTS_IMPL_H_
 #define NBVP_VOXBLOX_RRT_RTTS_IMPL_H_
 

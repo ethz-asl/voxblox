@@ -13,9 +13,15 @@ class State {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   State()
-      : position_(Eigen::Vector3d::Zero()), yaw_(0), gain_computed_(false) {}
+      : position_(Eigen::Vector3d::Zero()),
+        yaw_(0),
+        gain_computed_(false),
+        exploration_gain_(0.0) {}
   State(const Eigen::Vector3d& position, double yaw)
-      : position_(position), yaw_(yaw), gain_computed_(false) {}
+      : position_(position),
+        yaw_(yaw),
+        gain_computed_(false),
+        exploration_gain_(0.0) {}
 
   State& operator=(const State& state_in) {
     position_ = state_in.getPosition();
@@ -37,6 +43,8 @@ class State {
     // TODO: compute gain!
     return 0.0;
   }
+
+  double getGain() { return exploration_gain_; }
 
   double& operator[](const int i) {
     if (i < 3) {

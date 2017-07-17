@@ -79,6 +79,10 @@ class Vertex {
    */
   Vertex& getParent() { return *parent; }
 
+  // Get the raw pointer so we don't dereference the default NULL ptr by
+  // accident at any time.
+  Vertex* getParentPtr() { return parent; }
+
   /*!
    * \brief Returns the accumulated cost at this vertex
    *
@@ -238,5 +242,7 @@ class Planner {
 
 }  // namespace RRTstar
 }  // namespace nbvp_voxblox
+
+#include "rrts_impl.h"
 
 #endif  // NBVP_VOXBLOX_RRT_RRTS_H_
