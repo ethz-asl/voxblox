@@ -168,7 +168,7 @@ void createOccupancyBlocksFromLayer(
 
 // Short-hand functions for visualizing different types of voxels.
 inline bool visualizeNearSurfaceTsdfVoxels(const TsdfVoxel& voxel,
-                                           const Point& coord,
+                                           const Point& /*coord*/,
                                            double surface_distance,
                                            Color* color) {
   if (voxel.weight > 0 && std::abs(voxel.distance) < surface_distance) {
@@ -179,9 +179,9 @@ inline bool visualizeNearSurfaceTsdfVoxels(const TsdfVoxel& voxel,
 }
 
 inline bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
-                                                 const Point& coord,
+                                                 const Point& /*coord*/,
                                                  double* intensity) {
-  DCHECK_NOTNULL(intensity);
+  CHECK_NOTNULL(intensity);
   if (voxel.weight > 1e-3) {
     *intensity = voxel.distance;
     return true;
@@ -192,7 +192,7 @@ inline bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
 inline bool visualizeDistanceIntensityTsdfVoxelsSlice(
     const TsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
     FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
-  DCHECK_NOTNULL(intensity);
+  CHECK_NOTNULL(intensity);
   if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size / 2.0) {
     if (voxel.weight > 1e-3) {
       *intensity = voxel.distance;
@@ -203,9 +203,9 @@ inline bool visualizeDistanceIntensityTsdfVoxelsSlice(
 }
 
 inline bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
-                                                 const Point& coord,
+                                                 const Point& /*coord*/,
                                                  double* intensity) {
-  DCHECK_NOTNULL(intensity);
+  CHECK_NOTNULL(intensity);
   if (voxel.observed) {
     *intensity = voxel.distance;
     return true;
@@ -216,7 +216,7 @@ inline bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
 inline bool visualizeDistanceIntensityEsdfVoxelsSlice(
     const EsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
     FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
-  DCHECK_NOTNULL(intensity);
+  CHECK_NOTNULL(intensity);
 
   if (std::abs(coord(free_plane_index) - free_plane_val) <= voxel_size / 2.0) {
     if (voxel.observed) {
@@ -228,7 +228,7 @@ inline bool visualizeDistanceIntensityEsdfVoxelsSlice(
 }
 
 inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
-                                        const Point& coord) {
+                                        const Point& /*coord*/) {
   if (voxel.weight > 1e-3 && voxel.distance <= 0) {
     return true;
   }
@@ -236,7 +236,7 @@ inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
 }
 
 inline bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
-                                             const Point& coord) {
+                                             const Point& /*coord*/) {
   const float kThresholdLogOccupancy = logOddsFromProbability(0.7);
   if (voxel.probability_log > kThresholdLogOccupancy) {
     return true;
