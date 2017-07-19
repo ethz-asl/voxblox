@@ -18,10 +18,10 @@ class Block {
   typedef std::shared_ptr<const Block<VoxelType> > ConstPtr;
 
   Block(size_t voxels_per_side, FloatingPoint voxel_size, const Point& origin)
-      : voxels_per_side_(voxels_per_side),
+      : has_data_(false),
+        voxels_per_side_(voxels_per_side),
         voxel_size_(voxel_size),
         origin_(origin),
-        has_data_(false),
         updated_(false) {
     num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
     voxel_size_inv_ = 1.0 / voxel_size_;
