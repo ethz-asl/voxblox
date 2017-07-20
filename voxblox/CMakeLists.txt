@@ -47,6 +47,7 @@ endif()
 set("${PROJECT_NAME}_SRCS"
   src/core/block.cc
   src/core/esdf_map.cc
+  src/core/tsdf_map.cc
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
   src/io/mesh_ply.cc
@@ -92,6 +93,7 @@ if(HAVE_PYBIND11)
   pybind11_add_module(voxbloxpy
     ${${PROJECT_NAME}_SRCS}
     src/pybind11/esdf_map_bind.cc
+    src/pybind11/tsdf_map_bind.cc
     src/pybind11/esdf_integrator_bind.cc
     src/pybind11/tsdf_integrator_bind.cc
     src/pybind11/voxel_bind.cc

@@ -26,12 +26,39 @@ class TsdfMap {
     block_size_ = config.tsdf_voxel_size * config.tsdf_voxels_per_side;
   }
 
+  // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
+  TsdfMap(Layer<TsdfVoxel>::Ptr tsdf_layer)
+     : tsdf_layer_(tsdf_layer) {
+    if (!tsdf_layer) {
+      // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
+      throw std::runtime_error(std::string("Null Layer<TsdfVoxel>::Ptr") +
+                               " in TsdfMap constructor");
+    }
+    block_size_ = tsdf_layer_->block_size();
+  }
+
   virtual ~TsdfMap() {}
 
   Layer<TsdfVoxel>* getTsdfLayerPtr() { return tsdf_layer_.get(); }
   const Layer<TsdfVoxel>& getTsdfLayer() const { return *tsdf_layer_; }
 
   FloatingPoint block_size() const { return block_size_; }
+  FloatingPoint voxel_size() const { return tsdf_layer_->voxel_size(); }
+
+  // EigenDRef is fully dynamic stride type alias for Numpy array slices
+  // Use column-major matrices; column-by-column traversal is faster
+
+  // convenience alias borrowed from pybind11
+  using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+  template <typename MatrixType> using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
+
+  unsigned int coordPlaneSliceGetDistanceWeight(
+    unsigned int free_plane_index,
+    double free_plane_val,
+    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    Eigen::Ref<Eigen::VectorXd> distances,
+    Eigen::Ref<Eigen::VectorXd> weights,
+    unsigned int max_points = 100000) const;
 
  protected:
   FloatingPoint block_size_;
