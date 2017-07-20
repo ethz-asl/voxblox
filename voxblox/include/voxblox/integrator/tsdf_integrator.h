@@ -466,6 +466,7 @@ class TsdfIntegrator {
             Point voxel_center_vec = voxel_center - point;
 
             // how far is voxel from center of filled sphere
+            FloatingPoint new_distance = sqrt(voxel_center_vec.squaredNorm());
 
             if ((voxel.distance == 0) ||
                 (new_distance < voxel.distance)) {

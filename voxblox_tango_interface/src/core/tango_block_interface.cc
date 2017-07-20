@@ -21,7 +21,7 @@ void TangoBlockInterface::deserializeFromIntegers(
     // TODO(mereweth@jpl.nasa.gov) - is this the best way to unpack NTSDF?
 
     voxel.distance = static_cast<int16_t>(bytes_1 >> 16)
-                     * meters_to_ntsdf_;
+                     / meters_to_ntsdf_;
 
     voxel.weight = static_cast<float>(max_ntsdf_voxel_weight_)
                    / static_cast<float>(UINT16_MAX)
