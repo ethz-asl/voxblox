@@ -26,6 +26,16 @@ class TsdfMap {
     block_size_ = config.tsdf_voxel_size * config.tsdf_voxels_per_side;
   }
 
+  // Creates a new TsdfMap based on a COPY of this layer.
+  explicit TsdfMap(const Layer<TsdfVoxel>& layer)
+      : TsdfMap(std::make_shared<Layer<TsdfVoxel>>(layer)) {}
+
+  // Creates a new TsdfMap that contains this layer.
+  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer) : tsdf_layer_(layer) {
+    CHECK(layer);
+    block_size_ = layer->block_size();
+  }
+
   virtual ~TsdfMap() {}
 
   Layer<TsdfVoxel>* getTsdfLayerPtr() { return tsdf_layer_.get(); }

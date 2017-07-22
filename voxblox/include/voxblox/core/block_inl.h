@@ -47,8 +47,7 @@ void Block<VoxelType>::getProto(BlockProto* proto) const {
 
 template <typename VoxelType>
 bool Block<VoxelType>::mergeBlock(const Block<VoxelType>& /*other_block*/) {
-  // TODO(mfehr): implement
-  LOG(FATAL) << "NOT IMPLEMENTED";
+  LOG(FATAL) << "Not implemented for this voxel type!";
   return false;
 }
 
