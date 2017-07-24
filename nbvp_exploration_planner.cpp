@@ -59,8 +59,9 @@ bool NbvpExplorationPlanner::getNextWaypoint(
               << " gain: " << current_state.getGain()
               << " total branch gain: " << current_gain << std::endl;
 
-    if (current_gain > best_gain) {
+    if (current_gain >= best_gain) {
       best_vertex = &current_vertex;
+      best_gain = current_gain;
     }
   }
 
@@ -86,6 +87,9 @@ bool NbvpExplorationPlanner::getNextWaypoint(
       best_vertex_parent = best_vertex_parent->getParentPtr();
     }
   }
+
+  waypoint->position_W = first_best_vertex->getState().getPosition();
+  waypoint->setFromYaw(first_best_vertex->getState().getYaw());
 
   return true;
 }
