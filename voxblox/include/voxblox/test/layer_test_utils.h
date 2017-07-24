@@ -87,15 +87,15 @@ void LayerTest<EsdfVoxel>::CompareVoxel(const EsdfVoxel& voxel_A,
                                         const EsdfVoxel& voxel_B) const {
   constexpr double kTolerance = 1e-10;
 
-  CHECK_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
-  CHECK_EQ(voxel_A.observed, voxel_B.observed);
-  CHECK_EQ(voxel_A.in_queue, voxel_B.in_queue);
-  CHECK_EQ(voxel_A.fixed, voxel_B.fixed);
+  EXPECT_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
+  EXPECT_EQ(voxel_A.observed, voxel_B.observed);
+  EXPECT_EQ(voxel_A.in_queue, voxel_B.in_queue);
+  EXPECT_EQ(voxel_A.fixed, voxel_B.fixed);
 
   // TODO(helenol): is this not serialized?
-  // CHECK_EQ(voxel_A.parent.x(), voxel_B.parent.x());
-  // CHECK_EQ(voxel_A.parent.y(), voxel_B.parent.y());
-  // CHECK_EQ(voxel_A.parent.z(), voxel_B.parent.z());
+  // EXPECT_EQ(voxel_A.parent.x(), voxel_B.parent.x());
+  // EXPECT_EQ(voxel_A.parent.y(), voxel_B.parent.y());
+  // EXPECT_EQ(voxel_A.parent.z(), voxel_B.parent.z());
 }
 
 template <>
@@ -103,34 +103,34 @@ void LayerTest<OccupancyVoxel>::CompareVoxel(
     const OccupancyVoxel& voxel_A, const OccupancyVoxel& voxel_B) const {
   constexpr double kTolerance = 1e-10;
 
-  CHECK_NEAR(voxel_A.probability_log, voxel_B.probability_log, kTolerance);
-  CHECK_EQ(voxel_A.observed, voxel_B.observed);
+  EXPECT_NEAR(voxel_A.probability_log, voxel_B.probability_log, kTolerance);
+  EXPECT_EQ(voxel_A.observed, voxel_B.observed);
 }
 
 template <>
 void LayerTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
                                         const TsdfVoxel& voxel_B) const {
-  CHECK_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
-  CHECK_NEAR(voxel_A.weight, voxel_B.weight, kTolerance);
-  CHECK_EQ(voxel_A.color.r, voxel_B.color.r);
-  CHECK_EQ(voxel_A.color.g, voxel_B.color.g);
-  CHECK_EQ(voxel_A.color.b, voxel_B.color.b);
-  CHECK_EQ(voxel_A.color.a, voxel_B.color.a);
+  EXPECT_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
+  EXPECT_NEAR(voxel_A.weight, voxel_B.weight, kTolerance);
+  EXPECT_EQ(voxel_A.color.r, voxel_B.color.r);
+  EXPECT_EQ(voxel_A.color.g, voxel_B.color.g);
+  EXPECT_EQ(voxel_A.color.b, voxel_B.color.b);
+  EXPECT_EQ(voxel_A.color.a, voxel_B.color.a);
 }
 
 template <typename VoxelType>
 void SetUpTestLayer(const size_t block_volume_diameter,
                     Layer<VoxelType>* layer) {
-  CHECK(layer);
+  CHECK_NOTNULL(layer);
   LOG(FATAL) << "Not implemented for this voxel type!";
 }
 
 template <>
 void SetUpTestLayer(const size_t block_volume_diameter,
                     Layer<TsdfVoxel>* layer) {
-  CHECK(layer);
+  CHECK_NOTNULL(layer);
 
-  int32_t half_index_range = block_volume_diameter / 2;
+  const int32_t half_index_range = block_volume_diameter / 2;
 
   for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
     for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
@@ -150,7 +150,7 @@ void SetUpTestLayer(const size_t block_volume_diameter,
       }
     }
   }
-  double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
+  const double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
   std::cout << std::endl
             << "Set up a test TSDF layer of size " << size_in_MB << " MB";
 }
@@ -158,9 +158,9 @@ void SetUpTestLayer(const size_t block_volume_diameter,
 template <>
 void SetUpTestLayer(const size_t block_volume_diameter,
                     Layer<EsdfVoxel>* layer) {
-  CHECK(layer);
+  CHECK_NOTNULL(layer);
 
-  int32_t half_index_range = block_volume_diameter / 2;
+  const int32_t half_index_range = block_volume_diameter / 2;
 
   for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
     for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
@@ -183,17 +183,17 @@ void SetUpTestLayer(const size_t block_volume_diameter,
       }
     }
   }
-  double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
+  const double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
   std::cout << std::endl
-            << "Set up a test Esdf layer of size " << size_in_MB << " MB";
+            << "Set up a test ESDF layer of size " << size_in_MB << " MB";
 }
 
 template <>
 void SetUpTestLayer(const size_t block_volume_diameter,
                     Layer<OccupancyVoxel>* layer) {
-  CHECK(layer);
+  CHECK_NOTNULL(layer);
 
-  int32_t half_index_range = block_volume_diameter / 2;
+  const int32_t half_index_range = block_volume_diameter / 2;
 
   for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
     for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
@@ -211,7 +211,7 @@ void SetUpTestLayer(const size_t block_volume_diameter,
       }
     }
   }
-  double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
+  const double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
   std::cout << std::endl
             << "Set up a test occupancy layer of size " << size_in_MB << " MB";
 }
@@ -320,7 +320,7 @@ bool IsSameLayer(const Layer<VoxelType>& layer_A,
   is_the_same &= blocks_A.size() == blocks_B.size();
 
   for (const BlockIndex& index_A : blocks_A) {
-    BlockIndexList::const_iterator it =
+    const BlockIndexList::const_iterator it =
         std::find(blocks_B.begin(), blocks_B.end(), index_A);
     if (it != blocks_B.end()) {
       const Block<VoxelType>& block_A = layer_A.getBlockByIndex(index_A);
@@ -337,7 +337,7 @@ bool IsSameLayer(const Layer<VoxelType>& layer_A,
     }
   }
   for (const BlockIndex& index_B : blocks_B) {
-    BlockIndexList::const_iterator it =
+    const BlockIndexList::const_iterator it =
         std::find(blocks_A.begin(), blocks_A.end(), index_B);
     if (it != blocks_A.end()) {
       const Block<VoxelType>& block_B = layer_A.getBlockByIndex(index_B);

@@ -1,5 +1,3 @@
-#include <iostream>  // NOLINT
-
 #include <gtest/gtest.h>
 
 #include "./Block.pb.h"
@@ -7,7 +5,6 @@
 #include "voxblox/core/block.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
-#include "voxblox/io/layer_io.h"
 #include "voxblox/test/layer_test_utils.h"
 
 using namespace voxblox;  // NOLINT

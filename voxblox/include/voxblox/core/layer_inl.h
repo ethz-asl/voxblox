@@ -29,12 +29,12 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
       << " layer type: " << getType();
 
   // Derived config parameter.
-  block_size_ = voxel_size_ * voxels_per_side_;
-  block_size_inv_ = 1.0 / block_size_;
-  voxels_per_side_inv_ = 1.0f / static_cast<FloatingPoint>(voxels_per_side_);
-
   CHECK_GT(proto.voxel_size(), 0.0);
+  block_size_ = voxel_size_ * voxels_per_side_;
+  CHECK_GT(block_size_, 0.0);
+  block_size_inv_ = 1.0 / block_size_;
   CHECK_GT(proto.voxels_per_side(), 0u);
+  voxels_per_side_inv_ = 1.0f / static_cast<FloatingPoint>(voxels_per_side_);
 }
 
 template <typename VoxelType>
