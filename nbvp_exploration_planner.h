@@ -31,6 +31,11 @@ class NbvpExplorationPlanner {
   void setRobotRadius(double radius) { robot_radius_ = radius; }
   double getRobotRadius() const { return robot_radius_; }
 
+  void setBounds(const Eigen::Vector3d& lower_bound,
+                 const Eigen::Vector3d& upper_bound) {
+    rrt_system_.setBounds(lower_bound, upper_bound);
+  }
+
   // MUST be called before the first instance of getNextWaypoint.
   // Sets up the underlying RRT problem.
   void setup();

@@ -272,6 +272,13 @@ int RRTstar::Planner<State, Trajectory, System>::initialize() {
   // If there is no system, then return failure
   if (!system) return 0;
 
+  // Set the root from the system again.
+  root = new Vertex<State, Trajectory, System>;
+  root->state = new State(system->getRootState());
+  root->costFromParent = 0.0;
+  root->costFromRoot = 0.0;
+  root->trajFromParent = NULL;
+
   // Backup the root
   Vertex<State, Trajectory, System>* rootBackup = NULL;
   if (root) rootBackup = new Vertex<State, Trajectory, System>(*root);
@@ -436,8 +443,15 @@ int RRTstar::Planner<State, Trajectory, System>::rewireVertices(
 template <class State, class Trajectory, class System>
 int RRTstar::Planner<State, Trajectory, System>::iteration() {
   // 1. Sample a new state
+  constexpr int kMaxValidStateTries = 10000;
+  bool state_valid = false;
+  int num_tries = 0;
+
   State stateRandom;
-  system->sampleState(stateRandom);
+  while (!state_valid && num_tries < kMaxValidStateTries) {
+    state_valid = system->sampleState(stateRandom) > 0;
+    num_tries++;
+  }
 
   // 2. Compute the set of all near vertices
   std::vector<Vertex<State, Trajectory, System>*> vectorNearVertices;
