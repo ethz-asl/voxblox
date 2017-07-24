@@ -6,6 +6,7 @@
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/test/layer_test_utils.h"
+#include "voxblox/utils/layer_utils.h"
 
 using namespace voxblox;  // NOLINT
 
@@ -36,17 +37,17 @@ typedef LayerTest<OccupancyVoxel> OccupancyLayerTest;
 
 TEST_F(TsdfLayerTest, DeepCopyConstructor) {
   Layer<TsdfVoxel> new_layer(*layer_);
-  EXPECT_TRUE(voxblox::test::IsSameLayer(new_layer, *layer_));
+  EXPECT_TRUE(voxblox::utils::isSameLayer(new_layer, *layer_));
 }
 
 TEST_F(EsdfLayerTest, DeepCopyConstructor) {
   Layer<EsdfVoxel> new_layer(*layer_);
-  EXPECT_TRUE(voxblox::test::IsSameLayer(new_layer, *layer_));
+  EXPECT_TRUE(voxblox::utils::isSameLayer(new_layer, *layer_));
 }
 
 TEST_F(OccupancyLayerTest, DeepCopyConstructor) {
   Layer<OccupancyVoxel> new_layer(*layer_);
-  EXPECT_TRUE(voxblox::test::IsSameLayer(new_layer, *layer_));
+  EXPECT_TRUE(voxblox::utils::isSameLayer(new_layer, *layer_));
 }
 
 int main(int argc, char** argv) {
