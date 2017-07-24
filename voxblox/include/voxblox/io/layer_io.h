@@ -18,6 +18,7 @@ template <typename VoxelType>
 bool LoadLayer(const std::string& file_path,
                typename Layer<VoxelType>::Ptr* layer_ptr) {
   CHECK_NOTNULL(layer_ptr);
+  CHECK(!file_path.empty());
 
   // Open and check the file
   std::fstream proto_file;
@@ -64,8 +65,10 @@ bool LoadLayer(const std::string& file_path,
       return false;
     }
 
-    if (!(*layer_ptr)->addBlockFromProto(
-             block_proto, Layer<VoxelType>::BlockMergingStrategy::kProhibit)) {
+    if (!(*layer_ptr)
+             ->addBlockFromProto(
+                 block_proto,
+                 Layer<VoxelType>::BlockMergingStrategy::kProhibit)) {
       LOG(ERROR) << "Could not add the block protobuf message to the layer!";
       return false;
     }
@@ -80,6 +83,7 @@ bool LoadBlocksFromFile(
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
     Layer<VoxelType>* layer_ptr) {
   CHECK_NOTNULL(layer_ptr);
+  CHECK(!file_path.empty());
 
   // Open and check the file
   std::fstream proto_file;
@@ -148,17 +152,16 @@ bool LoadBlocksFromFile(
 // If opening the file at file_path fails, create an empty layer
 template <typename VoxelType>
 typename Layer<VoxelType>::Ptr LoadOrCreateLayerHeader(
-                                                const std::string& file_path,
-                                                FloatingPoint voxel_size,
-                                                size_t voxels_per_side) {
+    const std::string& file_path, FloatingPoint voxel_size,
+    size_t voxels_per_side) {
+  CHECK(!file_path.empty());
 
   bool success = true;
 
   // Open and check the file
   std::fstream proto_file;
   proto_file.open(file_path, std::fstream::in);
-  if (!success ||
-      !proto_file.is_open()) {
+  if (!success || !proto_file.is_open()) {
     LOG(ERROR) << "Could not open protobuf file to load layer: " << file_path;
     success = false;
   }
@@ -168,24 +171,21 @@ typename Layer<VoxelType>::Ptr LoadOrCreateLayerHeader(
 
   // Get number of messages
   uint32_t num_protos;
-  if (!success ||
-      !utils::readProtoMsgCountToStream(&proto_file, &num_protos,
-                                        &tmp_byte_offset)) {
+  if (!success || !utils::readProtoMsgCountToStream(&proto_file, &num_protos,
+                                                    &tmp_byte_offset)) {
     LOG(ERROR) << "Could not read number of messages.";
     success = false;
   }
 
-  if (!success ||
-      (num_protos == 0u)) {
+  if (!success || (num_protos == 0u)) {
     LOG(WARNING) << "Empty protobuf file!";
     success = false;
   }
 
   // Get header and create the layer if compatible
   LayerProto layer_proto;
-  if (!success ||
-      !utils::readProtoMsgFromStream(&proto_file, &layer_proto,
-                                     &tmp_byte_offset)) {
+  if (!success || !utils::readProtoMsgFromStream(&proto_file, &layer_proto,
+                                                 &tmp_byte_offset)) {
     LOG(ERROR) << "Could not read layer protobuf message.";
     success = false;
   }
@@ -193,9 +193,9 @@ typename Layer<VoxelType>::Ptr LoadOrCreateLayerHeader(
   typename Layer<VoxelType>::Ptr layer_ptr;
   if (success) {
     layer_ptr = aligned_shared<Layer<VoxelType> >(layer_proto);
-  }
-  else {
-    layer_ptr = std::make_shared<Layer<VoxelType> >(voxel_size, voxels_per_side);
+  } else {
+    layer_ptr =
+        std::make_shared<Layer<VoxelType> >(voxel_size, voxels_per_side);
   }
   CHECK(layer_ptr);
 
@@ -204,6 +204,7 @@ typename Layer<VoxelType>::Ptr LoadOrCreateLayerHeader(
 
 template <typename VoxelType>
 bool SaveLayer(const Layer<VoxelType>& layer, const std::string& file_path) {
+  CHECK(!file_path.empty());
   return layer.saveToFile(file_path);
 }
 
@@ -212,6 +213,7 @@ bool SaveLayerSubset(const Layer<VoxelType>& layer,
                      const std::string& file_path,
                      BlockIndexList blocks_to_include,
                      bool include_all_blocks) {
+  CHECK(!file_path.empty());
   return layer.saveSubsetToFile(file_path, blocks_to_include,
                                 include_all_blocks);
 }

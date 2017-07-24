@@ -30,18 +30,27 @@ class EsdfMap {
     block_size_ = config.esdf_voxel_size * config.esdf_voxels_per_side;
   }
 
-  EsdfMap(const std::string& file_path)
-      : esdf_layer_(io::LoadOrCreateLayerHeader<EsdfVoxel>(file_path,
-                                                           0.2,
-                                                           16u)),
+  explicit EsdfMap(const std::string& file_path)
+      : esdf_layer_(
+            io::LoadOrCreateLayerHeader<EsdfVoxel>(file_path, 0.2, 16u)),
         interpolator_(esdf_layer_.get()) {
-    if (!io::LoadBlocksFromFile<EsdfVoxel>(file_path,
-                                           Layer<EsdfVoxel>::BlockMergingStrategy::kProhibit,
-                                           esdf_layer_.get())) {
+    if (!io::LoadBlocksFromFile<EsdfVoxel>(
+            file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kProhibit,
+            esdf_layer_.get())) {
       // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
       throw std::runtime_error(std::string("Invalid file path: ") + file_path);
     }
     block_size_ = esdf_layer_->block_size();
+  }
+
+  // Creates a new EsdfMap based on a COPY of this layer.
+  explicit EsdfMap(const Layer<EsdfVoxel>& layer)
+      : EsdfMap(std::make_shared<Layer<EsdfVoxel>>(layer)) {}
+
+  // Creates a new EsdfMap that contains this layer.
+  explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer)
+      : esdf_layer_(layer), interpolator_(CHECK_NOTNULL(esdf_layer_.get())) {
+    block_size_ = layer->block_size();
   }
 
   virtual ~EsdfMap() {}
@@ -74,31 +83,31 @@ class EsdfMap {
 
   // convenience alias borrowed from pybind11
   using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
-  template <typename MatrixType> using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
+  template <typename MatrixType>
+  using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
 
   void batchGetDistanceAtPosition(
-    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXd> distances,
-    Eigen::Ref<Eigen::VectorXi> observed) const;
+      EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXd> distances,
+      Eigen::Ref<Eigen::VectorXi> observed) const;
 
   void batchGetDistanceAndGradientAtPosition(
-    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXd> distances,
-    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients,
-    Eigen::Ref<Eigen::VectorXi> observed) const;
+      EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXd> distances,
+      EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients,
+      Eigen::Ref<Eigen::VectorXi> observed) const;
 
   void batchIsObserved(
-    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXi> observed) const;
+      EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXi> observed) const;
 
   unsigned int coordPlaneSliceGetCount(unsigned int free_plane_index,
                                        double free_plane_val) const;
 
   unsigned int coordPlaneSliceGetDistance(
-    unsigned int free_plane_index,
-    double free_plane_val,
-    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXd> distances) const;
+      unsigned int free_plane_index, double free_plane_val,
+      EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXd> distances) const;
 
  protected:
   FloatingPoint block_size_;

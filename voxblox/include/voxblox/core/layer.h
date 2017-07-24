@@ -7,9 +7,9 @@
 
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
-#include "voxblox/core/common.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/block_hash.h"
+#include "voxblox/core/common.h"
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
@@ -33,6 +33,9 @@ class Layer {
 
   // Create the layer from protobuf layer header.
   explicit Layer(const LayerProto& proto);
+
+  // Deep copy constructor.
+  explicit Layer(const Layer& other);
 
   virtual ~Layer() {}
 
@@ -117,8 +120,8 @@ class Layer {
                    voxels_per_side_, voxel_size_,
                    getOriginPointFromGridIndex(index, block_size_)))));
 
-    DCHECK(insert_status.second) << "Block already exists when allocating at "
-                                 << index.transpose();
+    DCHECK(insert_status.second)
+        << "Block already exists when allocating at " << index.transpose();
 
     DCHECK(insert_status.first->second);
     DCHECK_EQ(insert_status.first->first, index);
@@ -173,8 +176,8 @@ class Layer {
     if (!hasBlock(block_index)) {
       return nullptr;
     }
-    const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
-        global_voxel_index, voxels_per_side_);
+    const VoxelIndex local_voxel_index =
+        getLocalFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_);
     const Block<VoxelType>& block = getBlockByIndex(block_index);
     return &block.getVoxelByVoxelIndex(local_voxel_index);
   }
@@ -186,8 +189,8 @@ class Layer {
     if (!hasBlock(block_index)) {
       return nullptr;
     }
-    const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
-        global_voxel_index, voxels_per_side_);
+    const VoxelIndex local_voxel_index =
+        getLocalFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_);
     Block<VoxelType>& block = getBlockByIndex(block_index);
     return &block.getVoxelByVoxelIndex(local_voxel_index);
   }

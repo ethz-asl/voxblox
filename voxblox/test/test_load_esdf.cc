@@ -1,15 +1,12 @@
-#include <iostream>  // NOLINT
+#include <string>
+#include <memory>
 
-#include "./Block.pb.h"
-#include "./Layer.pb.h"
+#include <glog/logging.h>
+
 #include "voxblox/core/block.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/io/layer_io.h"
-#include "voxblox/test/layer_test_utils.h"
-
-#include <voxblox/io/mesh_ply.h>
-#include <voxblox/mesh/mesh_integrator.h>
 
 using namespace voxblox;  // NOLINT
 
@@ -25,7 +22,7 @@ int main(int argc, char** argv) {
   Layer<EsdfVoxel>::Ptr layer_from_file;
   io::LoadLayer<EsdfVoxel>(file, &layer_from_file);
 
-  std::cout << "Layer memory size: " << layer_from_file->getMemorySize()
+  LOG(INFO) << "Layer memory size: " << layer_from_file->getMemorySize()
             << "\n";
 
   return 0;
