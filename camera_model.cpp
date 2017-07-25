@@ -11,7 +11,7 @@ void Plane::setFromPoints(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2,
 
   Eigen::Vector3d cross = p1p2.cross(p1p3);
   normal_ = cross.normalized();
-  distance_ = -cross.dot(p1);
+  distance_ = normal_.dot(p1);
 }
 
 void Plane::setFromDistanceNormal(const Eigen::Vector3d& normal,
@@ -102,7 +102,7 @@ void CameraModel::setBodyPose(const Transformation& body_pose) {
 }
 
 void CameraModel::calculateBoundingPlanes() {
-  if (initialized_) {
+  if (!initialized_) {
     return;
   }
 
@@ -121,37 +121,41 @@ void CameraModel::calculateBoundingPlanes() {
 
   // Near plane.
   bounding_planes_[0].setFromPoints(
-      transformed_corners[0], transformed_corners[1], transformed_corners[2]);
-  std::cout << "Near plane: Normal: " << bounding_planes_[0].normal()
+      transformed_corners[0], transformed_corners[2], transformed_corners[1]);
+  std::cout << "Near plane: Normal: "
+            << bounding_planes_[0].normal().transpose()
             << " distance: " << bounding_planes_[0].distance() << std::endl;
   // Far plane.
   bounding_planes_[1].setFromPoints(
       transformed_corners[4], transformed_corners[5], transformed_corners[6]);
-  std::cout << "Far plane: Normal: " << bounding_planes_[1].normal()
+  std::cout << "Far plane: Normal: " << bounding_planes_[1].normal().transpose()
             << " distance: " << bounding_planes_[1].distance() << std::endl;
 
   // Left.
   bounding_planes_[2].setFromPoints(
-      transformed_corners[3], transformed_corners[2], transformed_corners[6]);
-  std::cout << "Left plane: Normal: " << bounding_planes_[2].normal()
+      transformed_corners[3], transformed_corners[6], transformed_corners[2]);
+  std::cout << "Left plane: Normal: "
+            << bounding_planes_[2].normal().transpose()
             << " distance: " << bounding_planes_[2].distance() << std::endl;
 
   // Right.
   bounding_planes_[3].setFromPoints(
-      transformed_corners[0], transformed_corners[4], transformed_corners[5]);
-  std::cout << "Right plane: Normal: " << bounding_planes_[3].normal()
+      transformed_corners[0], transformed_corners[5], transformed_corners[4]);
+  std::cout << "Right plane: Normal: "
+            << bounding_planes_[3].normal().transpose()
             << " distance: " << bounding_planes_[3].distance() << std::endl;
 
   // Top.
   bounding_planes_[4].setFromPoints(
-      transformed_corners[3], transformed_corners[7], transformed_corners[4]);
-  std::cout << "Top plane: Normal: " << bounding_planes_[4].normal()
+      transformed_corners[3], transformed_corners[4], transformed_corners[7]);
+  std::cout << "Top plane: Normal: " << bounding_planes_[4].normal().transpose()
             << " distance: " << bounding_planes_[4].distance() << std::endl;
 
   // Bottom.
   bounding_planes_[5].setFromPoints(
       transformed_corners[2], transformed_corners[6], transformed_corners[5]);
-  std::cout << "Bottom plane: Normal: " << bounding_planes_[5].normal()
+  std::cout << "Bottom plane: Normal: "
+            << bounding_planes_[5].normal().transpose()
             << " distance: " << bounding_planes_[5].distance() << std::endl;
 
   // Calculate AABB.
