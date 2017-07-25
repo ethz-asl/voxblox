@@ -398,12 +398,12 @@ inline FloatingPoint Interpolator<VoxelType>::interpMember(
     const InterpVector& q_vector, const VoxelType** voxels,
     TGetter (*getter)(const VoxelType&)) {
   InterpVector data;
-  for (size_t i = 0; i < data.size(); ++i) {
+  for (int i = 0; i < data.size(); ++i) {
     data[i] = static_cast<FloatingPoint>((*getter)(*voxels[i]));
   }
   /*
     The paper (http://spie.org/samples/PM159.pdf) has a different
-    order than us for the data. The table below is therefore a 
+    order than us for the data. The table below is therefore a
     permuted version of the table in the paper.
 
     Current data order
