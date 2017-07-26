@@ -168,6 +168,9 @@ void CameraModel::calculateBoundingPlanes() {
       aabb_max_(i) = std::max(aabb_max_(i), transformed_corners[j](i));
     }
   }
+
+  std::cout << "AABB min:\n" << aabb_min_.transpose() << "\nAABB max:\n"
+            << aabb_max_.transpose() << std::endl;
 }
 
 }  // namespace nbvp_voxblox
