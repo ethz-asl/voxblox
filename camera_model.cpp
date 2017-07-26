@@ -20,7 +20,7 @@ void Plane::setFromDistanceNormal(const Eigen::Vector3d& normal,
   distance_ = distance;
 }
 
-bool Plane::isPointInside(const Eigen::Vector3d& point) {
+bool Plane::isPointInside(const Eigen::Vector3d& point) const {
   if (point.dot(normal_) + distance_ <= 0.0) {
     return true;
   }
@@ -171,6 +171,22 @@ void CameraModel::calculateBoundingPlanes() {
 
   std::cout << "AABB min:\n" << aabb_min_.transpose() << "\nAABB max:\n"
             << aabb_max_.transpose() << std::endl;
+}
+
+void CameraModel::getAabb(Eigen::Vector3d* aabb_min,
+                          Eigen::Vector3d* aabb_max) const {
+  *aabb_min = aabb_min_;
+  *aabb_max = aabb_max_;
+}
+
+bool CameraModel::isPointInView(const Eigen::Vector3d& point) const {
+  // Skip the AABB check, assume already been done.
+  for (size_t i = 0; i < bounding_planes_.size(); i++) {
+    if (!bounding_planes_[i].isPointInside(point)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace nbvp_voxblox
