@@ -23,7 +23,7 @@ class Plane {
   void setFromDistanceNormal(const Eigen::Vector3d& normal, double distance);
 
   // I guess more correctly, is the point on the correct side of the plane.
-  bool isPointInside(const Eigen::Vector3d& point);
+  bool isPointInside(const Eigen::Vector3d& point) const;
 
   Eigen::Vector3d normal() const { return normal_; }
   double distance() const { return distance_; }
@@ -53,6 +53,10 @@ class CameraModel {
   // Set camera pose actually computes the new bounding plane positions.
   void setCameraPose(const Transformation& cam_pose);
   void setBodyPose(const Transformation& body_pose);
+
+  // Check whether a point belongs in the current view.
+  void getAabb(Eigen::Vector3d* aabb_min, Eigen::Vector3d* aabb_max) const;
+  bool isPointInView(const Eigen::Vector3d& point) const;
 
  private:
   void calculateBoundingPlanes();
