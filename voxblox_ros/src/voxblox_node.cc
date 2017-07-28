@@ -293,11 +293,11 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   } else if (method.compare("merged") == 0) {
     integrator_config.discard = false;
     tsdf_integrator_.reset(
-      new MergedTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+      new FastTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged_discard") == 0) {
     integrator_config.discard = true;
     tsdf_integrator_.reset(
-      new MergedTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+      new FastTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else {
     tsdf_integrator_.reset(
       new SimpleTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
@@ -493,29 +493,29 @@ void VoxbloxNode::insertPointcloudWithTf(
     ros::WallTime start = ros::WallTime::now();
 
     tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
-
+/*
     if (generate_occupancy_) {
       occupancy_integrator_->integratePointCloud(T_G_C, points_C);
-    }
+    }*/
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
       ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
                (end - start).toSec(),
                tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
-      if (generate_occupancy_) {
+      /*if (generate_occupancy_) {
         ROS_INFO("Occupancy: %lu blocks.",
                  occupancy_map_->getOccupancyLayerPtr()
                      ->getNumberOfAllocatedBlocks());
-      }
+      }*/
     }
 
-    publishAllUpdatedTsdfVoxels();
+    /*publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
     publishTsdfOccupiedNodes();
     if (generate_occupancy_) {
       publishOccupancy();
     }
-    publishSlices();
+    publishSlices();*/
 
     if (verbose_) {
       ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
