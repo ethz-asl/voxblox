@@ -56,7 +56,7 @@ class TsdfIntegrator {
 
   virtual void integratePointCloud(const Transformation& T_G_C,
                                    const Pointcloud& points_C,
-                                   const Colors& colors){}
+                                   const Colors& colors) {}
 
   // Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
@@ -128,7 +128,7 @@ class TsdfIntegrator {
     return sdf;
   }
 
-  float getVoxelWeight(const Point& point_C) const {
+  inline float getVoxelWeight(const Point& point_C) const {
     if (config_.use_const_weight) {
       return 1.0;
     }
@@ -139,7 +139,6 @@ class TsdfIntegrator {
     return 0.0;
   }
 
- protected:
   Config config_;
 
   Layer<TsdfVoxel>* layer_;
@@ -474,6 +473,152 @@ class MergedTsdfIntegrator : public TsdfIntegrator {
       }
     }
   }
+};
+
+class FastTsdfIntegrator : public TsdfIntegrator {
+ public:
+  FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
+      : TsdfIntegrator(config, layer){};
+
+  void integratePointCloud(const Transformation& T_G_C,
+                           const Pointcloud& points_C, const Colors& colors) {
+    DCHECK_EQ(points_C.size(), colors.size());
+    timing::Timer integrate_timer("integrate");
+
+    const Point& origin = T_G_C.getPosition();
+
+    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
+      const Point& point_C = points_C[pt_idx];
+      const Point point_G = T_G_C * point_C;
+      const Color& color = colors[pt_idx];
+
+      FloatingPoint ray_distance = (point_G - origin).norm();
+      if (ray_distance < config_.min_ray_length_m) {
+        continue;
+      } else if (ray_distance > config_.max_ray_length_m) {
+        // TODO(zac): clear until max ray length instead.
+        continue;
+      }
+
+      FloatingPoint truncation_distance = config_.default_truncation_distance;
+
+      const Ray unit_ray = (point_G - origin).normalized();
+
+      const Point ray_end = point_G + unit_ray * truncation_distance;
+      const Point ray_start = config_.voxel_carving_enabled
+                                  ? origin
+                                  : (point_G - unit_ray * truncation_distance);
+
+      const Point start_scaled = ray_start * voxel_size_inv_;
+      const Point end_scaled = ray_end * voxel_size_inv_;
+
+      IndexVector global_voxel_indices;
+
+      constexpr FloatingPoint kTolerance = 1e-6;
+
+      AnyIndex start_index = getGridIndexFromPoint(start_scaled);
+      AnyIndex end_index = getGridIndexFromPoint(end_scaled);
+
+      if (start_index == end_index) {
+        continue;
+      }
+
+      Ray ray_scaled = end_scaled - start_scaled;
+
+      AnyIndex ray_step_signs(signum(ray_scaled.x()), signum(ray_scaled.y()),
+                              signum(ray_scaled.z()));
+
+      AnyIndex corrected_step(std::max(0, ray_step_signs.x()),
+                              std::max(0, ray_step_signs.y()),
+                              std::max(0, ray_step_signs.z()));
+
+      Point start_scaled_shifted =
+          start_scaled - start_index.cast<FloatingPoint>();
+
+      Ray distance_to_boundaries(corrected_step.cast<FloatingPoint>() -
+                                 start_scaled_shifted);
+
+      Ray t_to_next_boundary((std::abs(ray_scaled.x()) < kTolerance)
+                                 ? 2.0
+                                 : distance_to_boundaries.x() / ray_scaled.x(),
+                             (std::abs(ray_scaled.y()) < kTolerance)
+                                 ? 2.0
+                                 : distance_to_boundaries.y() / ray_scaled.y(),
+                             (std::abs(ray_scaled.z()) < kTolerance)
+                                 ? 2.0
+                                 : distance_to_boundaries.z() / ray_scaled.z());
+
+      // Distance to cross one grid cell along the ray in t.
+      // Same as absolute inverse value of delta_coord.
+      Ray t_step_size((std::abs(ray_scaled.x()) < kTolerance)
+                          ? 2.0
+                          : ray_step_signs.x() / ray_scaled.x(),
+                      (std::abs(ray_scaled.y()) < kTolerance)
+                          ? 2.0
+                          : ray_step_signs.y() / ray_scaled.y(),
+                      (std::abs(ray_scaled.z()) < kTolerance)
+                          ? 2.0
+                          : ray_step_signs.z() / ray_scaled.z());
+
+      AnyIndex curr_index = start_index;
+
+      BlockIndex last_block_idx = BlockIndex::Zero();
+      Block<TsdfVoxel>::Ptr block;
+
+      BlockIndex block_idx =
+          getBlockIndexFromGlobalVoxelIndex(curr_index, voxels_per_side_inv_);
+      VoxelIndex local_voxel_idx =
+          getLocalFromGlobalVoxelIndex(curr_index, voxels_per_side_);
+
+      block = layer_->allocateBlockPtrByIndex(block_idx);
+      block->updated() = true;
+      last_block_idx = block_idx;
+
+      do {
+        const Point voxel_center_G =
+            block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
+        TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
+
+        if (tsdf_voxel.updated) {
+          break;
+        }
+
+        const float weight = getVoxelWeight(point_C);
+        updateTsdfVoxel(origin, point_G, voxel_center_G, color,
+                        truncation_distance, weight, &tsdf_voxel);
+        tsdf_voxel.updated = true;
+        updated_.push_back(&(tsdf_voxel.updated_));
+
+        int t_min_idx;
+        t_to_next_boundary.minCoeff(&t_min_idx);
+
+        curr_index[t_min_idx] += ray_step_signs[t_min_idx];
+        t_to_next_boundary[t_min_idx] += t_step_size[t_min_idx];
+
+        BlockIndex block_idx =
+            getBlockIndexFromGlobalVoxelIndex(curr_index, voxels_per_side_inv_);
+        VoxelIndex local_voxel_idx =
+            getLocalFromGlobalVoxelIndex(curr_index, voxels_per_side_);
+
+        if (block_idx != last_block_idx) {
+          block = layer_->allocateBlockPtrByIndex(block_idx);
+          block->updated() = true;
+          last_block_idx = block_idx;
+        }
+      } while (curr_index != end_index);
+    }
+
+    integrate_timer.Stop();
+
+    for (bool* update : updated_) {
+      *update = false;
+    }
+
+    updated_.clear();
+  }
+
+ private:
+  std::vector<bool*> updated_;
 };
 
 }  // namespace voxblox
