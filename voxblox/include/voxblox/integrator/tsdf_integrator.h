@@ -560,11 +560,9 @@ class FastTsdfIntegrator : public TsdfIntegrator {
       }
     }
 
-    timing::Timer clearing_timer("clearing");
     for (bool* updated_voxel : updated_voxels) {
       *updated_voxel = false;
     }
-    clearing_timer.Stop();
 
     integrate_timer.Stop();
   }
