@@ -85,10 +85,12 @@ inline bool TangoLoadLayer(const std::string& file_path,
 
     //TODO(mereweth@jpl.nasa.gov) - how to check if compatible?
 
-    if (!(*layer_ptr)->addBlockFromProto(
-             block_proto, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit)) {
-      LOG(ERROR) << "Could not add the block protobuf message to the layer!";
-      return false;
+    if (block_proto.has_data()) {      
+      if (!(*layer_ptr)->addBlockFromProto(
+               block_proto, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit)) {
+        LOG(ERROR) << "Could not add the block protobuf message to the layer!";
+        return false;
+      }
     }
   }
 

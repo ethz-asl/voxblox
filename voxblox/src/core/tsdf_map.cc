@@ -37,6 +37,10 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
     // Iterate over all voxels in said blocks.
     const Block<TsdfVoxel>& block = tsdf_layer_->getBlockByIndex(index);
 
+    if (!block.has_data()) {
+      continue;
+    }
+
     Point origin = block.origin();
     if (std::abs(origin(free_plane_index) - free_plane_val)
                                         > block.block_size()) {
@@ -52,9 +56,9 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
         double distance = voxel.distance;
         double weight   = voxel.weight;
 
-        if (weight == 0) {
+        /*if (weight == 0) {
           continue;
-        }
+        }*/
 
         if (count < positions.cols()) {
           positions.col(count) = Eigen::Vector3d(coord.x(), coord.y(), coord.z());
