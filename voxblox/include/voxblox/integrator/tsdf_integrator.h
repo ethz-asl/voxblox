@@ -487,14 +487,18 @@ class FastTsdfIntegrator : public TsdfIntegrator {
       : TsdfIntegrator(config, layer){};
 
   void integrator(const Transformation& T_G_C, const Pointcloud& points_C,
-                  const Colors& colors, const size_t start_idx,
-                  const size_t end_idx,
+                  const Colors& colors,
                   std::vector<std::atomic_flag*>* updated_voxels) {
     DCHECK_EQ(points_C.size(), colors.size());
 
     const Point& origin = T_G_C.getPosition();
 
-    for (size_t pt_idx = start_idx; pt_idx < end_idx; ++pt_idx) {
+    while (true) {
+      size_t pt_idx = point_idx.fetch_add(1);
+      if (pt_idx >= points_C.size()) {
+        break;
+      }
+
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
       const Color& color = colors[pt_idx];
@@ -573,29 +577,26 @@ class FastTsdfIntegrator : public TsdfIntegrator {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
+    size_t num_threads = 4;
+
+    point_idx = 0;
+
     std::vector<std::vector<std::atomic_flag*>> updated_voxels;
-    updated_voxels.resize(config_.integration_threads);
+    updated_voxels.resize(num_threads);
 
-    size_t points_per_thread =
-        std::ceil(points_C.size() / config_.integration_threads);
-
-    std::vector<std::thread> integration_threads;
-    size_t start_idx = 0;
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
-      size_t end_idx = std::min(start_idx + points_per_thread, points_C.size());
-      integration_threads.emplace_back(&FastTsdfIntegrator::integrator, this,
-                                       T_G_C, points_C, colors, start_idx,
-                                       end_idx, &(updated_voxels[i]));
-
-      start_idx += points_per_thread;
+    std::vector<std::thread> integrator_threads;
+    for (size_t i = 0; i < num_threads; ++i) {
+      integrator_threads.emplace_back(&FastTsdfIntegrator::integrator, this,
+                                      T_G_C, points_C, colors,
+                                      &(updated_voxels[i]));
     }
 
-    for (std::thread& thread : integration_threads) {
+    for (std::thread& thread : integrator_threads) {
       thread.join();
     }
 
     std::vector<std::thread> tracker_reset_threads;
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+    for (size_t i = 0; i < num_threads; ++i) {
       tracker_reset_threads.emplace_back(&FastTsdfIntegrator::resetTracker,
                                          this, updated_voxels[i]);
     }
@@ -654,6 +655,7 @@ class FastTsdfIntegrator : public TsdfIntegrator {
 
   TrackerBlockHashMap tracker_block_map_;
   mutable std::shared_mutex mutex_;
+  std::atomic<int> point_idx;
 };
 
 }  // namespace voxblox
