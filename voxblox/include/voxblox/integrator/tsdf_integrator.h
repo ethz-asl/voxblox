@@ -577,7 +577,13 @@ class FastTsdfIntegrator : public TsdfIntegrator {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
-    size_t num_threads = 4;
+    if(tracker_block_map_.size() + 10000000 > current_max_size_){
+      current_max_size_ += 10000000;
+      tracker_block_map_.rehash(current_max_size_);
+      layer_->rehash(current_max_size_);
+    }
+
+    size_t num_threads = 8;
 
     point_idx = 0;
 
@@ -630,7 +636,7 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   void createBlock(const BlockIndex& index,
                    Block<std::atomic_flag>::Ptr* tracker_block_ptr,
                    Block<TsdfVoxel>::Ptr* tsdf_block_ptr) {
-    std::unique_lock<std::shared_mutex> lock(mutex_);
+    //std::unique_lock<std::shared_mutex> lock(mutex_);
 
     auto insert_status = tracker_block_map_.insert(std::make_pair(
         index,
@@ -656,6 +662,8 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   TrackerBlockHashMap tracker_block_map_;
   mutable std::shared_mutex mutex_;
   std::atomic<int> point_idx;
+
+  size_t current_max_size_;
 };
 
 }  // namespace voxblox
