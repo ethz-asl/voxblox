@@ -85,7 +85,7 @@ class SimulationServer {
   std::unique_ptr<Layer<OccupancyVoxel> > occ_test_;
 
   // Integrators:
-  std::unique_ptr<TsdfIntegrator> tsdf_integrator_;
+  std::unique_ptr<MergedTsdfIntegrator> tsdf_integrator_;
   std::unique_ptr<EsdfIntegrator> esdf_integrator_;
   std::unique_ptr<OccupancyIntegrator> occ_integrator_;
   std::unique_ptr<EsdfOccIntegrator> esdf_occ_integrator_;
@@ -153,7 +153,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
       static_cast<float>(truncation_distance_);
 
   tsdf_integrator_.reset(
-      new TsdfIntegrator(integrator_config, tsdf_test_.get()));
+      new MergedTsdfIntegrator(integrator_config, tsdf_test_.get()));
 
   EsdfIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
@@ -312,9 +312,7 @@ void SimulationServer::generateSDF() {
     transformPointcloud(T_G_C.inverse(), ptcloud, &ptcloud_C);
 
     // Put into the real map.
-    bool discard = false;
-    tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
-                                                discard);
+    tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors);
 
     if (generate_occupancy_) {
       occ_integrator_->integratePointCloud(T_G_C, ptcloud_C);

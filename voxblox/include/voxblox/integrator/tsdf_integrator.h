@@ -9,8 +9,8 @@
 #include <utility>
 #include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -33,18 +33,7 @@ class TsdfIntegrator {
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
     size_t integrator_threads = std::thread::hardware_concurrency();
-  };
-
-  struct VoxelInfo {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-    TsdfVoxel voxel;
-
-    BlockIndex block_idx;
-    VoxelIndex local_voxel_idx;
-
-    Point point_C;
-    Point point_G;
+    bool discard = false;
   };
 
   TsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
@@ -65,17 +54,14 @@ class TsdfIntegrator {
     }
   }
 
-  float getVoxelWeight(const Point& point_C) const {
-    if (config_.use_const_weight) {
-      return 1.0;
-    }
-    FloatingPoint dist_z = std::abs(point_C.z());
-    if (dist_z > kEpsilon) {
-      return 1.0 / (dist_z * dist_z);
-    }
-    return 0.0;
-  }
+  virtual void integratePointCloud(const Transformation& T_G_C,
+                                   const Pointcloud& points_C,
+                                   const Colors& colors){}
 
+  // Returns a CONST ref of the config.
+  const Config& getConfig() const { return config_; }
+
+ protected:
   inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
                               const Point& voxel_center, const Color& color,
                               const float truncation_distance,
@@ -141,6 +127,38 @@ class TsdfIntegrator {
     float sdf = static_cast<float>(dist_G - dist_G_V);
     return sdf;
   }
+
+  float getVoxelWeight(const Point& point_C) const {
+    if (config_.use_const_weight) {
+      return 1.0;
+    }
+    FloatingPoint dist_z = std::abs(point_C.z());
+    if (dist_z > kEpsilon) {
+      return 1.0 / (dist_z * dist_z);
+    }
+    return 0.0;
+  }
+
+ protected:
+  Config config_;
+
+  Layer<TsdfVoxel>* layer_;
+
+  // Cached map config.
+  FloatingPoint voxel_size_;
+  size_t voxels_per_side_;
+  FloatingPoint block_size_;
+
+  // Derived types.
+  FloatingPoint voxel_size_inv_;
+  FloatingPoint voxels_per_side_inv_;
+  FloatingPoint block_size_inv_;
+};
+
+class SimpleTsdfIntegrator : public TsdfIntegrator {
+ public:
+  SimpleTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
+      : TsdfIntegrator(config, layer){};
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
@@ -218,6 +236,52 @@ class TsdfIntegrator {
     }
     integrate_timer.Stop();
   }
+};
+
+class MergedTsdfIntegrator : public TsdfIntegrator {
+ public:
+  MergedTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
+      : TsdfIntegrator(config, layer){};
+
+  void integratePointCloud(const Transformation& T_G_C,
+                           const Pointcloud& points_C, const Colors& colors) {
+    DCHECK_EQ(points_C.size(), colors.size());
+    timing::Timer integrate_timer("integrate");
+
+    // Pre-compute a list of unique voxels to end on.
+    // Create a hashmap: VOXEL INDEX -> index in original cloud.
+    BlockHashMapType<std::vector<size_t>>::type voxel_map;
+    // This is a hash map (same as above) to all the indices that need to be
+    // cleared.
+    BlockHashMapType<std::vector<size_t>>::type clear_map;
+
+    bundleRays(T_G_C, points_C, &voxel_map, &clear_map);
+
+    integrateRays(T_G_C, points_C, colors, config_.discard, false, voxel_map,
+                  clear_map);
+
+    timing::Timer clear_timer("integrate/clear");
+
+    integrateRays(T_G_C, points_C, colors, config_.discard, true, voxel_map,
+                  clear_map);
+
+    clear_timer.Stop();
+
+    integrate_timer.Stop();
+  }
+
+ private:
+  struct VoxelInfo {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    TsdfVoxel voxel;
+
+    BlockIndex block_idx;
+    VoxelIndex local_voxel_idx;
+
+    Point point_C;
+    Point point_G;
+  };
 
   inline void bundleRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
@@ -393,8 +457,8 @@ class TsdfIntegrator {
     } else {
       std::vector<std::thread> integration_threads;
       for (size_t i = 0; i < config_.integrator_threads; ++i) {
-        integration_threads.emplace_back(&TsdfIntegrator::integrateVoxels, this,
-                                         T_G_C, points_C, colors, discard,
+        integration_threads.emplace_back(&MergedTsdfIntegrator::integrateVoxels,
+                                         this, T_G_C, points_C, colors, discard,
                                          clearing_ray, voxel_map, clear_map,
                                          &(voxel_update_queues[i]), i);
       }
@@ -410,51 +474,6 @@ class TsdfIntegrator {
       }
     }
   }
-
-  void integratePointCloudMerged(const Transformation& T_G_C,
-                                 const Pointcloud& points_C,
-                                 const Colors& colors, bool discard) {
-    DCHECK_EQ(points_C.size(), colors.size());
-    timing::Timer integrate_timer("integrate");
-
-    // Pre-compute a list of unique voxels to end on.
-    // Create a hashmap: VOXEL INDEX -> index in original cloud.
-    BlockHashMapType<std::vector<size_t>>::type voxel_map;
-    // This is a hash map (same as above) to all the indices that need to be
-    // cleared.
-    BlockHashMapType<std::vector<size_t>>::type clear_map;
-
-    bundleRays(T_G_C, points_C, &voxel_map, &clear_map);
-
-    integrateRays(T_G_C, points_C, colors, discard, false, voxel_map,
-                  clear_map);
-
-    timing::Timer clear_timer("integrate/clear");
-
-    integrateRays(T_G_C, points_C, colors, discard, true, voxel_map, clear_map);
-
-    clear_timer.Stop();
-
-    integrate_timer.Stop();
-  }
-
-  // Returns a CONST ref of the config.
-  const Config& getConfig() const { return config_; }
-
- protected:
-  Config config_;
-
-  Layer<TsdfVoxel>* layer_;
-
-  // Cached map config.
-  FloatingPoint voxel_size_;
-  size_t voxels_per_side_;
-  FloatingPoint block_size_;
-
-  // Derived types.
-  FloatingPoint voxel_size_inv_;
-  FloatingPoint voxels_per_side_inv_;
-  FloatingPoint block_size_inv_;
 };
 
 }  // namespace voxblox

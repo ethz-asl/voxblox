@@ -31,7 +31,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                                               1, true);
   occupancy_marker_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
-                                                              1, true);
+                                                             1, true);
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
 
@@ -42,17 +42,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                   &TsdfServer::insertPointcloud, this);
 
   nh_private_.param("verbose", verbose_, verbose_);
-  std::string method("merged");
-  nh_private_.param("method", method, method);
-  if (method.compare("simple") == 0) {
-    method_ = kSimple;
-  } else if (method.compare("merged") == 0) {
-    method_ = kMerged;
-  } else if (method.compare("merged_discard") == 0) {
-    method_ = kMergedDiscard;
-  } else {
-    method_ = kSimple;
-  }
 
   // Determine map parameters.
   TsdfMap::Config config;
@@ -93,8 +82,23 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
 
-  tsdf_integrator_.reset(
-      new TsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  std::string method("merged");
+  nh_private_.param("method", method, method);
+  if (method.compare("simple") == 0) {
+    tsdf_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("merged") == 0) {
+    integrator_config.discard = false;
+    tsdf_integrator_.reset(new MergedTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("merged_discard") == 0) {
+    integrator_config.discard = true;
+    tsdf_integrator_.reset(new MergedTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else {
+    tsdf_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  }
 
   // Mesh settings.
   nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
@@ -219,17 +223,7 @@ void TsdfServer::insertPointcloud(
 void TsdfServer::integratePointcloud(const Transformation& T_G_C,
                                      const Pointcloud& ptcloud_C,
                                      const Colors& colors) {
-  if (method_ == Method::kMerged) {
-    bool discard = false;
-    tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
-                                                discard);
-  } else if (method_ == Method::kMergedDiscard) {
-    bool discard = true;
-    tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
-                                                discard);
-  } else {
-    tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors);
-  }
+  tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors);
 }
 
 void TsdfServer::publishAllUpdatedTsdfVoxels() {

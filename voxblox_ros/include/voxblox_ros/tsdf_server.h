@@ -27,8 +27,6 @@ namespace voxblox {
 
 class TsdfServer {
  public:
-  // Merging method for new pointclouds.
-  enum Method { kSimple = 0, kMerged, kMergedDiscard };
 
   TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   virtual ~TsdfServer() {}
@@ -71,9 +69,6 @@ class TsdfServer {
   ros::NodeHandle nh_private_;
 
   bool verbose_;
-
-  // Merging method for new pointclouds, chosen from enum above.
-  Method method_;
 
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.

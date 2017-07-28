@@ -33,8 +33,6 @@ namespace voxblox {
 
 class VoxbloxNode {
  public:
-  // Merging method for new pointclouds.
-  enum Method { kSimple = 0, kMerged, kMergedDiscard };
 
   VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
@@ -79,9 +77,6 @@ class VoxbloxNode {
 
   // This is a debug option, more or less...
   bool color_ptcloud_by_weight_;
-
-  // Merging method for new pointclouds, chosen from enum above.
-  Method method_;
 
   // Which maps to generate.
   bool generate_esdf_;
@@ -249,20 +244,10 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   nh_private_.param("verbose", verbose_, verbose_);
   nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
                     color_ptcloud_by_weight_);
-  std::string method("merged");
-  nh_private_.param("method", method, method);
-  if (method.compare("simple") == 0) {
-    method_ = kSimple;
-  } else if (method.compare("merged") == 0) {
-    method_ = kMerged;
-  } else if (method.compare("merged_discard") == 0) {
-    method_ = kMergedDiscard;
-  } else {
-    method_ = kSimple;
-  }
 
   // Determine map parameters.
   TsdfMap::Config config;
+
   // Workaround for OS X on mac mini not having specializations for float
   // for some reason.
   double voxel_size = config.tsdf_voxel_size;
@@ -300,8 +285,23 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
 
-  tsdf_integrator_.reset(
-      new TsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  std::string method("merged");
+  nh_private_.param("method", method, method);
+  if (method.compare("simple") == 0) {
+    tsdf_integrator_.reset(
+      new SimpleTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("merged") == 0) {
+    integrator_config.discard = false;
+    tsdf_integrator_.reset(
+      new MergedTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("merged_discard") == 0) {
+    integrator_config.discard = true;
+    tsdf_integrator_.reset(
+      new MergedTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else {
+    tsdf_integrator_.reset(
+      new SimpleTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  }
 
   // ESDF settings.
   if (generate_esdf_) {
@@ -491,17 +491,8 @@ void VoxbloxNode::insertPointcloudWithTf(
       ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
     }
     ros::WallTime start = ros::WallTime::now();
-    if (method_ == Method::kMerged) {
-      bool discard = false;
-      tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
-                                                  discard);
-    } else if (method_ == Method::kMergedDiscard) {
-      bool discard = true;
-      tsdf_integrator_->integratePointCloudMerged(T_G_C, points_C, colors,
-                                                  discard);
-    } else {
-      tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
-    }
+
+    tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
 
     if (generate_occupancy_) {
       occupancy_integrator_->integratePointCloud(T_G_C, points_C);
