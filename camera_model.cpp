@@ -21,7 +21,11 @@ void Plane::setFromDistanceNormal(const Eigen::Vector3d& normal,
 }
 
 bool Plane::isPointInside(const Eigen::Vector3d& point) const {
-  if (point.dot(normal_) + distance_ <= 0.0) {
+  /*std::cout << "Plane: normal: " << normal_.transpose()
+            << " distance: " << distance_ << " point: " << point.transpose()
+            << std::endl;
+  std::cout << "Distance: " << point.dot(normal_) + distance_ << std::endl; */
+  if (point.dot(normal_) >= distance_) {
     return true;
   }
   return false;
@@ -122,45 +126,47 @@ void CameraModel::calculateBoundingPlanes() {
   // Near plane.
   bounding_planes_[0].setFromPoints(
       transformed_corners[0], transformed_corners[2], transformed_corners[1]);
-  std::cout << "Near plane: Normal: "
+  /* std::cout << "Near plane: Normal: "
             << bounding_planes_[0].normal().transpose()
-            << " distance: " << bounding_planes_[0].distance() << std::endl;
+            << " distance: " << bounding_planes_[0].distance() << std::endl; */
   // Far plane.
   bounding_planes_[1].setFromPoints(
       transformed_corners[4], transformed_corners[5], transformed_corners[6]);
-  std::cout << "Far plane: Normal: " << bounding_planes_[1].normal().transpose()
-            << " distance: " << bounding_planes_[1].distance() << std::endl;
+  /* std::cout << "Far plane: Normal: " <<
+     bounding_planes_[1].normal().transpose()
+            << " distance: " << bounding_planes_[1].distance() << std::endl; */
 
   // Left.
   bounding_planes_[2].setFromPoints(
       transformed_corners[3], transformed_corners[6], transformed_corners[2]);
-  std::cout << "Left plane: Normal: "
+  /* std::cout << "Left plane: Normal: "
             << bounding_planes_[2].normal().transpose()
-            << " distance: " << bounding_planes_[2].distance() << std::endl;
+            << " distance: " << bounding_planes_[2].distance() << std::endl; */
 
   // Right.
   bounding_planes_[3].setFromPoints(
       transformed_corners[0], transformed_corners[5], transformed_corners[4]);
-  std::cout << "Right plane: Normal: "
+  /* std::cout << "Right plane: Normal: "
             << bounding_planes_[3].normal().transpose()
-            << " distance: " << bounding_planes_[3].distance() << std::endl;
+            << " distance: " << bounding_planes_[3].distance() << std::endl; */
 
   // Top.
   bounding_planes_[4].setFromPoints(
       transformed_corners[3], transformed_corners[4], transformed_corners[7]);
-  std::cout << "Top plane: Normal: " << bounding_planes_[4].normal().transpose()
-            << " distance: " << bounding_planes_[4].distance() << std::endl;
+  /* std::cout << "Top plane: Normal: " <<
+     bounding_planes_[4].normal().transpose()
+            << " distance: " << bounding_planes_[4].distance() << std::endl; */
 
   // Bottom.
   bounding_planes_[5].setFromPoints(
       transformed_corners[2], transformed_corners[6], transformed_corners[5]);
-  std::cout << "Bottom plane: Normal: "
+  /* std::cout << "Bottom plane: Normal: "
             << bounding_planes_[5].normal().transpose()
-            << " distance: " << bounding_planes_[5].distance() << std::endl;
+            << " distance: " << bounding_planes_[5].distance() << std::endl; */
 
   // Calculate AABB.
   aabb_min_.setConstant(std::numeric_limits<double>::max());
-  aabb_max_.setConstant(std::numeric_limits<double>::min());
+  aabb_max_.setConstant(std::numeric_limits<double>::lowest());
 
   for (int i = 0; i < 3; i++) {
     for (size_t j = 0; j < transformed_corners.size(); j++) {
@@ -169,8 +175,8 @@ void CameraModel::calculateBoundingPlanes() {
     }
   }
 
-  std::cout << "AABB min:\n" << aabb_min_.transpose() << "\nAABB max:\n"
-            << aabb_max_.transpose() << std::endl;
+  /* std::cout << "AABB min:\n" << aabb_min_.transpose() << "\nAABB max:\n"
+            << aabb_max_.transpose() << std::endl; */
 }
 
 void CameraModel::getAabb(Eigen::Vector3d* aabb_min,
