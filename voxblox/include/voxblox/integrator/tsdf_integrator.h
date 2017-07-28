@@ -613,7 +613,7 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   bool readBlock(const BlockIndex& index,
                  Block<std::atomic_flag>::Ptr* tracker_block_ptr,
                  Block<TsdfVoxel>::Ptr* tsdf_block_ptr) const {
-    std::shared_lock<std::shared_mutex> lock(mutex_);
+    //std::shared_lock<std::shared_mutex> lock(mutex_);
 
     typename TrackerBlockHashMap::const_iterator it =
         tracker_block_map_.find(index);
