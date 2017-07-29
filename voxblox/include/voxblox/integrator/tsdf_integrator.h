@@ -574,7 +574,7 @@ class FastTsdfIntegrator : public TsdfIntegrator {
     timing::Timer integrate_timer("integrate");
 
     // Currently we are memory bottlenecked. More threads actually slow things
-    // down
+    // down. Fancy read-write locks actually make things even worse.
     config_.integrator_threads = 1;
 
     size_t points_per_thread =
@@ -617,10 +617,6 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   bool readBlock(const BlockIndex& index,
                  Block<std::atomic_flag>::Ptr* tracker_block_ptr,
                  Block<TsdfVoxel>::Ptr* tsdf_block_ptr) const {
-    if (config_.integrator_threads != 1) {
-      std::lock_guard<std::mutex> lock(mutex_);
-    }
-
     typename TrackerBlockHashMap::const_iterator it =
         tracker_block_map_.find(index);
     if (it != tracker_block_map_.end()) {
@@ -636,10 +632,6 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   void createBlock(const BlockIndex& index,
                    Block<std::atomic_flag>::Ptr* tracker_block_ptr,
                    Block<TsdfVoxel>::Ptr* tsdf_block_ptr) {
-    if (config_.integrator_threads != 1) {
-      std::lock_guard<std::mutex> lock(mutex_);
-    }
-
     auto insert_status = tracker_block_map_.insert(std::make_pair(
         index,
         std::shared_ptr<Block<std::atomic_flag>>(new Block<std::atomic_flag>(
@@ -662,6 +654,11 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   void getBlock(const BlockIndex& index,
                 Block<std::atomic_flag>::Ptr* tracker_block_ptr,
                 Block<TsdfVoxel>::Ptr* tsdf_block_ptr) {
+
+    if(config_.integrator_threads != 1){
+      std::lock_guard<std::mutex> lock(mutex_);
+    }
+
     if (!readBlock(index, tracker_block_ptr, tsdf_block_ptr)) {
       createBlock(index, tracker_block_ptr, tsdf_block_ptr);
     }
