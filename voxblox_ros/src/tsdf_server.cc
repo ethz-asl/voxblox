@@ -95,6 +95,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     integrator_config.discard = true;
     tsdf_integrator_.reset(new MergedTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("fast") == 0) {
+    tsdf_integrator_.reset(new FastTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else {
     tsdf_integrator_.reset(new SimpleTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));

@@ -1,4 +1,3 @@
-#include <deque>
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_xml.h>
@@ -6,13 +5,14 @@
 #include <pcl/filters/filter.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
 #include <pcl_msgs/PolygonMesh.h>
+#include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <deque>
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>
@@ -24,16 +24,15 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
-#include "voxblox_ros/mesh_vis.h"
-#include "voxblox_ros/mesh_pcl.h"
-#include "voxblox_ros/ptcloud_vis.h"
 #include <voxblox_msgs/FilePath.h>
+#include "voxblox_ros/mesh_pcl.h"
+#include "voxblox_ros/mesh_vis.h"
+#include "voxblox_ros/ptcloud_vis.h"
 
 namespace voxblox {
 
 class VoxbloxNode {
  public:
-
   VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
   void insertPointcloudWithTf(const sensor_msgs::PointCloud2::Ptr& pointcloud);
@@ -197,15 +196,14 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   mesh_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
   surface_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
           "surface_pointcloud", 1, true);
-  tsdf_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
-                                                              1, true);
+  tsdf_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+      "tsdf_pointcloud", 1, true);
 
   if (output_mesh_as_pointcloud_) {
     mesh_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
             "mesh_pointcloud", 1, true);
   }
 
@@ -214,20 +212,20 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
         nh_private_.advertise<pcl_msgs::PolygonMesh>("pcl_mesh", 1, true);
   }
 
-  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
       "tsdf_slice", 1, true);
 
   if (generate_esdf_) {
     esdf_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
             "esdf_pointcloud", 1, true);
-    esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+    esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
         "esdf_slice", 1, true);
   }
 
   occupancy_marker_pub_ =
-        nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
-                                                               1, true);
+      nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
+                                                             1, true);
   if (generate_occupancy_) {
     occupancy_layer_pub_ =
         nh_private_.advertise<visualization_msgs::MarkerArray>(
@@ -288,19 +286,22 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   std::string method("merged");
   nh_private_.param("method", method, method);
   if (method.compare("simple") == 0) {
-    tsdf_integrator_.reset(
-      new SimpleTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+    tsdf_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged") == 0) {
     integrator_config.discard = false;
-    tsdf_integrator_.reset(
-      new FastTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+    tsdf_integrator_.reset(new MergedTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged_discard") == 0) {
     integrator_config.discard = true;
-    tsdf_integrator_.reset(
-      new FastTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+    tsdf_integrator_.reset(new MergedTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("fast") == 0) {
+    tsdf_integrator_.reset(new FastTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else {
-    tsdf_integrator_.reset(
-      new SimpleTsdfIntegrator(integrator_config, tsdf_map_->getTsdfLayerPtr()));
+    tsdf_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
   }
 
   // ESDF settings.
@@ -493,29 +494,29 @@ void VoxbloxNode::insertPointcloudWithTf(
     ros::WallTime start = ros::WallTime::now();
 
     tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
-/*
+
     if (generate_occupancy_) {
       occupancy_integrator_->integratePointCloud(T_G_C, points_C);
-    }*/
+    }
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
       ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
                (end - start).toSec(),
                tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
-      /*if (generate_occupancy_) {
+      if (generate_occupancy_) {
         ROS_INFO("Occupancy: %lu blocks.",
                  occupancy_map_->getOccupancyLayerPtr()
                      ->getNumberOfAllocatedBlocks());
-      }*/
+      }
     }
 
-    /*publishAllUpdatedTsdfVoxels();
+    publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
     publishTsdfOccupiedNodes();
     if (generate_occupancy_) {
       publishOccupancy();
     }
-    publishSlices();*/
+    publishSlices();
 
     if (verbose_) {
       ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
@@ -724,7 +725,7 @@ bool VoxbloxNode::generateMeshCallback(
   marker_array.markers[0].header.frame_id = world_frame_;
   mesh_pub_.publish(marker_array);
 
-  if(output_mesh_as_pointcloud_){
+  if (output_mesh_as_pointcloud_) {
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
     fillPointcloudWithMesh(mesh_layer_, color_mode_, &pointcloud);
     pointcloud.header.frame_id = world_frame_;
@@ -814,13 +815,13 @@ void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
   marker_array.markers[0].header.frame_id = world_frame_;
   mesh_pub_.publish(marker_array);
 
-  if(output_mesh_as_pointcloud_){
+  if (output_mesh_as_pointcloud_) {
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
     fillPointcloudWithMesh(mesh_layer_, color_mode_, &pointcloud);
     pointcloud.header.frame_id = world_frame_;
     mesh_pointcloud_pub_.publish(pointcloud);
   }
-  
+
   publish_mesh_timer.Stop();
 }
 

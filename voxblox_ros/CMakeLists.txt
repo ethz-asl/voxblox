@@ -4,7 +4,7 @@ project(voxblox_ros)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
-add_definitions(-std=c++1z -Wno-sign-compare -Wno-unused-value)
+add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
 #############
 # LIBRARIES #

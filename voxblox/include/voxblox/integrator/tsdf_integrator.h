@@ -7,7 +7,6 @@
 #include <iostream>
 #include <mutex>
 #include <queue>
-#include <shared_mutex>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -487,18 +486,14 @@ class FastTsdfIntegrator : public TsdfIntegrator {
       : TsdfIntegrator(config, layer){};
 
   void integrator(const Transformation& T_G_C, const Pointcloud& points_C,
-                  const Colors& colors,
+                  const Colors& colors, const size_t start_idx,
+                  const size_t end_idx,
                   std::vector<std::atomic_flag*>* updated_voxels) {
     DCHECK_EQ(points_C.size(), colors.size());
 
     const Point& origin = T_G_C.getPosition();
 
-    while (true) {
-      size_t pt_idx = point_idx.fetch_add(1);
-      if (pt_idx >= points_C.size()) {
-        break;
-      }
-
+    for (size_t pt_idx = start_idx; pt_idx < end_idx; ++pt_idx) {
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
       const Color& color = colors[pt_idx];
@@ -538,6 +533,7 @@ class FastTsdfIntegrator : public TsdfIntegrator {
             global_voxel_idx, voxels_per_side_inv_);
         VoxelIndex local_voxel_idx =
             getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
+
         if (!tracker_block || block_idx != last_block_idx) {
           getBlock(block_idx, &tracker_block, &tsdf_block);
 
@@ -551,6 +547,8 @@ class FastTsdfIntegrator : public TsdfIntegrator {
           break;
         }
 
+        updated_voxels->push_back(&(updated_voxel));
+
         const Point voxel_center_G =
             tsdf_block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
         TsdfVoxel& tsdf_voxel =
@@ -560,8 +558,6 @@ class FastTsdfIntegrator : public TsdfIntegrator {
 
         updateTsdfVoxel(origin, point_G, voxel_center_G, color,
                         truncation_distance, weight, &tsdf_voxel);
-
-        updated_voxels->push_back(&(updated_voxel));
       }
     }
   }
@@ -577,24 +573,26 @@ class FastTsdfIntegrator : public TsdfIntegrator {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
-    if(tracker_block_map_.size() + 10000000 > current_max_size_){
-      current_max_size_ += 10000000;
-      tracker_block_map_.rehash(current_max_size_);
-      layer_->rehash(current_max_size_);
-    }
+    // Currently we are memory bottlenecked. More threads actually slow things
+    // down
+    config_.integrator_threads = 1;
 
-    size_t num_threads = 8;
+    size_t points_per_thread =
+        std::ceil(points_C.size() / config_.integrator_threads);
 
-    point_idx = 0;
+    size_t start_idx = 0;
 
     std::vector<std::vector<std::atomic_flag*>> updated_voxels;
-    updated_voxels.resize(num_threads);
+    updated_voxels.resize(config_.integrator_threads);
 
     std::vector<std::thread> integrator_threads;
-    for (size_t i = 0; i < num_threads; ++i) {
+    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+      size_t end_idx = std::min(start_idx + points_per_thread, points_C.size());
       integrator_threads.emplace_back(&FastTsdfIntegrator::integrator, this,
-                                      T_G_C, points_C, colors,
-                                      &(updated_voxels[i]));
+                                      T_G_C, points_C, colors, start_idx,
+                                      end_idx, &(updated_voxels[i]));
+
+      start_idx += points_per_thread;
     }
 
     for (std::thread& thread : integrator_threads) {
@@ -602,7 +600,7 @@ class FastTsdfIntegrator : public TsdfIntegrator {
     }
 
     std::vector<std::thread> tracker_reset_threads;
-    for (size_t i = 0; i < num_threads; ++i) {
+    for (size_t i = 0; i < config_.integrator_threads; ++i) {
       tracker_reset_threads.emplace_back(&FastTsdfIntegrator::resetTracker,
                                          this, updated_voxels[i]);
     }
@@ -619,7 +617,9 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   bool readBlock(const BlockIndex& index,
                  Block<std::atomic_flag>::Ptr* tracker_block_ptr,
                  Block<TsdfVoxel>::Ptr* tsdf_block_ptr) const {
-    //std::shared_lock<std::shared_mutex> lock(mutex_);
+    if (config_.integrator_threads != 1) {
+      std::lock_guard<std::mutex> lock(mutex_);
+    }
 
     typename TrackerBlockHashMap::const_iterator it =
         tracker_block_map_.find(index);
@@ -636,7 +636,9 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   void createBlock(const BlockIndex& index,
                    Block<std::atomic_flag>::Ptr* tracker_block_ptr,
                    Block<TsdfVoxel>::Ptr* tsdf_block_ptr) {
-    //std::unique_lock<std::shared_mutex> lock(mutex_);
+    if (config_.integrator_threads != 1) {
+      std::lock_guard<std::mutex> lock(mutex_);
+    }
 
     auto insert_status = tracker_block_map_.insert(std::make_pair(
         index,
@@ -648,6 +650,12 @@ class FastTsdfIntegrator : public TsdfIntegrator {
     DCHECK_EQ(insert_status.first->first, index);
     *tracker_block_ptr = insert_status.first->second;
     *tsdf_block_ptr = layer_->allocateBlockPtrByIndex(index);
+
+    // using a raw c array in the back end means the trackers are uninitialized
+    // a.k,a the bug that tested my sanity
+    for (size_t i = 0; i < (*tracker_block_ptr)->num_voxels(); ++i) {
+      (*tracker_block_ptr)->getVoxelByLinearIndex(i).clear();
+    }
   }
 
   // thread safe wrapper for reading/writing to layer
@@ -660,8 +668,7 @@ class FastTsdfIntegrator : public TsdfIntegrator {
   }
 
   TrackerBlockHashMap tracker_block_map_;
-  mutable std::shared_mutex mutex_;
-  std::atomic<int> point_idx;
+  mutable std::mutex mutex_;
 
   size_t current_max_size_;
 };
