@@ -29,7 +29,8 @@ public:
   bool isCompatible(const tsdf2::MapHeaderProto& layer_proto) const;
   bool isCompatible(const tsdf2::VolumeProto& block_proto) const;
   bool addBlockFromProto(const tsdf2::VolumeProto& block_proto,
-                         TangoLayerInterface::BlockMergingStrategy strategy);
+                         TangoLayerInterface::BlockMergingStrategy strategy,
+                         bool audit = false);
 
 private:
   unsigned int max_ntsdf_voxel_weight_;

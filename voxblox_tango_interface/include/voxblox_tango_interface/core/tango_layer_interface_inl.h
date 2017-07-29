@@ -30,14 +30,16 @@ inline TangoLayerInterface::TangoLayerInterface(const tsdf2::MapHeaderProto& pro
  */
 inline bool TangoLayerInterface ::
     addBlockFromProto(const tsdf2::VolumeProto& block_proto,
-                      TangoLayerInterface::BlockMergingStrategy strategy) {
+                      TangoLayerInterface::BlockMergingStrategy strategy,
+                      bool audit) {
   CHECK_EQ(getType().compare(voxel_types::kTsdf), 0)
       << "The voxel type of this layer is not TsdfVoxel!";
 
   if (isCompatible(block_proto)) {
     TangoBlockInterface::Ptr block_ptr(new TangoBlockInterface(block_proto,
                                                     max_ntsdf_voxel_weight_,
-                                                    meters_to_ntsdf_));
+                                                    meters_to_ntsdf_,
+                                                    audit));
 
     const BlockIndex block_index =
         getGridIndexFromOriginPoint(block_ptr->origin(), block_size_inv_);

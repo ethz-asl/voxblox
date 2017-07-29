@@ -24,7 +24,8 @@ namespace io {
  */
 
 inline bool TangoLoadLayer(const std::string& file_path,
-                           TangoLayerInterface::Ptr* layer_ptr) {
+                           TangoLayerInterface::Ptr* layer_ptr,
+                           bool audit = false) {
   CHECK_NOTNULL(layer_ptr);
 
   // Open and check the file
@@ -85,9 +86,9 @@ inline bool TangoLoadLayer(const std::string& file_path,
 
     //TODO(mereweth@jpl.nasa.gov) - how to check if compatible?
 
-    if (block_proto.has_data()) {      
+    if (block_proto.has_data()) {
       if (!(*layer_ptr)->addBlockFromProto(
-               block_proto, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit)) {
+               block_proto, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit, audit)) {
         LOG(ERROR) << "Could not add the block protobuf message to the layer!";
         return false;
       }
@@ -100,7 +101,8 @@ inline bool TangoLoadLayer(const std::string& file_path,
 inline bool TangoLoadBlocksFromFile(
     const std::string& file_path,
     Layer<TsdfVoxel>::BlockMergingStrategy strategy,
-    TangoLayerInterface* layer_ptr) {
+    TangoLayerInterface* layer_ptr,
+    bool audit = false) {
   CHECK_NOTNULL(layer_ptr);
 
   // Open and check the file
@@ -151,7 +153,7 @@ inline bool TangoLoadBlocksFromFile(
       return false;
     }
 
-    if (!layer_ptr->addBlockFromProto(block_proto, strategy)) {
+    if (!layer_ptr->addBlockFromProto(block_proto, strategy, audit)) {
       LOG(ERROR) << "Could not add the block protobuf message to the layer!";
       return false;
     }
@@ -160,13 +162,14 @@ inline bool TangoLoadBlocksFromFile(
 }
 
 // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
-inline TangoLayerInterface TangoLoadLayer(const std::string& file_path) {
+inline TangoLayerInterface TangoLoadLayer(const std::string& file_path,
+                                          bool audit = false) {
 
   bool success = true;
   TangoLayerInterface::Ptr layer_ptr;
 
   if (!success ||
-      !TangoLoadLayer(file_path, &layer_ptr)) {
+      !TangoLoadLayer(file_path, &layer_ptr, audit)) {
     // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
     throw std::runtime_error(std::string("Could not load layer from: ")
                              + file_path);

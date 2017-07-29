@@ -12,7 +12,8 @@ namespace voxblox {
 inline TangoBlockInterface::TangoBlockInterface(
                                     const tsdf2::VolumeProto& proto,
                                     unsigned int max_ntsdf_voxel_weight,
-                                    FloatingPoint meters_to_ntsdf)
+                                    FloatingPoint meters_to_ntsdf,
+                                    bool audit)
     : TangoBlockInterface(
             proto.voxels_per_side(), proto.voxel_size(),
             proto.has_origin() ?
@@ -48,7 +49,7 @@ inline TangoBlockInterface::TangoBlockInterface(
     LOG(FATAL) << "Unequal number of tsdf and color voxels in Tango TSDF";
   }
 
-  deserializeFromIntegers(data);
+  deserializeFromIntegers(data, audit);
 }
 
 }  // namespace voxblox

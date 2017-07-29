@@ -20,11 +20,13 @@ public:
 
   TangoBlockInterface(const tsdf2:: VolumeProto& proto,
                       unsigned int max_ntsdf_voxel_weight,
-                      FloatingPoint meters_to_ntsdf);
+                      FloatingPoint meters_to_ntsdf,
+                      bool audit = false);
 
 private:
   void deserializeProto(const tsdf2::VolumeProto& proto);
-  void deserializeFromIntegers(const std::vector<uint32_t>& data);
+  void deserializeFromIntegers(const std::vector<uint32_t>& data,
+                               bool audit = false);
 
   unsigned int max_ntsdf_voxel_weight_;
   FloatingPoint meters_to_ntsdf_;
