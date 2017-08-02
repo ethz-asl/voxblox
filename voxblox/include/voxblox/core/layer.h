@@ -199,10 +199,6 @@ class Layer {
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
 
-  void rehash(size_t count){
-    block_map_.rehash(count);
-  }
-
   // Serialization tools.
   void getProto(LayerProto* proto) const;
   bool isCompatible(const LayerProto& layer_proto) const;

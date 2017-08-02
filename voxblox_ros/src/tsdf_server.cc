@@ -56,7 +56,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_map_.reset(new TsdfMap(config));
 
   // Determine integrator parameters.
-  TsdfIntegrator::Config integrator_config;
+  TsdfIntegratorBase::Config integrator_config;
   integrator_config.voxel_carving_enabled = true;
   // Used to be * 4 according to Marius's experience, now * 2.
   // This should be made bigger again if behind-surface weighting is improved.
@@ -88,11 +88,11 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     tsdf_integrator_.reset(new SimpleTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged") == 0) {
-    integrator_config.discard = false;
+    integrator_config.enable_anti_grazing = false;
     tsdf_integrator_.reset(new MergedTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged_discard") == 0) {
-    integrator_config.discard = true;
+    integrator_config.enable_anti_grazing = true;
     tsdf_integrator_.reset(new MergedTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("fast") == 0) {

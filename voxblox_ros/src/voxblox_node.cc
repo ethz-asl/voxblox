@@ -144,7 +144,7 @@ class VoxbloxNode {
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
-  std::shared_ptr<TsdfIntegrator> tsdf_integrator_;
+  std::shared_ptr<TsdfIntegratorBase> tsdf_integrator_;
   // ESDF maps (optional).
   std::shared_ptr<EsdfMap> esdf_map_;
   std::shared_ptr<EsdfIntegrator> esdf_integrator_;
@@ -257,7 +257,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   tsdf_map_.reset(new TsdfMap(config));
 
   // Determine integrator parameters.
-  TsdfIntegrator::Config integrator_config;
+  TsdfIntegratorBase::Config integrator_config;
   integrator_config.voxel_carving_enabled = true;
   // Used to be * 4 according to Marius's experience, now * 2.
   // This should be made bigger again if behind-surface weighting is improved.
@@ -289,11 +289,11 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     tsdf_integrator_.reset(new SimpleTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged") == 0) {
-    integrator_config.discard = false;
+    integrator_config.enable_anti_grazing = false;
     tsdf_integrator_.reset(new MergedTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged_discard") == 0) {
-    integrator_config.discard = true;
+    integrator_config.enable_anti_grazing = true;
     tsdf_integrator_.reset(new MergedTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("fast") == 0) {

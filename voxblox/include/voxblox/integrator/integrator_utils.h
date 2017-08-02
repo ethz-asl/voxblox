@@ -14,7 +14,7 @@ namespace voxblox {
 
 // This class assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
-// should map to Local/Voxel indices.
+// should map to voxel indices.
 class RayCaster {
  public:
   RayCaster(const Point& start_scaled, const Point& end_scaled) {
@@ -23,16 +23,16 @@ class RayCaster {
     curr_index_ = getGridIndexFromPoint(start_scaled);
     end_index_ = getGridIndexFromPoint(end_scaled);
 
-    Ray ray_scaled = end_scaled - start_scaled;
+    const Ray ray_scaled = end_scaled - start_scaled;
 
     ray_step_signs_ = AnyIndex(signum(ray_scaled.x()), signum(ray_scaled.y()),
                                signum(ray_scaled.z()));
 
-    AnyIndex corrected_step(std::max(0, ray_step_signs_.x()),
+    const AnyIndex corrected_step(std::max(0, ray_step_signs_.x()),
                             std::max(0, ray_step_signs_.y()),
                             std::max(0, ray_step_signs_.z()));
 
-    Point start_scaled_shifted =
+    const Point start_scaled_shifted =
         start_scaled - curr_index_.cast<FloatingPoint>();
 
     Ray distance_to_boundaries(corrected_step.cast<FloatingPoint>() -
@@ -63,6 +63,7 @@ class RayCaster {
   }
 
   bool nextRayIndex(AnyIndex* ray_index) {
+    DCHECK_NOTNULL(ray_index);
     *ray_index = curr_index_;
     bool not_at_end = curr_index_ != end_index_;
 
@@ -84,7 +85,7 @@ class RayCaster {
 
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
-// should map to Local/Voxel indices.
+// should map to voxel indices.
 inline void castRay(
     const Point& start_scaled, const Point& end_scaled,
     std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex> >* indices) {

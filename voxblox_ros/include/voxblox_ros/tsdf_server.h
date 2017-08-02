@@ -107,7 +107,7 @@ class TsdfServer {
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
-  std::unique_ptr<TsdfIntegrator> tsdf_integrator_;
+  std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
 
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;
