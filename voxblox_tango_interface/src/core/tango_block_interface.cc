@@ -40,3 +40,5 @@ void TangoBlockInterface::deserializeFromIntegers(
     voxel.color.a = static_cast<uint8_t>(bytes_2 & 0x000000FF);
   }
 }
+
+}
