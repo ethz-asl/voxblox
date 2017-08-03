@@ -53,6 +53,7 @@ set("${PROJECT_NAME}_SRCS"
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
+  src/utils/layer_utils.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
 )
@@ -132,6 +133,11 @@ catkin_add_gtest(test_tsdf_interpolator
   test/test_tsdf_interpolator.cc
 )
 target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+catkin_add_gtest(test_layer
+  test/test_layer.cc
+)
+target_link_libraries(test_layer ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 ##########
 # EXPORT #
