@@ -16,6 +16,7 @@
   <buildtool_depend>catkin_simple</buildtool_depend>
 
   <depend>gflags_catkin</depend>
+  <depend>interactive_markers</depend>
   <depend>minkindr_conversions</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
