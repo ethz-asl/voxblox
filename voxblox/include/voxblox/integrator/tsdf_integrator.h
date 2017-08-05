@@ -486,11 +486,10 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 // the hash of its coordinates are stored and checked against during the scan
 // integration.
 //
-// As hash tables are expensive we use a vector with 268 million elements
-// (2^28). Thanks to std::vector<bool> being the beautiful mistake it is this
-// only takes 33mb. If two hashed indices fall into the same bucket in this
-// vector they are taken as the same. The size of the vector is a power of two
-// so we can use bit masking rather than the more expensive % operator.
+// As hash tables are expensive we use a 3D vector with 1024 bins in each
+// dimension. Thanks to std::vector<bool> being the beautiful mistake it is this
+// only takes 134mb. If two indices fall into the same bucket in this
+// vector they are taken as the same.
 class FastTsdfIntegrator : public TsdfIntegratorBase {
  public:
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
@@ -513,7 +512,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex global_voxel_idx =
           getGridIndexFromPoint(point_G, voxel_size_inv_);
-      if (tracker_[hasher_(global_voxel_idx) & bit_mask_]) {
+      if (tracker_[localHash(global_voxel_idx)]) {
         continue;
       }
 
@@ -547,7 +546,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       Block<TsdfVoxel>::Ptr tsdf_block;
 
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        const size_t hash = hasher_(global_voxel_idx) & bit_mask_;
+        const size_t hash = localHash(global_voxel_idx);
         if (tracker_[hash]) {
           continue;
         }
@@ -587,13 +586,19 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   }
 
  private:
-  static constexpr unsigned int tracker_power_ = 28;
-  static constexpr unsigned int tracker_size_ = 2 << tracker_power_;
-  static constexpr unsigned int bit_mask_ = tracker_size_ - 1;
+  static constexpr uint64_t bits_per_dim_ = 10;
+  static constexpr uint64_t tracker_size_ = 1 << bits_per_dim_ * 3;
+  static constexpr uint64_t bit_mask_ = (1 << bits_per_dim_) - 1;
+
+  uint64_t static inline localHash(const AnyIndex& index) {
+    return ((static_cast<uint64_t>(index.x()) & bit_mask_)
+            << (2 * bits_per_dim_)) +
+           ((static_cast<uint64_t>(index.y()) & bit_mask_) << (bits_per_dim_)) +
+           (static_cast<uint64_t>(index.z()) & bit_mask_);
+  }
 
   std::vector<bool> tracker_;
   std::queue<size_t> reset_queue_;
-  BlockIndexHash hasher_;
 };
 
 }  // namespace voxblox
