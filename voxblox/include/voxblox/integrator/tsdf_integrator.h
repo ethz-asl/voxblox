@@ -1,10 +1,10 @@
-#ifndef VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
-#define VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
+#ifndef INTEGRATOR_TSDF_INTEGRATOR_H_
+#define INTEGRATOR_TSDF_INTEGRATOR_H_
 
 #include <algorithm>
 #include <atomic>
 #include <cmath>
-#include <iostream>
+#include <limits>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -18,6 +18,8 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/timing.h"
+
+#include "voxblox/core/block_hash.h"
 
 namespace voxblox {
 
@@ -160,7 +162,7 @@ class TsdfIntegratorBase {
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
  public:
   SimpleTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
-      : TsdfIntegratorBase(config, layer){};
+      : TsdfIntegratorBase(config, layer) {}
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
@@ -243,7 +245,7 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 class MergedTsdfIntegrator : public TsdfIntegratorBase {
  public:
   MergedTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
-      : TsdfIntegratorBase(config, layer){};
+      : TsdfIntegratorBase(config, layer) {}
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
@@ -479,17 +481,27 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
   }
 };
 
+// This integrator will only cast a ray through a voxel if no other ray has
+// updated that voxel for this scan. To know if a voxel has been passed through
+// the hash of its coordinates are stored and checked against during the scan
+// integration.
+//
+// As hash tables are expensive we use a vector with 268 million elements
+// (2^28). Thanks to std::vector<bool> being the beautiful mistake it is this
+// only takes 33mb. If two hashed indices fall into the same bucket in this
+// vector they are taken as the same. The size of the vector is a power of two
+// so we can use bit masking rather than the more expensive % operator.
 class FastTsdfIntegrator : public TsdfIntegratorBase {
  public:
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
-      : TsdfIntegratorBase(config, layer){};
+      : TsdfIntegratorBase(config, layer) {
+    tracker_.resize(tracker_size_);
+  };
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
-
-    IndexSet tracker_set;
 
     const Point& origin = T_G_C.getPosition();
 
@@ -501,9 +513,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex global_voxel_idx =
           getGridIndexFromPoint(point_G, voxel_size_inv_);
-      std::pair<typename IndexSet::const_iterator, bool> insertion_status =
-          tracker_set.insert(global_voxel_idx);
-      if (!insertion_status.second) {
+      if (tracker_[hasher_(global_voxel_idx) & bit_mask_]) {
         continue;
       }
 
@@ -537,10 +547,12 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       Block<TsdfVoxel>::Ptr tsdf_block;
 
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        insertion_status = tracker_set.insert(global_voxel_idx);
-        if (!insertion_status.second) {
+        const size_t hash = hasher_(global_voxel_idx) & bit_mask_;
+        if (tracker_[hash]) {
           continue;
         }
+        tracker_[hash] = true;
+        reset_queue_.push(hash);
 
         BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
             global_voxel_idx, voxels_per_side_inv_);
@@ -566,10 +578,24 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       }
     }
 
+    while (!reset_queue_.empty()) {
+      tracker_[reset_queue_.back()] = false;
+      reset_queue_.pop();
+    }
+
     integrate_timer.Stop();
   }
+
+ private:
+  static constexpr unsigned int tracker_power_ = 28;
+  static constexpr unsigned int tracker_size_ = 2 << tracker_power_;
+  static constexpr unsigned int bit_mask_ = tracker_size_ - 1;
+
+  std::vector<bool> tracker_;
+  std::queue<size_t> reset_queue_;
+  BlockIndexHash hasher_;
 };
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
+#endif  // INTEGRATOR_TSDF_INTEGRATOR_H_
