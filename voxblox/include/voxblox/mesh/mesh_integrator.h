@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef VOXBLOX_MESH_MESH_INTEGRATOR_H_
-#define VOXBLOX_MESH_MESH_INTEGRATOR_H_
+#ifndef MESH_MESH_INTEGRATOR_H_
+#define MESH_MESH_INTEGRATOR_H_
 
 #include <algorithm>
 #include <vector>
@@ -95,7 +95,8 @@ class MeshIntegrator {
     }
   }
 
-  void extractBlockMesh(typename Block<VoxelType>::ConstPtr block, Mesh::Ptr mesh) {
+  void extractBlockMesh(typename Block<VoxelType>::ConstPtr block,
+                        Mesh::Ptr mesh) {
     size_t vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
@@ -173,6 +174,13 @@ class MeshIntegrator {
                               VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK_NOTNULL(next_mesh_index);
     DCHECK_NOTNULL(mesh);
+
+    // If the distance to the surface is greater than the length of two voxels,
+    // the mesh will be empty.
+    if ((2 * block.voxel_size()) < block.getVoxelByVoxelIndex(index).distance) {
+      return;
+    }
+
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
     Eigen::Matrix<FloatingPoint, 3, 8> corner_coords;
@@ -183,11 +191,7 @@ class MeshIntegrator {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
       const VoxelType& voxel = block.getVoxelByVoxelIndex(corner_index);
 
-      // Do not extract a mesh here if one of the corner is unobserved and
-      // outside the truncation region.
-      // TODO(helenol): comment above from open_chisel, but no actual checks
-      // on distance are ever made. Definitely we should skip doing checks of
-      // voxels that are too far from the surface...
+      // Do not extract a mesh here if one of the corner is unobserved.
       if (voxel.weight <= config_.min_weight) {
         all_neighbors_observed = false;
         break;
@@ -205,6 +209,13 @@ class MeshIntegrator {
                            const VoxelIndex& index, const Point& coords,
                            VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK_NOTNULL(mesh);
+
+    // If the distance to the surface is greater than the length of two voxels,
+    // the mesh will be empty.
+    if ((2 * block.voxel_size()) < block.getVoxelByVoxelIndex(index).distance) {
+      return;
+    }
+
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
     Eigen::Matrix<FloatingPoint, 3, 8> corner_coords;
@@ -280,7 +291,8 @@ class MeshIntegrator {
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
-        if (voxel.weight >= config_.min_weight) {
+        if (((2 * block.voxel_size()) >= voxel.distance) &&
+            (voxel.weight >= config_.min_weight)) {
           mesh->colors[i] = voxel.color;
         }
       } else {
@@ -295,19 +307,26 @@ class MeshIntegrator {
   }
 
   void computeMeshNormals(const Block<VoxelType>& block, Mesh* mesh) {
-    mesh->normals.clear();
-    mesh->normals.resize(mesh->indices.size(), Point::Zero());
-
     Interpolator<VoxelType> interpolator(tsdf_layer_);
 
     Point grad;
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
       const Point& pos = mesh->vertices[i];
-      // Otherwise the norm stays 0.
-      if (interpolator.getGradient(pos, &grad, true)) {
-        mesh->normals[i] = grad.normalized();
-      } else if (interpolator.getGradient(pos, &grad, false)) {
-        mesh->normals[i] = grad.normalized();
+
+      VoxelIndex voxel_index = block.computeVoxelIndexFromCoordinates(pos);
+      if (block.isValidVoxelIndex(voxel_index)) {
+        const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
+
+        if (((2 * block.voxel_size()) >= voxel.distance) &&
+            (voxel.weight >= config_.min_weight)) {
+          if (interpolator.getGradient(pos, &grad, true)) {
+            mesh->normals[i] = grad.normalized();
+          } else if (interpolator.getGradient(pos, &grad, false)) {
+            mesh->normals[i] = grad.normalized();
+          } else {
+            mesh->normals[i] = Point::Zero();
+          }
+        }
       }
     }
   }
@@ -334,4 +353,4 @@ class MeshIntegrator {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_MESH_MESH_INTEGRATOR_H_
+#endif  // MESH_MESH_INTEGRATOR_H_
