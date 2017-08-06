@@ -81,6 +81,10 @@ class VoxbloxNode {
   bool generate_esdf_;
   bool generate_occupancy_;
 
+  // What output information to publish
+  bool publish_tsdf_info_;
+  bool publish_slices_;
+
   bool output_mesh_as_pointcloud_;
   bool output_mesh_as_pcl_mesh_;
 
@@ -167,6 +171,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       color_ptcloud_by_weight_(false),
       generate_esdf_(false),
       generate_occupancy_(false),
+      publish_tsdf_info_(false),
+      publish_slices_(false),
       output_mesh_as_pointcloud_(false),
       output_mesh_as_pcl_mesh_(false),
       world_frame_("world"),
@@ -191,15 +197,25 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   nh_private_.param("slice_level", slice_level_, slice_level_);
   nh_private_.param("world_frame", world_frame_, world_frame_);
   nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
+  nh_private_.param("publish_tsdf_info", publish_tsdf_info_,
+                    publish_tsdf_info_);
+  nh_private_.param("publish_slices", publish_slices_, publish_slices_);
 
   // Advertise topics.
   mesh_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
-  surface_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
-          "surface_pointcloud", 1, true);
-  tsdf_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
-      "tsdf_pointcloud", 1, true);
+
+  if (publish_tsdf_info_) {
+    surface_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
+            "surface_pointcloud", 1, true);
+    tsdf_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+            "tsdf_pointcloud", 1, true);
+    occupancy_marker_pub_ =
+        nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
+                                                               1, true);
+  }
 
   if (output_mesh_as_pointcloud_) {
     mesh_pointcloud_pub_ =
@@ -212,20 +228,22 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
         nh_private_.advertise<pcl_msgs::PolygonMesh>("pcl_mesh", 1, true);
   }
 
-  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
-      "tsdf_slice", 1, true);
+  if (publish_slices_) {
+    tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+        "tsdf_slice", 1, true);
+
+    if (generate_esdf_) {
+      esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+          "esdf_slice", 1, true);
+    }
+  }
 
   if (generate_esdf_) {
     esdf_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
             "esdf_pointcloud", 1, true);
-    esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
-        "esdf_slice", 1, true);
   }
 
-  occupancy_marker_pub_ =
-      nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
-                                                             1, true);
   if (generate_occupancy_) {
     occupancy_layer_pub_ =
         nh_private_.advertise<visualization_msgs::MarkerArray>(
@@ -259,9 +277,10 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Determine integrator parameters.
   TsdfIntegratorBase::Config integrator_config;
   integrator_config.voxel_carving_enabled = true;
-  // Used to be * 4 according to Marius's experience, now * 2.
+  // Used to be * 4 according to Marius's experience, was then * 2.
+  // It is now * 3 as this makes detecting empty mesh spaces more efficient.
   // This should be made bigger again if behind-surface weighting is improved.
-  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 2;
+  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 3;
 
   double truncation_distance = integrator_config.default_truncation_distance;
   double max_weight = integrator_config.max_weight;
@@ -510,13 +529,17 @@ void VoxbloxNode::insertPointcloudWithTf(
       }
     }
 
-    publishAllUpdatedTsdfVoxels();
-    publishTsdfSurfacePoints();
-    publishTsdfOccupiedNodes();
+    if (publish_tsdf_info_) {
+      publishAllUpdatedTsdfVoxels();
+      publishTsdfSurfacePoints();
+      publishTsdfOccupiedNodes();
+    }
     if (generate_occupancy_) {
       publishOccupancy();
     }
-    publishSlices();
+    if (publish_slices_) {
+      publishSlices();
+    }
 
     if (verbose_) {
       ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());

@@ -43,7 +43,6 @@ class MeshIntegrator {
  public:
   struct Config {
     bool use_color = true;
-    bool compute_normals = true;
     float min_weight = 1e-4;
   };
 
@@ -156,16 +155,10 @@ class MeshIntegrator {
                  << block_index.transpose();
       return;
     }
-
     extractBlockMesh(block, mesh);
-
     // Update colors if needed.
     if (config_.use_color) {
       updateMeshColor(*block, mesh.get());
-    }
-
-    if (config_.compute_normals) {
-      computeMeshNormals(*block, mesh.get());
     }
   }
 
@@ -177,7 +170,8 @@ class MeshIntegrator {
 
     // If the distance to the surface is greater than the length of two voxels,
     // the mesh will be empty.
-    if ((2 * block.voxel_size()) < block.getVoxelByVoxelIndex(index).distance) {
+    if ((2 * block.voxel_size()) <
+        std::abs(block.getVoxelByVoxelIndex(index).distance)) {
       return;
     }
 
@@ -212,7 +206,8 @@ class MeshIntegrator {
 
     // If the distance to the surface is greater than the length of two voxels,
     // the mesh will be empty.
-    if ((2 * block.voxel_size()) < block.getVoxelByVoxelIndex(index).distance) {
+    if ((2 * block.voxel_size()) <
+        std::abs(block.getVoxelByVoxelIndex(index).distance)) {
       return;
     }
 
@@ -291,7 +286,7 @@ class MeshIntegrator {
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
-        if (((2 * block.voxel_size()) >= voxel.distance) &&
+        if (((2 * block.voxel_size()) >= std::abs(voxel.distance)) &&
             (voxel.weight >= config_.min_weight)) {
           mesh->colors[i] = voxel.color;
         }
@@ -301,31 +296,6 @@ class MeshIntegrator {
         const VoxelType& voxel = neighbor_block->getVoxelByCoordinates(vertex);
         if (voxel.weight >= config_.min_weight) {
           mesh->colors[i] = voxel.color;
-        }
-      }
-    }
-  }
-
-  void computeMeshNormals(const Block<VoxelType>& block, Mesh* mesh) {
-    Interpolator<VoxelType> interpolator(tsdf_layer_);
-
-    Point grad;
-    for (size_t i = 0; i < mesh->vertices.size(); i++) {
-      const Point& pos = mesh->vertices[i];
-
-      VoxelIndex voxel_index = block.computeVoxelIndexFromCoordinates(pos);
-      if (block.isValidVoxelIndex(voxel_index)) {
-        const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
-
-        if (((2 * block.voxel_size()) >= voxel.distance) &&
-            (voxel.weight >= config_.min_weight)) {
-          if (interpolator.getGradient(pos, &grad, true)) {
-            mesh->normals[i] = grad.normalized();
-          } else if (interpolator.getGradient(pos, &grad, false)) {
-            mesh->normals[i] = grad.normalized();
-          } else {
-            mesh->normals[i] = Point::Zero();
-          }
         }
       }
     }

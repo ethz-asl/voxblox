@@ -11,7 +11,7 @@
     <param name="tsdf_voxel_size" value="0.02" />
     <param name="tsdf_voxels_per_side" value="16" />
     <param name="voxel_carving_enabled" value="true" />
-    <param name="color_mode" value="color" />
+    <param name="color_mode" value="normals" />
     <param name="use_tf_transforms" value="false" />
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="min_time_between_msgs_sec" value="0.2" />
