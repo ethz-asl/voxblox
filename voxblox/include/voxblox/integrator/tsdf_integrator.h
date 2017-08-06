@@ -495,12 +495,16 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {
     tracker_.resize(tracker_size_);
+    tracker_ptr_ = &tracker_[0];
+    old_tracker_ptr_ = &tracker_[1];
   };
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
+
+    std::swap(tracker_ptr_, old_tracker_ptr_);
 
     const Point& origin = T_G_C.getPosition();
 
@@ -512,7 +516,8 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex global_voxel_idx =
           getGridIndexFromPoint(point_G, voxel_size_inv_);
-      if (tracker_[localHash(global_voxel_idx)]) {
+      size_t hash = hasher_(global_voxel_idx);
+      if (hash == tracker_ptr_[hash & bit_mask_]) {
         continue;
       }
 
@@ -546,12 +551,12 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       Block<TsdfVoxel>::Ptr tsdf_block;
 
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        const size_t hash = localHash(global_voxel_idx);
-        if (tracker_[hash]) {
+        hash = hasher_(global_voxel_idx);
+        size_t local_hash = hash & bit_mask_;
+        if (hash == tracker_ptr_[local_hash]) {
           continue;
         }
-        tracker_[hash] = true;
-        reset_queue_.push(hash);
+        tracker_ptr_[local_hash] = hash;
 
         BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
             global_voxel_idx, voxels_per_side_inv_);
@@ -577,28 +582,18 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       }
     }
 
-    while (!reset_queue_.empty()) {
-      tracker_[reset_queue_.back()] = false;
-      reset_queue_.pop();
-    }
-
     integrate_timer.Stop();
   }
 
  private:
-  static constexpr uint64_t bits_per_dim_ = 10;
-  static constexpr uint64_t tracker_size_ = 1 << bits_per_dim_ * 3;
-  static constexpr uint64_t bit_mask_ = (1 << bits_per_dim_) - 1;
+  static constexpr uint64_t bits_in_index_ = 24;
+  static constexpr uint64_t tracker_size_ = (1 << bits_in_index_) + 1;
+  static constexpr uint64_t bit_mask_ = (1 << bits_in_index_) - 1;
 
-  uint64_t static inline localHash(const AnyIndex& index) {
-    return ((static_cast<uint64_t>(index.x()) & bit_mask_)
-            << (2 * bits_per_dim_)) +
-           ((static_cast<uint64_t>(index.y()) & bit_mask_) << (bits_per_dim_)) +
-           (static_cast<uint64_t>(index.z()) & bit_mask_);
-  }
-
-  std::vector<bool> tracker_;
-  std::queue<size_t> reset_queue_;
+  std::vector<size_t> tracker_;
+  size_t* tracker_ptr_;
+  size_t* old_tracker_ptr_;
+  BlockIndexHash hasher_;
 };
 
 }  // namespace voxblox
