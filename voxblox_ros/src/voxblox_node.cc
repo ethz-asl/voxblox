@@ -277,10 +277,9 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   // Determine integrator parameters.
   TsdfIntegratorBase::Config integrator_config;
   integrator_config.voxel_carving_enabled = true;
-  // Used to be * 4 according to Marius's experience, was then * 2.
-  // It is now * 3 as this makes detecting empty mesh spaces more efficient.
+  // Used to be * 4 according to Marius's experience, was changed to *2
   // This should be made bigger again if behind-surface weighting is improved.
-  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 3;
+  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 2;
 
   double truncation_distance = integrator_config.default_truncation_distance;
   double max_weight = integrator_config.max_weight;

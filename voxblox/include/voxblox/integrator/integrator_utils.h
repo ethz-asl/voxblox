@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
-#define VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
+#ifndef INTEGRATOR_INTEGRATOR_UTILS_H_
+#define INTEGRATOR_INTEGRATOR_UTILS_H_
 
 #include <algorithm>
 #include <vector>
@@ -94,7 +94,7 @@ inline void castRay(
   RayCaster ray_caster(start_scaled, end_scaled);
 
   AnyIndex ray_index;
-  while(ray_caster.nextRayIndex(&ray_index)){
+  while (ray_caster.nextRayIndex(&ray_index)) {
     indices->push_back(ray_index);
   }
 }
@@ -148,4 +148,4 @@ inline void getHierarchicalIndexAlongRay(
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
+#endif  // INTEGRATOR_INTEGRATOR_UTILS_H_

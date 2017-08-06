@@ -23,6 +23,92 @@
 
 namespace voxblox {
 
+// One of the ugliest bits of code I have ever written
+// Why it is crazy ugly:
+// - A very small chance it will return false when it should return true (as
+// reliable as the hash function)
+// - A really decent chance it will return true when it should return false
+// (depends on many factors but 1 in 100 or higher is possible)
+// - Non-deterministic behavior when threaded
+// - Can use hundreds of mb of ram to store a few thousand ints
+// - Just look at the reset function
+//
+// Why you want to use this terrible thing:
+// - Acts as a thread safe completely lockless set that is well over twice as
+// fast as an actual non thread safe set
+// - Speeds up putting a large number of elements that may already exist into an
+// actual set or map. If the false positive rate is acceptable, it can (usually)
+// tell you if an element will already be allocated before you test it.
+//
+// How does it work:
+// - It allocates an array that is 2^unmasked_bits in length. This acts like a
+// hash table that cannot grow and has at most one element per bucket
+// - Computes the hash and only uses the first unmasked_bits bits of it to find
+// the bin.
+// - If the element matches returns true
+// - If it does not it, replaces the value with the hash and returns false.
+template <size_t unmasked_bits>
+class UnreliableAllocTester {
+ public:
+  UnreliableAllocTester() {
+    pseudo_set_ptr_.store(&pseudo_set_[0]);
+    prev_pseudo_set_ptr_.store(&pseudo_set_[1]);
+  }
+
+  bool unreliableTryFind(const AnyIndex& index) {
+    size_t hash;
+    return unreliableTryFind(index, &hash);
+  }
+
+  // Almost always returns true if value already inserted
+  // Sometimes returns false if value was not previously inserted
+  bool unreliableTryFind(const AnyIndex& index, size_t* hash) {
+    DCHECK(hash);
+    *hash = hasher_(index);
+    const size_t masked_hash = (*hash) & bit_mask_;
+    if (pseudo_set_ptr_.load(std::memory_order_relaxed)[masked_hash].load(
+            std::memory_order_relaxed) == *hash) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool unreliableTryInsert(const AnyIndex& index) {
+    size_t hash;
+    return unreliableTryInsert(index, &hash);
+  }
+
+  // Almost always returns false if value already inserted
+  // Sometimes returns true if value was not previously inserted
+  bool unreliableTryInsert(const AnyIndex& index, size_t* hash) {
+    DCHECK(hash);
+    *hash = hasher_(index);
+    const size_t masked_hash = (*hash) & bit_mask_;
+    if (pseudo_set_ptr_.load(std::memory_order_relaxed)[masked_hash].load(
+            std::memory_order_relaxed) == *hash) {
+      return false;
+    } else {
+      pseudo_set_ptr_.load(std::memory_order_relaxed)[masked_hash].store(
+          *hash, std::memory_order_relaxed);
+      return true;
+    }
+  }
+
+  // Clearing a really, really large array can take a long time. However, we can
+  // get the same effect by offsetting where the index points to.
+  void resetTester() { pseudo_set_ptr_.exchange(prev_pseudo_set_ptr_); }
+
+ private:
+  static constexpr size_t pseudo_set_size_ = (1 << unmasked_bits) + 1;
+  static constexpr size_t bit_mask_ = (1 << unmasked_bits) - 1;
+
+  std::array<std::atomic<size_t>, pseudo_set_size_> pseudo_set_;
+  std::atomic<std::atomic<size_t>*> pseudo_set_ptr_;
+  std::atomic<std::atomic<size_t>*> prev_pseudo_set_ptr_;
+  BlockIndexHash hasher_;
+};
+
 class TsdfIntegratorBase {
  public:
   struct Config {
@@ -493,18 +579,15 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 class FastTsdfIntegrator : public TsdfIntegratorBase {
  public:
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
-      : TsdfIntegratorBase(config, layer) {
-    tracker_.resize(tracker_size_);
-    tracker_ptr_ = &tracker_[0];
-    old_tracker_ptr_ = &tracker_[1];
-  };
+      : TsdfIntegratorBase(config, layer) {}
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
     DCHECK_EQ(points_C.size(), colors.size());
     timing::Timer integrate_timer("integrate");
 
-    std::swap(tracker_ptr_, old_tracker_ptr_);
+    unreliable_ray_tester_.resetTester();
+    unreliable_start_tester_.resetTester();
 
     const Point& origin = T_G_C.getPosition();
 
@@ -515,9 +598,8 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       // immediately check if the voxel the point is in has already been ray
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex global_voxel_idx =
-          getGridIndexFromPoint(point_G, voxel_size_inv_);
-      size_t hash = hasher_(global_voxel_idx);
-      if (hash == tracker_ptr_[hash & bit_mask_]) {
+          getGridIndexFromPoint(point_G, voxel_sub_sample_ * voxel_size_inv_);
+      if (!unreliable_start_tester_.unreliableTryInsert(global_voxel_idx)) {
         continue;
       }
 
@@ -541,22 +623,23 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
                                   ? origin
                                   : (point_G - unit_ray * truncation_distance);
 
-      const Point start_scaled = ray_start * voxel_size_inv_;
-      const Point end_scaled = ray_end * voxel_size_inv_;
-
-      IndexVector global_voxel_indices;
-      RayCaster ray_caster(end_scaled, start_scaled);
+      RayCaster ray_caster(ray_end * voxel_size_inv_,
+                           ray_start * voxel_size_inv_);
 
       BlockIndex last_block_idx = BlockIndex::Zero();
       Block<TsdfVoxel>::Ptr tsdf_block;
 
+      size_t consecutive_ray_collisions = 0;
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        hash = hasher_(global_voxel_idx);
-        size_t local_hash = hash & bit_mask_;
-        if (hash == tracker_ptr_[local_hash]) {
+        // if all a ray is doing is follow in the path of another, stop casting
+        if (!unreliable_ray_tester_.unreliableTryInsert(global_voxel_idx)) {
+          ++consecutive_ray_collisions;
+        } else {
+          consecutive_ray_collisions = 0;
+        }
+        if (consecutive_ray_collisions > max_consecutive_ray_collisions_) {
           continue;
         }
-        tracker_ptr_[local_hash] = hash;
 
         BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
             global_voxel_idx, voxels_per_side_inv_);
@@ -586,14 +669,11 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   }
 
  private:
-  static constexpr uint64_t bits_in_index_ = 24;
-  static constexpr uint64_t tracker_size_ = (1 << bits_in_index_) + 1;
-  static constexpr uint64_t bit_mask_ = (1 << bits_in_index_) - 1;
-
-  std::vector<size_t> tracker_;
-  size_t* tracker_ptr_;
-  size_t* old_tracker_ptr_;
-  BlockIndexHash hasher_;
+  static constexpr size_t masked_bits_ = 26;  // 8 mb of ram per tester
+  static constexpr FloatingPoint voxel_sub_sample_ = 4.0f;
+  static constexpr size_t max_consecutive_ray_collisions_ = 8;
+  UnreliableAllocTester<masked_bits_> unreliable_ray_tester_;
+  UnreliableAllocTester<masked_bits_> unreliable_start_tester_;
 };
 
 }  // namespace voxblox
