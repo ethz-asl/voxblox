@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_CORE_LAYER_H_
-#define VOXBLOX_CORE_LAYER_H_
+#ifndef CORE_LAYER_H_
+#define CORE_LAYER_H_
 
 #include <glog/logging.h>
 #include <string>
@@ -196,6 +196,7 @@ class Layer {
   }
 
   FloatingPoint block_size() const { return block_size_; }
+  FloatingPoint block_size_inv() const { return block_size_inv_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
 
@@ -230,4 +231,4 @@ class Layer {
 
 #include "voxblox/core/layer_inl.h"
 
-#endif  // VOXBLOX_CORE_LAYER_H_
+#endif  // CORE_LAYER_H_

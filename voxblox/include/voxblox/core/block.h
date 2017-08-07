@@ -1,6 +1,7 @@
-#ifndef VOXBLOX_CORE_BLOCK_H_
-#define VOXBLOX_CORE_BLOCK_H_
+#ifndef CORE_BLOCK_H_
+#define CORE_BLOCK_H_
 
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,15 @@
 #include "voxblox/core/common.h"
 
 namespace voxblox {
+
+template <typename VoxelType>
+struct VoxelWithFlag {
+  VoxelWithFlag(VoxelType* voxel, std::atomic_flag* flag)
+      : voxel_(*voxel), flag_(*flag) {}
+
+  VoxelType& voxel_;
+  std::atomic_flag& flag_;
+};
 
 template <typename VoxelType>
 class Block {
@@ -28,6 +38,11 @@ class Block {
     block_size_ = voxels_per_side_ * voxel_size_;
     block_size_inv_ = 1.0 / block_size_;
     voxels_.reset(new VoxelType[num_voxels_]);
+    lock_flags_.reset(new std::atomic_flag[num_voxels_]);
+
+    for (size_t i = 0; i < num_voxels_; ++i) {
+      lock_flags_[i].clear();
+    }
   }
 
   explicit Block(const BlockProto& proto);
@@ -111,6 +126,24 @@ class Block {
     return voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
+  inline VoxelWithFlag<VoxelType> getVoxelAndFlagByLinearIndex(size_t index) {
+    DCHECK_LT(index, num_voxels_);
+    return VoxelWithFlag<VoxelType>(&voxels_[index], &lock_flags_[index]);
+  }
+
+  inline VoxelWithFlag<VoxelType> getVoxelAndFlagByVoxelIndex(
+      const VoxelIndex& index) {
+    const size_t linear_index = computeLinearIndexFromVoxelIndex(index);
+    return VoxelWithFlag<VoxelType>(voxels_[&linear_index],
+                                    &lock_flags_[linear_index]);
+  }
+
+  inline VoxelWithFlag<VoxelType> getVoxelAndFlagByCoordinates(
+      const Point& coords) {
+    const size_t index = computeLinearIndexFromCoordinates(index);
+    return VoxelWithFlag<VoxelType>(&voxels_[index], &lock_flags_[index]);
+  }
+
   inline bool isValidVoxelIndex(const VoxelIndex& index) const {
     if (index.x() < 0 || index.x() >= voxels_per_side_) {
       return false;
@@ -157,8 +190,9 @@ class Block {
 
   size_t getMemorySize() const;
 
-protected:
+ protected:
   std::unique_ptr<VoxelType[]> voxels_;
+  std::unique_ptr<std::atomic_flag[]> lock_flags_;
 
   // Derived, cached parameters.
   size_t num_voxels_;
@@ -188,4 +222,4 @@ protected:
 
 #include "voxblox/core/block_inl.h"
 
-#endif  // VOXBLOX_CORE_BLOCK_H_
+#endif  // CORE_BLOCK_H_

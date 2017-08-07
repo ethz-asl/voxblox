@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <deque>
 #include <limits>
 #include <mutex>
 #include <queue>
@@ -51,8 +52,9 @@ template <size_t unmasked_bits>
 class UnreliableAllocTester {
  public:
   UnreliableAllocTester() {
-    pseudo_set_ptr_.store(&pseudo_set_[0]);
-    prev_pseudo_set_ptr_.store(&pseudo_set_[1]);
+    pseudo_set_ptr_.store(
+        &pseudo_set_[reset_counter_.load(std::memory_order_relaxed)]);
+    ++reset_counter_;
   }
 
   bool unreliableTryFind(const AnyIndex& index) {
@@ -96,16 +98,32 @@ class UnreliableAllocTester {
   }
 
   // Clearing a really, really large array can take a long time. However, we can
-  // get the same effect by offsetting where the index points to.
-  void resetTester() { pseudo_set_ptr_.exchange(prev_pseudo_set_ptr_); }
+  // get the same effect by offsetting where the index points to. Every now and
+  // then we still need to zero out the memory, this is determined by the
+  // full_reset_threshold.
+  void resetTester() {
+    if (reset_counter_.load(std::memory_order_relaxed) >
+        full_reset_threshold_) {
+      for (std::atomic<size_t>& value : pseudo_set_) {
+        value.store(0, std::memory_order_relaxed);
+      }
+      reset_counter_.store(0, std::memory_order_relaxed);
+    } else {
+      pseudo_set_ptr_.store(
+          &pseudo_set_[reset_counter_.load(std::memory_order_relaxed)]);
+      ++reset_counter_;
+    }
+  }
 
  private:
-  static constexpr size_t pseudo_set_size_ = (1 << unmasked_bits) + 1;
+  static constexpr size_t full_reset_threshold_ = 100000;
+  static constexpr size_t pseudo_set_size_ =
+      (1 << unmasked_bits) + full_reset_threshold_;
   static constexpr size_t bit_mask_ = (1 << unmasked_bits) - 1;
 
+  std::atomic<size_t> reset_counter_;
   std::array<std::atomic<size_t>, pseudo_set_size_> pseudo_set_;
   std::atomic<std::atomic<size_t>*> pseudo_set_ptr_;
-  std::atomic<std::atomic<size_t>*> prev_pseudo_set_ptr_;
   BlockIndexHash hasher_;
 };
 
@@ -153,6 +171,82 @@ class TsdfIntegratorBase {
   const Config& getConfig() const { return config_; }
 
  protected:
+  // Can be used to pre-allocate all the blocks needed by the integrator. This
+  // allows thread-safe lockless block map access
+  void allocateBlocks(const Transformation& T_G_C, const Pointcloud& points_C) {
+    const Point& origin = T_G_C.getPosition();
+    IndexSet index_set;
+
+    unreliable_ray_tester_.resetTester();
+
+    // we need the queue so we can iterate and insert into the set at the same
+    // time
+    std::queue<AnyIndex,
+               std::deque<AnyIndex, Eigen::aligned_allocator<AnyIndex>>>
+        new_blocks_queue;
+
+    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
+      const Point& point_C = points_C[pt_idx];
+      const Point point_G = T_G_C * point_C;
+
+      // immediately check if the voxel the point is in has already been ray
+      // traced (saves time setting up ray tracer for already used points)
+      AnyIndex block_idx =
+          getGridIndexFromPoint(point_G, layer_->block_size_inv());
+      if (index_set.count(block_idx)) {
+        continue;
+      }
+
+      const FloatingPoint ray_distance = (point_G - origin).norm();
+      if (ray_distance < config_.min_ray_length_m) {
+        continue;
+      } else if (ray_distance > config_.max_ray_length_m) {
+        // TODO(helenol): clear until max ray length instead.
+        continue;
+      }
+
+      const FloatingPoint truncation_distance =
+          config_.default_truncation_distance;
+
+      const Ray unit_ray = (point_G - origin).normalized();
+
+      const Point ray_end = point_G + unit_ray * truncation_distance;
+      const Point ray_start = config_.voxel_carving_enabled
+                                  ? origin
+                                  : (point_G - unit_ray * truncation_distance);
+
+      RayCaster ray_caster(ray_end * layer_->block_size_inv(),
+                           ray_start * layer_->block_size_inv());
+
+      while (ray_caster.nextRayIndex(&block_idx)) {
+        if (!index_set.insert(block_idx).second) {
+          break;
+        }
+        new_blocks_queue.push(block_idx);
+      }
+    }
+
+    // ray termination strategy will miss some blocks that must be allocated
+    // however, all these missed blocks will have neighbors that were not missed
+    // so we add all the neighbors as well
+    while (!new_blocks_queue.empty()) {
+      for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
+          for (int z = -1; z <= 1; ++z) {
+            AnyIndex block_idx = new_blocks_queue.front() + AnyIndex(x, y, z);
+            index_set.insert(block_idx);
+          }
+        }
+      }
+      new_blocks_queue.pop();
+    }
+
+    // actually allocate blocks
+    for (const AnyIndex& block_idx : index_set) {
+      layer_->allocateBlockPtrByIndex(block_idx);
+    }
+  }
+
   inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
                               const Point& voxel_center, const Color& color,
                               const float truncation_distance,
@@ -243,6 +337,9 @@ class TsdfIntegratorBase {
   FloatingPoint voxel_size_inv_;
   FloatingPoint voxels_per_side_inv_;
   FloatingPoint block_size_inv_;
+
+  static constexpr size_t masked_bits_ = 26;  // 8 mb of ram per tester
+  UnreliableAllocTester<masked_bits_> unreliable_ray_tester_;
 };
 
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
@@ -567,32 +664,39 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
   }
 };
 
-// This integrator will only cast a ray through a voxel if no other ray has
-// updated that voxel for this scan. To know if a voxel has been passed through
-// the hash of its coordinates are stored and checked against during the scan
-// integration.
-//
-// As hash tables are expensive we use a 3D vector with 1024 bins in each
-// dimension. Thanks to std::vector<bool> being the beautiful mistake it is this
-// only takes 134mb. If two indices fall into the same bucket in this
-// vector they are taken as the same.
 class FastTsdfIntegrator : public TsdfIntegratorBase {
  public:
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
-  void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors) {
-    DCHECK_EQ(points_C.size(), colors.size());
-    timing::Timer integrate_timer("integrate");
+  // mixes up the order rays are given in so that each thread is working with a
+  // point that is far away from the other threads current points.
+  size_t getMixedIdx(size_t number_of_points, size_t base_idx) {
+    const size_t number_of_groups = config_.integrator_threads;
+    const size_t points_per_group = number_of_points / number_of_groups;
 
-    unreliable_ray_tester_.resetTester();
-    unreliable_start_tester_.resetTester();
+    if (points_per_group * number_of_groups <= base_idx) {
+      return base_idx;
+    } else {
+      size_t group_num = base_idx % number_of_groups;
+      size_t position_in_group = base_idx / number_of_groups;
 
+      return group_num * points_per_group + position_in_group;
+    }
+  }
+
+  void integrateFunction(const Transformation& T_G_C,
+                         const Pointcloud& points_C, const Colors& colors) {
     const Point& origin = T_G_C.getPosition();
 
-    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
+    size_t pt_idx = getMixedIdx(points_C.size(), atomic_idx.fetch_add(1));
+
+    while (pt_idx < points_C.size()) {
       const Point& point_C = points_C[pt_idx];
+      const Color& color = colors[pt_idx];
+
+      pt_idx = getMixedIdx(points_C.size(), atomic_idx.fetch_add(1));
+
       const Point point_G = T_G_C * point_C;
 
       // immediately check if the voxel the point is in has already been ray
@@ -602,8 +706,6 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       if (!unreliable_start_tester_.unreliableTryInsert(global_voxel_idx)) {
         continue;
       }
-
-      const Color& color = colors[pt_idx];
 
       const FloatingPoint ray_distance = (point_G - origin).norm();
       if (ray_distance < config_.min_ray_length_m) {
@@ -638,7 +740,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
           consecutive_ray_collisions = 0;
         }
         if (consecutive_ray_collisions > max_consecutive_ray_collisions_) {
-          continue;
+          break;
         }
 
         BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
@@ -647,32 +749,67 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
             getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
         if (!tsdf_block || block_idx != last_block_idx) {
-          tsdf_block = layer_->allocateBlockPtrByIndex(block_idx);
+          tsdf_block = layer_->getBlockPtrByIndex(block_idx);
 
+          if (tsdf_block == nullptr) {
+            ROS_WARN_STREAM(
+                "Block ("
+                << block_idx.transpose()
+                << ") was not pre-allocated, this should never happen");
+            continue;
+          }
           tsdf_block->updated() = true;
           last_block_idx = block_idx;
         }
 
         const Point voxel_center_G =
             tsdf_block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
-        TsdfVoxel& tsdf_voxel =
-            tsdf_block->getVoxelByVoxelIndex(local_voxel_idx);
+        VoxelWithFlag<TsdfVoxel> tsdf_voxel =
+            tsdf_block->getVoxelAndFlagByVoxelIndex(local_voxel_idx);
 
-        const float weight = getVoxelWeight(point_C);
+        if (!tsdf_voxel.flag_.test_and_set()) {
+          const float weight = getVoxelWeight(point_C);
 
-        updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                        truncation_distance, weight, &tsdf_voxel);
+          updateTsdfVoxel(origin, point_G, voxel_center_G, color,
+                          truncation_distance, weight, &(tsdf_voxel.voxel_));
+          tsdf_voxel.flag_.clear();
+        }
       }
+    }
+  }
+
+  void integratePointCloud(const Transformation& T_G_C,
+                           const Pointcloud& points_C, const Colors& colors) {
+    DCHECK_EQ(points_C.size(), colors.size());
+
+    timing::Timer block_timer("block_allocation");
+    allocateBlocks(T_G_C, points_C);
+    block_timer.Stop();
+
+    timing::Timer integrate_timer("integrate");
+
+    unreliable_ray_tester_.resetTester();
+    unreliable_start_tester_.resetTester();
+
+    atomic_idx.store(0);
+
+    std::vector<std::thread> integration_threads;
+    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+      integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,
+                                       this, T_G_C, points_C, colors);
+    }
+
+    for (std::thread& thread : integration_threads) {
+      thread.join();
     }
 
     integrate_timer.Stop();
   }
 
  private:
-  static constexpr size_t masked_bits_ = 26;  // 8 mb of ram per tester
+  std::atomic<size_t> atomic_idx;
   static constexpr FloatingPoint voxel_sub_sample_ = 4.0f;
   static constexpr size_t max_consecutive_ray_collisions_ = 8;
-  UnreliableAllocTester<masked_bits_> unreliable_ray_tester_;
   UnreliableAllocTester<masked_bits_> unreliable_start_tester_;
 };
 
