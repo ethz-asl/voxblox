@@ -24,6 +24,7 @@
 #include <chrono>
 #include <limits>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -176,6 +177,7 @@ class Timing {
   list_t timers_;
   map_t tagMap_;
   size_t maxTagLength_;
+  std::mutex mutex_;
 };
 
 #if ENABLE_MSF_TIMING
