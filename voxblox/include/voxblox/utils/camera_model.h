@@ -1,11 +1,11 @@
-#ifndef NBVP_VOXBLOX_CAMERA_MODEL_H
-#define NBVP_VOXBLOX_CAMERA_MODEL_H
+#ifndef VOXBLOX_CAMERA_MODEL_H
+#define VOXBLOX_CAMERA_MODEL_H
 
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <kindr/minimal/quat-transformation.h>
 
-namespace nbvp_voxblox {
+namespace voxblox {
 
 // Transformation type for defining sensor orientation.
 typedef kindr::minimal::QuatTransformationTemplate<double> Transformation;
@@ -76,6 +76,6 @@ class CameraModel {
   Eigen::Vector3d aabb_min_;
   Eigen::Vector3d aabb_max_;
 };
-}  // namespace nbvp_voxblox
+}  // namespace voxblox
 
-#endif  // NBVP_VOXBLOX_CAMERA_MODEL_H
+#endif  // VOXBLOX_CAMERA_MODEL_H
