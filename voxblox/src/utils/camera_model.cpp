@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include "nbvp_voxblox/camera_model.h"
+#include "voxblox/utils/camera_model.h"
 
-namespace nbvp_voxblox {
+namespace voxblox {
 
 void Plane::setFromPoints(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2,
                           const Eigen::Vector3d& p3) {
@@ -195,4 +195,4 @@ bool CameraModel::isPointInView(const Eigen::Vector3d& point) const {
   return true;
 }
 
-}  // namespace nbvp_voxblox
+}  // namespace voxblox
