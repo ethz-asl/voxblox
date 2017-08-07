@@ -1,9 +1,11 @@
-#ifndef VOXBLOX_CAMERA_MODEL_H
-#define VOXBLOX_CAMERA_MODEL_H
+#ifndef VOXBLOX_UTILS_CAMERA_MODEL_H
+#define VOXBLOX_UTILS_CAMERA_MODEL_H
 
-#include <Eigen/Core>
+#include <vector>
+
 #include <glog/logging.h>
 #include <kindr/minimal/quat-transformation.h>
+#include <Eigen/Core>
 
 namespace voxblox {
 
@@ -78,4 +80,4 @@ class CameraModel {
 };
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CAMERA_MODEL_H
+#endif  // VOXBLOX_UTILS_CAMERA_MODEL_H
