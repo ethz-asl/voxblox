@@ -4,32 +4,26 @@
   <arg name="voxel_size" default="0.10"/>
   <arg name="generate_esdf" default="false" />
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args=" --clock /home/z/Datasets/good.bag">
-    <remap from="/lidar_1/points_out" to="/pointcloud"/>
-    <remap from="/lidar_2/points_out" to="/pointcloud"/>
-    <remap from="/lidar_3/points_out" to="/pointcloud"/>
-    <remap from="/lidar_4/points_out" to="/pointcloud"/>
-    <remap from="/lidar_5/points_out" to="/pointcloud"/>
-  </node>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -s 10 -u 30 -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
    <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
-    <!--<remap from="pointcloud" to="/camera/depth_registered/points"/>-->
-    <param name="tsdf_voxel_size" value="0.2" />
+    <remap from="pointcloud" to="/camera/depth_registered/points"/>
+    <param name="tsdf_voxel_size" value="0.05" />
     <param name="tsdf_voxels_per_side" value="16" />
     <param name="voxel_carving_enabled" value="true" />
     <param name="color_mode" value="normals" />
-    <param name="use_tf_transforms" value="true" />
+    <param name="use_tf_transforms" value="false" />
     <param name="update_mesh_every_n_sec" value="1.0" />
-    <param name="min_time_between_msgs_sec" value="0.0" />
+    <param name="min_time_between_msgs_sec" value="0.2" />
     <param name="method" value="merged" />
-    <param name="generate_esdf" value="false" />
+    <param name="generate_esdf" value="$(arg generate_esdf)" />
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="false" />
     <param name="mesh_min_weight" value="0.00000001"/>
-    <param name="truncation_distance" value="0.5" />
+    <param name="truncation_distance" value="0.2" />
     <param name="verbose" value="true" />
-    <param name="min_ray_length_m" value="2.0"/>
-    <param name="max_ray_length_m" value="20.0"/>
+    <remap from="transform" to="/kinect/vrpn_client/estimated_transform" />
+    <rosparam file="$(find voxblox_ros)/cfg/cow_and_lady.yaml"/>
     <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon cow).ply" />
   </node>
 
