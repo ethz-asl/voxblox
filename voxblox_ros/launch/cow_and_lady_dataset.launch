@@ -21,7 +21,7 @@
     <param name="use_tf_transforms" value="true" />
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="min_time_between_msgs_sec" value="0.0" />
-    <param name="method" value="fast" />
+    <param name="method" value="merged" />
     <param name="generate_esdf" value="false" />
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="false" />

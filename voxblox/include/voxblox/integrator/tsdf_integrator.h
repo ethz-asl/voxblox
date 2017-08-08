@@ -85,15 +85,13 @@ class TsdfIntegratorBase {
       DCHECK_EQ(points_C_.size(), colors_.size());
     }
 
-    bool getNextPoint(size_t point_idx*, Point* point_G, bool* clearing) {
+    bool getNextPoint(size_t* point_idx, Point* point_G, bool* clearing) {
       while (atomic_idx_.load() < points_C_.size()) {
-        *origin = origin_;
-
         *point_idx = getMixedIdx(atomic_idx_.fetch_add(1));
-        const Point& point_C = points_C_[pt_idx];
-        *point_G = T_G_C_ * *point_C;
+        const Point& point_C = points_C_[*point_idx];
+        *point_G = T_G_C_ * point_C;
 
-        FloatingPoint ray_distance = (*point_G - *origin).norm();
+        FloatingPoint ray_distance = (*point_G - origin_).norm();
         if (ray_distance < config_.min_ray_length_m) {
           continue;
         } else if (ray_distance > config_.max_ray_length_m) {
@@ -148,7 +146,6 @@ class TsdfIntegratorBase {
     const Config& config_;
     const Point origin_;
     std::atomic<size_t> atomic_idx_;
-  }
   };
 
   // Can be used to pre-allocate all the blocks needed by the integrator. This
@@ -389,8 +386,14 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
-    DCHECK_EQ(points_C.size(), colors.size());
+    timing::Timer block_timer("block_allocation");
+    allocateBlocks(T_G_C, points_C, colors);
+    block_timer.Stop();
+
     timing::Timer integrate_timer("integrate");
+
+    point_getter_ =
+        std::make_shared<PointGetter>(T_G_C, points_C, colors, config_);
 
     // Pre-compute a list of unique voxels to end on.
     // Create a hashmap: VOXEL INDEX -> index in original cloud.
@@ -399,7 +402,7 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
     // cleared.
     BlockHashMapType<std::vector<size_t>>::type clear_map;
 
-    bundleRays(T_G_C, points_C, &voxel_map, &clear_map);
+    bundleRays(&voxel_map, &clear_map);
 
     integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, false,
                   voxel_map, clear_map);
@@ -415,18 +418,6 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
   }
 
  private:
-  struct VoxelInfo {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-    TsdfVoxel voxel;
-
-    BlockIndex block_idx;
-    VoxelIndex local_voxel_idx;
-
-    Point point_C;
-    Point point_G;
-  };
-
   inline void bundleRays(
       BlockHashMapType<std::vector<size_t>>::type* voxel_map,
       BlockHashMapType<std::vector<size_t>>::type* clear_map) {
@@ -443,59 +434,36 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       }
     }
 
-    LOG(INFO) << "Went from " << points_getter_.numPoints() << " points to "
+    LOG(INFO) << "Went from " << point_getter_->numPoints() << " points to "
               << voxel_map->size() << " raycasts  and " << clear_map->size()
               << " clear rays.";
-  }
-
-  void updateVoxel(const VoxelInfo& voxel_info, const Point& origin) {
-    static BlockIndex last_block_idx = BlockIndex::Zero();
-    static Block<TsdfVoxel>::Ptr block;
-
-    if (!block || voxel_info.block_idx != last_block_idx) {
-      block = layer_->allocateBlockPtrByIndex(voxel_info.block_idx);
-      block->updated() = true;
-      last_block_idx = voxel_info.block_idx;
-    }
-
-    const Point voxel_center_G =
-        block->computeCoordinatesFromVoxelIndex(voxel_info.local_voxel_idx);
-    TsdfVoxel& tsdf_voxel =
-        block->getVoxelByVoxelIndex(voxel_info.local_voxel_idx);
-
-    updateTsdfVoxel(origin, voxel_info.point_G, voxel_center_G,
-                    voxel_info.voxel.color, config_.default_truncation_distance,
-                    voxel_info.voxel.weight, &tsdf_voxel);
   }
 
   void integrateVoxel(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const std::pair<AnyIndex, std::vector<size_t>>& kv,
-      const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-      std::queue<VoxelInfo>* voxel_update_queue) {
+      const BlockHashMapType<std::vector<size_t>>::type& voxel_map) {
     if (kv.second.empty()) {
       return;
     }
 
     const Point& origin = T_G_C.getPosition();
-
-    // stores all the information needed to update a map voxel
-    VoxelInfo voxel_info;
-    voxel_info.point_C = Point::Zero();
-    voxel_info.voxel.weight = 0.0;
+    Color merged_color;
+    Point merged_point_C = Point::Zero();
+    FloatingPoint merged_weight = 0.0;
 
     for (const size_t pt_idx : kv.second) {
       const Point& point_C = points_C[pt_idx];
       const Color& color = colors[pt_idx];
 
       float point_weight = getVoxelWeight(point_C);
-      voxel_info.point_C = (voxel_info.point_C * voxel_info.voxel.weight +
-                            point_C * point_weight) /
-                           (voxel_info.voxel.weight + point_weight);
-      voxel_info.voxel.color = Color::blendTwoColors(
-          voxel_info.voxel.color, voxel_info.voxel.weight, color, point_weight);
-      voxel_info.voxel.weight += point_weight;
+      merged_point_C =
+          (merged_point_C * merged_weight + point_C * point_weight) /
+          (merged_weight + point_weight);
+      merged_color = Color::blendTwoColors(merged_color, merged_weight, color,
+                                           point_weight);
+      merged_weight += point_weight;
 
       // only take first point when clearing
       if (clearing_ray) {
@@ -503,33 +471,18 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       }
     }
 
-    voxel_info.point_G = T_G_C * voxel_info.point_C;
-    const Ray unit_ray = (voxel_info.point_G - origin).normalized();
+    const Point merged_point_G = T_G_C * merged_point_C;
 
-    Point ray_end, ray_start;
-    if (clearing_ray) {
-      ray_end = origin + unit_ray * config_.max_ray_length_m;
-      ray_start = origin;
-    } else {
-      ray_end =
-          voxel_info.point_G + unit_ray * config_.default_truncation_distance;
-      ray_start = config_.voxel_carving_enabled
-                      ? origin
-                      : (voxel_info.point_G -
-                         unit_ray * config_.default_truncation_distance);
-    }
+    RayCaster ray_caster(origin, merged_point_G, clearing_ray,
+                         config_.voxel_carving_enabled,
+                         config_.max_ray_length_m, voxel_size_inv_,
+                         config_.default_truncation_distance, false);
 
-    const Point start_scaled = ray_start * voxel_size_inv_;
-    const Point end_scaled = ray_end * voxel_size_inv_;
+    BlockIndex last_block_idx = BlockIndex::Zero();
+    Block<TsdfVoxel>::Ptr block;
 
-    IndexVector global_voxel_index;
-    timing::Timer cast_ray_timer("integrate/cast_ray");
-    castRay(start_scaled, end_scaled, &global_voxel_index);
-    cast_ray_timer.Stop();
-
-    timing::Timer update_voxels_timer("integrate/update_voxels");
-
-    for (const AnyIndex& global_voxel_idx : global_voxel_index) {
+    VoxelIndex global_voxel_idx;
+    while (ray_caster.nextRayIndex(&global_voxel_idx)) {
       if (enable_anti_grazing) {
         // Check if this one is already the the block hash map for this
         // insertion. Skip this to avoid grazing.
@@ -539,15 +492,16 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
         }
       }
 
-      voxel_info.block_idx = getGridIndexFromPoint(
-          global_voxel_idx.cast<FloatingPoint>(), voxels_per_side_inv_);
+      TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx);
+      if (voxel != nullptr) {
+        const Point voxel_center_G =
+            getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
-      voxel_info.local_voxel_idx =
-          getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
-
-      voxel_update_queue->push(voxel_info);
+        updateTsdfVoxel(origin, merged_point_G, voxel_center_G, merged_color,
+                        config_.default_truncation_distance, merged_weight,
+                        voxel);
+      }
     }
-    update_voxels_timer.Stop();
   }
 
   void integrateVoxels(
@@ -555,7 +509,7 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
       const BlockHashMapType<std::vector<size_t>>::type& clear_map,
-      std::queue<VoxelInfo>* voxel_update_queue, size_t tid) {
+      size_t tid) {
     BlockHashMapType<std::vector<size_t>>::type::const_iterator it;
     size_t map_size;
     if (clearing_ray) {
@@ -569,7 +523,7 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
     for (size_t i = 0; i < map_size; ++i) {
       if (((i + tid + 1) % config_.integrator_threads) == 0) {
         integrateVoxel(T_G_C, points_C, colors, enable_anti_grazing,
-                       clearing_ray, *it, voxel_map, voxel_update_queue);
+                       clearing_ray, *it, voxel_map);
       }
       ++it;
     }
@@ -580,33 +534,22 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
       const BlockHashMapType<std::vector<size_t>>::type& clear_map) {
-    std::vector<std::queue<VoxelInfo>> voxel_update_queues(
-        config_.integrator_threads);
-
     const Point& origin = T_G_C.getPosition();
 
     // if only 1 thread just do function call, otherwise spawn threads
     if (config_.integrator_threads == 1) {
       integrateVoxels(T_G_C, points_C, colors, enable_anti_grazing,
-                      clearing_ray, voxel_map, clear_map,
-                      &(voxel_update_queues[0]), 0);
+                      clearing_ray, voxel_map, clear_map, 0);
     } else {
       std::vector<std::thread> integration_threads;
       for (size_t i = 0; i < config_.integrator_threads; ++i) {
         integration_threads.emplace_back(
             &MergedTsdfIntegrator::integrateVoxels, this, T_G_C, points_C,
-            colors, enable_anti_grazing, clearing_ray, voxel_map, clear_map,
-            &(voxel_update_queues[i]), i);
+            colors, enable_anti_grazing, clearing_ray, voxel_map, clear_map, i);
       }
 
       for (std::thread& thread : integration_threads) {
         thread.join();
-      }
-    }
-    for (std::queue<VoxelInfo>& voxel_update_queue : voxel_update_queues) {
-      while (!voxel_update_queue.empty()) {
-        updateVoxel(voxel_update_queue.front(), origin);
-        voxel_update_queue.pop();
       }
     }
   }
