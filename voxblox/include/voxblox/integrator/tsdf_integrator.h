@@ -226,6 +226,10 @@ class TsdfIntegratorBase {
       }
     }
 
+    // Grab and lock the mutex responsible for this voxel
+    std::lock_guard<std::mutex> lock(
+        mutexes_.get(getGridIndexFromPoint(point_G, voxel_size_inv_)));
+
     const float new_weight = tsdf_voxel->weight + updated_weight;
     tsdf_voxel->color = Color::blendTwoColors(
         tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
@@ -365,7 +369,6 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
         const float weight = getVoxelWeight(point_C);
 
-        std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
         updateTsdfVoxel(origin, point_G, voxel_center_G, color,
                         truncation_distance, weight, &tsdf_voxel);
       }
@@ -691,7 +694,6 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
         const float weight = getVoxelWeight(point_C);
 
-        std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
         updateTsdfVoxel(origin, point_G, voxel_center_G, color,
                         truncation_distance, weight, &tsdf_voxel);
       }
