@@ -296,11 +296,12 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       FloatingPoint ray_distance = (point_C).norm();
       if (ray_distance < config_.min_ray_length_m) {
         continue;
-      } else if (config_.allow_clear &&
-                 ray_distance > config_.max_ray_length_m) {
-        VoxelIndex voxel_index =
-            getGridIndexFromPoint(point_G, voxel_size_inv_);
-        (*clear_map)[voxel_index].push_back(pt_idx);
+      } else if (ray_distance > config_.max_ray_length_m) {
+        if (config_.allow_clear) {  
+          VoxelIndex voxel_index =
+              getGridIndexFromPoint(point_G, voxel_size_inv_);
+          (*clear_map)[voxel_index].push_back(pt_idx);
+        }
         continue;
       }
 
