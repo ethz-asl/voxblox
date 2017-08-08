@@ -85,14 +85,12 @@ class TsdfIntegratorBase {
       DCHECK_EQ(points_C_.size(), colors_.size());
     }
 
-    bool getNextPoint(Point* point_C, Point* point_G, Color* color,
-                      Point* origin, bool* clearing) {
+    bool getNextPoint(size_t point_idx*, Point* point_G, bool* clearing) {
       while (atomic_idx_.load() < points_C_.size()) {
         *origin = origin_;
 
-        const size_t pt_idx = getMixedIdx(atomic_idx_.fetch_add(1));
-        *point_C = points_C_[pt_idx];
-        *color = colors_[pt_idx];
+        *point_idx = getMixedIdx(atomic_idx_.fetch_add(1));
+        const Point& point_C = points_C_[pt_idx];
         *point_G = T_G_C_ * *point_C;
 
         FloatingPoint ray_distance = (*point_G - *origin).norm();
@@ -113,6 +111,21 @@ class TsdfIntegratorBase {
 
       return false;
     }
+
+    bool getNextPoint(Point* point_C, Point* point_G, Color* color,
+                      Point* origin, bool* clearing) {
+      size_t point_idx;
+      if (getNextPoint(&point_idx, point_G, clearing)) {
+        *origin = origin_;
+        *point_C = points_C_[point_idx];
+        *color = colors_[point_idx];
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    size_t numPoints() { return points_C_.size(); }
 
    private:
     // Mixes up the order rays are given in so that each thread is working with
@@ -135,6 +148,7 @@ class TsdfIntegratorBase {
     const Config& config_;
     const Point origin_;
     std::atomic<size_t> atomic_idx_;
+  }
   };
 
   // Can be used to pre-allocate all the blocks needed by the integrator. This
@@ -185,6 +199,30 @@ class TsdfIntegratorBase {
         }
       }
     }
+  }
+
+  inline TsdfVoxel* getVoxel(const VoxelIndex& global_voxel_idx,
+                             Block<TsdfVoxel>::Ptr* block,
+                             BlockIndex* last_block_idx) {
+    BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
+        global_voxel_idx, voxels_per_side_inv_);
+    VoxelIndex local_voxel_idx =
+        getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
+
+    if ((*block == nullptr) || (block_idx != *last_block_idx)) {
+      *block = layer_->getBlockPtrByIndex(block_idx);
+
+      if (*block == nullptr) {
+        ROS_WARN_STREAM("Block ("
+                        << block_idx.transpose()
+                        << ") was not pre-allocated, this should never happen");
+        return nullptr;
+      }
+      (*block)->updated() = true;
+      *last_block_idx = block_idx;
+    }
+
+    return &((*block)->getVoxelByVoxelIndex(local_voxel_idx));
   }
 
   inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
@@ -328,36 +366,17 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
       BlockIndex last_block_idx = BlockIndex::Zero();
       Block<TsdfVoxel>::Ptr block;
-
       VoxelIndex global_voxel_idx;
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
-            global_voxel_idx, voxels_per_side_inv_);
-        VoxelIndex local_voxel_idx =
-            getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
+        TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx);
+        if (voxel != nullptr) {
+          const float weight = getVoxelWeight(point_C);
+          const Point voxel_center_G =
+              getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
-        if (!block || block_idx != last_block_idx) {
-          block = layer_->getBlockPtrByIndex(block_idx);
-
-          if (block == nullptr) {
-            ROS_WARN_STREAM(
-                "Block ("
-                << block_idx.transpose()
-                << ") was not pre-allocated, this should never happen");
-            continue;
-          }
-          last_block_idx = block_idx;
+          updateTsdfVoxel(origin, point_G, voxel_center_G, color,
+                          config_.default_truncation_distance, weight, voxel);
         }
-
-        const Point voxel_center_G =
-            block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
-        TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
-
-        const float weight = getVoxelWeight(point_C);
-
-        updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                        config_.default_truncation_distance, weight,
-                        &tsdf_voxel);
       }
     }
   }
@@ -409,30 +428,22 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
   };
 
   inline void bundleRays(
-      const Transformation& T_G_C, const Pointcloud& points_C,
       BlockHashMapType<std::vector<size_t>>::type* voxel_map,
       BlockHashMapType<std::vector<size_t>>::type* clear_map) {
-    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
-      const Point& point_C = points_C[pt_idx];
-      const Point point_G = T_G_C * point_C;
-
-      FloatingPoint ray_distance = (point_C).norm();
-      if (ray_distance < config_.min_ray_length_m) {
-        continue;
-      } else if (config_.allow_clear &&
-                 ray_distance > config_.max_ray_length_m) {
-        VoxelIndex voxel_index =
-            getGridIndexFromPoint(point_G, voxel_size_inv_);
-        (*clear_map)[voxel_index].push_back(pt_idx);
-        continue;
-      }
-
-      // Figure out what the end voxel is here.
+    size_t point_idx;
+    Point point_G;
+    bool clearing;
+    while (point_getter_->getNextPoint(&point_idx, &point_G, &clearing)) {
       VoxelIndex voxel_index = getGridIndexFromPoint(point_G, voxel_size_inv_);
-      (*voxel_map)[voxel_index].push_back(pt_idx);
+
+      if (clearing) {
+        (*clear_map)[voxel_index].push_back(point_idx);
+      } else {
+        (*voxel_map)[voxel_index].push_back(point_idx);
+      }
     }
 
-    LOG(INFO) << "Went from " << points_C.size() << " points to "
+    LOG(INFO) << "Went from " << points_getter_.numPoints() << " points to "
               << voxel_map->size() << " raycasts  and " << clear_map->size()
               << " clear rays.";
   }
@@ -468,7 +479,6 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
     }
 
     const Point& origin = T_G_C.getPosition();
-    const Point voxel_center_offset(0.5, 0.5, 0.5);
 
     // stores all the information needed to update a map voxel
     VoxelInfo voxel_info;
@@ -627,7 +637,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
                            config_.default_truncation_distance, false);
 
       BlockIndex last_block_idx = BlockIndex::Zero();
-      Block<TsdfVoxel>::Ptr tsdf_block;
+      Block<TsdfVoxel>::Ptr block;
 
       size_t consecutive_ray_collisions = 0;
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
@@ -641,35 +651,15 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
           break;
         }
 
-        BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
-            global_voxel_idx, voxels_per_side_inv_);
-        VoxelIndex local_voxel_idx =
-            getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
+        TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx);
+        if (voxel != nullptr) {
+          const float weight = getVoxelWeight(point_C);
+          const Point voxel_center_G =
+              getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
-        if (!tsdf_block || block_idx != last_block_idx) {
-          tsdf_block = layer_->getBlockPtrByIndex(block_idx);
-
-          if (tsdf_block == nullptr) {
-            ROS_WARN_STREAM(
-                "Block ("
-                << block_idx.transpose()
-                << ") was not pre-allocated, this should never happen");
-            continue;
-          }
-          tsdf_block->updated() = true;
-          last_block_idx = block_idx;
+          updateTsdfVoxel(origin, point_G, voxel_center_G, color,
+                          config_.default_truncation_distance, weight, voxel);
         }
-
-        const Point voxel_center_G =
-            tsdf_block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
-        TsdfVoxel& tsdf_voxel =
-            tsdf_block->getVoxelByVoxelIndex(local_voxel_idx);
-
-        const float weight = getVoxelWeight(point_C);
-
-        updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                        config_.default_truncation_distance, weight,
-                        &tsdf_voxel);
       }
     }
   }
