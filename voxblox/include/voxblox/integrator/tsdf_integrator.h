@@ -159,20 +159,10 @@ class TsdfIntegratorBase {
         continue;
       }
 
-      const FloatingPoint truncation_distance =
-          config_.default_truncation_distance;
-
-      const Ray unit_ray = (point_G - origin).normalized();
-
-      const Point ray_end = clearing
-                                ? origin + unit_ray * config_.max_ray_length_m
-                                : point_G + unit_ray * truncation_distance;
-      const Point ray_start = config_.voxel_carving_enabled
-                                  ? origin
-                                  : (point_G - unit_ray * truncation_distance);
-
-      RayCaster ray_caster(ray_end * layer_->block_size_inv(),
-                           ray_start * layer_->block_size_inv());
+      RayCaster ray_caster(origin, point_G, clearing,
+                           config_.voxel_carving_enabled,
+                           config_.max_ray_length_m, layer_->block_size_inv(),
+                           config_.default_truncation_distance, false);
 
       while (ray_caster.nextRayIndex(&block_idx)) {
         if (!index_set.insert(block_idx).second) {
@@ -331,27 +321,16 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
     bool clearing;
     while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin,
                                        &clearing)) {
-      FloatingPoint truncation_distance = config_.default_truncation_distance;
-
-      const Ray unit_ray = (point_G - origin).normalized();
-
-      const Point ray_end = clearing
-                                ? origin + unit_ray * config_.max_ray_length_m
-                                : point_G + unit_ray * truncation_distance;
-      const Point ray_start = config_.voxel_carving_enabled
-                                  ? origin
-                                  : (point_G - unit_ray * truncation_distance);
-
-      const Point start_scaled = ray_start * voxel_size_inv_;
-      const Point end_scaled = ray_end * voxel_size_inv_;
-
-      IndexVector global_voxel_indices;
-      castRay(start_scaled, end_scaled, &global_voxel_indices);
+      RayCaster ray_caster(origin, point_G, clearing,
+                           config_.voxel_carving_enabled,
+                           config_.max_ray_length_m, voxel_size_inv_,
+                           config_.default_truncation_distance);
 
       BlockIndex last_block_idx = BlockIndex::Zero();
       Block<TsdfVoxel>::Ptr block;
 
-      for (const AnyIndex& global_voxel_idx : global_voxel_indices) {
+      VoxelIndex global_voxel_idx;
+      while (ray_caster.nextRayIndex(&global_voxel_idx)) {
         BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
             global_voxel_idx, voxels_per_side_inv_);
         VoxelIndex local_voxel_idx =
@@ -377,7 +356,8 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
         const float weight = getVoxelWeight(point_C);
 
         updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                        truncation_distance, weight, &tsdf_voxel);
+                        config_.default_truncation_distance, weight,
+                        &tsdf_voxel);
       }
     }
   }
@@ -641,18 +621,10 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
         continue;
       }
 
-      const FloatingPoint truncation_distance =
-          config_.default_truncation_distance;
-
-      const Ray unit_ray = (point_G - origin).normalized();
-
-      const Point ray_end = point_G + unit_ray * truncation_distance;
-      const Point ray_start = config_.voxel_carving_enabled
-                                  ? origin
-                                  : (point_G - unit_ray * truncation_distance);
-
-      RayCaster ray_caster(ray_end * voxel_size_inv_,
-                           ray_start * voxel_size_inv_);
+      RayCaster ray_caster(origin, point_G, clearing,
+                           config_.voxel_carving_enabled,
+                           config_.max_ray_length_m, voxel_size_inv_,
+                           config_.default_truncation_distance, false);
 
       BlockIndex last_block_idx = BlockIndex::Zero();
       Block<TsdfVoxel>::Ptr tsdf_block;
@@ -696,7 +668,8 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
         const float weight = getVoxelWeight(point_C);
 
         updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                        truncation_distance, weight, &tsdf_voxel);
+                        config_.default_truncation_distance, weight,
+                        &tsdf_voxel);
       }
     }
   }

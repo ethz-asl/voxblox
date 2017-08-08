@@ -17,7 +17,50 @@ namespace voxblox {
 // should map to voxel indices.
 class RayCaster {
  public:
+  RayCaster(const Point& origin, const Point& point_G,
+            const bool is_clearing_ray, const bool voxel_carving_enabled,
+            const FloatingPoint max_ray_length_m,
+            const FloatingPoint voxel_size_inv,
+            const FloatingPoint truncation_distance,
+            const bool cast_from_origin = true) {
+    const Ray unit_ray = (point_G - origin).normalized();
+
+    const Point ray_end = is_clearing_ray
+                              ? origin + unit_ray * max_ray_length_m
+                              : point_G + unit_ray * truncation_distance;
+    const Point ray_start = voxel_carving_enabled
+                                ? origin
+                                : (point_G - unit_ray * truncation_distance);
+
+    const Point start_scaled = ray_start * voxel_size_inv;
+    const Point end_scaled = ray_end * voxel_size_inv;
+
+    if (cast_from_origin) {
+      setupRayCaster(start_scaled, end_scaled);
+    } else {
+      setupRayCaster(end_scaled, start_scaled);
+    }
+  }
+
   RayCaster(const Point& start_scaled, const Point& end_scaled) {
+    setupRayCaster(start_scaled, end_scaled);
+  }
+
+  bool nextRayIndex(AnyIndex* ray_index) {
+    DCHECK_NOTNULL(ray_index);
+    *ray_index = curr_index_;
+    bool not_at_end = curr_index_ != end_index_;
+
+    int t_min_idx;
+    t_to_next_boundary_.minCoeff(&t_min_idx);
+    curr_index_[t_min_idx] += ray_step_signs_[t_min_idx];
+    t_to_next_boundary_[t_min_idx] += t_step_size_[t_min_idx];
+
+    return not_at_end;
+  }
+
+ private:
+  void setupRayCaster(const Point& start_scaled, const Point& end_scaled) {
     constexpr FloatingPoint kTolerance = 1e-6;
 
     curr_index_ = getGridIndexFromPoint(start_scaled);
@@ -29,8 +72,8 @@ class RayCaster {
                                signum(ray_scaled.z()));
 
     const AnyIndex corrected_step(std::max(0, ray_step_signs_.x()),
-                            std::max(0, ray_step_signs_.y()),
-                            std::max(0, ray_step_signs_.z()));
+                                  std::max(0, ray_step_signs_.y()),
+                                  std::max(0, ray_step_signs_.z()));
 
     const Point start_scaled_shifted =
         start_scaled - curr_index_.cast<FloatingPoint>();
@@ -51,31 +94,15 @@ class RayCaster {
 
     // Distance to cross one grid cell along the ray in t.
     // Same as absolute inverse value of delta_coord.
-    t_step_size_ = Ray((std::abs(ray_scaled.x()) < kTolerance)
-                         ? 2.0
-                         : ray_step_signs_.x() / ray_scaled.x(),
-                     (std::abs(ray_scaled.y()) < kTolerance)
-                         ? 2.0
-                         : ray_step_signs_.y() / ray_scaled.y(),
-                     (std::abs(ray_scaled.z()) < kTolerance)
-                         ? 2.0
-                         : ray_step_signs_.z() / ray_scaled.z());
+    t_step_size_ = Ray(
+        (std::abs(ray_scaled.x()) < kTolerance) ? 2.0 : ray_step_signs_.x() /
+                                                            ray_scaled.x(),
+        (std::abs(ray_scaled.y()) < kTolerance) ? 2.0 : ray_step_signs_.y() /
+                                                            ray_scaled.y(),
+        (std::abs(ray_scaled.z()) < kTolerance) ? 2.0 : ray_step_signs_.z() /
+                                                            ray_scaled.z());
   }
 
-  bool nextRayIndex(AnyIndex* ray_index) {
-    DCHECK_NOTNULL(ray_index);
-    *ray_index = curr_index_;
-    bool not_at_end = curr_index_ != end_index_;
-
-    int t_min_idx;
-    t_to_next_boundary_.minCoeff(&t_min_idx);
-    curr_index_[t_min_idx] += ray_step_signs_[t_min_idx];
-    t_to_next_boundary_[t_min_idx] += t_step_size_[t_min_idx];
-
-    return not_at_end;
-  }
-
- private:
   Ray t_to_next_boundary_;
   AnyIndex curr_index_;
   AnyIndex end_index_;

@@ -15,7 +15,7 @@
     <param name="use_tf_transforms" value="false" />
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="min_time_between_msgs_sec" value="0.2" />
-    <param name="method" value="simple" />
+    <param name="method" value="fast" />
     <param name="generate_esdf" value="$(arg generate_esdf)" />
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="false" />
