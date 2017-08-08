@@ -75,30 +75,43 @@ class TsdfIntegratorBase {
   class PointGetter {
    public:
     PointGetter(const Transformation& T_G_C, const Pointcloud& points_C,
-                const Colors& colors, const size_t number_of_threads)
+                const Colors& colors, const Config& config)
         : T_G_C_(T_G_C),
           points_C_(points_C),
           colors_(colors),
+          config_(config),
           origin_(T_G_C.getPosition()),
-          number_of_threads_(number_of_threads),
           atomic_idx_(0) {
       DCHECK_EQ(points_C_.size(), colors_.size());
     }
 
     bool getNextPoint(Point* point_C, Point* point_G, Color* color,
-                      Point* origin) {
-      if (points_C_.size() <= atomic_idx_.load()) {
-        return false;
+                      Point* origin, bool* clearing) {
+      while (atomic_idx_.load() < points_C_.size()) {
+        *origin = origin_;
+
+        const size_t pt_idx = getMixedIdx(atomic_idx_.fetch_add(1));
+        *point_C = points_C_[pt_idx];
+        *color = colors_[pt_idx];
+        *point_G = T_G_C_ * *point_C;
+
+        FloatingPoint ray_distance = (*point_G - *origin).norm();
+        if (ray_distance < config_.min_ray_length_m) {
+          continue;
+        } else if (ray_distance > config_.max_ray_length_m) {
+          if (config_.allow_clear) {
+            *clearing = true;
+          } else {
+            continue;
+          }
+        } else {
+          *clearing = false;
+        }
+
+        return true;
       }
 
-      *origin = origin_;
-
-      const size_t pt_idx = getMixedIdx(atomic_idx_.fetch_add(1));
-      *point_C = points_C_[pt_idx];
-      *color = colors_[pt_idx];
-      *point_G = T_G_C_ * *point_C;
-
-      return true;
+      return false;
     }
 
    private:
@@ -107,7 +120,7 @@ class TsdfIntegratorBase {
     // point that is far away from the other threads current points.
     size_t getMixedIdx(size_t base_idx) {
       const size_t number_of_points = points_C_.size();
-      const size_t number_of_groups = number_of_threads_;
+      const size_t number_of_groups = config_.integrator_threads;
       const size_t points_per_group = number_of_points / number_of_groups;
 
       size_t group_num = base_idx % number_of_groups;
@@ -119,21 +132,25 @@ class TsdfIntegratorBase {
     const Transformation& T_G_C_;
     const Pointcloud& points_C_;
     const Colors& colors_;
+    const Config& config_;
     const Point origin_;
-    const size_t number_of_threads_;
     std::atomic<size_t> atomic_idx_;
   };
 
   // Can be used to pre-allocate all the blocks needed by the integrator. This
   // allows thread-safe lockless block map access
-  void allocateBlocks(const Transformation& T_G_C, const Pointcloud& points_C) {
-    const Point& origin = T_G_C.getPosition();
+  void allocateBlocks(const Transformation& T_G_C, const Pointcloud& points_C,
+                      const Colors& colors) {
     IndexSet index_set;
 
-    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
-      const Point& point_C = points_C[pt_idx];
-      const Point point_G = T_G_C * point_C;
+    point_getter_ =
+        std::make_shared<PointGetter>(T_G_C, points_C, colors, config_);
 
+    Point point_C, point_G, origin;
+    Color color;
+    bool clearing;
+    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin,
+                                       &clearing)) {
       // immediately check if the voxel the point is in has already been ray
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex block_idx =
@@ -142,20 +159,14 @@ class TsdfIntegratorBase {
         continue;
       }
 
-      const FloatingPoint ray_distance = (point_G - origin).norm();
-      if (ray_distance < config_.min_ray_length_m) {
-        continue;
-      } else if (ray_distance > config_.max_ray_length_m) {
-        // TODO(helenol): clear until max ray length instead.
-        continue;
-      }
-
       const FloatingPoint truncation_distance =
           config_.default_truncation_distance;
 
       const Ray unit_ray = (point_G - origin).normalized();
 
-      const Point ray_end = point_G + unit_ray * truncation_distance;
+      const Point ray_end = clearing
+                                ? origin + unit_ray * config_.max_ray_length_m
+                                : point_G + unit_ray * truncation_distance;
       const Point ray_start = config_.voxel_carving_enabled
                                   ? origin
                                   : (point_G - unit_ray * truncation_distance);
@@ -292,14 +303,14 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
-    point_getter_ = std::make_shared<PointGetter>(T_G_C, points_C, colors,
-                                                  config_.integrator_threads);
-
     timing::Timer block_timer("block_allocation");
-    allocateBlocks(T_G_C, points_C);
+    allocateBlocks(T_G_C, points_C, colors);
     block_timer.Stop();
 
     timing::Timer integrate_timer("integrate");
+
+    point_getter_ =
+        std::make_shared<PointGetter>(T_G_C, points_C, colors, config_);
 
     std::vector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
@@ -317,20 +328,16 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
   void integrateFunction() {
     Point point_C, point_G, origin;
     Color color;
-    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin)) {
-      FloatingPoint ray_distance = (point_G - origin).norm();
-      if (ray_distance < config_.min_ray_length_m) {
-        continue;
-      } else if (ray_distance > config_.max_ray_length_m) {
-        // TODO(helenol): clear until max ray length instead.
-        continue;
-      }
-
+    bool clearing;
+    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin,
+                                       &clearing)) {
       FloatingPoint truncation_distance = config_.default_truncation_distance;
 
       const Ray unit_ray = (point_G - origin).normalized();
 
-      const Point ray_end = point_G + unit_ray * truncation_distance;
+      const Point ray_end = clearing
+                                ? origin + unit_ray * config_.max_ray_length_m
+                                : point_G + unit_ray * truncation_distance;
       const Point ray_start = config_.voxel_carving_enabled
                                   ? origin
                                   : (point_G - unit_ray * truncation_distance);
@@ -623,20 +630,14 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   void integrateFunction() {
     Point point_C, point_G, origin;
     Color color;
-    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin)) {
+    bool clearing;
+    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin,
+                                       &clearing)) {
       // immediately check if the voxel the point is in has already been ray
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex global_voxel_idx =
           getGridIndexFromPoint(point_G, voxel_sub_sample_ * voxel_size_inv_);
       if (!approx_start_tester_.replaceHash(global_voxel_idx)) {
-        continue;
-      }
-
-      const FloatingPoint ray_distance = (point_G - origin).norm();
-      if (ray_distance < config_.min_ray_length_m) {
-        continue;
-      } else if (ray_distance > config_.max_ray_length_m) {
-        // TODO(helenol): clear until max ray length instead.
         continue;
       }
 
@@ -702,17 +703,17 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
-    point_getter_ = std::make_shared<PointGetter>(T_G_C, points_C, colors,
-                                                  config_.integrator_threads);
-
     timing::Timer block_timer("block_allocation");
-    allocateBlocks(T_G_C, points_C);
+    allocateBlocks(T_G_C, points_C, colors);
     block_timer.Stop();
 
     timing::Timer integrate_timer("integrate");
 
     approx_ray_tester_.resetApproxSet();
     approx_start_tester_.resetApproxSet();
+
+    point_getter_ =
+        std::make_shared<PointGetter>(T_G_C, points_C, colors, config_);
 
     std::vector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
