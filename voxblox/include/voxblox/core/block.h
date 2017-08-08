@@ -134,7 +134,7 @@ class Block {
   inline VoxelWithFlag<VoxelType> getVoxelAndFlagByVoxelIndex(
       const VoxelIndex& index) {
     const size_t linear_index = computeLinearIndexFromVoxelIndex(index);
-    return VoxelWithFlag<VoxelType>(voxels_[&linear_index],
+    return VoxelWithFlag<VoxelType>(&voxels_[linear_index],
                                     &lock_flags_[linear_index]);
   }
 

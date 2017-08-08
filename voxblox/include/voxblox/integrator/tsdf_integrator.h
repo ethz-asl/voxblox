@@ -18,114 +18,12 @@
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
+#include "voxblox/utils/approx_hash_array.h"
 #include "voxblox/utils/timing.h"
 
 #include "voxblox/core/block_hash.h"
 
 namespace voxblox {
-
-// One of the ugliest bits of code I have ever written
-// Why it is crazy ugly:
-// - A very small chance it will return false when it should return true (as
-// reliable as the hash function)
-// - A really decent chance it will return true when it should return false
-// (depends on many factors but 1 in 100 or higher is possible)
-// - Non-deterministic behavior when threaded
-// - Can use hundreds of mb of ram to store a few thousand ints
-// - Just look at the reset function
-//
-// Why you want to use this terrible thing:
-// - Acts as a thread safe completely lockless set that is well over twice as
-// fast as an actual non thread safe set
-// - Speeds up putting a large number of elements that may already exist into an
-// actual set or map. If the false positive rate is acceptable, it can (usually)
-// tell you if an element will already be allocated before you test it.
-//
-// How does it work:
-// - It allocates an array that is 2^unmasked_bits in length. This acts like a
-// hash table that cannot grow and has at most one element per bucket
-// - Computes the hash and only uses the first unmasked_bits bits of it to find
-// the bin.
-// - If the element matches returns true
-// - If it does not it, replaces the value with the hash and returns false.
-template <size_t unmasked_bits>
-class UnreliableAllocTester {
- public:
-  UnreliableAllocTester() {
-    pseudo_set_ptr_.store(
-        &pseudo_set_[reset_counter_.load(std::memory_order_relaxed)]);
-    ++reset_counter_;
-  }
-
-  bool unreliableTryFind(const AnyIndex& index) {
-    size_t hash;
-    return unreliableTryFind(index, &hash);
-  }
-
-  // Almost always returns true if value already inserted
-  // Sometimes returns false if value was not previously inserted
-  bool unreliableTryFind(const AnyIndex& index, size_t* hash) {
-    DCHECK(hash);
-    *hash = hasher_(index);
-    const size_t masked_hash = (*hash) & bit_mask_;
-    if (pseudo_set_ptr_.load(std::memory_order_relaxed)[masked_hash].load(
-            std::memory_order_relaxed) == *hash) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  bool unreliableTryInsert(const AnyIndex& index) {
-    size_t hash;
-    return unreliableTryInsert(index, &hash);
-  }
-
-  // Almost always returns false if value already inserted
-  // Sometimes returns true if value was not previously inserted
-  bool unreliableTryInsert(const AnyIndex& index, size_t* hash) {
-    DCHECK(hash);
-    *hash = hasher_(index);
-    const size_t masked_hash = (*hash) & bit_mask_;
-    if (pseudo_set_ptr_.load(std::memory_order_relaxed)[masked_hash].load(
-            std::memory_order_relaxed) == *hash) {
-      return false;
-    } else {
-      pseudo_set_ptr_.load(std::memory_order_relaxed)[masked_hash].store(
-          *hash, std::memory_order_relaxed);
-      return true;
-    }
-  }
-
-  // Clearing a really, really large array can take a long time. However, we can
-  // get the same effect by offsetting where the index points to. Every now and
-  // then we still need to zero out the memory, this is determined by the
-  // full_reset_threshold.
-  void resetTester() {
-    if (reset_counter_.load(std::memory_order_relaxed) >
-        full_reset_threshold_) {
-      for (std::atomic<size_t>& value : pseudo_set_) {
-        value.store(0, std::memory_order_relaxed);
-      }
-      reset_counter_.store(0, std::memory_order_relaxed);
-    } else {
-      pseudo_set_ptr_.store(
-          &pseudo_set_[reset_counter_.load(std::memory_order_relaxed)]);
-      ++reset_counter_;
-    }
-  }
-
- private:
-  static constexpr size_t full_reset_threshold_ = 100000;
-  static constexpr size_t pseudo_set_size_ =
-      (1 << unmasked_bits) + full_reset_threshold_;
-  static constexpr size_t bit_mask_ = (1 << unmasked_bits) - 1;
-
-  std::atomic<size_t> reset_counter_;
-  std::array<std::atomic<size_t>, pseudo_set_size_> pseudo_set_;
-  std::atomic<std::atomic<size_t>*> pseudo_set_ptr_;
-  BlockIndexHash hasher_;
-};
 
 class TsdfIntegratorBase {
  public:
@@ -177,14 +75,6 @@ class TsdfIntegratorBase {
     const Point& origin = T_G_C.getPosition();
     IndexSet index_set;
 
-    unreliable_ray_tester_.resetTester();
-
-    // we need the queue so we can iterate and insert into the set at the same
-    // time
-    std::queue<AnyIndex,
-               std::deque<AnyIndex, Eigen::aligned_allocator<AnyIndex>>>
-        new_blocks_queue;
-
     for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
       const Point& point_C = points_C[pt_idx];
       const Point point_G = T_G_C * point_C;
@@ -222,28 +112,20 @@ class TsdfIntegratorBase {
         if (!index_set.insert(block_idx).second) {
           break;
         }
-        new_blocks_queue.push(block_idx);
       }
     }
 
     // ray termination strategy will miss some blocks that must be allocated
     // however, all these missed blocks will have neighbors that were not missed
     // so we add all the neighbors as well
-    while (!new_blocks_queue.empty()) {
+    for (const AnyIndex& block_idx : index_set) {
       for (int x = -1; x <= 1; ++x) {
         for (int y = -1; y <= 1; ++y) {
           for (int z = -1; z <= 1; ++z) {
-            AnyIndex block_idx = new_blocks_queue.front() + AnyIndex(x, y, z);
-            index_set.insert(block_idx);
+            layer_->allocateBlockPtrByIndex(block_idx + AnyIndex(x, y, z));
           }
         }
       }
-      new_blocks_queue.pop();
-    }
-
-    // actually allocate blocks
-    for (const AnyIndex& block_idx : index_set) {
-      layer_->allocateBlockPtrByIndex(block_idx);
     }
   }
 
@@ -337,9 +219,6 @@ class TsdfIntegratorBase {
   FloatingPoint voxel_size_inv_;
   FloatingPoint voxels_per_side_inv_;
   FloatingPoint block_size_inv_;
-
-  static constexpr size_t masked_bits_ = 26;  // 8 mb of ram per tester
-  UnreliableAllocTester<masked_bits_> unreliable_ray_tester_;
 };
 
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
@@ -703,7 +582,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex global_voxel_idx =
           getGridIndexFromPoint(point_G, voxel_sub_sample_ * voxel_size_inv_);
-      if (!unreliable_start_tester_.unreliableTryInsert(global_voxel_idx)) {
+      if (!approx_start_tester_.replaceHash(global_voxel_idx)) {
         continue;
       }
 
@@ -734,7 +613,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       size_t consecutive_ray_collisions = 0;
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
         // if all a ray is doing is follow in the path of another, stop casting
-        if (!unreliable_ray_tester_.unreliableTryInsert(global_voxel_idx)) {
+        if (!approx_ray_tester_.replaceHash(global_voxel_idx)) {
           ++consecutive_ray_collisions;
         } else {
           consecutive_ray_collisions = 0;
@@ -788,11 +667,10 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
     timing::Timer integrate_timer("integrate");
 
-    unreliable_ray_tester_.resetTester();
-    unreliable_start_tester_.resetTester();
+    approx_ray_tester_.resetApproxSet();
+    approx_start_tester_.resetApproxSet();
 
     atomic_idx.store(0);
-
     std::vector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,
@@ -810,7 +688,10 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   std::atomic<size_t> atomic_idx;
   static constexpr FloatingPoint voxel_sub_sample_ = 4.0f;
   static constexpr size_t max_consecutive_ray_collisions_ = 8;
-  UnreliableAllocTester<masked_bits_> unreliable_start_tester_;
+  static constexpr size_t masked_bits_ = 26;  // 8 mb of ram per tester
+  static constexpr size_t full_reset_threshold = 10000;
+  ApproxHashSet<masked_bits_, full_reset_threshold> approx_start_tester_;
+  ApproxHashSet<masked_bits_, full_reset_threshold> approx_ray_tester_;
 };
 
 }  // namespace voxblox

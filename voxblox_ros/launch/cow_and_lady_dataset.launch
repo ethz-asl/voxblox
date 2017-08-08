@@ -20,7 +20,7 @@
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="false" />
     <param name="mesh_min_weight" value="0.00000001"/>
-    <param name="truncation_distance" value="0.1" />
+    <param name="truncation_distance" value="0.05" />
     <param name="verbose" value="true" />
     <remap from="transform" to="/kinect/vrpn_client/estimated_transform" />
     <rosparam file="$(find voxblox_ros)/cfg/cow_and_lady.yaml"/>
