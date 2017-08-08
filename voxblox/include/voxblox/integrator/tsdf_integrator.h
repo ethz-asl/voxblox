@@ -69,6 +69,61 @@ class TsdfIntegratorBase {
   const Config& getConfig() const { return config_; }
 
  protected:
+  // thread safe method of getting the next point in a point cloud, also does
+  // the
+  // global transform
+  class PointGetter {
+   public:
+    PointGetter(const Transformation& T_G_C, const Pointcloud& points_C,
+                const Colors& colors, const size_t number_of_threads)
+        : T_G_C_(T_G_C),
+          points_C_(points_C),
+          colors_(colors),
+          origin_(T_G_C.getPosition()),
+          number_of_threads_(number_of_threads),
+          atomic_idx_(0) {
+      DCHECK_EQ(points_C_.size(), colors_.size());
+    }
+
+    bool getNextPoint(Point* point_C, Point* point_G, Color* color,
+                      Point* origin) {
+      if (points_C_.size() <= atomic_idx_.load()) {
+        return false;
+      }
+
+      *origin = origin_;
+
+      const size_t pt_idx = getMixedIdx(atomic_idx_.fetch_add(1));
+      *point_C = points_C_[pt_idx];
+      *color = colors_[pt_idx];
+      *point_G = T_G_C_ * *point_C;
+
+      return true;
+    }
+
+   private:
+    // Mixes up the order rays are given in so that each thread is working with
+    // a
+    // point that is far away from the other threads current points.
+    size_t getMixedIdx(size_t base_idx) {
+      const size_t number_of_points = points_C_.size();
+      const size_t number_of_groups = number_of_threads_;
+      const size_t points_per_group = number_of_points / number_of_groups;
+
+      size_t group_num = base_idx % number_of_groups;
+      size_t position_in_group = base_idx / number_of_groups;
+
+      return group_num * points_per_group + position_in_group;
+    }
+
+    const Transformation& T_G_C_;
+    const Pointcloud& points_C_;
+    const Colors& colors_;
+    const Point origin_;
+    const size_t number_of_threads_;
+    std::atomic<size_t> atomic_idx_;
+  };
+
   // Can be used to pre-allocate all the blocks needed by the integrator. This
   // allows thread-safe lockless block map access
   void allocateBlocks(const Transformation& T_G_C, const Pointcloud& points_C) {
@@ -219,6 +274,9 @@ class TsdfIntegratorBase {
   FloatingPoint voxel_size_inv_;
   FloatingPoint voxels_per_side_inv_;
   FloatingPoint block_size_inv_;
+
+  std::shared_ptr<PointGetter> point_getter_;
+  ApproxHashArray<12, std::mutex> mutexes_;  // 4096 locks
 };
 
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
@@ -548,36 +606,10 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
-  // mixes up the order rays are given in so that each thread is working with a
-  // point that is far away from the other threads current points.
-  size_t getMixedIdx(size_t number_of_points, size_t base_idx) {
-    const size_t number_of_groups = config_.integrator_threads;
-    const size_t points_per_group = number_of_points / number_of_groups;
-
-    if (points_per_group * number_of_groups <= base_idx) {
-      return base_idx;
-    } else {
-      size_t group_num = base_idx % number_of_groups;
-      size_t position_in_group = base_idx / number_of_groups;
-
-      return group_num * points_per_group + position_in_group;
-    }
-  }
-
-  void integrateFunction(const Transformation& T_G_C,
-                         const Pointcloud& points_C, const Colors& colors) {
-    const Point& origin = T_G_C.getPosition();
-
-    size_t pt_idx = getMixedIdx(points_C.size(), atomic_idx.fetch_add(1));
-
-    while (pt_idx < points_C.size()) {
-      const Point& point_C = points_C[pt_idx];
-      const Color& color = colors[pt_idx];
-
-      pt_idx = getMixedIdx(points_C.size(), atomic_idx.fetch_add(1));
-
-      const Point point_G = T_G_C * point_C;
-
+  void integrateFunction() {
+    Point point_C, point_G, origin;
+    Color color;
+    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin)) {
       // immediately check if the voxel the point is in has already been ray
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex global_voxel_idx =
@@ -657,7 +689,8 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
-    DCHECK_EQ(points_C.size(), colors.size());
+    point_getter_ = std::make_shared<PointGetter>(T_G_C, points_C, colors,
+                                                  config_.integrator_threads);
 
     timing::Timer block_timer("block_allocation");
     allocateBlocks(T_G_C, points_C);
@@ -668,11 +701,10 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
     approx_ray_tester_.resetApproxSet();
     approx_start_tester_.resetApproxSet();
 
-    atomic_idx.store(0);
     std::vector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,
-                                       this, T_G_C, points_C, colors);
+                                       this);
     }
 
     for (std::thread& thread : integration_threads) {
@@ -683,14 +715,12 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   }
 
  private:
-  std::atomic<size_t> atomic_idx;
   static constexpr FloatingPoint voxel_sub_sample_ = 4.0f;
   static constexpr size_t max_consecutive_ray_collisions_ = 8;
   static constexpr size_t masked_bits_ = 20;  // 8 mb of ram per tester
   static constexpr size_t full_reset_threshold = 10000;
   ApproxHashSet<masked_bits_, full_reset_threshold> approx_start_tester_;
   ApproxHashSet<masked_bits_, full_reset_threshold> approx_ray_tester_;
-  ApproxHashArray<12, std::mutex> mutexes_;  // 4096 locks
 };
 
 }  // namespace voxblox
