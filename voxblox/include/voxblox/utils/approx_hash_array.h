@@ -1,5 +1,5 @@
-#ifndef UTILS_APPROX_HASH_ARRAY_H_
-#define UTILS_APPROX_HASH_ARRAY_H_
+#ifndef VOXBLOX_UTILS_APPROX_HASH_ARRAY_H_
+#define VOXBLOX_UTILS_APPROX_HASH_ARRAY_H_
 
 #include <atomic>
 #include <limits>
@@ -150,4 +150,4 @@ class ApproxHashSet {
 };
 }  // namespace voxblox
 
-#endif  // UTILS_APPROX_HASH_ARRAY_H_
+#endif  // VOXBLOX_UTILS_APPROX_HASH_ARRAY_H_

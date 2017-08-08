@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef MESH_MESH_INTEGRATOR_H_
-#define MESH_MESH_INTEGRATOR_H_
+#ifndef VOXBLOX_MESH_MESH_INTEGRATOR_H_
+#define VOXBLOX_MESH_MESH_INTEGRATOR_H_
 
 #include <algorithm>
 #include <vector>
@@ -323,4 +323,4 @@ class MeshIntegrator {
 
 }  // namespace voxblox
 
-#endif  // MESH_MESH_INTEGRATOR_H_
+#endif  // VOXBLOX_MESH_MESH_INTEGRATOR_H_

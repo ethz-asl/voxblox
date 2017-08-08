@@ -1,5 +1,5 @@
-#ifndef CORE_BLOCK_H_
-#define CORE_BLOCK_H_
+#ifndef VOXBLOX_CORE_BLOCK_H_
+#define VOXBLOX_CORE_BLOCK_H_
 
 #include <atomic>
 #include <memory>
@@ -195,4 +195,4 @@ class Block {
 
 #include "voxblox/core/block_inl.h"
 
-#endif  // CORE_BLOCK_H_
+#endif  // VOXBLOX_CORE_BLOCK_H_

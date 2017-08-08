@@ -1,5 +1,5 @@
-#ifndef INTEGRATOR_TSDF_INTEGRATOR_H_
-#define INTEGRATOR_TSDF_INTEGRATOR_H_
+#ifndef VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
+#define VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
 
 #include <algorithm>
 #include <atomic>
@@ -645,4 +645,4 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
 }  // namespace voxblox
 
-#endif  // INTEGRATOR_TSDF_INTEGRATOR_H_
+#endif  // VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
