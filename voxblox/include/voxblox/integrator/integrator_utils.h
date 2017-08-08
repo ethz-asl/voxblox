@@ -63,7 +63,8 @@ class RayCaster {
   }
 
   bool nextRayIndex(AnyIndex* ray_index) {
-    *DCHECK_NOTNULL(ray_index) = curr_index_;
+    DCHECK(ray_index != nullptr);
+    *ray_index = curr_index_;
     bool not_at_end = curr_index_ != end_index_;
 
     int t_min_idx;
