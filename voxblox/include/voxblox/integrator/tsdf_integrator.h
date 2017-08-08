@@ -177,7 +177,9 @@ class TsdfIntegratorBase {
       for (int x = -1; x <= 1; ++x) {
         for (int y = -1; y <= 1; ++y) {
           for (int z = -1; z <= 1; ++z) {
-            layer_->allocateBlockPtrByIndex(block_idx + AnyIndex(x, y, z));
+            Block<TsdfVoxel>::Ptr block =
+                layer_->allocateBlockPtrByIndex(block_idx + AnyIndex(x, y, z));
+            block->updated() = true;
           }
         }
       }
@@ -286,16 +288,32 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors) {
-    DCHECK_EQ(points_C.size(), colors.size());
+    point_getter_ = std::make_shared<PointGetter>(T_G_C, points_C, colors,
+                                                  config_.integrator_threads);
+
+    timing::Timer block_timer("block_allocation");
+    allocateBlocks(T_G_C, points_C);
+    block_timer.Stop();
+
     timing::Timer integrate_timer("integrate");
 
-    const Point& origin = T_G_C.getPosition();
+    std::vector<std::thread> integration_threads;
+    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+      integration_threads.emplace_back(&SimpleTsdfIntegrator::integrateFunction,
+                                       this);
+    }
 
-    for (size_t pt_idx = 0; pt_idx < points_C.size(); ++pt_idx) {
-      const Point& point_C = points_C[pt_idx];
-      const Point point_G = T_G_C * point_C;
-      const Color& color = colors[pt_idx];
+    for (std::thread& thread : integration_threads) {
+      thread.join();
+    }
 
+    integrate_timer.Stop();
+  }
+
+  void integrateFunction() {
+    Point point_C, point_G, origin;
+    Color color;
+    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin)) {
       FloatingPoint ray_distance = (point_G - origin).norm();
       if (ray_distance < config_.min_ray_length_m) {
         continue;
@@ -317,11 +335,7 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
       const Point end_scaled = ray_end * voxel_size_inv_;
 
       IndexVector global_voxel_indices;
-      timing::Timer cast_ray_timer("integrate/cast_ray");
       castRay(start_scaled, end_scaled, &global_voxel_indices);
-      cast_ray_timer.Stop();
-
-      timing::Timer update_voxels_timer("integrate/update_voxels");
 
       BlockIndex last_block_idx = BlockIndex::Zero();
       Block<TsdfVoxel>::Ptr block;
@@ -332,19 +346,16 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
         VoxelIndex local_voxel_idx =
             getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
-        if (local_voxel_idx.x() < 0) {
-          local_voxel_idx.x() += voxels_per_side_;
-        }
-        if (local_voxel_idx.y() < 0) {
-          local_voxel_idx.y() += voxels_per_side_;
-        }
-        if (local_voxel_idx.z() < 0) {
-          local_voxel_idx.z() += voxels_per_side_;
-        }
-
         if (!block || block_idx != last_block_idx) {
-          block = layer_->allocateBlockPtrByIndex(block_idx);
-          block->updated() = true;
+          block = layer_->getBlockPtrByIndex(block_idx);
+
+          if (block == nullptr) {
+            ROS_WARN_STREAM(
+                "Block ("
+                << block_idx.transpose()
+                << ") was not pre-allocated, this should never happen");
+            continue;
+          }
           last_block_idx = block_idx;
         }
 
@@ -353,12 +364,12 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
         TsdfVoxel& tsdf_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
 
         const float weight = getVoxelWeight(point_C);
+
+        std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
         updateTsdfVoxel(origin, point_G, voxel_center_G, color,
                         truncation_distance, weight, &tsdf_voxel);
       }
-      update_voxels_timer.Stop();
     }
-    integrate_timer.Stop();
   }
 };
 
