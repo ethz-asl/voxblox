@@ -643,16 +643,14 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
         const Point voxel_center_G =
             tsdf_block->computeCoordinatesFromVoxelIndex(local_voxel_idx);
-        VoxelWithFlag<TsdfVoxel> tsdf_voxel =
-            tsdf_block->getVoxelAndFlagByVoxelIndex(local_voxel_idx);
+        TsdfVoxel& tsdf_voxel =
+            tsdf_block->getVoxelByVoxelIndex(local_voxel_idx);
 
-        if (!tsdf_voxel.flag_.test_and_set()) {
-          const float weight = getVoxelWeight(point_C);
+        const float weight = getVoxelWeight(point_C);
 
-          updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                          truncation_distance, weight, &(tsdf_voxel.voxel_));
-          tsdf_voxel.flag_.clear();
-        }
+        std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
+        updateTsdfVoxel(origin, point_G, voxel_center_G, color,
+                        truncation_distance, weight, &tsdf_voxel);
       }
     }
   }
@@ -688,10 +686,11 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   std::atomic<size_t> atomic_idx;
   static constexpr FloatingPoint voxel_sub_sample_ = 4.0f;
   static constexpr size_t max_consecutive_ray_collisions_ = 8;
-  static constexpr size_t masked_bits_ = 26;  // 8 mb of ram per tester
+  static constexpr size_t masked_bits_ = 20;  // 8 mb of ram per tester
   static constexpr size_t full_reset_threshold = 10000;
   ApproxHashSet<masked_bits_, full_reset_threshold> approx_start_tester_;
   ApproxHashSet<masked_bits_, full_reset_threshold> approx_ray_tester_;
+  ApproxHashArray<12, std::mutex> mutexes_;  // 4096 locks
 };
 
 }  // namespace voxblox

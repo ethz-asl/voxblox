@@ -11,15 +11,6 @@
 namespace voxblox {
 
 template <typename VoxelType>
-struct VoxelWithFlag {
-  VoxelWithFlag(VoxelType* voxel, std::atomic_flag* flag)
-      : voxel_(*voxel), flag_(*flag) {}
-
-  VoxelType& voxel_;
-  std::atomic_flag& flag_;
-};
-
-template <typename VoxelType>
 class Block {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -124,24 +115,6 @@ class Block {
 
   inline VoxelType& getVoxelByCoordinates(const Point& coords) {
     return voxels_[computeLinearIndexFromCoordinates(coords)];
-  }
-
-  inline VoxelWithFlag<VoxelType> getVoxelAndFlagByLinearIndex(size_t index) {
-    DCHECK_LT(index, num_voxels_);
-    return VoxelWithFlag<VoxelType>(&voxels_[index], &lock_flags_[index]);
-  }
-
-  inline VoxelWithFlag<VoxelType> getVoxelAndFlagByVoxelIndex(
-      const VoxelIndex& index) {
-    const size_t linear_index = computeLinearIndexFromVoxelIndex(index);
-    return VoxelWithFlag<VoxelType>(&voxels_[linear_index],
-                                    &lock_flags_[linear_index]);
-  }
-
-  inline VoxelWithFlag<VoxelType> getVoxelAndFlagByCoordinates(
-      const Point& coords) {
-    const size_t index = computeLinearIndexFromCoordinates(index);
-    return VoxelWithFlag<VoxelType>(&voxels_[index], &lock_flags_[index]);
   }
 
   inline bool isValidVoxelIndex(const VoxelIndex& index) const {
