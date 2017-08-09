@@ -352,4 +352,61 @@ void TsdfServer::clear() {
   mesh_layer_->clear();
 }
 
+double TsdfServer::evaluateExplorationGain(
+    const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation,
+    voxblox::CameraModel* camera_model) {
+  CHECK_NOTNULL(camera_model);
+  CHECK(tsdf_map_);
+  CHECK(camera_model->isInitialized());
+  camera_model->setBodyPose(Transformation(orientation, position));
+
+  // Get the boundaries of the current view.
+  Eigen::Vector3d aabb_min, aabb_max;
+  camera_model->getAabb(&aabb_min, &aabb_max);
+
+  const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer =
+      tsdf_map_->getTsdfLayer();
+
+  const double tsdf_voxel_size = tsdf_layer.voxel_size();
+
+  // Since some complete blocks may be unallocated, just do the dumbest possible
+  // thing: iterate over all voxels in the AABB and check if they belong (which
+  // should be quite cheap), then look them up.
+  double gain = 0.0;
+  int checked_voxels = 0;
+  Eigen::Vector3d pos = aabb_min;
+  for (pos.x() = aabb_min.x(); pos.x() < aabb_max.x();
+       pos.x() += tsdf_voxel_size) {
+    for (pos.y() = aabb_min.y(); pos.y() < aabb_max.y();
+         pos.y() += tsdf_voxel_size) {
+      for (pos.z() = aabb_min.z(); pos.z() < aabb_max.z();
+           pos.z() += tsdf_voxel_size) {
+        if (!camera_model->isPointInView(pos)) {
+          continue;
+        }
+        checked_voxels++;
+
+        // Look up the voxel in the TSDF.
+        voxblox::BlockIndex block_index =
+            tsdf_layer.computeBlockIndexFromCoordinates(pos);
+
+        const voxblox::Block<voxblox::TsdfVoxel>::ConstPtr block_ptr =
+            tsdf_layer.getBlockPtrByIndex(block_index);
+        if (block_ptr) {
+          const voxblox::TsdfVoxel& voxel =
+              block_ptr->getVoxelByCoordinates(pos);
+          if (voxel.weight <= 1e-1) {
+            gain++;
+          }
+        } else {
+          gain++;
+        }
+      }
+    }
+  }
+  std::cout << "Checked voxels: " << checked_voxels << " total gain: " << gain
+            << std::endl;
+  return gain;
+}
+
 }  // namespace voxblox

@@ -60,6 +60,8 @@ class CameraModel {
   void getAabb(Eigen::Vector3d* aabb_min, Eigen::Vector3d* aabb_max) const;
   bool isPointInView(const Eigen::Vector3d& point) const;
 
+  bool isInitialized() const { return initialized_; }
+
  private:
   void calculateBoundingPlanes();
 

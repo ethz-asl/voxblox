@@ -9,14 +9,15 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
-#include <string>
 #include <visualization_msgs/MarkerArray.h>
+#include <string>
 
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
+#include <voxblox/utils/camera_model.h>
 
 #include <voxblox_msgs/FilePath.h>
 #include "voxblox_ros/mesh_vis.h"
@@ -27,7 +28,6 @@ namespace voxblox {
 
 class TsdfServer {
  public:
-
   TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   virtual ~TsdfServer() {}
 
@@ -54,6 +54,10 @@ class TsdfServer {
                             std_srvs::Empty::Response& response);    // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
+
+  double evaluateExplorationGain(const Eigen::Vector3d& position,
+                                 const Eigen::Quaterniond& orientation,
+                                 voxblox::CameraModel* camera_model);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
 
