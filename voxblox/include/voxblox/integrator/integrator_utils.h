@@ -1,5 +1,5 @@
-#ifndef INTEGRATOR_INTEGRATOR_UTILS_H_
-#define INTEGRATOR_INTEGRATOR_UTILS_H_
+#ifndef VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
+#define VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
 
 #include <algorithm>
 #include <vector>
@@ -175,4 +175,4 @@ inline void getHierarchicalIndexAlongRay(
 
 }  // namespace voxblox
 
-#endif  // INTEGRATOR_INTEGRATOR_UTILS_H_
+#endif  // VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_

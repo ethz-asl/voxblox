@@ -1,5 +1,5 @@
-#ifndef CORE_LAYER_H_
-#define CORE_LAYER_H_
+#ifndef VOXBLOX_CORE_LAYER_H_
+#define VOXBLOX_CORE_LAYER_H_
 
 #include <glog/logging.h>
 #include <string>
@@ -231,4 +231,4 @@ class Layer {
 
 #include "voxblox/core/layer_inl.h"
 
-#endif  // CORE_LAYER_H_
+#endif  // VOXBLOX_CORE_LAYER_H_
