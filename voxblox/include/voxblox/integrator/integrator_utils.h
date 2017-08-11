@@ -46,17 +46,21 @@ class RayCaster {
     setupRayCaster(start_scaled, end_scaled);
   }
 
+  // returns false if ray terminates at ray_index, true otherwise
   bool nextRayIndex(AnyIndex* ray_index) {
+    if (at_end_) {
+      return false;
+    }
     DCHECK_NOTNULL(ray_index);
     *ray_index = curr_index_;
-    bool not_at_end = curr_index_ != end_index_;
+    at_end_ = curr_index_ == end_index_;
 
     int t_min_idx;
     t_to_next_boundary_.minCoeff(&t_min_idx);
     curr_index_[t_min_idx] += ray_step_signs_[t_min_idx];
     t_to_next_boundary_[t_min_idx] += t_step_size_[t_min_idx];
 
-    return not_at_end;
+    return true;
   }
 
  private:
@@ -65,6 +69,8 @@ class RayCaster {
 
     curr_index_ = getGridIndexFromPoint(start_scaled);
     end_index_ = getGridIndexFromPoint(end_scaled);
+
+    at_end_ = false;
 
     const Ray ray_scaled = end_scaled - start_scaled;
 
@@ -108,6 +114,7 @@ class RayCaster {
   AnyIndex end_index_;
   AnyIndex ray_step_signs_;
   Ray t_step_size_;
+  bool at_end_;
 };
 
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
