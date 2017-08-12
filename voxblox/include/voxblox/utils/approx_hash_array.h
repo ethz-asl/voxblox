@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_UTILS_APPROX_HASH_ARRAY_H_
 #define VOXBLOX_UTILS_APPROX_HASH_ARRAY_H_
 
+#include <array>
 #include <atomic>
 #include <limits>
 #include "voxblox/core/common.h"

@@ -24,6 +24,7 @@
 #define VOXBLOX_MESH_MESH_INTEGRATOR_H_
 
 #include <algorithm>
+#include <thread>
 #include <vector>
 
 #include <glog/logging.h>
@@ -31,6 +32,7 @@
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/interpolator/interpolator.h"
 #include "voxblox/mesh/marching_cubes.h"
 #include "voxblox/mesh/mesh_layer.h"
