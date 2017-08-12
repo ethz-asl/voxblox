@@ -268,14 +268,14 @@ class Cylinder : public Object {
       distance = std::sqrt(
           std::max((point.head<2>() - center_.head<2>()).squaredNorm() -
                        radius_ * radius_,
-                   0.0) +
+                   static_cast<FloatingPoint>(0.0)) +
           (point.z() - max_z_limit) * (point.z() - max_z_limit));
     } else {
       // Case 3: below cylinder.
       distance = std::sqrt(
           std::max((point.head<2>() - center_.head<2>()).squaredNorm() -
                        radius_ * radius_,
-                   0.0) +
+                   static_cast<FloatingPoint>(0.0)) +
           (point.z() - min_z_limit) * (point.z() - min_z_limit));
     }
     return distance;

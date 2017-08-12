@@ -1,618 +1,864 @@
-#ifndef VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
-#define VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
-
-#include <algorithm>
-#include <atomic>
-#include <cmath>
+#include <minkindr_conversions/kindr_msg.h>
+#include <minkindr_conversions/kindr_tf.h>
+#include <minkindr_conversions/kindr_xml.h>
+#include <pcl/conversions.h>
+#include <pcl/filters/filter.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_msgs/PolygonMesh.h>
+#include <pcl_ros/point_cloud.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <std_srvs/Empty.h>
+#include <tf/transform_listener.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <deque>
-#include <limits>
-#include <mutex>
-#include <queue>
-#include <thread>
-#include <utility>
-#include <vector>
 
-#include <glog/logging.h>
-#include <Eigen/Core>
+#include <voxblox/core/esdf_map.h>
+#include <voxblox/core/occupancy_map.h>
+#include <voxblox/core/tsdf_map.h>
+#include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/occupancy_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/io/layer_io.h>
+#include <voxblox/io/mesh_ply.h>
+#include <voxblox/mesh/mesh_integrator.h>
 
-#include "voxblox/core/layer.h"
-#include "voxblox/core/voxel.h"
-#include "voxblox/integrator/integrator_utils.h"
-#include "voxblox/utils/approx_hash_array.h"
-#include "voxblox/utils/timing.h"
-
-#include "voxblox/core/block_hash.h"
+#include <voxblox_msgs/FilePath.h>
+#include "voxblox_ros/mesh_pcl.h"
+#include "voxblox_ros/mesh_vis.h"
+#include "voxblox_ros/ptcloud_vis.h"
 
 namespace voxblox {
 
-class TsdfIntegratorBase {
+class VoxbloxNode {
  public:
-  typedef BlockHashMapType<TsdfVoxel>::type VoxelMap;
+  VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
-  struct Config {
-    float default_truncation_distance = 0.1;
-    float max_weight = 10000.0;
-    bool voxel_carving_enabled = true;
-    FloatingPoint min_ray_length_m = 0.1;
-    FloatingPoint max_ray_length_m = 5.0;
-    bool use_const_weight = false;
-    bool allow_clear = true;
-    bool use_weight_dropoff = true;
-    bool use_sparsity_compensation_factor = false;
-    float sparsity_compensation_factor = 1.0f;
-    size_t integrator_threads = std::thread::hardware_concurrency();
-    // only implemented in the merge integrator
-    bool enable_anti_grazing = false;
-  };
+  void insertPointcloudWithTf(const sensor_msgs::PointCloud2::Ptr& pointcloud);
 
-  TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer)
-      : config_(config), layer_(layer) {
-    DCHECK(layer_);
+  bool lookupTransform(const std::string& from_frame,
+                       const std::string& to_frame, const ros::Time& timestamp,
+                       Transformation* transform);
+  bool lookupTransformTf(const std::string& from_frame,
+                         const std::string& to_frame,
+                         const ros::Time& timestamp, Transformation* transform);
+  bool lookupTransformQueue(const std::string& from_frame,
+                            const std::string& to_frame,
+                            const ros::Time& timestamp,
+                            Transformation* transform);
 
-    voxel_size_ = layer_->voxel_size();
-    block_size_ = layer_->block_size();
-    voxels_per_side_ = layer_->voxels_per_side();
+  void publishAllUpdatedTsdfVoxels();
+  void publishAllUpdatedEsdfVoxels();
+  void publishTsdfSurfacePoints();
+  void publishTsdfOccupiedNodes();
+  void publishOccupancy();
+  void publishSlices();
 
-    voxel_size_inv_ = 1.0 / voxel_size_;
-    block_size_inv_ = 1.0 / block_size_;
-    voxels_per_side_inv_ = 1.0 / voxels_per_side_;
+  void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
 
-    if (config_.integrator_threads == 0) {
-      LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
-      config_.integrator_threads = 1;
-    }
-  }
+  bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
+                            std_srvs::Empty::Response& response);    // NOLINT
+  bool generateEsdfCallback(std_srvs::Empty::Request& request,       // NOLINT
+                            std_srvs::Empty::Response& response);    // NOLINT
+  bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
+                       voxblox_msgs::FilePath::Response& response);  // NOLINT
+  bool loadMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
+                       voxblox_msgs::FilePath::Response& response);  // NOLINT
 
-  virtual void integratePointCloud(const Transformation& T_G_C,
-                                   const Pointcloud& points_C,
-                                   const Colors& colors) = 0;
-
-  // Returns a CONST ref of the config.
-  const Config& getConfig() const { return config_; }
-
- protected:
-  bool isPointValid(const Point& point_C, bool* is_clearing) {
-    const FloatingPoint ray_distance = point_C.norm();
-    if (ray_distance < config_.min_ray_length_m) {
-      return false;
-    } else if (ray_distance > config_.max_ray_length_m) {
-      if (config_.allow_clear) {
-        *is_clearing = true;
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      *is_clearing = false;
-      return true;
-    }
-  }
-
-  inline TsdfVoxel* getVoxel(const VoxelIndex& global_voxel_idx,
-                             Block<TsdfVoxel>::Ptr* block,
-                             BlockIndex* last_block_idx,
-                             VoxelMap* temp_voxel_storage) {
-    BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
-        global_voxel_idx, voxels_per_side_inv_);
-    VoxelIndex local_voxel_idx =
-        getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
-
-    if (block_idx != *last_block_idx) {
-      *block = layer_->getBlockPtrByIndex(block_idx);
-      *last_block_idx = block_idx;
-      if (*block != nullptr) {
-        (*block)->updated() = true;
-      }
-    }
-
-    // If no block at this location currently exists, we allocate a temporary
-    // voxel that will be merged into the map later
-    if (*block == nullptr) {
-      return &((*temp_voxel_storage)[global_voxel_idx]);
-    } else {
-      return &((*block)->getVoxelByVoxelIndex(local_voxel_idx));
-    }
-  }
-
-  void updateLayerWithStoredVoxels(const VoxelMap& temp_voxel_storage) {
-    BlockIndex last_block_idx;
-    Block<TsdfVoxel>::Ptr block = nullptr;
-    for (const std::pair<const VoxelIndex, TsdfVoxel>& temp_voxel :
-         temp_voxel_storage) {
-      BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
-          temp_voxel.first, voxels_per_side_inv_);
-      VoxelIndex local_voxel_idx =
-          getLocalFromGlobalVoxelIndex(temp_voxel.first, voxels_per_side_);
-
-      if ((block_idx != last_block_idx) || (block == nullptr)) {
-        block = layer_->allocateBlockPtrByIndex(block_idx);
-        block->updated() = true;
-      }
-
-      TsdfVoxel& base_voxel = block->getVoxelByVoxelIndex(local_voxel_idx);
-
-      const float new_weight = base_voxel.weight + temp_voxel.second.weight;
-
-      // it is possible that both voxels have weights very close to zero
-      if (new_weight < kFloatEpsilon) {
-        continue;
-      }
-      base_voxel.color = Color::blendTwoColors(
-          base_voxel.color, base_voxel.weight, temp_voxel.second.color,
-          temp_voxel.second.weight);
-      base_voxel.distance =
-          (base_voxel.distance * base_voxel.weight +
-           temp_voxel.second.distance * temp_voxel.second.weight) /
-          new_weight;
-
-      base_voxel.weight = std::min(config_.max_weight, new_weight);
-    }
-  }
-
-  // updates tsdf_voxel. thread safe
-  inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
-                              const Point& voxel_center, const Color& color,
-                              const float truncation_distance,
-                              const float weight, TsdfVoxel* tsdf_voxel) {
-    // Figure out whether the voxel is behind or in front of the surface.
-    // To do this, project the voxel_center onto the ray from origin to point G.
-    // Then check if the the magnitude of the vector is smaller or greater than
-    // the original distance...
-    Point v_voxel_origin = voxel_center - origin;
-    Point v_point_origin = point_G - origin;
-
-    FloatingPoint dist_G = v_point_origin.norm();
-    // projection of a (v_voxel_origin) onto b (v_point_origin)
-    FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
-
-    float sdf = static_cast<float>(dist_G - dist_G_V);
-
-    float updated_weight = weight;
-    // Compute updated weight in case we use weight dropoff. It's easier here
-    // that in getVoxelWeight as here we have the actual SDF for the voxel
-    // already computed.
-    const FloatingPoint dropoff_epsilon = voxel_size_;
-    if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
-      updated_weight = weight * (truncation_distance + sdf) /
-                       (truncation_distance - dropoff_epsilon);
-      updated_weight = std::max(updated_weight, 0.0f);
-    }
-
-    // Compute the updated weight in case we compensate for sparsity. By
-    // multiplicating the weight of occupied areas (|sdf| < truncation distance)
-    // by a factor, we prevent to easily fade out these areas with the free
-    // space parts of other rays which pass through the corresponding voxels.
-    // This can be useful for creating a TSDF map from sparse sensor data (e.g.
-    // visual features from a SLAM system). By default, this option is disabled.
-    if (config_.use_sparsity_compensation_factor) {
-      if (std::abs(sdf) < config_.default_truncation_distance) {
-        updated_weight *= config_.sparsity_compensation_factor;
-      }
-    }
-
-    // Grab and lock the mutex responsible for this voxel
-    std::lock_guard<std::mutex> lock(
-        mutexes_.get(getGridIndexFromPoint(point_G, voxel_size_inv_)));
-
-    const float new_weight = tsdf_voxel->weight + updated_weight;
-    tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
-    const float new_sdf =
-        (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
-        new_weight;
-
-    tsdf_voxel->distance = (new_sdf > 0.0)
-                               ? std::min(truncation_distance, new_sdf)
-                               : std::max(-truncation_distance, new_sdf);
-    tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
-  }
-
-  inline float computeDistance(const Point& origin, const Point& point_G,
-                               const Point& voxel_center) {
-    Point v_voxel_origin = voxel_center - origin;
-    Point v_point_origin = point_G - origin;
-
-    FloatingPoint dist_G = v_point_origin.norm();
-    // projection of a (v_voxel_origin) onto b (v_point_origin)
-    FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
-
-    float sdf = static_cast<float>(dist_G - dist_G_V);
-    return sdf;
-  }
-
-  inline float getVoxelWeight(const Point& point_C) const {
-    if (config_.use_const_weight) {
-      return 1.0f;
-    }
-    FloatingPoint dist_z = std::abs(point_C.z());
-    if (dist_z > kEpsilon) {
-      return 1.0f / (dist_z * dist_z);
-    }
-    return 0.0f;
-  }
-
-  Config config_;
-
-  Layer<TsdfVoxel>* layer_;
-
-  // Cached map config.
-  FloatingPoint voxel_size_;
-  size_t voxels_per_side_;
-  FloatingPoint block_size_;
-
-  // Derived types.
-  FloatingPoint voxel_size_inv_;
-  FloatingPoint voxels_per_side_inv_;
-  FloatingPoint block_size_inv_;
-
-  ApproxHashArray<12, std::mutex> mutexes_;  // 4096 locks
-};
-
-class SimpleTsdfIntegrator : public TsdfIntegratorBase {
- public:
-  SimpleTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
-      : TsdfIntegratorBase(config, layer) {}
-
-  void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors) {
-    std::vector<VoxelMap> temp_voxel_storage(config_.integrator_threads);
-
-    timing::Timer integrate_timer("integrate");
-
-    ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
-
-    std::vector<std::thread> integration_threads;
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
-      integration_threads.emplace_back(&SimpleTsdfIntegrator::integrateFunction,
-                                       this, T_G_C, points_C, colors,
-                                       &index_getter, &(temp_voxel_storage[i]));
-    }
-
-    for (std::thread& thread : integration_threads) {
-      thread.join();
-    }
-    integrate_timer.Stop();
-
-    timing::Timer insertion_timer("inserting_missed_voxels");
-    for (const VoxelMap& temp_voxels : temp_voxel_storage) {
-      updateLayerWithStoredVoxels(temp_voxels);
-    }
-    insertion_timer.Stop();
-  }
-
-  void integrateFunction(const Transformation& T_G_C,
-                         const Pointcloud& points_C, const Colors& colors,
-                         ThreadSafeIndex* index_getter,
-                         VoxelMap* temp_voxel_storage) {
-    size_t point_idx;
-    while (index_getter->getNextIndex(&point_idx)) {
-      const Point& point_C = points_C[point_idx];
-      const Color& color = colors[point_idx];
-      bool is_clearing;
-      if (!isPointValid(point_C, &is_clearing)) {
-        continue;
-      }
-
-      const Point origin = T_G_C.getPosition();
-      const Point point_G = T_G_C * point_C;
-
-      RayCaster ray_caster(origin, point_G, is_clearing,
-                           config_.voxel_carving_enabled,
-                           config_.max_ray_length_m, voxel_size_inv_,
-                           config_.default_truncation_distance);
-
-      BlockIndex last_block_idx = BlockIndex::Zero();
-      Block<TsdfVoxel>::Ptr block;
-      VoxelIndex global_voxel_idx;
-      while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx,
-                                    temp_voxel_storage);
-        if (voxel != nullptr) {
-          const float weight = getVoxelWeight(point_C);
-          const Point voxel_center_G =
-              getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
-
-          updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                          config_.default_truncation_distance, weight, voxel);
-        }
-      }
-    }
-  }
-};
-
-class MergedTsdfIntegrator : public TsdfIntegratorBase {
- public:
-  MergedTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
-      : TsdfIntegratorBase(config, layer) {}
-
-  void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors) {
-    timing::Timer integrate_timer("integrate");
-
-    // Pre-compute a list of unique voxels to end on.
-    // Create a hashmap: VOXEL INDEX -> index in original cloud.
-    BlockHashMapType<std::vector<size_t>>::type voxel_map;
-    // This is a hash map (same as above) to all the indices that need to be
-    // cleared.
-    BlockHashMapType<std::vector<size_t>>::type clear_map;
-
-    ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
-
-    bundleRays(T_G_C, points_C, colors, &index_getter, &voxel_map, &clear_map);
-
-    integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, false,
-                  voxel_map, clear_map);
-
-    timing::Timer clear_timer("integrate/clear");
-
-    integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, true,
-                  voxel_map, clear_map);
-
-    clear_timer.Stop();
-
-    integrate_timer.Stop();
-  }
+  void updateMeshEvent(const ros::TimerEvent& e);
 
  private:
-  inline void bundleRays(
-      const Transformation& T_G_C, const Pointcloud& points_C,
-      const Colors& colors, ThreadSafeIndex* index_getter,
-      BlockHashMapType<std::vector<size_t>>::type* voxel_map,
-      BlockHashMapType<std::vector<size_t>>::type* clear_map) {
-    size_t point_idx;
-    while (index_getter->getNextIndex(&point_idx)) {
-      const Point& point_C = points_C[point_idx];
-      bool is_clearing;
-      if (!isPointValid(point_C, &is_clearing)) {
-        continue;
-      }
+  ros::NodeHandle nh_;
+  ros::NodeHandle nh_private_;
 
-      const Point point_G = T_G_C * point_C;
+  bool verbose_;
 
-      VoxelIndex voxel_index = getGridIndexFromPoint(point_G, voxel_size_inv_);
+  // This is a debug option, more or less...
+  bool color_ptcloud_by_weight_;
 
-      if (is_clearing) {
-        (*clear_map)[voxel_index].push_back(point_idx);
-      } else {
-        (*voxel_map)[voxel_index].push_back(point_idx);
-      }
-    }
+  // Which maps to generate.
+  bool generate_esdf_;
+  bool generate_occupancy_;
 
-    LOG(INFO) << "Went from " << points_C.size() << " points to "
-              << voxel_map->size() << " raycasts  and " << clear_map->size()
-              << " clear rays.";
-  }
+  // What output information to publish
+  bool publish_tsdf_info_;
+  bool publish_slices_;
 
-  void integrateVoxel(
-      const Transformation& T_G_C, const Pointcloud& points_C,
-      const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const std::pair<AnyIndex, std::vector<size_t>>& kv,
-      const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-      VoxelMap* temp_voxel_storage) {
-    if (kv.second.empty()) {
-      return;
-    }
+  bool output_mesh_as_pointcloud_;
+  bool output_mesh_as_pcl_mesh_;
 
-    const Point& origin = T_G_C.getPosition();
-    Color merged_color;
-    Point merged_point_C = Point::Zero();
-    FloatingPoint merged_weight = 0.0;
+  // Global/map coordinate frame. Will always look up TF transforms to this
+  // frame.
+  std::string world_frame_;
+  // If set, overwrite sensor frame with this value. If empty, unused.
+  std::string sensor_frame_;
+  // Whether to use TF transform resolution (true) or fixed transforms from
+  // parameters and transform topics (false).
+  bool use_tf_transforms_;
+  int64_t timestamp_tolerance_ns_;
+  // B is the body frame of the robot, C is the camera/sensor frame creating
+  // the pointclouds, and D is the 'dynamic' frame; i.e., incoming messages
+  // are assumed to be T_G_D.
+  Transformation T_B_C_;
+  Transformation T_B_D_;
 
-    for (const size_t pt_idx : kv.second) {
-      const Point& point_C = points_C[pt_idx];
-      const Color& color = colors[pt_idx];
+  // Pointcloud visualization settings.
+  double slice_level_;
 
-      float point_weight = getVoxelWeight(point_C);
-      merged_point_C =
-          (merged_point_C * merged_weight + point_C * point_weight) /
-          (merged_weight + point_weight);
-      merged_color = Color::blendTwoColors(merged_color, merged_weight, color,
-                                           point_weight);
-      merged_weight += point_weight;
+  // Mesh output settings. Mesh is only written to file if mesh_filename_ is
+  // not empty.
+  std::string mesh_filename_;
+  // How to color the mesh.
+  ColorMode color_mode_;
 
-      // only take first point when clearing
-      if (clearing_ray) {
-        break;
-      }
-    }
+  // Keep track of these for throttling.
+  ros::Duration min_time_between_msgs_;
+  ros::Time last_msg_time_;
 
-    const Point merged_point_G = T_G_C * merged_point_C;
+  // To be replaced (at least optionally) with odometry + static transform
+  // from IMU to visual frame.
+  tf::TransformListener tf_listener_;
 
-    RayCaster ray_caster(origin, merged_point_G, clearing_ray,
-                         config_.voxel_carving_enabled,
-                         config_.max_ray_length_m, voxel_size_inv_,
-                         config_.default_truncation_distance, false);
+  // Data subscribers.
+  ros::Subscriber pointcloud_sub_;
+  // Only used if use_tf_transforms_ set to false.
+  ros::Subscriber transform_sub_;
 
-    BlockIndex last_block_idx = BlockIndex::Zero();
-    Block<TsdfVoxel>::Ptr block;
+  // Publish markers for visualization.
+  ros::Publisher mesh_pub_;
+  ros::Publisher mesh_pointcloud_pub_;
+  ros::Publisher mesh_pcl_mesh_pub_;
+  ros::Publisher tsdf_pointcloud_pub_;
+  ros::Publisher esdf_pointcloud_pub_;
+  ros::Publisher surface_pointcloud_pub_;
+  ros::Publisher occupancy_marker_pub_;
+  ros::Publisher occupancy_layer_pub_;
+  ros::Publisher tsdf_slice_pub_;
+  ros::Publisher esdf_slice_pub_;
 
-    VoxelIndex global_voxel_idx;
-    while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-      if (enable_anti_grazing) {
-        // Check if this one is already the the block hash map for this
-        // insertion. Skip this to avoid grazing.
-        if ((clearing_ray || global_voxel_idx != kv.first) &&
-            voxel_map.find(global_voxel_idx) != voxel_map.end()) {
-          continue;
-        }
-      }
+  // Services.
+  ros::ServiceServer generate_mesh_srv_;
+  ros::ServiceServer generate_esdf_srv_;
+  ros::ServiceServer save_map_srv_;
+  ros::ServiceServer load_map_srv_;
 
-      TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx,
-                                  temp_voxel_storage);
-      if (voxel != nullptr) {
-        const Point voxel_center_G =
-            getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+  // Timers.
+  ros::Timer update_mesh_timer_;
 
-        updateTsdfVoxel(origin, merged_point_G, voxel_center_G, merged_color,
-                        config_.default_truncation_distance, merged_weight,
-                        voxel);
-      }
-    }
-  }
+  // Maps and integrators.
+  std::shared_ptr<TsdfMap> tsdf_map_;
+  std::shared_ptr<TsdfIntegratorBase> tsdf_integrator_;
+  // ESDF maps (optional).
+  std::shared_ptr<EsdfMap> esdf_map_;
+  std::shared_ptr<EsdfIntegrator> esdf_integrator_;
+  // Occupancy maps (optional).
+  std::shared_ptr<OccupancyMap> occupancy_map_;
+  std::shared_ptr<OccupancyIntegrator> occupancy_integrator_;
+  // Mesh accessories.
+  std::shared_ptr<MeshLayer> mesh_layer_;
+  std::shared_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
 
-  void integrateVoxels(
-      const Transformation& T_G_C, const Pointcloud& points_C,
-      const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-      const BlockHashMapType<std::vector<size_t>>::type& clear_map, size_t tid,
-      VoxelMap* temp_voxel_storage) {
-    BlockHashMapType<std::vector<size_t>>::type::const_iterator it;
-    size_t map_size;
-    if (clearing_ray) {
-      it = clear_map.begin();
-      map_size = clear_map.size();
-    } else {
-      it = voxel_map.begin();
-      map_size = voxel_map.size();
-    }
-
-    for (size_t i = 0; i < map_size; ++i) {
-      if (((i + tid + 1) % config_.integrator_threads) == 0) {
-        integrateVoxel(T_G_C, points_C, colors, enable_anti_grazing,
-                       clearing_ray, *it, voxel_map, temp_voxel_storage);
-      }
-      ++it;
-    }
-  }
-
-  void integrateRays(
-      const Transformation& T_G_C, const Pointcloud& points_C,
-      const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-      const BlockHashMapType<std::vector<size_t>>::type& clear_map) {
-    const Point& origin = T_G_C.getPosition();
-
-    std::vector<VoxelMap> temp_voxel_storage(config_.integrator_threads);
-
-    // if only 1 thread just do function call, otherwise spawn threads
-    if (config_.integrator_threads == 1) {
-      integrateVoxels(T_G_C, points_C, colors, enable_anti_grazing,
-                      clearing_ray, voxel_map, clear_map, 0,
-                      &(temp_voxel_storage[0]));
-    } else {
-      std::vector<std::thread> integration_threads;
-      for (size_t i = 0; i < config_.integrator_threads; ++i) {
-        integration_threads.emplace_back(
-            &MergedTsdfIntegrator::integrateVoxels, this, T_G_C, points_C,
-            colors, enable_anti_grazing, clearing_ray, voxel_map, clear_map, i,
-            &(temp_voxel_storage[i]));
-      }
-
-      for (std::thread& thread : integration_threads) {
-        thread.join();
-      }
-    }
-
-    timing::Timer insertion_timer("inserting_missed_voxels");
-    for (const VoxelMap& temp_voxels : temp_voxel_storage) {
-      updateLayerWithStoredVoxels(temp_voxels);
-    }
-    insertion_timer.Stop();
-  }
+  // Transform queue, used only when use_tf_transforms is false.
+  std::deque<geometry_msgs::TransformStamped> transform_queue_;
 };
 
-class FastTsdfIntegrator : public TsdfIntegratorBase {
- public:
-  FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
-      : TsdfIntegratorBase(config, layer) {}
+VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
+                         const ros::NodeHandle& nh_private)
+    : nh_(nh),
+      nh_private_(nh_private),
+      verbose_(true),
+      color_ptcloud_by_weight_(false),
+      generate_esdf_(false),
+      generate_occupancy_(false),
+      publish_tsdf_info_(false),
+      publish_slices_(false),
+      output_mesh_as_pointcloud_(false),
+      output_mesh_as_pcl_mesh_(false),
+      world_frame_("world"),
+      sensor_frame_(""),
+      use_tf_transforms_(true),
+      // 10 ms here:
+      timestamp_tolerance_ns_(10000000),
+      slice_level_(0.5) {
+  // Before subscribing, determine minimum time between messages.
+  // 0 by default.
+  double min_time_between_msgs_sec = 0.0;
+  nh_private_.param("min_time_between_msgs_sec", min_time_between_msgs_sec,
+                    min_time_between_msgs_sec);
+  min_time_between_msgs_.fromSec(min_time_between_msgs_sec);
 
-  void integrateFunction(const Transformation& T_G_C,
-                         const Pointcloud& points_C, const Colors& colors,
-                         ThreadSafeIndex* index_getter,
-                         VoxelMap* temp_voxel_storage) {
-    size_t point_idx;
-    while (index_getter->getNextIndex(&point_idx)) {
-      const Point& point_C = points_C[point_idx];
-      const Color& color = colors[point_idx];
-      bool is_clearing;
-      if (!isPointValid(point_C, &is_clearing)) {
-        continue;
-      }
+  // Determine which parts to generate.
+  nh_private_.param("generate_esdf", generate_esdf_, generate_esdf_);
+  nh_private_.param("output_mesh_as_pointcloud", output_mesh_as_pointcloud_,
+                    output_mesh_as_pointcloud_);
+  nh_private_.param("output_mesh_as_pcl_mesh", output_mesh_as_pcl_mesh_,
+                    output_mesh_as_pcl_mesh_);
+  nh_private_.param("slice_level", slice_level_, slice_level_);
+  nh_private_.param("world_frame", world_frame_, world_frame_);
+  nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
+  nh_private_.param("publish_tsdf_info", publish_tsdf_info_,
+                    publish_tsdf_info_);
+  nh_private_.param("publish_slices", publish_slices_, publish_slices_);
 
-      const Point origin = T_G_C.getPosition();
-      const Point point_G = T_G_C * point_C;
-      // immediately check if the voxel the point is in has already been ray
-      // traced (saves time setting up ray tracer for already used points)
-      AnyIndex global_voxel_idx =
-          getGridIndexFromPoint(point_G, voxel_sub_sample_ * voxel_size_inv_);
-      if (!approx_start_tester_.replaceHash(global_voxel_idx)) {
-        continue;
-      }
+  // Advertise topics.
+  mesh_pub_ =
+      nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
 
-      RayCaster ray_caster(origin, point_G, is_clearing,
-                           config_.voxel_carving_enabled,
-                           config_.max_ray_length_m, voxel_size_inv_,
-                           config_.default_truncation_distance, false);
+  if (publish_tsdf_info_) {
+    surface_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
+            "surface_pointcloud", 1, true);
+    tsdf_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+            "tsdf_pointcloud", 1, true);
+    occupancy_marker_pub_ =
+        nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
+                                                               1, true);
+  }
 
-      BlockIndex last_block_idx = BlockIndex::Zero();
-      Block<TsdfVoxel>::Ptr block;
+  if (output_mesh_as_pointcloud_) {
+    mesh_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
+            "mesh_pointcloud", 1, true);
+  }
 
-      size_t consecutive_ray_collisions = 0;
-      while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        // if all a ray is doing is follow in the path of another, stop casting
-        if (!approx_ray_tester_.replaceHash(global_voxel_idx)) {
-          ++consecutive_ray_collisions;
-        } else {
-          consecutive_ray_collisions = 0;
-        }
-        if (consecutive_ray_collisions > max_consecutive_ray_collisions_) {
-          break;
-        }
+  if (output_mesh_as_pcl_mesh_) {
+    mesh_pcl_mesh_pub_ =
+        nh_private_.advertise<pcl_msgs::PolygonMesh>("pcl_mesh", 1, true);
+  }
 
-        TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx,
-                                    temp_voxel_storage);
-        if (voxel != nullptr) {
-          const float weight = getVoxelWeight(point_C);
-          const Point voxel_center_G =
-              getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+  if (publish_slices_) {
+    tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+        "tsdf_slice", 1, true);
 
-          updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                          config_.default_truncation_distance, weight, voxel);
-        }
-      }
+    if (generate_esdf_) {
+      esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+          "esdf_slice", 1, true);
     }
   }
 
-  void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors) {
-    std::vector<VoxelMap> temp_voxel_storage(config_.integrator_threads);
-
-    timing::Timer integrate_timer("integrate");
-
-    approx_ray_tester_.resetApproxSet();
-    approx_start_tester_.resetApproxSet();
-
-    ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
-
-    std::vector<std::thread> integration_threads;
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
-      integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,
-                                       this, T_G_C, points_C, colors,
-                                       &index_getter, &(temp_voxel_storage[i]));
-    }
-
-    for (std::thread& thread : integration_threads) {
-      thread.join();
-    }
-
-    integrate_timer.Stop();
-
-    timing::Timer insertion_timer("inserting_missed_voxels");
-    for (const VoxelMap& temp_voxels : temp_voxel_storage) {
-      updateLayerWithStoredVoxels(temp_voxels);
-    }
-    insertion_timer.Stop();
+  if (generate_esdf_) {
+    esdf_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+            "esdf_pointcloud", 1, true);
   }
 
- private:
-  static constexpr FloatingPoint voxel_sub_sample_ = 2.0f;
-  static constexpr size_t max_consecutive_ray_collisions_ = 4;
-  static constexpr size_t masked_bits_ = 20;  // 8 mb of ram per tester
-  static constexpr size_t full_reset_threshold = 10000;
-  ApproxHashSet<masked_bits_, full_reset_threshold> approx_start_tester_;
-  ApproxHashSet<masked_bits_, full_reset_threshold> approx_ray_tester_;
-};
+  if (generate_occupancy_) {
+    occupancy_layer_pub_ =
+        nh_private_.advertise<visualization_msgs::MarkerArray>(
+            "occupancy_layer", 1, true);
+  }
+
+  int pointcloud_queue_size = 1;
+  nh_private_.param("pointcloud_queue_size", pointcloud_queue_size,
+                    pointcloud_queue_size);
+
+  pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size,
+                                  &VoxbloxNode::insertPointcloudWithTf, this);
+
+  nh_private_.param("verbose", verbose_, verbose_);
+  nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
+                    color_ptcloud_by_weight_);
+
+  // Determine map parameters.
+  TsdfMap::Config config;
+
+  // Workaround for OS X on mac mini not having specializations for float
+  // for some reason.
+  double voxel_size = config.tsdf_voxel_size;
+  int voxels_per_side = config.tsdf_voxels_per_side;
+  nh_private_.param("tsdf_voxel_size", voxel_size, voxel_size);
+  nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
+  config.tsdf_voxel_size = static_cast<FloatingPoint>(voxel_size);
+  config.tsdf_voxels_per_side = voxels_per_side;
+  tsdf_map_.reset(new TsdfMap(config));
+
+  // Determine integrator parameters.
+  TsdfIntegratorBase::Config integrator_config;
+  integrator_config.voxel_carving_enabled = true;
+  // Used to be * 4 according to Marius's experience, was changed to *2
+  // This should be made bigger again if behind-surface weighting is improved.
+  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 2;
+
+  double truncation_distance = integrator_config.default_truncation_distance;
+  double max_weight = integrator_config.max_weight;
+  nh_private_.param("voxel_carving_enabled",
+                    integrator_config.voxel_carving_enabled,
+                    integrator_config.voxel_carving_enabled);
+  nh_private_.param("truncation_distance", truncation_distance,
+                    truncation_distance);
+  nh_private_.param("max_ray_length_m", integrator_config.max_ray_length_m,
+                    integrator_config.max_ray_length_m);
+  nh_private_.param("min_ray_length_m", integrator_config.min_ray_length_m,
+                    integrator_config.min_ray_length_m);
+  nh_private_.param("max_weight", max_weight, max_weight);
+  nh_private_.param("use_const_weight", integrator_config.use_const_weight,
+                    integrator_config.use_const_weight);
+  nh_private_.param("allow_clear", integrator_config.allow_clear,
+                    integrator_config.allow_clear);
+  integrator_config.default_truncation_distance =
+      static_cast<float>(truncation_distance);
+  integrator_config.max_weight = static_cast<float>(max_weight);
+
+  std::string method("merged");
+  nh_private_.param("method", method, method);
+  if (method.compare("simple") == 0) {
+    tsdf_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("merged") == 0) {
+    integrator_config.enable_anti_grazing = false;
+    tsdf_integrator_.reset(new MergedTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("merged_discard") == 0) {
+    integrator_config.enable_anti_grazing = true;
+    tsdf_integrator_.reset(new MergedTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("fast") == 0) {
+    tsdf_integrator_.reset(new FastTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else {
+    tsdf_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  }
+
+  // ESDF settings.
+  if (generate_esdf_) {
+    EsdfMap::Config esdf_config;
+    // TODO(helenol): add possibility for different ESDF map sizes.
+    esdf_config.esdf_voxel_size = config.tsdf_voxel_size;
+    esdf_config.esdf_voxels_per_side = config.tsdf_voxels_per_side;
+
+    esdf_map_.reset(new EsdfMap(esdf_config));
+
+    EsdfIntegrator::Config esdf_integrator_config;
+    // Make sure that this is the same as the truncation distance OR SMALLER!
+    esdf_integrator_config.min_distance_m =
+        integrator_config.default_truncation_distance;
+    nh_private_.param("esdf_max_distance_m",
+                      esdf_integrator_config.max_distance_m,
+                      esdf_integrator_config.max_distance_m);
+    nh_private_.param("esdf_default_distance_m",
+                      esdf_integrator_config.default_distance_m,
+                      esdf_integrator_config.default_distance_m);
+
+    esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
+                                              tsdf_map_->getTsdfLayerPtr(),
+                                              esdf_map_->getEsdfLayerPtr()));
+  }
+
+  // Occupancy settings.
+  if (generate_occupancy_) {
+    OccupancyMap::Config occupancy_config;
+    // TODO(helenol): add possibility for different ESDF map sizes.
+    occupancy_config.occupancy_voxel_size = config.tsdf_voxel_size;
+    occupancy_config.occupancy_voxels_per_side = config.tsdf_voxels_per_side;
+    occupancy_map_.reset(new OccupancyMap(occupancy_config));
+
+    OccupancyIntegrator::Config occupancy_integrator_config;
+    occupancy_integrator_.reset(new OccupancyIntegrator(
+        occupancy_integrator_config, occupancy_map_->getOccupancyLayerPtr()));
+  }
+
+  // Mesh settings.
+  nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
+  std::string color_mode("color");
+  nh_private_.param("color_mode", color_mode, color_mode);
+  if (color_mode == "color" || color_mode == "colors") {
+    color_mode_ = ColorMode::kColor;
+  } else if (color_mode == "height") {
+    color_mode_ = ColorMode::kHeight;
+  } else if (color_mode == "normals") {
+    color_mode_ = ColorMode::kNormals;
+  } else if (color_mode == "lambert") {
+    color_mode_ = ColorMode::kLambert;
+  } else {  // Default case is gray.
+    color_mode_ = ColorMode::kGray;
+  }
+
+  MeshIntegrator<TsdfVoxel>::Config mesh_config;
+  nh_private_.param("mesh_min_weight", mesh_config.min_weight,
+                    mesh_config.min_weight);
+
+  mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
+
+  mesh_integrator_.reset(new MeshIntegrator<TsdfVoxel>(
+      mesh_config, tsdf_map_->getTsdfLayerPtr(), mesh_layer_.get()));
+
+  // Advertise services.
+  generate_mesh_srv_ = nh_private_.advertiseService(
+      "generate_mesh", &VoxbloxNode::generateMeshCallback, this);
+  if (generate_esdf_) {
+    generate_esdf_srv_ = nh_private_.advertiseService(
+        "generate_esdf", &VoxbloxNode::generateEsdfCallback, this);
+  }
+  save_map_srv_ = nh_private_.advertiseService(
+      "save_map", &VoxbloxNode::saveMapCallback, this);
+  load_map_srv_ = nh_private_.advertiseService(
+      "load_map", &VoxbloxNode::loadMapCallback, this);
+
+  // If set, use a timer to progressively integrate the mesh.
+  double update_mesh_every_n_sec = 0.0;
+  nh_private_.param("update_mesh_every_n_sec", update_mesh_every_n_sec,
+                    update_mesh_every_n_sec);
+
+  if (update_mesh_every_n_sec > 0.0) {
+    update_mesh_timer_ =
+        nh_private_.createTimer(ros::Duration(update_mesh_every_n_sec),
+                                &VoxbloxNode::updateMeshEvent, this);
+  }
+
+  // Transform settings.
+  nh_private_.param("use_tf_transforms", use_tf_transforms_,
+                    use_tf_transforms_);
+  // If we use topic transforms, we have 2 parts: a dynamic transform from a
+  // topic and a static transform from parameters.
+  // Static transform should be T_G_D (where D is whatever sensor the
+  // dynamic coordinate frame is in) and the static should be T_D_C (where
+  // C is the sensor frame that produces the depth data). It is possible to
+  // specific T_C_D and set invert_static_tranform to true.
+  if (!use_tf_transforms_) {
+    transform_sub_ =
+        nh_.subscribe("transform", 40, &VoxbloxNode::transformCallback, this);
+    // Retrieve T_D_C from params.
+    XmlRpc::XmlRpcValue T_B_D_xml;
+    // TODO(helenol): split out into a function to avoid duplication.
+    if (nh_private_.getParam("T_B_D", T_B_D_xml)) {
+      kindr::minimal::xmlRpcToKindr(T_B_D_xml, &T_B_D_);
+
+      // See if we need to invert it.
+      bool invert_static_tranform = false;
+      nh_private_.param("invert_T_B_D", invert_static_tranform,
+                        invert_static_tranform);
+      if (invert_static_tranform) {
+        T_B_D_ = T_B_D_.inverse();
+      }
+    }
+    XmlRpc::XmlRpcValue T_B_C_xml;
+    if (nh_private_.getParam("T_B_C", T_B_C_xml)) {
+      kindr::minimal::xmlRpcToKindr(T_B_C_xml, &T_B_C_);
+
+      // See if we need to invert it.
+      bool invert_static_tranform = false;
+      nh_private_.param("invert_T_B_C", invert_static_tranform,
+                        invert_static_tranform);
+      if (invert_static_tranform) {
+        T_B_C_ = T_B_C_.inverse();
+      }
+    }
+
+    ROS_INFO_STREAM("Static transforms loaded from file.\nT_B_D:\n"
+                    << T_B_D_ << "\nT_B_C:" << T_B_C_);
+  }
+
+  ros::spinOnce();
+}
+
+void VoxbloxNode::insertPointcloudWithTf(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+  // Figure out if we should insert this.
+  if (pointcloud_msg->header.stamp - last_msg_time_ < min_time_between_msgs_) {
+    return;
+  }
+  last_msg_time_ = pointcloud_msg->header.stamp;
+
+  // Look up transform from sensor frame to world frame.
+  Transformation T_G_C;
+  if (lookupTransform(pointcloud_msg->header.frame_id, world_frame_,
+                      pointcloud_msg->header.stamp, &T_G_C)) {
+    // Convert the PCL pointcloud into our awesome format.
+    // TODO(helenol): improve...
+    // Horrible hack fix to fix color parsing colors in PCL.
+    for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
+      if (pointcloud_msg->fields[d].name == std::string("rgb")) {
+        pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
+      }
+    }
+
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+    // pointcloud_pcl is modified below:
+    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+
+    timing::Timer ptcloud_timer("ptcloud_preprocess");
+
+    // Filter out NaNs. :|
+    std::vector<int> indices;
+    pcl::removeNaNFromPointCloud(pointcloud_pcl, pointcloud_pcl, indices);
+
+    Pointcloud points_C;
+    Colors colors;
+    points_C.reserve(pointcloud_pcl.size());
+    colors.reserve(pointcloud_pcl.size());
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
+          !std::isfinite(pointcloud_pcl.points[i].y) ||
+          !std::isfinite(pointcloud_pcl.points[i].z)) {
+        continue;
+      }
+
+      points_C.push_back(Point(pointcloud_pcl.points[i].x,
+                               pointcloud_pcl.points[i].y,
+                               pointcloud_pcl.points[i].z));
+      colors.push_back(
+          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
+                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+    }
+
+    ptcloud_timer.Stop();
+
+    if (verbose_) {
+      ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
+    }
+    ros::WallTime start = ros::WallTime::now();
+
+    tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
+
+    if (generate_occupancy_) {
+      occupancy_integrator_->integratePointCloud(T_G_C, points_C);
+    }
+    ros::WallTime end = ros::WallTime::now();
+    if (verbose_) {
+      ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
+               (end - start).toSec(),
+               tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
+      if (generate_occupancy_) {
+        ROS_INFO("Occupancy: %lu blocks.",
+                 occupancy_map_->getOccupancyLayerPtr()
+                     ->getNumberOfAllocatedBlocks());
+      }
+    }
+
+    if (publish_tsdf_info_) {
+      publishAllUpdatedTsdfVoxels();
+      publishTsdfSurfacePoints();
+      publishTsdfOccupiedNodes();
+    }
+    if (generate_occupancy_) {
+      publishOccupancy();
+    }
+    if (publish_slices_) {
+      publishSlices();
+    }
+
+    if (verbose_) {
+      ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
+      ROS_INFO_STREAM(
+          "Layer memory: " << tsdf_map_->getTsdfLayer().getMemorySize());
+    }
+  }
+}
+
+void VoxbloxNode::transformCallback(
+    const geometry_msgs::TransformStamped& transform_msg) {
+  transform_queue_.push_back(transform_msg);
+}
+
+void VoxbloxNode::publishAllUpdatedTsdfVoxels() {
+  DCHECK(tsdf_map_) << "TSDF map not allocated.";
+  // Create a pointcloud with distance = intensity.
+  pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+  createDistancePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(), &pointcloud);
+
+  pointcloud.header.frame_id = world_frame_;
+  tsdf_pointcloud_pub_.publish(pointcloud);
+}
+
+void VoxbloxNode::publishAllUpdatedEsdfVoxels() {
+  DCHECK(esdf_map_) << "ESDF map not allocated.";
+
+  // Create a pointcloud with distance = intensity.
+  pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+  createDistancePointcloudFromEsdfLayer(esdf_map_->getEsdfLayer(), &pointcloud);
+
+  pointcloud.header.frame_id = world_frame_;
+  esdf_pointcloud_pub_.publish(pointcloud);
+}
+
+void VoxbloxNode::publishTsdfSurfacePoints() {
+  DCHECK(tsdf_map_) << "TSDF map not allocated.";
+
+  // Create a pointcloud with distance = intensity.
+  pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+  const float surface_distance_thresh =
+      tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
+  createSurfacePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(),
+                                       surface_distance_thresh, &pointcloud);
+
+  pointcloud.header.frame_id = world_frame_;
+  surface_pointcloud_pub_.publish(pointcloud);
+}
+
+void VoxbloxNode::publishTsdfOccupiedNodes() {
+  DCHECK(tsdf_map_) << "TSDF map not allocated.";
+
+  // Create a pointcloud with distance = intensity.
+  visualization_msgs::MarkerArray marker_array;
+  createOccupancyBlocksFromTsdfLayer(tsdf_map_->getTsdfLayer(), world_frame_,
+                                     &marker_array);
+  occupancy_marker_pub_.publish(marker_array);
+}
+
+void VoxbloxNode::publishOccupancy() {
+  DCHECK(occupancy_map_) << "Occupancy map not allocated.";
+
+  // Create a pointcloud with distance = intensity.
+  visualization_msgs::MarkerArray marker_array;
+  createOccupancyBlocksFromOccupancyLayer(
+      *occupancy_map_->getOccupancyLayerPtr(), world_frame_, &marker_array);
+  occupancy_layer_pub_.publish(marker_array);
+}
+
+void VoxbloxNode::publishSlices() {
+  if (tsdf_map_) {
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+    createDistancePointcloudFromTsdfLayerSlice(tsdf_map_->getTsdfLayer(), 2,
+                                               slice_level_, &pointcloud);
+
+    pointcloud.header.frame_id = world_frame_;
+    tsdf_slice_pub_.publish(pointcloud);
+  }
+  if (esdf_map_) {
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+    createDistancePointcloudFromEsdfLayerSlice(esdf_map_->getEsdfLayer(), 2,
+                                               slice_level_, &pointcloud);
+
+    pointcloud.header.frame_id = world_frame_;
+    esdf_slice_pub_.publish(pointcloud);
+  }
+}
+
+bool VoxbloxNode::lookupTransform(const std::string& from_frame,
+                                  const std::string& to_frame,
+                                  const ros::Time& timestamp,
+                                  Transformation* transform) {
+  if (use_tf_transforms_) {
+    return lookupTransformTf(from_frame, to_frame, timestamp, transform);
+  } else {
+    return lookupTransformQueue(from_frame, to_frame, timestamp, transform);
+  }
+}
+
+// Stolen from octomap_manager
+bool VoxbloxNode::lookupTransformTf(const std::string& from_frame,
+                                    const std::string& to_frame,
+                                    const ros::Time& timestamp,
+                                    Transformation* transform) {
+  tf::StampedTransform tf_transform;
+  ros::Time time_to_lookup = timestamp;
+
+  // Allow overwriting the TF frame for the sensor.
+  std::string from_frame_modified = from_frame;
+  if (!sensor_frame_.empty()) {
+    from_frame_modified = sensor_frame_;
+  }
+
+  // If this transform isn't possible at the time, then try to just look up
+  // the latest (this is to work with bag files and static transform
+  // publisher, etc).
+  if (!tf_listener_.canTransform(to_frame, from_frame_modified,
+                                 time_to_lookup)) {
+    time_to_lookup = ros::Time(0);
+    ROS_WARN("Using latest TF transform instead of timestamp match.");
+  }
+
+  try {
+    tf_listener_.lookupTransform(to_frame, from_frame_modified, time_to_lookup,
+                                 tf_transform);
+  } catch (tf::TransformException& ex) {  // NOLINT
+    ROS_ERROR_STREAM(
+        "Error getting TF transform from sensor data: " << ex.what());
+    return false;
+  }
+
+  tf::transformTFToKindr(tf_transform, transform);
+  return true;
+}
+
+bool VoxbloxNode::lookupTransformQueue(const std::string& from_frame,
+                                       const std::string& to_frame,
+                                       const ros::Time& timestamp,
+                                       Transformation* transform) {
+  // Try to match the transforms in the queue.
+  bool match_found = false;
+  std::deque<geometry_msgs::TransformStamped>::iterator it =
+      transform_queue_.begin();
+  for (; it != transform_queue_.end(); ++it) {
+    // If the current transform is newer than the requested timestamp, we need
+    // to break.
+    if (it->header.stamp > timestamp) {
+      if ((it->header.stamp - timestamp).toNSec() < timestamp_tolerance_ns_) {
+        match_found = true;
+      }
+      break;
+    }
+
+    if ((timestamp - it->header.stamp).toNSec() < timestamp_tolerance_ns_) {
+      match_found = true;
+      break;
+    }
+  }
+
+  if (match_found) {
+    Transformation T_G_D;
+    tf::transformMsgToKindr(it->transform, &T_G_D);
+
+    // If we have a static transform, apply it too.
+    // Transform should actually be T_G_C. So need to take it through the full
+    // chain.
+    *transform = T_G_D * T_B_D_.inverse() * T_B_C_;
+
+    // And also clear the queue up to this point. This leaves the current
+    // message in place.
+    transform_queue_.erase(transform_queue_.begin(), it);
+  } else {
+    ROS_WARN_STREAM_THROTTLE(
+        30, "No match found for transform timestamp: " << timestamp);
+    if (!transform_queue_.empty()) {
+      ROS_WARN_STREAM_THROTTLE(
+          30,
+          "Queue front: " << transform_queue_.front().header.stamp
+                          << " back: " << transform_queue_.back().header.stamp);
+    }
+  }
+  return match_found;
+}
+
+bool VoxbloxNode::generateMeshCallback(
+    std_srvs::Empty::Request& request,
+    std_srvs::Empty::Response& response) {  // NOLINT
+  timing::Timer generate_mesh_timer("mesh/generate");
+  const bool clear_mesh = true;
+  if (clear_mesh) {
+    mesh_integrator_->generateWholeMesh();
+  } else {
+    const bool clear_updated_flag = true;
+    mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+  }
+  generate_mesh_timer.Stop();
+
+  timing::Timer publish_mesh_timer("mesh/publish");
+  visualization_msgs::MarkerArray marker_array;
+  marker_array.markers.resize(1);
+  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
+  marker_array.markers[0].header.frame_id = world_frame_;
+  mesh_pub_.publish(marker_array);
+
+  if (output_mesh_as_pointcloud_) {
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+    fillPointcloudWithMesh(mesh_layer_, color_mode_, &pointcloud);
+    pointcloud.header.frame_id = world_frame_;
+    mesh_pointcloud_pub_.publish(pointcloud);
+  }
+  publish_mesh_timer.Stop();
+
+  if (output_mesh_as_pcl_mesh_) {
+    pcl::PolygonMesh polygon_mesh;
+    toPCLPolygonMesh(*mesh_layer_, world_frame_, &polygon_mesh);
+    pcl_msgs::PolygonMesh mesh_msg;
+    pcl_conversions::fromPCL(polygon_mesh, mesh_msg);
+    mesh_msg.header.stamp = ros::Time::now();
+    mesh_pcl_mesh_pub_.publish(mesh_msg);
+  }
+
+  if (!mesh_filename_.empty()) {
+    timing::Timer output_mesh_timer("mesh/output");
+    bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
+    output_mesh_timer.Stop();
+    if (success) {
+      ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
+    } else {
+      ROS_INFO("Failed to output mesh as PLY: %s", mesh_filename_.c_str());
+    }
+  }
+
+  ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
+  return true;
+}
+
+bool VoxbloxNode::generateEsdfCallback(
+    std_srvs::Empty::Request& request,
+    std_srvs::Empty::Response& response) {  // NOLINT
+  if (!generate_esdf_) {
+    return false;
+  }
+  const bool clear_esdf = true;
+  if (clear_esdf) {
+    esdf_integrator_->updateFromTsdfLayerBatch();
+  } else {
+    const bool clear_updated_flag = true;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
+  }
+  publishAllUpdatedEsdfVoxels();
+  publishSlices();
+  return true;
+}
+
+bool VoxbloxNode::saveMapCallback(
+    voxblox_msgs::FilePath::Request& request,
+    voxblox_msgs::FilePath::Response& response) {  // NOLINT
+  // Will only save TSDF layer for now.
+  return io::SaveLayer(tsdf_map_->getTsdfLayer(), request.file_path);
+}
+
+bool VoxbloxNode::loadMapCallback(
+    voxblox_msgs::FilePath::Request& request,
+    voxblox_msgs::FilePath::Response& response) {  // NOLINT
+  // Will only load TSDF layer for now.
+  return io::LoadBlocksFromFile(
+      request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
+      tsdf_map_->getTsdfLayerPtr());
+}
+
+void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
+  if (verbose_) {
+    ROS_INFO("Updating mesh.");
+  }
+  // TODO(helenol): also update the ESDF layer each time you update the mesh.
+  if (generate_esdf_) {
+    const bool clear_updated_flag_esdf = false;
+    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+    publishAllUpdatedEsdfVoxels();
+  }
+
+  timing::Timer generate_mesh_timer("mesh/update");
+  const bool clear_updated_flag = true;
+  mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+  generate_mesh_timer.Stop();
+
+  // TODO(helenol): also think about how to update markers incrementally?
+  timing::Timer publish_mesh_timer("mesh/publish");
+  visualization_msgs::MarkerArray marker_array;
+  marker_array.markers.resize(1);
+  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
+  marker_array.markers[0].header.frame_id = world_frame_;
+  mesh_pub_.publish(marker_array);
+
+  if (output_mesh_as_pointcloud_) {
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+    fillPointcloudWithMesh(mesh_layer_, color_mode_, &pointcloud);
+    pointcloud.header.frame_id = world_frame_;
+    mesh_pointcloud_pub_.publish(pointcloud);
+  }
+
+  publish_mesh_timer.Stop();
+}
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_TSDF_INTEGRATOR_H_
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "voxblox_node");
+  google::InitGoogleLogging(argv[0]);
+  google::ParseCommandLineFlags(&argc, &argv, false);
+  google::InstallFailureSignalHandler();
+  ros::NodeHandle nh;
+  ros::NodeHandle nh_private("~");
+
+  voxblox::VoxbloxNode node(nh, nh_private);
+
+  ros::spin();
+  return 0;
+}

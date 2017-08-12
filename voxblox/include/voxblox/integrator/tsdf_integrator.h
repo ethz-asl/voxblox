@@ -151,9 +151,15 @@ class TsdfIntegratorBase {
       if (new_weight < kFloatEpsilon) {
         continue;
       }
-      base_voxel.color = Color::blendTwoColors(
-          base_voxel.color, base_voxel.weight, temp_voxel.second.color,
-          temp_voxel.second.weight);
+
+      // color blending is expensive only do it close to the surface
+      if (std::abs(temp_voxel.second.distance) <
+          config_.default_truncation_distance) {
+        base_voxel.color = Color::blendTwoColors(
+            base_voxel.color, base_voxel.weight, temp_voxel.second.color,
+            temp_voxel.second.weight);
+      }
+
       base_voxel.distance =
           (base_voxel.distance * base_voxel.weight +
            temp_voxel.second.distance * temp_voxel.second.weight) /
@@ -166,7 +172,6 @@ class TsdfIntegratorBase {
   // Updates tsdf_voxel. Thread safe.
   inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
                               const Point& voxel_center, const Color& color,
-                              const float truncation_distance,
                               const float weight, TsdfVoxel* tsdf_voxel) {
     // Figure out whether the voxel is behind or in front of the surface.
     // To do this, project the voxel_center onto the ray from origin to point G.
@@ -187,8 +192,8 @@ class TsdfIntegratorBase {
     // already computed.
     const FloatingPoint dropoff_epsilon = voxel_size_;
     if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
-      updated_weight = weight * (truncation_distance + sdf) /
-                       (truncation_distance - dropoff_epsilon);
+      updated_weight = weight * (config_.default_truncation_distance + sdf) /
+                       (config_.default_truncation_distance - dropoff_epsilon);
       updated_weight = std::max(updated_weight, 0.0f);
     }
 
@@ -209,15 +214,20 @@ class TsdfIntegratorBase {
         mutexes_.get(getGridIndexFromPoint(point_G, voxel_size_inv_)));
 
     const float new_weight = tsdf_voxel->weight + updated_weight;
-    tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
     const float new_sdf =
         (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
         new_weight;
 
-    tsdf_voxel->distance = (new_sdf > 0.0)
-                               ? std::min(truncation_distance, new_sdf)
-                               : std::max(-truncation_distance, new_sdf);
+    // color blending is expensive only do it close to the surface
+    if (std::abs(sdf) < config_.default_truncation_distance) {
+      tsdf_voxel->color = Color::blendTwoColors(
+          tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+    }
+
+    tsdf_voxel->distance =
+        (new_sdf > 0.0)
+            ? std::min(config_.default_truncation_distance, new_sdf)
+            : std::max(-config_.default_truncation_distance, new_sdf);
     tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
   }
 
@@ -319,16 +329,14 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
       VoxelIndex global_voxel_idx;
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(global_voxel_idx,
-                                    temp_voxel_storage);
-        if (voxel != nullptr) {
-          const float weight = getVoxelWeight(point_C);
-          const Point voxel_center_G =
-              getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+        TsdfVoxel* voxel =
+            findOrTempAllocateVoxelPtr(global_voxel_idx, temp_voxel_storage);
 
-          updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                          config_.default_truncation_distance, weight, voxel);
-        }
+        const float weight = getVoxelWeight(point_C);
+        const Point voxel_center_G =
+            getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+
+        updateTsdfVoxel(origin, point_G, voxel_center_G, color, weight, voxel);
       }
     }
   }
@@ -451,16 +459,13 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
         }
       }
 
-      TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(global_voxel_idx,
-                                  temp_voxel_storage);
-      if (voxel != nullptr) {
-        const Point voxel_center_G =
-            getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+      TsdfVoxel* voxel =
+          findOrTempAllocateVoxelPtr(global_voxel_idx, temp_voxel_storage);
+      const Point voxel_center_G =
+          getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
-        updateTsdfVoxel(origin, merged_point_G, voxel_center_G, merged_color,
-                        config_.default_truncation_distance, merged_weight,
-                        voxel);
-      }
+      updateTsdfVoxel(origin, merged_point_G, voxel_center_G, merged_color,
+                      merged_weight, voxel);
     }
   }
 
@@ -562,6 +567,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
       Block<TsdfVoxel>::Ptr block;
 
       size_t consecutive_ray_collisions = 0;
+
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
         // if all a ray is doing is follow in the path of another, stop casting
         if (!approx_ray_tester_.replaceHash(global_voxel_idx)) {
@@ -573,16 +579,14 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
           break;
         }
 
-        TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(global_voxel_idx,
-                                    temp_voxel_storage);
-        if (voxel != nullptr) {
-          const float weight = getVoxelWeight(point_C);
-          const Point voxel_center_G =
-              getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+        TsdfVoxel* voxel =
+            findOrTempAllocateVoxelPtr(global_voxel_idx, temp_voxel_storage);
 
-          updateTsdfVoxel(origin, point_G, voxel_center_G, color,
-                          config_.default_truncation_distance, weight, voxel);
-        }
+        const float weight = getVoxelWeight(point_C);
+        const Point voxel_center_G =
+            getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+
+        updateTsdfVoxel(origin, point_G, voxel_center_G, color, weight, voxel);
       }
     }
   }
@@ -620,7 +624,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
  private:
   static constexpr FloatingPoint voxel_sub_sample_ = 2.0f;
-  static constexpr size_t max_consecutive_ray_collisions_ = 4;
+  static constexpr size_t max_consecutive_ray_collisions_ = 8;
   static constexpr size_t masked_bits_ = 20;  // 8 mb of ram per tester
   static constexpr size_t full_reset_threshold = 10000;
   ApproxHashSet<masked_bits_, full_reset_threshold> approx_start_tester_;
