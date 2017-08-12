@@ -51,7 +51,7 @@ class RayCaster {
     if (at_end_) {
       return false;
     }
-    DCHECK_NOTNULL(ray_index);
+    DCHECK(ray_index != nullptr);
     *ray_index = curr_index_;
     at_end_ = curr_index_ == end_index_;
 

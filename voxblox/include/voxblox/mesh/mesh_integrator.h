@@ -170,7 +170,7 @@ class MeshIntegrator {
 
     // If the distance to the surface is greater than the length of two voxels,
     // the mesh will be empty.
-    if ((2 * block.voxel_size()) <=
+    if ((2.0 * block.voxel_size()) <=
         std::abs(block.getVoxelByVoxelIndex(index).distance)) {
       return;
     }
@@ -206,7 +206,7 @@ class MeshIntegrator {
 
     // If the distance to the surface is greater than the length of two voxels,
     // the mesh will be empty.
-    if ((2 * block.voxel_size()) <=
+    if ((2.0 * block.voxel_size()) <=
         std::abs(block.getVoxelByVoxelIndex(index).distance)) {
       return;
     }
@@ -286,7 +286,7 @@ class MeshIntegrator {
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
-        if (((2 * block.voxel_size()) > std::abs(voxel.distance)) &&
+        if (((2.0 * block.voxel_size()) > std::abs(voxel.distance)) &&
             (voxel.weight >= config_.min_weight)) {
           mesh->colors[i] = voxel.color;
         }

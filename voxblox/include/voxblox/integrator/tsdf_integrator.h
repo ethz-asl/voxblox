@@ -91,7 +91,7 @@ class TsdfIntegratorBase {
         const Point& point_C = points_C_[*point_idx];
         *point_G = T_G_C_ * point_C;
 
-        FloatingPoint ray_distance = (*point_G - origin_).norm();
+        const FloatingPoint ray_distance = (*point_G - origin_).norm();
         if (ray_distance < config_.min_ray_length_m) {
           continue;
         } else if (ray_distance > config_.max_ray_length_m) {
@@ -127,15 +127,14 @@ class TsdfIntegratorBase {
 
    private:
     // Mixes up the order rays are given in so that each thread is working with
-    // a
-    // point that is far away from the other threads current points.
+    // a point that is far away from the other threads current points.
     size_t getMixedIdx(size_t base_idx) {
       const size_t number_of_points = points_C_.size();
       const size_t number_of_groups = config_.integrator_threads;
       const size_t points_per_group = number_of_points / number_of_groups;
 
-      size_t group_num = base_idx % number_of_groups;
-      size_t position_in_group = base_idx / number_of_groups;
+      const size_t group_num = base_idx % number_of_groups;
+      const size_t position_in_group = base_idx / number_of_groups;
 
       return group_num * points_per_group + position_in_group;
     }
