@@ -1,8 +1,7 @@
-#include <eigen-checks/entrypoint.h>
-#include <eigen-checks/gtest.h>
 #include <gtest/gtest.h>
 #include <random>
 
+#include "voxblox/core/block_hash.h"
 #include "voxblox/core/common.h"
 #include "voxblox/utils/approx_hash_array.h"
 
@@ -27,7 +26,7 @@ TEST_F(ApproxHashArrayTest, InsertValues) {
   }
 }
 
-TEST_F(ApproxHashArray, ArrayRandomWriteRead) {
+TEST_F(ApproxHashArrayTest, ArrayRandomWriteRead) {
   // storing 65536 size_ts
   ApproxHashArray<16, size_t> approx_hash_array;
 
@@ -59,7 +58,7 @@ TEST_F(ApproxHashArray, ArrayRandomWriteRead) {
   EXPECT_GT(recovered, 950);
 }
 
-TEST_F(ApproxHashArray, SetRandomWriteRead) {
+TEST_F(ApproxHashArrayTest, SetRandomWriteRead) {
   // storing 65536 size_ts
   ApproxHashSet<16, 10> approx_hash_set;
 
@@ -73,34 +72,35 @@ TEST_F(ApproxHashArray, SetRandomWriteRead) {
 
   // test insert and clearing
   for (size_t i = 0; i < 50; ++i) {
-    approx_hash_array.resetApproxSet()
+    approx_hash_set.resetApproxSet();
 
-        // insert their values
-        int inserted;
+    // insert their values
+    int inserted = 0;
     for (const AnyIndex& rand_index : rand_indexes) {
-      if (approx_hash_array.replaceHash(rand_index)) {
+      if (approx_hash_set.replaceHash(rand_index)) {
         ++inserted;
       }
     }
     // require at least a 95% success rate
-    EXPECT_GT(recovered, 950);
+    EXPECT_GT(inserted, 950);
 
     // insert a second time
-    int inserted = 0;
+    inserted = 0;
     for (const AnyIndex& rand_index : rand_indexes) {
-      if (approx_hash_array.replaceHash(rand_index)) {
+      if (approx_hash_set.replaceHash(rand_index)) {
         ++inserted;
       }
     }
     // require at least a 95% failure rate
-    EXPECT_LT(recovered, 50);
+    EXPECT_LT(inserted, 50);
   }
 
   // find out how many we can recover
   int recovered = 0;
   for (const AnyIndex& rand_index : rand_indexes) {
+    AnyIndexHash hasher;
     size_t hash = hasher(rand_index);
-    if (approx_hash_array.isHashCurrentlyPresent(hash)) {
+    if (approx_hash_set.isHashCurrentlyPresent(hash)) {
       ++recovered;
     }
   }
