@@ -17,14 +17,14 @@
 // - Highly inefficient use of memory (allocates 2^N elements)
 // - Cannot discern between two different elements with the same hash
 // - If the hash of two elements have the same first N elements of their hash,
-// only one can be store.
+// only one can be stored.
 
 namespace voxblox {
 
 // Basic container, give in an index and get the element that was stored there.
 // There are 2^unmasked_bits_ elements in the container, which element is
 // returned depends on your hashing function.
-// Uses at least 2^unmaksed_bits * sizeof(StoreElement) bytes of ram
+// Uses at least 2^unmasked_bits * sizeof(StoreElement) bytes of ram
 template <size_t unmasked_bits_, typename StoredElement>
 class ApproxHashArray {
  public:
@@ -58,7 +58,7 @@ class ApproxHashArray {
 // A false negative occurs if an element was removed to add another element with
 // the same masked hash. The chance of this happening is inversely proportional
 // to 2^unmasked_bits_.
-// Uses at least (2^unmaksed_bits + full_reset_threshold) * sizeof(StoreElement)
+// Uses at least (2^unmasked_bits + full_reset_threshold) * sizeof(StoreElement)
 // bytes of ram.
 // Note that the reset function is not thread safe.
 template <size_t unmasked_bits_, size_t full_reset_threshold_>

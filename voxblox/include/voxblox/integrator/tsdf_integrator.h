@@ -158,8 +158,8 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-      const BlockHashMapType<std::vector<size_t>>::type& clear_map, size_t tid,
-      VoxelMap* temp_voxel_storage);
+      const BlockHashMapType<std::vector<size_t>>::type& clear_map,
+      size_t thread_idx, VoxelMap* temp_voxel_storage);
 
   void integrateRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
@@ -198,12 +198,12 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   // Voxel start locations are added to this set before ray casting. The ray
   // casting only occurs if no ray has been cast from this location for this
   // scan.
-  ApproxHashSet<masked_bits_, full_reset_threshold> approx_start_tester_;
+  ApproxHashSet<masked_bits_, full_reset_threshold> start_voxel_approx_set_;
   // This set records which voxels a scans rays have passed through. If a ray
   // moves through max_consecutive_ray_collisions voxels in a row that have
   // already been seen this scan, it is deemed to be adding no new information
   // and the casting stops.
-  ApproxHashSet<masked_bits_, full_reset_threshold> approx_ray_tester_;
+  ApproxHashSet<masked_bits_, full_reset_threshold> voxel_observed_approx_set_;
 };
 
 }  // namespace voxblox

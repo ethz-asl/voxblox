@@ -398,8 +398,8 @@ void MergedTsdfIntegrator::integrateVoxels(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
     const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-    const BlockHashMapType<std::vector<size_t>>::type& clear_map, size_t tid,
-    VoxelMap* temp_voxel_storage) {
+    const BlockHashMapType<std::vector<size_t>>::type& clear_map,
+    size_t thread_idx, VoxelMap* temp_voxel_storage) {
   DCHECK(temp_voxel_storage != nullptr);
 
   BlockHashMapType<std::vector<size_t>>::type::const_iterator it;
@@ -413,7 +413,7 @@ void MergedTsdfIntegrator::integrateVoxels(
   }
 
   for (size_t i = 0; i < map_size; ++i) {
-    if (((i + tid + 1) % config_.integrator_threads) == 0) {
+    if (((i + thread_idx + 1) % config_.integrator_threads) == 0) {
       integrateVoxel(T_G_C, points_C, colors, enable_anti_grazing, clearing_ray,
                      *it, voxel_map, temp_voxel_storage);
     }
@@ -474,11 +474,14 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 
     const Point origin = T_G_C.getPosition();
     const Point point_G = T_G_C * point_C;
-    // immediately check if the voxel the point is in has already been ray
-    // traced (saves time setting up ray tracer for already used points)
+    // Checks to see if another ray in this scan has already started 'close' to
+    // this location. If it has then we skip ray casting this point. We measure
+    // if a start location is 'close' to another points by inserting the point
+    // into a set of voxels. This voxel set has a resolution
+    // start_voxel_subsampling_factor times higher then the voxel size.
     AnyIndex global_voxel_idx = getGridIndexFromPoint(
         point_G, config_.start_voxel_subsampling_factor * voxel_size_inv_);
-    if (!approx_start_tester_.replaceHash(global_voxel_idx)) {
+    if (!start_voxel_approx_set_.replaceHash(global_voxel_idx)) {
       continue;
     }
 
@@ -491,8 +494,11 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     size_t consecutive_ray_collisions = 0;
 
     while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-      // if all a ray is doing is follow in the path of another, stop casting
-      if (!approx_ray_tester_.replaceHash(global_voxel_idx)) {
+      // Check if the current voxel has been seen by any ray cast this scan. If
+      // it has increment the consecutive_ray_collisions counter, otherwise
+      // reset it. If the counter reaches a threshold we stop casting as the ray
+      // is deemed to be contributing too little new information.
+      if (!voxel_observed_approx_set_.replaceHash(global_voxel_idx)) {
         ++consecutive_ray_collisions;
       } else {
         consecutive_ray_collisions = 0;
@@ -520,8 +526,8 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 
   timing::Timer integrate_timer("integrate");
 
-  approx_ray_tester_.resetApproxSet();
-  approx_start_tester_.resetApproxSet();
+  start_voxel_approx_set_.resetApproxSet();
+  voxel_observed_approx_set_.resetApproxSet();
 
   ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
 
