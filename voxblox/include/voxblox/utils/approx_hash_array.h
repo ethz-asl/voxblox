@@ -48,7 +48,7 @@ class ApproxHashArray {
   static constexpr size_t bit_mask_ = (1 << unmasked_bits_) - 1;
 
   std::array<StoredElement, pseudo_map_size_> pseudo_map_;
-  BlockIndexHash hasher_;
+  AnyIndexHash hasher_;
 };
 
 // Acts as a fast and thread safe set, with the serious limitation of both
@@ -146,7 +146,7 @@ class ApproxHashSet {
   size_t reset_counter_;
   std::array<std::atomic<size_t>, pseudo_set_size_> pseudo_set_;
   std::atomic<size_t>* pseudo_set_ptr_;
-  BlockIndexHash hasher_;
+  AnyIndexHash hasher_;
 };
 }  // namespace voxblox
 

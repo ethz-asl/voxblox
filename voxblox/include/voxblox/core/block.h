@@ -149,9 +149,9 @@ class Block {
   FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
-  bool updated() const { return updated_; }
+  const bool updated() const { return updated_; }
 
-  bool& updated() { return updated_; }
+  std::atomic<bool>& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
   // Serialization.
@@ -188,7 +188,7 @@ class Block {
   FloatingPoint block_size_inv_;
 
   // Is set to true when data is updated.
-  bool updated_;
+  std::atomic<bool> updated_;
 };
 
 }  // namespace voxblox

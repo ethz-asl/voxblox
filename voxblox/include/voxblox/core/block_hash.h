@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <utility>
 
 #include <Eigen/Core>
 
@@ -10,12 +11,12 @@
 
 namespace voxblox {
 
-struct BlockIndexHash {
+struct AnyIndexHash {
   static constexpr size_t prime1 = 73856093;
   static constexpr size_t prime2 = 19349663;
   static constexpr size_t prime3 = 83492791;
 
-  std::size_t operator()(const BlockIndex& index) const {
+  std::size_t operator()(const AnyIndex& index) const {
     return (static_cast<unsigned int>(index.x()) * prime1 ^ index.y() * prime2 ^
             index.z() * prime3);
   }
@@ -24,12 +25,12 @@ struct BlockIndexHash {
 template <typename ValueType>
 struct BlockHashMapType {
   typedef std::unordered_map<
-      BlockIndex, ValueType, BlockIndexHash, std::equal_to<BlockIndex>,
+      BlockIndex, ValueType, AnyIndexHash, std::equal_to<BlockIndex>,
       Eigen::aligned_allocator<std::pair<const BlockIndex, ValueType> > >
       type;
 };
 
-typedef std::unordered_set<AnyIndex, BlockIndexHash, std::equal_to<AnyIndex>,
+typedef std::unordered_set<AnyIndex, AnyIndexHash, std::equal_to<AnyIndex>,
                            Eigen::aligned_allocator<AnyIndex> >
     IndexSet;
 
