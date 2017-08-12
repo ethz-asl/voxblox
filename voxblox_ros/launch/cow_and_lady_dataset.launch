@@ -4,16 +4,16 @@
   <arg name="voxel_size" default="0.10"/>
   <arg name="generate_esdf" default="false" />
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args=" -s 10 -u 30 -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -d 6 -s 10 -u 30 -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
    <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="/camera/depth_registered/points"/>
-    <param name="tsdf_voxel_size" value="0.05" />
+    <param name="tsdf_voxel_size" value="0.03" />
     <param name="tsdf_voxels_per_side" value="16" />
     <param name="voxel_carving_enabled" value="true" />
-    <param name="color_mode" value="normals" />
+    <param name="color_mode" value="color" />
     <param name="use_tf_transforms" value="false" />
-    <param name="update_mesh_every_n_sec" value="1.0" />
+    <param name="update_mesh_every_n_sec" value="0.3" />
     <param name="min_time_between_msgs_sec" value="0.2" />
     <param name="method" value="fast" />
     <param name="generate_esdf" value="$(arg generate_esdf)" />
