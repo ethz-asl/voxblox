@@ -49,6 +49,7 @@ set("${PROJECT_NAME}_SRCS"
   src/core/esdf_map.cc
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
+  src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
