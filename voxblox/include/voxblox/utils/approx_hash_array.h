@@ -65,8 +65,12 @@ class ApproxHashArray {
 template <size_t unmasked_bits_, size_t full_reset_threshold_>
 class ApproxHashSet {
  public:
-  ApproxHashSet() {
+  ApproxHashSet() : reset_counter_(0) {
     pseudo_set_ptr_ = &pseudo_set_[reset_counter_++];
+
+    for (std::atomic<size_t>& value : pseudo_set_) {
+      value.store(0, std::memory_order_relaxed);
+    }
 
     // we init our set with zeros, except for the 0 bin which needs a different
     // number
@@ -128,7 +132,7 @@ class ApproxHashSet {
   // clear the memory).
   // This function is not thread safe.
   void resetApproxSet() {
-    if (reset_counter_ > full_reset_threshold_) {
+    if (reset_counter_ >= full_reset_threshold_) {
       for (std::atomic<size_t>& value : pseudo_set_) {
         value.store(0, std::memory_order_relaxed);
       }
