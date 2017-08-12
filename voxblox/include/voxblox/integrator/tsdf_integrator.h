@@ -69,13 +69,15 @@ class TsdfIntegratorBase {
   inline bool isPointValid(const Point& point_C, bool* is_clearing) const;
 
   // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
-  // layer. Thread safe
+  // layer. Thread safe.
+  // Takes in the last_block_idx and last_block to prevent unneeded map lookups.
   // If the block this voxel would be in has not been allocated, a voxel in
   // temp_voxel_storage is allocated and returned instead.
   // This can be merged into the layer later by calling
   // updateLayerWithStoredVoxels(temp_voxel_storage)
   inline TsdfVoxel* findOrTempAllocateVoxelPtr(
-      const VoxelIndex& global_voxel_idx, VoxelMap* temp_voxel_storage) const;
+      const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
+      BlockIndex* last_block_idx, VoxelMap* temp_voxel_storage) const;
 
   // NOT thread safe
   inline void updateLayerWithStoredVoxels(const VoxelMap& temp_voxel_storage);

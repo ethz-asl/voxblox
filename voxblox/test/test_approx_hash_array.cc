@@ -4,7 +4,7 @@
 #include <random>
 
 #include "voxblox/core/common.h"
-#include "voxblox/cutils/approx_hash_array.h"
+#include "voxblox/utils/approx_hash_array.h"
 
 using namespace voxblox;  // NOLINT
 

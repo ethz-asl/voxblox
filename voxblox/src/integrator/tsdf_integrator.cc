@@ -43,38 +43,36 @@ inline bool TsdfIntegratorBase::isPointValid(const Point& point_C,
 
 // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
 // layer. Thread safe.
+// Takes in the last_block_idx and last_block to prevent unneeded map lookups.
 // If the block this voxel would be in has not been allocated, a voxel in
 // temp_voxel_storage is allocated and returned instead.
 // This can be merged into the layer later by calling
 // updateLayerWithStoredVoxels(temp_voxel_storage)
 inline TsdfVoxel* TsdfIntegratorBase::findOrTempAllocateVoxelPtr(
-    const VoxelIndex& global_voxel_idx, VoxelMap* temp_voxel_storage) const {
+    const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
+    BlockIndex* last_block_idx, VoxelMap* temp_voxel_storage) const {
   DCHECK(temp_voxel_storage != nullptr);
-
-  // caches the last block as successive calls usually have close by voxels
-  static thread_local Block<TsdfVoxel>::Ptr block = nullptr;
-  static thread_local BlockIndex last_block_idx;
 
   const BlockIndex block_idx =
       getBlockIndexFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_inv_);
 
-  if (block_idx != last_block_idx) {
-    block = layer_->getBlockPtrByIndex(block_idx);
-    last_block_idx = block_idx;
-    if (block != nullptr) {
-      block->updated() = true;
+  if (block_idx != *last_block_idx) {
+    *last_block = layer_->getBlockPtrByIndex(block_idx);
+    *last_block_idx = block_idx;
+    if (*last_block != nullptr) {
+      (*last_block)->updated() = true;
     }
   }
 
   // If no block at this location currently exists, we allocate a temporary
   // voxel that will be merged into the map later
-  if (block == nullptr) {
+  if (*last_block == nullptr) {
     return &((*temp_voxel_storage)[global_voxel_idx]);
   } else {
     const VoxelIndex local_voxel_idx =
         getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
-    return &(block->getVoxelByVoxelIndex(local_voxel_idx));
+    return &((*last_block)->getVoxelByVoxelIndex(local_voxel_idx));
   }
 }
 
@@ -258,10 +256,12 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                          config_.max_ray_length_m, voxel_size_inv_,
                          config_.default_truncation_distance);
 
+    Block<TsdfVoxel>::Ptr block = nullptr;
+    BlockIndex block_idx;
     VoxelIndex global_voxel_idx;
     while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-      TsdfVoxel* voxel =
-          findOrTempAllocateVoxelPtr(global_voxel_idx, temp_voxel_storage);
+      TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(
+          global_voxel_idx, &block, &block_idx, temp_voxel_storage);
 
       const float weight = getVoxelWeight(point_C);
       const Point voxel_center_G =
@@ -384,8 +384,10 @@ void MergedTsdfIntegrator::integrateVoxel(
       }
     }
 
-    TsdfVoxel* voxel =
-        findOrTempAllocateVoxelPtr(global_voxel_idx, temp_voxel_storage);
+    Block<TsdfVoxel>::Ptr block = nullptr;
+    BlockIndex block_idx;
+    TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(
+        global_voxel_idx, &block, &block_idx, temp_voxel_storage);
     const Point voxel_center_G =
         getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
@@ -493,6 +495,8 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 
     size_t consecutive_ray_collisions = 0;
 
+    Block<TsdfVoxel>::Ptr block = nullptr;
+    BlockIndex block_idx;
     while (ray_caster.nextRayIndex(&global_voxel_idx)) {
       // Check if the current voxel has been seen by any ray cast this scan. If
       // it has increment the consecutive_ray_collisions counter, otherwise
@@ -507,8 +511,8 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
         break;
       }
 
-      TsdfVoxel* voxel =
-          findOrTempAllocateVoxelPtr(global_voxel_idx, temp_voxel_storage);
+      TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(
+          global_voxel_idx, &block, &block_idx, temp_voxel_storage);
 
       const float weight = getVoxelWeight(point_C);
       const Point voxel_center_G =
