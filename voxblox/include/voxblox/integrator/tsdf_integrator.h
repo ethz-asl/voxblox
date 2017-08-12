@@ -69,130 +69,49 @@ class TsdfIntegratorBase {
   const Config& getConfig() const { return config_; }
 
  protected:
-  // thread safe method of getting the next point in a point cloud, also does
-  // the
-  // global transform
-  class PointGetter {
-   public:
-    PointGetter(const Transformation& T_G_C, const Pointcloud& points_C,
-                const Colors& colors, const Config& config)
-        : T_G_C_(T_G_C),
-          points_C_(points_C),
-          colors_(colors),
-          config_(config),
-          origin_(T_G_C.getPosition()),
-          atomic_idx_(0) {
-      DCHECK_EQ(points_C_.size(), colors_.size());
-    }
-
-    bool getNextPoint(size_t* point_idx, Point* point_G, bool* clearing) {
-      while (atomic_idx_.load() < points_C_.size()) {
-        *point_idx = getMixedIdx(atomic_idx_.fetch_add(1));
-        const Point& point_C = points_C_[*point_idx];
-        *point_G = T_G_C_ * point_C;
-
-        const FloatingPoint ray_distance = (*point_G - origin_).norm();
-        if (ray_distance < config_.min_ray_length_m) {
-          continue;
-        } else if (ray_distance > config_.max_ray_length_m) {
-          if (config_.allow_clear) {
-            *clearing = true;
-          } else {
-            continue;
-          }
-        } else {
-          *clearing = false;
-        }
-
-        return true;
-      }
-
+  bool isPointValid(const Point& point_C, bool* is_clearing) {
+    const FloatingPoint ray_distance = point_C.norm();
+    if (ray_distance < config_.min_ray_length_m) {
       return false;
-    }
-
-    bool getNextPoint(Point* point_C, Point* point_G, Color* color,
-                      Point* origin, bool* clearing) {
-      size_t point_idx;
-      if (getNextPoint(&point_idx, point_G, clearing)) {
-        *origin = origin_;
-        *point_C = points_C_[point_idx];
-        *color = colors_[point_idx];
+    } else if (ray_distance > config_.max_ray_length_m) {
+      if (config_.allow_clear) {
+        *is_clearing = true;
         return true;
       } else {
         return false;
       }
+    } else {
+      *is_clearing = false;
+      return true;
     }
-
-    size_t numPoints() { return points_C_.size(); }
-
-   private:
-    // Mixes up the order rays are given in so that each thread is working with
-    // a point that is far away from the other threads current points.
-    size_t getMixedIdx(size_t base_idx) {
-      const size_t number_of_points = points_C_.size();
-      const size_t number_of_groups = config_.integrator_threads;
-      const size_t points_per_group = number_of_points / number_of_groups;
-
-      const size_t group_num = base_idx % number_of_groups;
-      const size_t position_in_group = base_idx / number_of_groups;
-
-      return group_num * points_per_group + position_in_group;
-    }
-
-    const Transformation& T_G_C_;
-    const Pointcloud& points_C_;
-    const Colors& colors_;
-    const Config& config_;
-    const Point origin_;
-    std::atomic<size_t> atomic_idx_;
-  };
+  }
 
   // Can be used to pre-allocate all the blocks needed by the integrator. This
   // allows thread-safe lockless block map access
   void allocateBlocks(const Transformation& T_G_C, const Pointcloud& points_C,
                       const Colors& colors) {
-    IndexSet index_set;
-
-    point_getter_ =
-        std::make_shared<PointGetter>(T_G_C, points_C, colors, config_);
-
-    Point point_C, point_G, origin;
-    Color color;
-    bool clearing;
-    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin,
-                                       &clearing)) {
-      // immediately check if the voxel the point is in has already been ray
-      // traced (saves time setting up ray tracer for already used points)
-      AnyIndex block_idx =
-          getGridIndexFromPoint(point_G, layer_->block_size_inv());
-      if (index_set.count(block_idx)) {
+    ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
+    size_t point_idx;
+    while (index_getter.getNextIndex(&point_idx)) {
+      const Point& point_C = points_C[point_idx];
+      bool is_clearing;
+      if (!isPointValid(point_C, &is_clearing)) {
         continue;
       }
 
-      RayCaster ray_caster(origin, point_G, clearing,
+      const Point origin = T_G_C.getPosition();
+      const Point point_G = T_G_C * point_C;
+
+      RayCaster ray_caster(origin, point_G, is_clearing,
                            config_.voxel_carving_enabled,
                            config_.max_ray_length_m, layer_->block_size_inv(),
-                           config_.default_truncation_distance, false);
+                           config_.default_truncation_distance);
 
+      BlockIndex block_idx;
       while (ray_caster.nextRayIndex(&block_idx)) {
-        if (!index_set.insert(block_idx).second) {
-          break;
-        }
-      }
-    }
-
-    // ray termination strategy will miss some blocks that must be allocated
-    // however, all these missed blocks will have neighbors that were not missed
-    // so we add all the neighbors as well
-    for (const AnyIndex& block_idx : index_set) {
-      for (int x = -1; x <= 1; ++x) {
-        for (int y = -1; y <= 1; ++y) {
-          for (int z = -1; z <= 1; ++z) {
-            Block<TsdfVoxel>::Ptr block =
-                layer_->allocateBlockPtrByIndex(block_idx + AnyIndex(x, y, z));
-            block->updated() = true;
-          }
-        }
+        Block<TsdfVoxel>::Ptr block =
+            layer_->allocateBlockPtrByIndex(block_idx);
+        block->updated() = true;
       }
     }
   }
@@ -316,7 +235,6 @@ class TsdfIntegratorBase {
   FloatingPoint voxels_per_side_inv_;
   FloatingPoint block_size_inv_;
 
-  std::shared_ptr<PointGetter> point_getter_;
   ApproxHashArray<12, std::mutex> mutexes_;  // 4096 locks
 };
 
@@ -333,13 +251,13 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
     timing::Timer integrate_timer("integrate");
 
-    point_getter_ =
-        std::make_shared<PointGetter>(T_G_C, points_C, colors, config_);
+    ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
 
     std::vector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(&SimpleTsdfIntegrator::integrateFunction,
-                                       this);
+                                       this, T_G_C, points_C, colors,
+                                       &index_getter);
     }
 
     for (std::thread& thread : integration_threads) {
@@ -349,13 +267,22 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
     integrate_timer.Stop();
   }
 
-  void integrateFunction() {
-    Point point_C, point_G, origin;
-    Color color;
-    bool clearing;
-    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin,
-                                       &clearing)) {
-      RayCaster ray_caster(origin, point_G, clearing,
+  void integrateFunction(const Transformation& T_G_C,
+                         const Pointcloud& points_C, const Colors& colors,
+                         ThreadSafeIndex* index_getter) {
+    size_t point_idx;
+    while (index_getter->getNextIndex(&point_idx)) {
+      const Point& point_C = points_C[point_idx];
+      const Color& color = colors[point_idx];
+      bool is_clearing;
+      if (!isPointValid(point_C, &is_clearing)) {
+        continue;
+      }
+
+      const Point origin = T_G_C.getPosition();
+      const Point point_G = T_G_C * point_C;
+
+      RayCaster ray_caster(origin, point_G, is_clearing,
                            config_.voxel_carving_enabled,
                            config_.max_ray_length_m, voxel_size_inv_,
                            config_.default_truncation_distance);
@@ -391,9 +318,6 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 
     timing::Timer integrate_timer("integrate");
 
-    point_getter_ =
-        std::make_shared<PointGetter>(T_G_C, points_C, colors, config_);
-
     // Pre-compute a list of unique voxels to end on.
     // Create a hashmap: VOXEL INDEX -> index in original cloud.
     BlockHashMapType<std::vector<size_t>>::type voxel_map;
@@ -401,7 +325,9 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
     // cleared.
     BlockHashMapType<std::vector<size_t>>::type clear_map;
 
-    bundleRays(&voxel_map, &clear_map);
+    ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
+
+    bundleRays(T_G_C, points_C, colors, &index_getter, &voxel_map, &clear_map);
 
     integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, false,
                   voxel_map, clear_map);
@@ -418,22 +344,30 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 
  private:
   inline void bundleRays(
+      const Transformation& T_G_C, const Pointcloud& points_C,
+      const Colors& colors, ThreadSafeIndex* index_getter,
       BlockHashMapType<std::vector<size_t>>::type* voxel_map,
       BlockHashMapType<std::vector<size_t>>::type* clear_map) {
     size_t point_idx;
-    Point point_G;
-    bool clearing;
-    while (point_getter_->getNextPoint(&point_idx, &point_G, &clearing)) {
+    while (index_getter->getNextIndex(&point_idx)) {
+      const Point& point_C = points_C[point_idx];
+      bool is_clearing;
+      if (!isPointValid(point_C, &is_clearing)) {
+        continue;
+      }
+
+      const Point point_G = T_G_C * point_C;
+
       VoxelIndex voxel_index = getGridIndexFromPoint(point_G, voxel_size_inv_);
 
-      if (clearing) {
+      if (is_clearing) {
         (*clear_map)[voxel_index].push_back(point_idx);
       } else {
         (*voxel_map)[voxel_index].push_back(point_idx);
       }
     }
 
-    LOG(INFO) << "Went from " << point_getter_->numPoints() << " points to "
+    LOG(INFO) << "Went from " << points_C.size() << " points to "
               << voxel_map->size() << " raycasts  and " << clear_map->size()
               << " clear rays.";
   }
@@ -559,12 +493,20 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
-  void integrateFunction() {
-    Point point_C, point_G, origin;
-    Color color;
-    bool clearing;
-    while (point_getter_->getNextPoint(&point_C, &point_G, &color, &origin,
-                                       &clearing)) {
+  void integrateFunction(const Transformation& T_G_C,
+                         const Pointcloud& points_C, const Colors& colors,
+                         ThreadSafeIndex* index_getter) {
+    size_t point_idx;
+    while (index_getter->getNextIndex(&point_idx)) {
+      const Point& point_C = points_C[point_idx];
+      const Color& color = colors[point_idx];
+      bool is_clearing;
+      if (!isPointValid(point_C, &is_clearing)) {
+        continue;
+      }
+
+      const Point origin = T_G_C.getPosition();
+      const Point point_G = T_G_C * point_C;
       // immediately check if the voxel the point is in has already been ray
       // traced (saves time setting up ray tracer for already used points)
       AnyIndex global_voxel_idx =
@@ -573,7 +515,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
         continue;
       }
 
-      RayCaster ray_caster(origin, point_G, clearing,
+      RayCaster ray_caster(origin, point_G, is_clearing,
                            config_.voxel_carving_enabled,
                            config_.max_ray_length_m, voxel_size_inv_,
                            config_.default_truncation_distance, false);
@@ -617,13 +559,13 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
     approx_ray_tester_.resetApproxSet();
     approx_start_tester_.resetApproxSet();
 
-    point_getter_ =
-        std::make_shared<PointGetter>(T_G_C, points_C, colors, config_);
+    ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
 
     std::vector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,
-                                       this);
+                                       this, T_G_C, points_C, colors,
+                                       &index_getter);
     }
 
     for (std::thread& thread : integration_threads) {

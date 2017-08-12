@@ -12,9 +12,52 @@
 
 namespace voxblox {
 
-// This class assumes PRE-SCALED coordinates, where one unit = one voxel
-// size. The indices are also returned in this scales coordinate system, which
-// should map to voxel indices.
+// Small class that can be used by multiple threads that need mutually exclusive
+// indexes to the same array, while still covering all elements.
+// The class attempts to make successive indexes far apart so that if the caller
+// also accesses neighboring indexes through thread safe locks, the amount of
+// time a thread must wait on a lock is minimized.
+class ThreadSafeIndex {
+ public:
+  ThreadSafeIndex(const size_t number_of_points, const size_t number_of_threads)
+      : number_of_points_(number_of_points),
+        number_of_threads_(number_of_threads),
+        atomic_idx_(0) {}
+
+  // returns true if index is valid, false otherwise
+  bool getNextIndex(size_t* idx) {
+    DCHECK(idx != nullptr);
+    size_t sequential_idx = atomic_idx_.fetch_add(1);
+
+    if (sequential_idx >= number_of_points_) {
+      return false;
+    } else {
+      *idx = getMixedIndex(sequential_idx);
+      return true;
+    }
+  }
+
+  void reset() { atomic_idx_.store(0); }
+
+ private:
+  size_t getMixedIndex(size_t base_idx) {
+    const size_t number_of_groups = number_of_threads_;
+    const size_t points_per_group = number_of_points_ / number_of_groups;
+
+    const size_t group_num = base_idx % number_of_groups;
+    const size_t position_in_group = base_idx / number_of_groups;
+
+    return group_num * points_per_group + position_in_group;
+  }
+
+  const size_t number_of_points_;
+  const size_t number_of_threads_;
+  std::atomic<size_t> atomic_idx_;
+};
+
+// This class assumes PRE-SCALED coordinates, where one unit = one voxel size.
+// The indices are also returned in this scales coordinate system, which should
+// map to voxel indices.
 class RayCaster {
  public:
   RayCaster(const Point& origin, const Point& point_G,
