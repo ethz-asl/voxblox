@@ -152,7 +152,6 @@ class RayCaster {
                                                             ray_scaled.z());
   }
 
- private:
   Ray t_to_next_boundary_;
   AnyIndex curr_index_;
   AnyIndex end_index_;
