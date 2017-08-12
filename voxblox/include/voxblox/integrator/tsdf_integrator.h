@@ -25,6 +25,10 @@
 
 namespace voxblox {
 
+// Note most functions state if they are thread safe. Unless explicitly stated
+// otherwise, this thread saftey is based on the assumption that any pointers
+// passed to the functions point to objects that are guaranteed to not be
+// accessed by other threads.
 class TsdfIntegratorBase {
  public:
   typedef BlockHashMapType<TsdfVoxel>::type VoxelMap;
@@ -63,6 +67,7 @@ class TsdfIntegratorBase {
     }
   }
 
+  // NOT thread safe.
   virtual void integratePointCloud(const Transformation& T_G_C,
                                    const Pointcloud& points_C,
                                    const Colors& colors) = 0;
@@ -71,6 +76,7 @@ class TsdfIntegratorBase {
   const Config& getConfig() const { return config_; }
 
  protected:
+  // Thread safe.
   bool isPointValid(const Point& point_C, bool* is_clearing) {
     const FloatingPoint ray_distance = point_C.norm();
     if (ray_distance < config_.min_ray_length_m) {
@@ -88,62 +94,40 @@ class TsdfIntegratorBase {
     }
   }
 
-  // Can be used to pre-allocate all the blocks needed by the integrator. This
-  // allows thread-safe lockless block map access
-  void allocateBlocks(const Transformation& T_G_C, const Pointcloud& points_C,
-                      const Colors& colors) {
-    ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
-    size_t point_idx;
-    while (index_getter.getNextIndex(&point_idx)) {
-      const Point& point_C = points_C[point_idx];
-      bool is_clearing;
-      if (!isPointValid(point_C, &is_clearing)) {
-        continue;
-      }
+  // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
+  // layer. Thread safe
+  // If the block this voxel would be in has not been allocated, a voxel in
+  // temp_voxel_storage is allocated and returned instead.
+  // This can be merged into the layer later by calling
+  // updateLayerWithStoredVoxels(temp_voxel_storage)
+  inline TsdfVoxel* findOrTempAllocateVoxelPtr(
+      const VoxelIndex& global_voxel_idx, VoxelMap* temp_voxel_storage) {
+    static thread_local Block<TsdfVoxel>::Ptr block = nullptr;
+    static thread_local BlockIndex last_block_idx;
 
-      const Point origin = T_G_C.getPosition();
-      const Point point_G = T_G_C * point_C;
-
-      RayCaster ray_caster(origin, point_G, is_clearing,
-                           config_.voxel_carving_enabled,
-                           config_.max_ray_length_m, layer_->block_size_inv(),
-                           config_.default_truncation_distance);
-
-      BlockIndex block_idx;
-      while (ray_caster.nextRayIndex(&block_idx)) {
-        Block<TsdfVoxel>::Ptr block =
-            layer_->allocateBlockPtrByIndex(block_idx);
-        block->updated() = true;
-      }
-    }
-  }
-
-  inline TsdfVoxel* getVoxel(const VoxelIndex& global_voxel_idx,
-                             Block<TsdfVoxel>::Ptr* block,
-                             BlockIndex* last_block_idx,
-                             VoxelMap* temp_voxel_storage) {
     BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
         global_voxel_idx, voxels_per_side_inv_);
     VoxelIndex local_voxel_idx =
         getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
-    if (block_idx != *last_block_idx) {
-      *block = layer_->getBlockPtrByIndex(block_idx);
-      *last_block_idx = block_idx;
-      if (*block != nullptr) {
-        (*block)->updated() = true;
+    if (block_idx != last_block_idx) {
+      block = layer_->getBlockPtrByIndex(block_idx);
+      last_block_idx = block_idx;
+      if (block != nullptr) {
+        block->updated() = true;
       }
     }
 
     // If no block at this location currently exists, we allocate a temporary
     // voxel that will be merged into the map later
-    if (*block == nullptr) {
+    if (block == nullptr) {
       return &((*temp_voxel_storage)[global_voxel_idx]);
     } else {
-      return &((*block)->getVoxelByVoxelIndex(local_voxel_idx));
+      return &(block->getVoxelByVoxelIndex(local_voxel_idx));
     }
   }
 
+  // NOT thread safe
   void updateLayerWithStoredVoxels(const VoxelMap& temp_voxel_storage) {
     BlockIndex last_block_idx;
     Block<TsdfVoxel>::Ptr block = nullptr;
@@ -179,7 +163,7 @@ class TsdfIntegratorBase {
     }
   }
 
-  // updates tsdf_voxel. thread safe
+  // Updates tsdf_voxel. Thread safe.
   inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
                               const Point& voxel_center, const Color& color,
                               const float truncation_distance,
@@ -237,6 +221,7 @@ class TsdfIntegratorBase {
     tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
   }
 
+  // Thread safe.
   inline float computeDistance(const Point& origin, const Point& point_G,
                                const Point& voxel_center) {
     Point v_voxel_origin = voxel_center - origin;
@@ -250,6 +235,7 @@ class TsdfIntegratorBase {
     return sdf;
   }
 
+  // Thread safe.
   inline float getVoxelWeight(const Point& point_C) const {
     if (config_.use_const_weight) {
       return 1.0f;
@@ -331,11 +317,9 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
                            config_.max_ray_length_m, voxel_size_inv_,
                            config_.default_truncation_distance);
 
-      BlockIndex last_block_idx = BlockIndex::Zero();
-      Block<TsdfVoxel>::Ptr block;
       VoxelIndex global_voxel_idx;
       while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-        TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx,
+        TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(global_voxel_idx,
                                     temp_voxel_storage);
         if (voxel != nullptr) {
           const float weight = getVoxelWeight(point_C);
@@ -467,7 +451,7 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
         }
       }
 
-      TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx,
+      TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(global_voxel_idx,
                                   temp_voxel_storage);
       if (voxel != nullptr) {
         const Point voxel_center_G =
@@ -589,7 +573,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
           break;
         }
 
-        TsdfVoxel* voxel = getVoxel(global_voxel_idx, &block, &last_block_idx,
+        TsdfVoxel* voxel = findOrTempAllocateVoxelPtr(global_voxel_idx,
                                     temp_voxel_storage);
         if (voxel != nullptr) {
           const float weight = getVoxelWeight(point_C);
