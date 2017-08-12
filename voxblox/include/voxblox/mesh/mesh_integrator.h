@@ -44,6 +44,7 @@ class MeshIntegrator {
   struct Config {
     bool use_color = true;
     float min_weight = 1e-4;
+    size_t integrator_threads = std::thread::hardware_concurrency();
   };
 
   MeshIntegrator(const Config& config, Layer<VoxelType>* tsdf_layer,
@@ -61,6 +62,11 @@ class MeshIntegrator {
 
     cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
         0, 0, 1, 1, 1, 1;
+
+    if (config_.integrator_threads == 0) {
+      LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
+      config_.integrator_threads = 1;
+    }
   }
 
   // Generates mesh for the entire tsdf layer from scratch.
@@ -70,8 +76,23 @@ class MeshIntegrator {
     BlockIndexList all_tsdf_blocks;
     tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
 
+    // Allocate all the mesh memory
     for (const BlockIndex& block_index : all_tsdf_blocks) {
-      updateMeshForBlock(block_index);
+      mesh_layer_->allocateMeshPtrByIndex(block_index);
+    }
+
+    ThreadSafeIndex index_getter(all_tsdf_blocks.size(),
+                                 config_.integrator_threads);
+
+    std::vector<std::thread> integration_threads;
+    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+      integration_threads.emplace_back(
+          &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
+          clear_updated_flag, &index_getter);
+    }
+
+    for (std::thread& thread : integration_threads) {
+      thread.join();
     }
   }
 
@@ -82,11 +103,37 @@ class MeshIntegrator {
     BlockIndexList all_tsdf_blocks;
     tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
 
+    // Allocate all the mesh memory
     for (const BlockIndex& block_index : all_tsdf_blocks) {
+      mesh_layer_->allocateMeshPtrByIndex(block_index);
+    }
+
+    ThreadSafeIndex index_getter(all_tsdf_blocks.size(),
+                                 config_.integrator_threads);
+
+    std::vector<std::thread> integration_threads;
+    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+      integration_threads.emplace_back(
+          &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
+          clear_updated_flag, &index_getter);
+    }
+
+    for (std::thread& thread : integration_threads) {
+      thread.join();
+    }
+  }
+
+  void generateMeshBlocksFunction(const BlockIndexList& all_tsdf_blocks,
+                                  bool clear_updated_flag,
+                                  ThreadSafeIndex* index_getter) {
+    DCHECK(index_getter != nullptr);
+    size_t block_idx;
+    while (index_getter->getNextIndex(&mesh_idx)) {
+      BlockIndex block_idx[list_idx];
       typename Block<VoxelType>::Ptr block =
-          tsdf_layer_->getBlockPtrByIndex(block_index);
+          tsdf_layer_->getBlockPtrByIndex(block_idx);
       if (block->updated()) {
-        updateMeshForBlock(block_index);
+        updateMeshForBlock(block_idx);
         if (clear_updated_flag) {
           block->updated() = false;
         }
@@ -96,6 +143,9 @@ class MeshIntegrator {
 
   void extractBlockMesh(typename Block<VoxelType>::ConstPtr block,
                         Mesh::Ptr mesh) {
+    DCHECK(block != nullptr);
+    DCHECK(mesh != nullptr);
+    
     size_t vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
@@ -143,7 +193,7 @@ class MeshIntegrator {
   }
 
   virtual void updateMeshForBlock(const BlockIndex& block_index) {
-    Mesh::Ptr mesh = mesh_layer_->allocateMeshPtrByIndex(block_index);
+    Mesh::Ptr mesh = mesh_layer_->getMeshPtrByIndex(block_index);
     mesh->clear();
     // This block should already exist, otherwise it makes no sense to update
     // the mesh for it. ;)
