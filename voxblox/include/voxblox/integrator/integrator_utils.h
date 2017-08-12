@@ -44,6 +44,10 @@ class ThreadSafeIndex {
     const size_t number_of_groups = number_of_threads_;
     const size_t points_per_group = number_of_points_ / number_of_groups;
 
+    if (number_of_groups * points_per_group <= base_idx) {
+      return base_idx;
+    }
+
     const size_t group_num = base_idx % number_of_groups;
     const size_t position_in_group = base_idx / number_of_groups;
 

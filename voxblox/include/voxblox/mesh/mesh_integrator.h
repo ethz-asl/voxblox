@@ -88,7 +88,7 @@ class MeshIntegrator {
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(
           &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
-          clear_updated_flag, &index_getter);
+          true, &index_getter);
     }
 
     for (std::thread& thread : integration_threads) {
@@ -101,7 +101,7 @@ class MeshIntegrator {
     // clear_updated_flag decides whether to reset 'updated' after updating the
     // mesh.
     BlockIndexList all_tsdf_blocks;
-    tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
+    tsdf_layer_->getAllUpdatedBlocks(&all_tsdf_blocks);
 
     // Allocate all the mesh memory
     for (const BlockIndex& block_index : all_tsdf_blocks) {
@@ -127,16 +127,16 @@ class MeshIntegrator {
                                   bool clear_updated_flag,
                                   ThreadSafeIndex* index_getter) {
     DCHECK(index_getter != nullptr);
-    size_t block_idx;
-    while (index_getter->getNextIndex(&mesh_idx)) {
-      BlockIndex block_idx[list_idx];
+
+    size_t list_idx;
+    while (index_getter->getNextIndex(&list_idx)) {
+      const BlockIndex& block_idx = all_tsdf_blocks[list_idx];
       typename Block<VoxelType>::Ptr block =
           tsdf_layer_->getBlockPtrByIndex(block_idx);
-      if (block->updated()) {
-        updateMeshForBlock(block_idx);
-        if (clear_updated_flag) {
-          block->updated() = false;
-        }
+
+      updateMeshForBlock(block_idx);
+      if (clear_updated_flag) {
+        block->updated() = false;
       }
     }
   }
@@ -145,7 +145,7 @@ class MeshIntegrator {
                         Mesh::Ptr mesh) {
     DCHECK(block != nullptr);
     DCHECK(mesh != nullptr);
-    
+
     size_t vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
