@@ -45,8 +45,13 @@ class TsdfIntegratorBase {
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
     size_t integrator_threads = std::thread::hardware_concurrency();
-    // only implemented in the merge integrator
+
+    // merge integrator specific
     bool enable_anti_grazing = false;
+
+    // fast integrator specific
+    float start_voxel_subsampling_factor = 2.0f;
+    int max_consecutive_ray_collisions = 2;
   };
 
   TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer);
@@ -101,7 +106,16 @@ class TsdfIntegratorBase {
   FloatingPoint voxels_per_side_inv_;
   FloatingPoint block_size_inv_;
 
-  ApproxHashArray<12, std::mutex> mutexes_;  // 4096 locks
+  // We need to prevent simultaneous access to the voxels in the map. We could
+  // put a single mutex on the map or on the blocks, but as voxel updating is
+  // the most expensive operation in integration and most voxels are close
+  // together, both strategies would bottleneck the system. We could make a
+  // mutex per voxel, but this is too ram heavy as one mutex = 40 bytes.
+  // Because of this we create an array that is indexed by the first n bits of
+  // the voxels hash. Assuming a uniform hash distribution, this means the
+  // chance of two threads needing the same lock for unrelated voxels is
+  // (num_threads / (2^n)). For 8 threads and 12 bits this gives 0.2%.
+  ApproxHashArray<12, std::mutex> mutexes_;
 };
 
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
@@ -168,11 +182,27 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
                            const Pointcloud& points_C, const Colors& colors);
 
  private:
-  static constexpr FloatingPoint voxel_sub_sample_ = 2.0f;
-  static constexpr size_t max_consecutive_ray_collisions_ = 2;
-  static constexpr size_t masked_bits_ = 20;  // 8 mb of ram per tester
+  // Two approximate sets are used below. The limitations of these sets are
+  // outlined in approx_hash_array.h, but in brief they are thread safe and very
+  // fast, but have a small chance of returning false positives and false
+  // negatives. As rejecting a ray or integrating an uninformative ray are not
+  // very harmful operations this trade-off works well in this integrator.
+
+  // uses 2^20 bytes (8 megabytes) of ram per tester
+  // A testers false negative rate is inversely proportional to its size
+  static constexpr size_t masked_bits_ = 20;
+  // only needs to zero the above 8mb of memory once every 10,000 scans
+  // (uses an additional 80,000 bytes)
   static constexpr size_t full_reset_threshold = 10000;
+
+  // Voxel start locations are added to this set before ray casting. The ray
+  // casting only occurs if no ray has been cast from this location for this
+  // scan.
   ApproxHashSet<masked_bits_, full_reset_threshold> approx_start_tester_;
+  // This set records which voxels a scans rays have passed through. If a ray
+  // moves through max_consecutive_ray_collisions voxels in a row that have
+  // already been seen this scan, it is deemed to be adding no new information
+  // and the casting stops.
   ApproxHashSet<masked_bits_, full_reset_threshold> approx_ray_tester_;
 };
 

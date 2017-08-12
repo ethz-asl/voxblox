@@ -78,6 +78,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                     integrator_config.use_const_weight);
   nh_private_.param("allow_clear", integrator_config.allow_clear,
                     integrator_config.allow_clear);
+  nh_private_.param("start_voxel_subsampling_factor",
+                    integrator_config.start_voxel_subsampling_factor,
+                    integrator_config.start_voxel_subsampling_factor);
+  nh_private_.param("max_consecutive_ray_collisions",
+                    integrator_config.max_consecutive_ray_collisions,
+                    integrator_config.max_consecutive_ray_collisions);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);

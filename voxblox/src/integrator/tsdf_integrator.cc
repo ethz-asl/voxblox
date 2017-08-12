@@ -24,6 +24,7 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
 // Thread safe.
 inline bool TsdfIntegratorBase::isPointValid(const Point& point_C,
                                              bool* is_clearing) const {
+  DCHECK(is_clearing != nullptr);
   const FloatingPoint ray_distance = point_C.norm();
   if (ray_distance < config_.min_ray_length_m) {
     return false;
@@ -41,20 +42,21 @@ inline bool TsdfIntegratorBase::isPointValid(const Point& point_C,
 }
 
 // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
-// layer. Thread safe
+// layer. Thread safe.
 // If the block this voxel would be in has not been allocated, a voxel in
 // temp_voxel_storage is allocated and returned instead.
 // This can be merged into the layer later by calling
 // updateLayerWithStoredVoxels(temp_voxel_storage)
 inline TsdfVoxel* TsdfIntegratorBase::findOrTempAllocateVoxelPtr(
     const VoxelIndex& global_voxel_idx, VoxelMap* temp_voxel_storage) const {
+  DCHECK(temp_voxel_storage != nullptr);
+
+  // caches the last block as successive calls usually have close by voxels
   static thread_local Block<TsdfVoxel>::Ptr block = nullptr;
   static thread_local BlockIndex last_block_idx;
 
-  BlockIndex block_idx =
+  const BlockIndex block_idx =
       getBlockIndexFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_inv_);
-  VoxelIndex local_voxel_idx =
-      getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
 
   if (block_idx != last_block_idx) {
     block = layer_->getBlockPtrByIndex(block_idx);
@@ -69,6 +71,9 @@ inline TsdfVoxel* TsdfIntegratorBase::findOrTempAllocateVoxelPtr(
   if (block == nullptr) {
     return &((*temp_voxel_storage)[global_voxel_idx]);
   } else {
+    const VoxelIndex local_voxel_idx =
+        getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
+
     return &(block->getVoxelByVoxelIndex(local_voxel_idx));
   }
 }
@@ -78,11 +83,12 @@ inline void TsdfIntegratorBase::updateLayerWithStoredVoxels(
     const VoxelMap& temp_voxel_storage) {
   BlockIndex last_block_idx;
   Block<TsdfVoxel>::Ptr block = nullptr;
+
   for (const std::pair<const VoxelIndex, TsdfVoxel>& temp_voxel :
        temp_voxel_storage) {
-    BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
+    const BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
         temp_voxel.first, voxels_per_side_inv_);
-    VoxelIndex local_voxel_idx =
+    const VoxelIndex local_voxel_idx =
         getLocalFromGlobalVoxelIndex(temp_voxel.first, voxels_per_side_);
 
     if ((block_idx != last_block_idx) || (block == nullptr)) {
@@ -120,18 +126,9 @@ inline void TsdfIntegratorBase::updateLayerWithStoredVoxels(
 inline void TsdfIntegratorBase::updateTsdfVoxel(
     const Point& origin, const Point& point_G, const Point& voxel_center,
     const Color& color, const float weight, TsdfVoxel* tsdf_voxel) {
-  // Figure out whether the voxel is behind or in front of the surface.
-  // To do this, project the voxel_center onto the ray from origin to point G.
-  // Then check if the the magnitude of the vector is smaller or greater than
-  // the original distance...
-  Point v_voxel_origin = voxel_center - origin;
-  Point v_point_origin = point_G - origin;
+  DCHECK(tsdf_voxel != nullptr);
 
-  FloatingPoint dist_G = v_point_origin.norm();
-  // projection of a (v_voxel_origin) onto b (v_point_origin)
-  FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
-
-  float sdf = static_cast<float>(dist_G - dist_G_V);
+  const float sdf = computeDistance(origin, point_G, voxel_center);
 
   float updated_weight = weight;
   // Compute updated weight in case we use weight dropoff. It's easier here
@@ -156,7 +153,7 @@ inline void TsdfIntegratorBase::updateTsdfVoxel(
     }
   }
 
-  // Grab and lock the mutex responsible for this voxel
+  // Lookup the mutex that is responsible for this voxel and lock it
   std::lock_guard<std::mutex> lock(
       mutexes_.get(getGridIndexFromPoint(point_G, voxel_size_inv_)));
 
@@ -178,17 +175,21 @@ inline void TsdfIntegratorBase::updateTsdfVoxel(
 }
 
 // Thread safe.
+// Figure out whether the voxel is behind or in front of the surface.
+// To do this, project the voxel_center onto the ray from origin to point G.
+// Then check if the the magnitude of the vector is smaller or greater than
+// the original distance...
 inline float TsdfIntegratorBase::computeDistance(
     const Point& origin, const Point& point_G,
     const Point& voxel_center) const {
-  Point v_voxel_origin = voxel_center - origin;
-  Point v_point_origin = point_G - origin;
+  const Point v_voxel_origin = voxel_center - origin;
+  const Point v_point_origin = point_G - origin;
 
-  FloatingPoint dist_G = v_point_origin.norm();
+  const FloatingPoint dist_G = v_point_origin.norm();
   // projection of a (v_voxel_origin) onto b (v_point_origin)
-  FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
+  const FloatingPoint dist_G_V = v_voxel_origin.dot(v_point_origin) / dist_G;
 
-  float sdf = static_cast<float>(dist_G - dist_G_V);
+  const float sdf = static_cast<float>(dist_G - dist_G_V);
   return sdf;
 }
 
@@ -197,7 +198,7 @@ inline float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
   if (config_.use_const_weight) {
     return 1.0f;
   }
-  FloatingPoint dist_z = std::abs(point_C.z());
+  const FloatingPoint dist_z = std::abs(point_C.z());
   if (dist_z > kEpsilon) {
     return 1.0f / (dist_z * dist_z);
   }
@@ -237,6 +238,9 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                                              const Colors& colors,
                                              ThreadSafeIndex* index_getter,
                                              VoxelMap* temp_voxel_storage) {
+  DCHECK(index_getter != nullptr);
+  DCHECK(temp_voxel_storage != nullptr);
+
   size_t point_idx;
   while (index_getter->getNextIndex(&point_idx)) {
     const Point& point_C = points_C[point_idx];
@@ -302,6 +306,9 @@ inline void MergedTsdfIntegrator::bundleRays(
     const Colors& colors, ThreadSafeIndex* index_getter,
     BlockHashMapType<std::vector<size_t>>::type* voxel_map,
     BlockHashMapType<std::vector<size_t>>::type* clear_map) {
+  DCHECK(voxel_map != nullptr);
+  DCHECK(clear_map != nullptr);
+
   size_t point_idx;
   while (index_getter->getNextIndex(&point_idx)) {
     const Point& point_C = points_C[point_idx];
@@ -332,6 +339,8 @@ void MergedTsdfIntegrator::integrateVoxel(
     const std::pair<AnyIndex, std::vector<size_t>>& kv,
     const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
     VoxelMap* temp_voxel_storage) {
+  DCHECK(temp_voxel_storage != nullptr);
+
   if (kv.second.empty()) {
     return;
   }
@@ -345,7 +354,7 @@ void MergedTsdfIntegrator::integrateVoxel(
     const Point& point_C = points_C[pt_idx];
     const Color& color = colors[pt_idx];
 
-    float point_weight = getVoxelWeight(point_C);
+    const float point_weight = getVoxelWeight(point_C);
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
                      (merged_weight + point_weight);
     merged_color =
@@ -362,11 +371,7 @@ void MergedTsdfIntegrator::integrateVoxel(
 
   RayCaster ray_caster(origin, merged_point_G, clearing_ray,
                        config_.voxel_carving_enabled, config_.max_ray_length_m,
-                       voxel_size_inv_, config_.default_truncation_distance,
-                       false);
-
-  BlockIndex last_block_idx = BlockIndex::Zero();
-  Block<TsdfVoxel>::Ptr block;
+                       voxel_size_inv_, config_.default_truncation_distance);
 
   VoxelIndex global_voxel_idx;
   while (ray_caster.nextRayIndex(&global_voxel_idx)) {
@@ -395,6 +400,8 @@ void MergedTsdfIntegrator::integrateVoxels(
     const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
     const BlockHashMapType<std::vector<size_t>>::type& clear_map, size_t tid,
     VoxelMap* temp_voxel_storage) {
+  DCHECK(temp_voxel_storage != nullptr);
+
   BlockHashMapType<std::vector<size_t>>::type::const_iterator it;
   size_t map_size;
   if (clearing_ray) {
@@ -453,6 +460,9 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                                            const Colors& colors,
                                            ThreadSafeIndex* index_getter,
                                            VoxelMap* temp_voxel_storage) {
+  DCHECK(index_getter != nullptr);
+  DCHECK(temp_voxel_storage != nullptr);
+
   size_t point_idx;
   while (index_getter->getNextIndex(&point_idx)) {
     const Point& point_C = points_C[point_idx];
@@ -466,19 +476,17 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     const Point point_G = T_G_C * point_C;
     // immediately check if the voxel the point is in has already been ray
     // traced (saves time setting up ray tracer for already used points)
-    AnyIndex global_voxel_idx =
-        getGridIndexFromPoint(point_G, voxel_sub_sample_ * voxel_size_inv_);
+    AnyIndex global_voxel_idx = getGridIndexFromPoint(
+        point_G, config_.start_voxel_subsampling_factor * voxel_size_inv_);
     if (!approx_start_tester_.replaceHash(global_voxel_idx)) {
       continue;
     }
 
+    constexpr bool cast_from_origin = false;
     RayCaster ray_caster(origin, point_G, is_clearing,
                          config_.voxel_carving_enabled,
                          config_.max_ray_length_m, voxel_size_inv_,
-                         config_.default_truncation_distance, false);
-
-    BlockIndex last_block_idx = BlockIndex::Zero();
-    Block<TsdfVoxel>::Ptr block;
+                         config_.default_truncation_distance, cast_from_origin);
 
     size_t consecutive_ray_collisions = 0;
 
@@ -489,7 +497,7 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
       } else {
         consecutive_ray_collisions = 0;
       }
-      if (consecutive_ray_collisions > max_consecutive_ray_collisions_) {
+      if (consecutive_ray_collisions > config_.max_consecutive_ray_collisions) {
         break;
       }
 

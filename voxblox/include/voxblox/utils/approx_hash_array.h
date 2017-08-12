@@ -15,16 +15,16 @@
 // simply locking the entire layer
 // Disadvantages-
 // - Highly inefficient use of memory (allocates 2^N elements)
-// - Cannot disern between two different elements with the same hash
+// - Cannot discern between two different elements with the same hash
 // - If the hash of two elements have the same first N elements of their hash,
 // only one can be store.
 
-// Basic container, given in an index and get the element that was stored there.
+namespace voxblox {
+
+// Basic container, give in an index and get the element that was stored there.
 // There are 2^unmasked_bits_ elements in the container, which element is
 // returned depends on your hashing function.
 // Uses at least 2^unmaksed_bits * sizeof(StoreElement) bytes of ram
-
-namespace voxblox {
 template <size_t unmasked_bits_, typename StoredElement>
 class ApproxHashArray {
  public:
@@ -53,6 +53,11 @@ class ApproxHashArray {
 
 // Acts as a fast and thread safe set, with the serious limitation of both
 // false-negatives and false positives being possible.
+// A false positive occurs if two different elements have the same hash, and the
+// other element was already added to the set.
+// A false negative occurs if an element was removed to add another element with
+// the same masked hash. The chance of this happening is inversely proportional
+// to 2^unmasked_bits_.
 // Uses at least (2^unmaksed_bits + full_reset_threshold) * sizeof(StoreElement)
 // bytes of ram.
 // Note that the reset function is not thread safe.
@@ -68,7 +73,7 @@ class ApproxHashSet {
   }
 
   // Returns true if an element with the same hash is currently in the set,
-  // false otherwise
+  // false otherwise.
   // Note due to the masking of bits, many elements that were previously
   // inserted into the ApproxHashSet have been overwritten by other values.
   bool isHashCurrentlyPresent(const size_t& hash) {
@@ -92,8 +97,8 @@ class ApproxHashSet {
   }
 
   // Returns true if it replaced the element in the masked_hash's with the hash
-  // of the given element
-  // Returns false if this hash was already there and no replacement was needed
+  // of the given element.
+  // Returns false if this hash was already there and no replacement was needed.
   bool replaceHash(const size_t& hash) {
     const size_t masked_hash = hash & bit_mask_;
     if (pseudo_set_ptr_[masked_hash].load(std::memory_order_relaxed) == hash) {
