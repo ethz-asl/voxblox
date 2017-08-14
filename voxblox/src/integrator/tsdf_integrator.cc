@@ -98,7 +98,9 @@ inline void TsdfIntegratorBase::updateLayerWithStoredVoxels(
 
     const float new_weight = base_voxel.weight + temp_voxel.second.weight;
 
-    // it is possible that both voxels have weights very close to zero
+    // it is possible that both voxels have weights very close to zero, due to
+    // the limited precision of floating points dividing by this small value can
+    // cause nans
     if (new_weight < kFloatEpsilon) {
       continue;
     }
@@ -156,6 +158,13 @@ inline void TsdfIntegratorBase::updateTsdfVoxel(
       mutexes_.get(getGridIndexFromPoint(point_G, voxel_size_inv_)));
 
   const float new_weight = tsdf_voxel->weight + updated_weight;
+
+  // it is possible to have weights very close to zero, due to the limited
+  // precision of floating points dividing by this small value can cause nans
+  if (new_weight < kFloatEpsilon) {
+    continue;
+  }
+
   const float new_sdf =
       (sdf * updated_weight + tsdf_voxel->distance * tsdf_voxel->weight) /
       new_weight;

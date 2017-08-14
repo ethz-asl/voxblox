@@ -217,8 +217,8 @@ class MeshIntegrator {
   void extractMeshInsideBlock(const Block<VoxelType>& block,
                               const VoxelIndex& index, const Point& coords,
                               VertexIndex* next_mesh_index, Mesh* mesh) {
-    DCHECK_NOTNULL(next_mesh_index);
-    DCHECK_NOTNULL(mesh);
+    DCHECK(next_mesh_index != nullptr);
+    DCHECK(mesh != nullptr);
 
     // If the distance to the surface is greater than the length of two voxels,
     // the mesh will be empty.
@@ -254,7 +254,7 @@ class MeshIntegrator {
   void extractMeshOnBorder(const Block<VoxelType>& block,
                            const VoxelIndex& index, const Point& coords,
                            VertexIndex* next_mesh_index, Mesh* mesh) {
-    DCHECK_NOTNULL(mesh);
+    DCHECK(mesh != nullptr);
 
     // If the distance to the surface is greater than the length of two voxels,
     // the mesh will be empty.
@@ -326,7 +326,7 @@ class MeshIntegrator {
   }
 
   void updateMeshColor(const Block<VoxelType>& block, Mesh* mesh) {
-    CHECK_NOTNULL(mesh);
+    DCHECK(mesh != nullptr);
 
     mesh->colors.clear();
     mesh->colors.resize(mesh->indices.size());
