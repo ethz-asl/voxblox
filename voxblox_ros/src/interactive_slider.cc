@@ -47,7 +47,7 @@ InteractiveSlider::InteractiveSlider(
   control.orientation.x = 0.0;
   control.orientation.y = 0.0;
   control.orientation.z = 0.0;
-  switch (free_plane_index) {
+  switch (free_plane_index_) {
     case 0u:
       marker.scale.x *= 0.1f;
       control.orientation.x = 1.0;
@@ -77,7 +77,16 @@ InteractiveSlider::InteractiveSlider(
   interactive_marker_server_.applyChanges();
 
   // Initial callback.
-  slider_callback(interactive_marker.pose.position.z);
+  switch (free_plane_index_) {
+    case 0u:
+      slider_callback(interactive_marker.pose.position.x);
+      break;
+    case 1u:
+      slider_callback(interactive_marker.pose.position.y);
+      break;
+    case 2u:
+      slider_callback(interactive_marker.pose.position.z);
+  }
 }
 
 void InteractiveSlider::interactiveMarkerFeedback(
