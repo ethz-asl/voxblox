@@ -162,7 +162,7 @@ inline void TsdfIntegratorBase::updateTsdfVoxel(
   // it is possible to have weights very close to zero, due to the limited
   // precision of floating points dividing by this small value can cause nans
   if (new_weight < kFloatEpsilon) {
-    continue;
+    return;
   }
 
   const float new_sdf =
