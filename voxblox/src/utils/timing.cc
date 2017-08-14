@@ -24,6 +24,8 @@
 #include <string>
 #include <math.h>
 
+#include <glog/logging.h>
+
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -42,6 +44,7 @@ Timing::~Timing() {}
 
 // Static functions to query the timers:
 size_t Timing::GetHandle(std::string const& tag) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   // Search for an existing tag.
   map_t::iterator i = Instance().tagMap_.find(tag);
   if (i == Instance().tagMap_.end()) {
@@ -59,6 +62,7 @@ size_t Timing::GetHandle(std::string const& tag) {
 }
 
 std::string Timing::GetTag(size_t handle) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   std::string tag;
 
   // Perform a linear search for the tag.
@@ -106,16 +110,19 @@ void Timer::Stop() {
 bool Timer::IsTiming() const { return timing_; }
 
 void Timing::AddTime(size_t handle, double seconds) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   timers_[handle].acc_.Add(seconds);
 }
 
 double Timing::GetTotalSeconds(size_t handle) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   return Instance().timers_[handle].acc_.Sum();
 }
 double Timing::GetTotalSeconds(std::string const& tag) {
   return GetTotalSeconds(GetHandle(tag));
 }
 double Timing::GetMeanSeconds(size_t handle) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   return Instance().timers_[handle].acc_.Mean();
 }
 double Timing::GetMeanSeconds(std::string const& tag) {
@@ -128,18 +135,21 @@ size_t Timing::GetNumSamples(std::string const& tag) {
   return GetNumSamples(GetHandle(tag));
 }
 double Timing::GetVarianceSeconds(size_t handle) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   return Instance().timers_[handle].acc_.LazyVariance();
 }
 double Timing::GetVarianceSeconds(std::string const& tag) {
   return GetVarianceSeconds(GetHandle(tag));
 }
 double Timing::GetMinSeconds(size_t handle) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   return Instance().timers_[handle].acc_.Min();
 }
 double Timing::GetMinSeconds(std::string const& tag) {
   return GetMinSeconds(GetHandle(tag));
 }
 double Timing::GetMaxSeconds(size_t handle) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   return Instance().timers_[handle].acc_.Max();
 }
 double Timing::GetMaxSeconds(std::string const& tag) {
@@ -147,7 +157,10 @@ double Timing::GetMaxSeconds(std::string const& tag) {
 }
 
 double Timing::GetHz(size_t handle) {
-  return 1.0 / Instance().timers_[handle].acc_.RollingMean();
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
+  const double rolling_mean = Instance().timers_[handle].acc_.RollingMean();
+  CHECK_GT(rolling_mean, 0.0);
+  return 1.0 / rolling_mean;
 }
 
 double Timing::GetHz(std::string const& tag) { return GetHz(GetHandle(tag)); }
@@ -159,6 +172,7 @@ std::string Timing::SecondsToTimeString(double seconds) {
 }
 
 void Timing::Print(std::ostream& out) {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
   map_t& tagMap = Instance().tagMap_;
 
   if (tagMap.empty()) {
@@ -199,7 +213,10 @@ std::string Timing::Print() {
   return ss.str();
 }
 
-void Timing::Reset() { Instance().tagMap_.clear(); }
+void Timing::Reset() {
+  std::lock_guard<std::mutex> lock(Instance().mutex_);
+  Instance().tagMap_.clear();
+}
 
 }  // namespace timing
 }  // namespace voxblox

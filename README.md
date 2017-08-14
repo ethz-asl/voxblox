@@ -155,7 +155,7 @@ A summary of the user setable voxblox_node parameters:
 | `pointcloud_queue_size` | The size of the queue used to subscribe to pointclouds. | 1 |
 | `verbose` | Prints additional debug and timing information. | true |
 | `color_ptcloud_by_weight` | If the pointcloud should be colored by the voxel weighting | false |
-| `method` | Method to use for integrating new readings into the tsdf. Options are "merged", "simple" and "merged_discard" | "merged" |
+| `method` | Method to use for integrating new readings into the tsdf. Options are "merged", "simple", "merged_discard" and "fast" | "merged" |
 | `tsdf_voxel_size` | The size of the tsdf voxels | 0.2 |
 | `tsdf_voxels_per_side` | TSDF voxels per side of an allocated block | 16 |
 | `voxel_carving_enabled` | If true, the entire length of a ray is integrated, if false only the region inside the trunaction distance is used. | true |
