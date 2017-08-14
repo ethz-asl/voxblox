@@ -78,6 +78,31 @@ bool LoadLayer(const std::string& file_path,
 }
 
 template <typename VoxelType>
+bool LoadBlocksFromStream(
+    const size_t num_blocks, typename Layer<VoxelType>::BlockMergingStrategy strategy,
+    std::fstream* proto_file_ptr, Layer<VoxelType>* layer_ptr,
+    uint32_t* tmp_byte_offset_ptr) {
+  CHECK_NOTNULL(layer_ptr);
+
+  // Read all blocks and add them to the layer.
+  for (uint32_t block_idx = 0u; block_idx < num_blocks; block_idx) {
+    BlockProto block_proto;
+    if (!utils::readProtoMsgFromStream(proto_file_ptr, &block_proto,
+                                       tmp_byte_offset_ptr)) {
+      LOG(ERROR) << "Could not read block protobuf message number "
+                 << block_idx;
+      return false;
+    }
+
+    if (!layer_ptr->addBlockFromProto(block_proto, strategy)) {
+      LOG(ERROR) << "Could not add the block protobuf message to the layer!";
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename VoxelType>
 bool LoadBlocksFromFile(
     const std::string& file_path,
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
@@ -124,20 +149,11 @@ bool LoadBlocksFromFile(
 
   // Read all blocks and add them to the layer.
   const size_t num_blocks = num_protos - 1;
-  for (uint32_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
-    BlockProto block_proto;
-    if (!utils::readProtoMsgFromStream(&proto_file, &block_proto,
-                                       &tmp_byte_offset)) {
-      LOG(ERROR) << "Could not read block protobuf message number "
-                 << block_idx;
-      return false;
-    }
-
-    if (!layer_ptr->addBlockFromProto(block_proto, strategy)) {
-      LOG(ERROR) << "Could not add the block protobuf message to the layer!";
-      return false;
-    }
+  if (!LoadBlocksFromStream(num_blocks, strategy, &proto_file, layer_ptr,
+                            &tmp_byte_offset)) {
+    return false;
   }
+
   return true;
 }
 

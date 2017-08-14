@@ -52,6 +52,8 @@ struct Mesh {
     indices.clear();
   }
 
+  void concatenateMesh(const Mesh& mesh);
+
   Pointcloud vertices;
   VertexIndexList indices;
   Pointcloud normals;

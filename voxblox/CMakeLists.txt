@@ -51,6 +51,7 @@ set("${PROJECT_NAME}_SRCS"
   src/integrator/esdf_occ_integrator.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
+  src/mesh/mesh.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
   src/utils/camera_model.cc

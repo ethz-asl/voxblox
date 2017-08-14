@@ -181,14 +181,12 @@ class MergeIntegrator {
   }
 
  private:
-  static const FloatingPoint kUnitCubeDiagonalLength;
+  static constexpr FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
+
 };
 
-const FloatingPoint MergeIntegrator::kUnitCubeDiagonalLength =
-    std::sqrt(3.0);
-
 template <>
-void MergeIntegrator::mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A,
+inline void MergeIntegrator::mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A,
                                             TsdfVoxel* voxel_B) {
   float combined_weight = voxel_A.weight + voxel_B->weight;
   if (combined_weight > 0) {
@@ -204,7 +202,7 @@ void MergeIntegrator::mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A,
 }
 
 template <>
-void MergeIntegrator::mergeVoxelAIntoVoxelB(const OccupancyVoxel& voxel_A,
+inline void MergeIntegrator::mergeVoxelAIntoVoxelB(const OccupancyVoxel& voxel_A,
                                             OccupancyVoxel* voxel_B) {
   voxel_B->probability_log += voxel_A.probability_log;
   voxel_B->observed = voxel_B->observed || voxel_A.observed;
