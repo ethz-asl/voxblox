@@ -29,11 +29,6 @@ class Block {
     block_size_ = voxels_per_side_ * voxel_size_;
     block_size_inv_ = 1.0 / block_size_;
     voxels_.reset(new VoxelType[num_voxels_]);
-    lock_flags_.reset(new std::atomic_flag[num_voxels_]);
-
-    for (size_t i = 0; i < num_voxels_; ++i) {
-      lock_flags_[i].clear();
-    }
   }
 
   explicit Block(const BlockProto& proto);
@@ -165,7 +160,6 @@ class Block {
 
  protected:
   std::unique_ptr<VoxelType[]> voxels_;
-  std::unique_ptr<std::atomic_flag[]> lock_flags_;
 
   // Derived, cached parameters.
   size_t num_voxels_;
