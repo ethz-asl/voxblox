@@ -84,6 +84,9 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_layer_->allocateBlockPtrByIndex(kv.first);
 
     for (const VoxelIndex& voxel_index : kv.second) {
+      if (!block_ptr->isValidVoxelIndex(voxel_index)) {
+        continue;
+      }
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
       if (!esdf_voxel.observed) {
         esdf_voxel.distance = -config_.default_distance_m;
@@ -547,6 +550,7 @@ void EsdfIntegrator::processOpenSet() {
     if (!esdf_block) {
       continue;
     }
+
     EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
     // Again, no point updating unobserved voxels.
