@@ -125,7 +125,7 @@ class EsdfIntegrator {
 
  protected:
   // Convenience functions for planning.
-  typedef BlockHashMapType<VoxelIndexList>::type BlockVoxelListMap;
+  typedef AnyIndexHashMapType<VoxelIndexList>::type BlockVoxelListMap;
   void getSphereAroundPoint(const Point& center, FloatingPoint radius,
                             BlockVoxelListMap* block_voxel_list) const;
 

@@ -19,7 +19,8 @@ class Layer {
  public:
   typedef std::shared_ptr<Layer> Ptr;
   typedef Block<VoxelType> BlockType;
-  typedef typename BlockHashMapType<typename BlockType::Ptr>::type BlockHashMap;
+  typedef
+      typename AnyIndexHashMapType<typename BlockType::Ptr>::type BlockHashMap;
   typedef typename std::pair<BlockIndex, typename BlockType::Ptr> BlockMapPair;
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
