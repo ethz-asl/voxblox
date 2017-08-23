@@ -26,12 +26,12 @@
 namespace voxblox {
 
 // Note most functions state if they are thread safe. Unless explicitly stated
-// otherwise, this thread saftey is based on the assumption that any pointers
+// otherwise, this thread safety is based on the assumption that any pointers
 // passed to the functions point to objects that are guaranteed to not be
 // accessed by other threads.
 class TsdfIntegratorBase {
  public:
-  typedef BlockHashMapType<TsdfVoxel>::type VoxelMap;
+  typedef AnyIndexHashMapType<TsdfVoxel>::type VoxelMap;
 
   struct Config {
     float default_truncation_distance = 0.1;

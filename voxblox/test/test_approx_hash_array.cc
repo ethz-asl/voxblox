@@ -71,7 +71,7 @@ TEST_F(ApproxHashArrayTest, SetRandomWriteRead) {
   }
 
   // test insert and clearing
-  for (size_t i = 0; i < 50; ++i) {
+  for (size_t i = 0; i < 50u; ++i) {
     approx_hash_set.resetApproxSet();
 
     // insert their values

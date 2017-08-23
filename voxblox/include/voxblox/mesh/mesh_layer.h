@@ -132,8 +132,9 @@ class MeshLayer {
     // them
     VertexIndexList temp_indices;
 
-    // If two vertices closer than (voxel_size / key_multiplication_factor) then
-    // the second vertice will be discarded and the first one used in its place
+    // If two vertexes are closer together than (voxel_size /
+    // key_multiplication_factor), then the second vertex will be discarded and
+    // the first one used in its place
     constexpr FloatingPoint key_multiplication_factor = 10;
 
     // Combine everything in the layer into one giant combined mesh.

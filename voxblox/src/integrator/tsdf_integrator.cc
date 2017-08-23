@@ -2,6 +2,11 @@
 
 namespace voxblox {
 
+// Note many functions state if they are thread safe. Unless explicitly stated
+// otherwise, this thread safety is based on the assumption that any pointers
+// passed to the functions point to objects that are guaranteed to not be
+// accessed by other threads.
+
 TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
                                        Layer<TsdfVoxel>* layer)
     : config_(config), layer_(layer) {
@@ -52,6 +57,8 @@ inline TsdfVoxel* TsdfIntegratorBase::findOrTempAllocateVoxelPtr(
     const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
     BlockIndex* last_block_idx, VoxelMap* temp_voxel_storage) const {
   DCHECK(temp_voxel_storage != nullptr);
+  DCHECK(last_block != nullptr);
+  DCHECK(last_block_idx != nullptr);
 
   const BlockIndex block_idx =
       getBlockIndexFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_inv_);
@@ -288,10 +295,10 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 
   // Pre-compute a list of unique voxels to end on.
   // Create a hashmap: VOXEL INDEX -> index in original cloud.
-  BlockHashMapType<std::vector<size_t>>::type voxel_map;
+  AnyIndexHashMapType<std::vector<size_t>>::type voxel_map;
   // This is a hash map (same as above) to all the indices that need to be
   // cleared.
-  BlockHashMapType<std::vector<size_t>>::type clear_map;
+  AnyIndexHashMapType<std::vector<size_t>>::type clear_map;
 
   ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
 
@@ -313,8 +320,8 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 inline void MergedTsdfIntegrator::bundleRays(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, ThreadSafeIndex* index_getter,
-    BlockHashMapType<std::vector<size_t>>::type* voxel_map,
-    BlockHashMapType<std::vector<size_t>>::type* clear_map) {
+    AnyIndexHashMapType<std::vector<size_t>>::type* voxel_map,
+    AnyIndexHashMapType<std::vector<size_t>>::type* clear_map) {
   DCHECK(voxel_map != nullptr);
   DCHECK(clear_map != nullptr);
 
@@ -346,7 +353,7 @@ void MergedTsdfIntegrator::integrateVoxel(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
     const std::pair<AnyIndex, std::vector<size_t>>& kv,
-    const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
+    const AnyIndexHashMapType<std::vector<size_t>>::type& voxel_map,
     VoxelMap* temp_voxel_storage) {
   DCHECK(temp_voxel_storage != nullptr);
 
@@ -408,12 +415,12 @@ void MergedTsdfIntegrator::integrateVoxel(
 void MergedTsdfIntegrator::integrateVoxels(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-    const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-    const BlockHashMapType<std::vector<size_t>>::type& clear_map,
+    const AnyIndexHashMapType<std::vector<size_t>>::type& voxel_map,
+    const AnyIndexHashMapType<std::vector<size_t>>::type& clear_map,
     size_t thread_idx, VoxelMap* temp_voxel_storage) {
   DCHECK(temp_voxel_storage != nullptr);
 
-  BlockHashMapType<std::vector<size_t>>::type::const_iterator it;
+  AnyIndexHashMapType<std::vector<size_t>>::type::const_iterator it;
   size_t map_size;
   if (clearing_ray) {
     it = clear_map.begin();
@@ -435,8 +442,8 @@ void MergedTsdfIntegrator::integrateVoxels(
 void MergedTsdfIntegrator::integrateRays(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-    const BlockHashMapType<std::vector<size_t>>::type& voxel_map,
-    const BlockHashMapType<std::vector<size_t>>::type& clear_map) {
+    const AnyIndexHashMapType<std::vector<size_t>>::type& voxel_map,
+    const AnyIndexHashMapType<std::vector<size_t>>::type& clear_map) {
   const Point& origin = T_G_C.getPosition();
 
   std::vector<VoxelMap> temp_voxel_storage(config_.integrator_threads);

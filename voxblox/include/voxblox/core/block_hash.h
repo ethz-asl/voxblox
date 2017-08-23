@@ -23,7 +23,7 @@ struct AnyIndexHash {
 };
 
 template <typename ValueType>
-struct BlockHashMapType {
+struct AnyIndexHashMapType {
   typedef std::unordered_map<
       BlockIndex, ValueType, AnyIndexHash, std::equal_to<BlockIndex>,
       Eigen::aligned_allocator<std::pair<const BlockIndex, ValueType> > >
@@ -34,7 +34,7 @@ typedef std::unordered_set<AnyIndex, AnyIndexHash, std::equal_to<AnyIndex>,
                            Eigen::aligned_allocator<AnyIndex> >
     IndexSet;
 
-typedef typename BlockHashMapType<IndexVector>::type HierarchicalIndexMap;
+typedef typename AnyIndexHashMapType<IndexVector>::type HierarchicalIndexMap;
 
 typedef typename HierarchicalIndexMap::value_type HierarchicalIndex;
 

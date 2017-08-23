@@ -124,7 +124,7 @@ add_custom_command(TARGET test_data
 catkin_add_gtest(test_approx_hash_array
   test/test_approx_hash_array.cc
 )
-target_link_libraries(test_approx_hash_array ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_approx_hash_array ${PROJECT_NAME})
 
 catkin_add_gtest(test_tsdf_map
   test/test_tsdf_map.cc

@@ -88,9 +88,10 @@ class MeshIntegrator {
 
     std::vector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
+      constexpr bool clear_updated_flag = true;
       integration_threads.emplace_back(
           &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
-          true, &index_getter);
+          clear_updated_flag, &index_getter);
     }
 
     for (std::thread& thread : integration_threads) {

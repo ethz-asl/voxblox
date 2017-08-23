@@ -23,10 +23,10 @@
 namespace voxblox {
 
 // Basic container, give in an index and get the element that was stored there.
-// There are 2^unmasked_bits_ elements in the container, which element is
+// There are 2^unmasked_bits elements in the container, which element is
 // returned depends on your hashing function.
 // Uses at least 2^unmasked_bits * sizeof(StoreElement) bytes of ram
-template <size_t unmasked_bits_, typename StoredElement>
+template <size_t unmasked_bits, typename StoredElement>
 class ApproxHashArray {
  public:
   StoredElement& get(const size_t& hash) {
@@ -45,8 +45,8 @@ class ApproxHashArray {
   }
 
  private:
-  static constexpr size_t pseudo_map_size_ = (1 << unmasked_bits_);
-  static constexpr size_t bit_mask_ = (1 << unmasked_bits_) - 1;
+  static constexpr size_t pseudo_map_size_ = (1 << unmasked_bits);
+  static constexpr size_t bit_mask_ = (1 << unmasked_bits) - 1;
 
   std::array<StoredElement, pseudo_map_size_> pseudo_map_;
   AnyIndexHash hasher_;
@@ -58,11 +58,11 @@ class ApproxHashArray {
 // other element was already added to the set.
 // A false negative occurs if an element was removed to add another element with
 // the same masked hash. The chance of this happening is inversely proportional
-// to 2^unmasked_bits_.
+// to 2^unmasked_bits.
 // Uses at least (2^unmasked_bits + full_reset_threshold) * sizeof(StoreElement)
 // bytes of ram.
 // Note that the reset function is not thread safe.
-template <size_t unmasked_bits_, size_t full_reset_threshold_>
+template <size_t unmasked_bits, size_t full_reset_threshold>
 class ApproxHashSet {
  public:
   ApproxHashSet() : reset_counter_(0) {
@@ -72,8 +72,10 @@ class ApproxHashSet {
       value.store(0, std::memory_order_relaxed);
     }
 
-    // we init our set with zeros, except for the 0 bin which needs a different
-    // number
+    // The array used for storing values is initialized with zeros. However, the
+    // zeroth bin can actually store the 0 hash. Because of this to prevent a
+    // false positive on looking up a 0 hash this bin needs to initially store a
+    // different value.
     pseudo_set_ptr_[0].store(std::numeric_limits<size_t>::max());
   }
 
@@ -125,22 +127,24 @@ class ApproxHashSet {
     return replaceHash(hash);
   }
 
-  // If unmasked_bits_ is large, the array takes a lot of memory, this makes
+  // If unmasked_bits is large, the array takes a lot of memory, this makes
   // clearing it slow.
   // However offsetting which bin hashes are placed into have the same effect.
   // Once we run out of room to offset by (determined by full_reset_threshold we
   // clear the memory).
   // This function is not thread safe.
   void resetApproxSet() {
-    if (reset_counter_ >= full_reset_threshold_) {
+    if (reset_counter_ >= full_reset_threshold) {
       for (std::atomic<size_t>& value : pseudo_set_) {
         value.store(0, std::memory_order_relaxed);
       }
       reset_counter_ = 0;
       pseudo_set_ptr_ = &pseudo_set_[reset_counter_++];
 
-      // we init our set with zeros, except for the 0 bin which needs a
-      // different number
+      // The array used for storing values is initialized with zeros. However,
+      // the zeroth bin can actually store the 0 hash. Because of this to
+      // prevent a false positive on looking up a 0 hash this bin needs to
+      // initially store a different value.
       pseudo_set_ptr_[0].store(std::numeric_limits<size_t>::max());
 
     } else {
@@ -150,8 +154,8 @@ class ApproxHashSet {
 
  private:
   static constexpr size_t pseudo_set_size_ =
-      (1 << unmasked_bits_) + full_reset_threshold_;
-  static constexpr size_t bit_mask_ = (1 << unmasked_bits_) - 1;
+      (1 << unmasked_bits) + full_reset_threshold;
+  static constexpr size_t bit_mask_ = (1 << unmasked_bits) - 1;
 
   size_t reset_counter_;
   std::array<std::atomic<size_t>, pseudo_set_size_> pseudo_set_;
