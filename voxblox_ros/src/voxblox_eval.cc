@@ -1,4 +1,3 @@
-#include <deque>
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_xml.h>
@@ -14,6 +13,7 @@
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <deque>
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>
@@ -64,7 +64,7 @@ class VoxbloxEvaluator {
   ros::Publisher gt_ptcloud_pub_;
 
   // Core data to compare.
-  std::shared_ptr<Layer<TsdfVoxel> > tsdf_layer_;
+  std::shared_ptr<Layer<TsdfVoxel>> tsdf_layer_;
   pcl::PointCloud<pcl::PointXYZRGB> gt_ptcloud_;
 
   // Interpolator to get the distance at the exact point in the GT.
@@ -124,7 +124,7 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   if (visualize_) {
     mesh_pub_ =
         nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
-    gt_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+    gt_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
         "gt_ptcloud", 1, true);
 
     std::string color_mode("color");
@@ -198,8 +198,7 @@ void VoxbloxEvaluator::evaluate() {
           tsdf_layer_->getBlockPtrByCoordinates(point);
       if (block_ptr != nullptr) {
         TsdfVoxel& voxel = block_ptr->getVoxelByCoordinates(point);
-        voxel.color =
-            grayColorMap(std::fabs(distance) / truncation_distance);
+        voxel.color = grayColorMap(std::fabs(distance) / truncation_distance);
       }
     }
 
@@ -227,9 +226,12 @@ void VoxbloxEvaluator::visualize() {
   // Generate the mesh.
   MeshIntegrator<TsdfVoxel>::Config mesh_config;
   mesh_layer_.reset(new MeshLayer(tsdf_layer_->block_size()));
-  mesh_integrator_.reset(
-      new MeshIntegrator<TsdfVoxel>(mesh_config, tsdf_layer_.get(), mesh_layer_.get()));
-  mesh_integrator_->generateWholeMesh();
+  mesh_integrator_.reset(new MeshIntegrator<TsdfVoxel>(
+      mesh_config, tsdf_layer_.get(), mesh_layer_.get()));
+
+  constexpr bool only_mesh_updated_blocks = false;
+  constexpr bool clear_updated_flag = true;
+  mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
 
   // Publish mesh.
   visualization_msgs::MarkerArray marker_array;

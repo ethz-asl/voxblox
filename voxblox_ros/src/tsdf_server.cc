@@ -281,8 +281,9 @@ void TsdfServer::updateMesh() {
   }
 
   timing::Timer generate_mesh_timer("mesh/update");
-  const bool clear_updated_flag = true;
-  mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+  constexpr bool only_mesh_updated_blocks = true;
+  constexpr bool clear_updated_flag = true;
+  mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
   generate_mesh_timer.Stop();
 
   // TODO(helenol): also think about how to update markers incrementally?
@@ -299,10 +300,15 @@ bool TsdfServer::generateMesh() {
   timing::Timer generate_mesh_timer("mesh/generate");
   const bool clear_mesh = true;
   if (clear_mesh) {
-    mesh_integrator_->generateWholeMesh();
+    constexpr bool only_mesh_updated_blocks = false;
+    constexpr bool clear_updated_flag = true;
+    mesh_integrator_->generateMesh(only_mesh_updated_blocks,
+                                   clear_updated_flag);
   } else {
-    const bool clear_updated_flag = true;
-    mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+    constexpr bool only_mesh_updated_blocks = true;
+    constexpr bool clear_updated_flag = true;
+    mesh_integrator_->generateMesh(only_mesh_updated_blocks,
+                                   clear_updated_flag);
   }
   generate_mesh_timer.Stop();
 

@@ -474,7 +474,11 @@ void SimulationServer::visualize() {
     MeshLayer::Ptr mesh(new MeshLayer(tsdf_gt_->block_size()));
     MeshIntegrator<TsdfVoxel> mesh_integrator(mesh_config, tsdf_gt_.get(),
                                               mesh.get());
-    mesh_integrator.generateWholeMesh();
+
+    constexpr bool only_mesh_updated_blocks = false;
+    constexpr bool clear_updated_flag = true;
+    mesh_integrator.generateMesh(only_mesh_updated_blocks, clear_updated_flag);
+
     visualization_msgs::MarkerArray marker_array;
     marker_array.markers.resize(1);
     ColorMode color_mode = ColorMode::kNormals;
@@ -486,7 +490,8 @@ void SimulationServer::visualize() {
     MeshLayer::Ptr mesh_test(new MeshLayer(tsdf_test_->block_size()));
     MeshIntegrator<TsdfVoxel> mesh_integrator_test(
         mesh_config, tsdf_test_.get(), mesh_test.get());
-    mesh_integrator_test.generateWholeMesh();
+    mesh_integrator_test.generateMesh(only_mesh_updated_blocks,
+                                      clear_updated_flag);
     marker_array.markers.clear();
     marker_array.markers.resize(1);
     fillMarkerWithMesh(mesh_test, color_mode, &marker_array.markers[0]);

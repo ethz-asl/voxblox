@@ -71,40 +71,14 @@ class MeshIntegrator {
     }
   }
 
-  // Generates mesh for the entire tsdf layer from scratch.
-  void generateWholeMesh() {
-    mesh_layer_->clear();
-    // Get all of the blocks in the TSDF layer, and mesh each one.
+  // Generates mesh for the tsdf layer.
+  void generateMesh(bool only_mesh_updated_blocks, bool clear_updated_flag) {
     BlockIndexList all_tsdf_blocks;
-    tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
-
-    // Allocate all the mesh memory
-    for (const BlockIndex& block_index : all_tsdf_blocks) {
-      mesh_layer_->allocateMeshPtrByIndex(block_index);
+    if (only_mesh_updated_blocks) {
+      tsdf_layer_->getAllUpdatedBlocks(&all_tsdf_blocks);
+    } else {
+      tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
     }
-
-    ThreadSafeIndex index_getter(all_tsdf_blocks.size(),
-                                 config_.integrator_threads);
-
-    std::vector<std::thread> integration_threads;
-    for (size_t i = 0; i < config_.integrator_threads; ++i) {
-      constexpr bool clear_updated_flag = true;
-      integration_threads.emplace_back(
-          &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
-          clear_updated_flag, &index_getter);
-    }
-
-    for (std::thread& thread : integration_threads) {
-      thread.join();
-    }
-  }
-
-  void generateMeshForUpdatedBlocks(bool clear_updated_flag) {
-    // Only update parts of the mesh for blocks that have updated.
-    // clear_updated_flag decides whether to reset 'updated' after updating the
-    // mesh.
-    BlockIndexList all_tsdf_blocks;
-    tsdf_layer_->getAllUpdatedBlocks(&all_tsdf_blocks);
 
     // Allocate all the mesh memory
     for (const BlockIndex& block_index : all_tsdf_blocks) {
