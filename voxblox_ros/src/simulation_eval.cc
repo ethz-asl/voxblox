@@ -1,15 +1,15 @@
 #include <ros/ros.h>
 
-#include <voxblox/simulation/simulation_world.h>
-#include <voxblox/mesh/mesh_integrator.h>
 #include <voxblox/integrator/esdf_integrator.h>
-#include <voxblox/integrator/tsdf_integrator.h>
-#include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/esdf_occ_integrator.h>
+#include <voxblox/integrator/occupancy_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/mesh/mesh_integrator.h>
+#include <voxblox/simulation/simulation_world.h>
 
-#include "voxblox_ros/ptcloud_vis.h"
-#include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/conversions.h"
+#include "voxblox_ros/mesh_vis.h"
+#include "voxblox_ros/ptcloud_vis.h"
 
 namespace voxblox {
 
@@ -303,9 +303,9 @@ void SimulationServer::generateSDF() {
                                       fov_h_rad, max_dist, &ptcloud, &colors);
 
     // Get T_G_C from ray origin and ray direction.
-    Transformation T_G_C(
-        view_origin, Eigen::Quaterniond::FromTwoVectors(Point(0.0, 0.0, 1.0),
-                                                        view_direction));
+    Transformation T_G_C(view_origin,
+                         Eigen::Quaternion<FloatingPoint>::FromTwoVectors(
+                             Point(0.0, 0.0, 1.0), view_direction));
 
     // Transform back into camera frame.
     Pointcloud ptcloud_C;
@@ -472,8 +472,13 @@ void SimulationServer::visualize() {
     // Generate TSDF GT mesh.
     MeshIntegrator<TsdfVoxel>::Config mesh_config;
     MeshLayer::Ptr mesh(new MeshLayer(tsdf_gt_->block_size()));
-    MeshIntegrator<TsdfVoxel> mesh_integrator(mesh_config, tsdf_gt_.get(), mesh.get());
-    mesh_integrator.generateWholeMesh();
+    MeshIntegrator<TsdfVoxel> mesh_integrator(mesh_config, tsdf_gt_.get(),
+                                              mesh.get());
+
+    constexpr bool only_mesh_updated_blocks = false;
+    constexpr bool clear_updated_flag = true;
+    mesh_integrator.generateMesh(only_mesh_updated_blocks, clear_updated_flag);
+
     visualization_msgs::MarkerArray marker_array;
     marker_array.markers.resize(1);
     ColorMode color_mode = ColorMode::kNormals;
@@ -483,9 +488,10 @@ void SimulationServer::visualize() {
 
     // Also generate test mesh
     MeshLayer::Ptr mesh_test(new MeshLayer(tsdf_test_->block_size()));
-    MeshIntegrator<TsdfVoxel> mesh_integrator_test(mesh_config, tsdf_test_.get(),
-                                        mesh_test.get());
-    mesh_integrator_test.generateWholeMesh();
+    MeshIntegrator<TsdfVoxel> mesh_integrator_test(
+        mesh_config, tsdf_test_.get(), mesh_test.get());
+    mesh_integrator_test.generateMesh(only_mesh_updated_blocks,
+                                      clear_updated_flag);
     marker_array.markers.clear();
     marker_array.markers.resize(1);
     fillMarkerWithMesh(mesh_test, color_mode, &marker_array.markers[0]);

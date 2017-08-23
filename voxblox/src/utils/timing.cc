@@ -172,7 +172,6 @@ std::string Timing::SecondsToTimeString(double seconds) {
 }
 
 void Timing::Print(std::ostream& out) {
-  std::lock_guard<std::mutex> lock(Instance().mutex_);
   map_t& tagMap = Instance().tagMap_;
 
   if (tagMap.empty()) {

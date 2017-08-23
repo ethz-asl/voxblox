@@ -78,6 +78,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                     integrator_config.use_const_weight);
   nh_private_.param("allow_clear", integrator_config.allow_clear,
                     integrator_config.allow_clear);
+  nh_private_.param("start_voxel_subsampling_factor",
+                    integrator_config.start_voxel_subsampling_factor,
+                    integrator_config.start_voxel_subsampling_factor);
+  nh_private_.param("max_consecutive_ray_collisions",
+                    integrator_config.max_consecutive_ray_collisions,
+                    integrator_config.max_consecutive_ray_collisions);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
@@ -275,8 +281,9 @@ void TsdfServer::updateMesh() {
   }
 
   timing::Timer generate_mesh_timer("mesh/update");
-  const bool clear_updated_flag = true;
-  mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+  constexpr bool only_mesh_updated_blocks = true;
+  constexpr bool clear_updated_flag = true;
+  mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
   generate_mesh_timer.Stop();
 
   // TODO(helenol): also think about how to update markers incrementally?
@@ -293,10 +300,15 @@ bool TsdfServer::generateMesh() {
   timing::Timer generate_mesh_timer("mesh/generate");
   const bool clear_mesh = true;
   if (clear_mesh) {
-    mesh_integrator_->generateWholeMesh();
+    constexpr bool only_mesh_updated_blocks = false;
+    constexpr bool clear_updated_flag = true;
+    mesh_integrator_->generateMesh(only_mesh_updated_blocks,
+                                   clear_updated_flag);
   } else {
-    const bool clear_updated_flag = true;
-    mesh_integrator_->generateMeshForUpdatedBlocks(clear_updated_flag);
+    constexpr bool only_mesh_updated_blocks = true;
+    constexpr bool clear_updated_flag = true;
+    mesh_integrator_->generateMesh(only_mesh_updated_blocks,
+                                   clear_updated_flag);
   }
   generate_mesh_timer.Stop();
 

@@ -49,6 +49,7 @@ set("${PROJECT_NAME}_SRCS"
   src/core/esdf_map.cc
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
+  src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
@@ -119,6 +120,11 @@ add_custom_command(TARGET test_data
                                 test_data/ || :)
 
 #add_definitions(-DVISUALIZE_UNIT_TEST_RESULTS)
+
+catkin_add_gtest(test_approx_hash_array
+  test/test_approx_hash_array.cc
+)
+target_link_libraries(test_approx_hash_array ${PROJECT_NAME})
 
 catkin_add_gtest(test_tsdf_map
   test/test_tsdf_map.cc

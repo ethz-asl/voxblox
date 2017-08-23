@@ -14,6 +14,7 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 # Table of Contents
 * [Paper and Video](README.md#paper-and-video)
 * [Credits](README.md#credits)
+* [Performance](README.md#performance)
 * [Installation](README.md#installation)
 * [Running Voxblox](README.md#running-voxblox)
 * [Voxblox Node](README.md#voxblox-node)
@@ -42,6 +43,26 @@ Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, 
 
 # Credits
 This library was written primarily by Helen Oleynikova and Marius Fehr, with significant contributions from Zachary Taylor, Alexander Millane, and others. The marching cubes meshing and ROS mesh generation were taken or heavily derived from [open_chisel](https://github.com/personalrobotics/OpenChisel). We've retained the copyright headers for the relevant files.
+
+# Performance
+The Voxblox code has prioritized readability and easy extension over performance. It was also designed to operate on systems that lack a GPU. One of the main drives to create Voxblox was to create a volumetric mapping library that fit the needs of planning for robots, because of this, and unlike many TSDF libraries all possible freespace is mapped in addition to areas close to surfaces. These design decisions limit performance, however high quality real-time mapping of large enviroments is still easily acheivable. 
+
+An example of the system integrating a TSDF, generating a mesh and publishing the result to RViz in real time is shown below. A table of the performance on the cow and lady dataset on a i7-4810MQ 2.80GHz CPU is also shown.
+
+![example_gif](http://i.imgur.com/2wLztFm.gif)
+
+<center>
+
+Rendered Mesh | Setup
+--- | --- 
+<img src="http://i.imgur.com/NYykPND.jpg" width="500"> | <table><tr><td>Integrator:</td><td>Merged</td></tr><tr><td>Voxel:</td><td>20 cm</td></tr><tr><td>TSDF:</td><td>56 ms / scan</td></tr><tr><td>Meshing:</td><td>2 ms / scan</td></tr><tr><td>Total RAM:</td><td>49 MB</td></tr></table>
+<img src="http://i.imgur.com/tHmGk8h.jpg" width="500"> | <table><tr><td>Integrator:</td><td>Fast</td></tr><tr><td>Voxel:</td><td>20 cm</td></tr><tr><td>TSDF:</td><td>20 ms / scan</td></tr><tr><td>Meshing:</td><td>2 ms / scan</td></tr><tr><td>Total RAM:</td><td>62 MB</td></tr></table>
+<img src="http://i.imgur.com/9KNmnum.jpg" width="500"> | <table><tr><td>Integrator:</td><td>Merged</td></tr><tr><td>Voxel:</td><td>5 cm</td></tr><tr><td>TSDF:</td><td>112 ms / scan</td></tr><tr><td>Meshing:</td><td>10 ms / scan</td></tr><tr><td>Total RAM:</td><td>144.2 MB</td></tr></table>
+<img src="http://i.imgur.com/3zolhrB.jpg" width="500"> | <table><tr><td>Integrator:</td><td>Fast</td></tr><tr><td>Voxel:</td><td>5 cm</td></tr><tr><td>TSDF:</td><td>23 ms / scan</td></tr><tr><td>Meshing:</td><td>12 ms / scan</td></tr><tr><td>Total RAM:</td><td>153.9 MB</td></tr></table>
+<img src="http://i.imgur.com/9WvpFIt.jpg" width="500"> | <table><tr><td>Integrator:</td><td>Merged</td></tr><tr><td>Voxel:</td><td>2 cm</td></tr><tr><td>TSDF:</td><td>527 ms / scan</td></tr><tr><td>Meshing:</td><td>66 ms / scan</td></tr><tr><td>Total RAM:</td><td>609.2 MB</td></tr></table>
+<img src="http://i.imgur.com/GcYiHZ1.jpg" width="500"> | <table><tr><td>Integrator:</td><td>Fast</td></tr><tr><td>Voxel:</td><td>2 cm</td></tr><tr><td>TSDF:</td><td>63 ms / scan</td></tr><tr><td>Meshing:</td><td>110 ms / scan</td></tr><tr><td>Total RAM:</td><td>673.1 MB</td></tr></table>
+
+</center>
 
 # Installation
 To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) or [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu).
