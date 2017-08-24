@@ -77,7 +77,7 @@ template <>
 bool getSurfaceDistanceAlongRay(const Layer<TsdfVoxel>& layer,
                                 const Point& ray_origin,
                                 const Point& bearing_vector,
-                                double max_distance, double* distance);
+                                double max_distance, Point* triangulated_pose);
 
 }  // namespace voxblox
 
