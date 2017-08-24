@@ -15,7 +15,7 @@ template <typename VoxelType>
 bool getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
                                 const Point& ray_origin,
                                 const Point& bearing_vector,
-                                double max_distance, double* distance) {
+                                double max_distance, Point* triangulated_pose) {
   // Make sure bearing vector is normalized.
   Point ray_direction = bearing_vector.normalized();
 
@@ -67,7 +67,7 @@ bool getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
   }
 
   if (surface_found) {
-    *distance = t;
+    *triangulated_pose = ray_origin + t * ray_direction;
   }
 
   return surface_found;
