@@ -9,8 +9,19 @@ namespace voxblox {
 
 TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
                                        Layer<TsdfVoxel>* layer)
-    : config_(config), layer_(layer) {
-  DCHECK(layer_);
+    : config_(config) {
+  setLayer(layer);
+
+  if (config_.integrator_threads == 0) {
+    LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
+    config_.integrator_threads = 1;
+  }
+}
+
+void TsdfIntegratorBase::setLayer(Layer<TsdfVoxel>* layer) {
+  DCHECK(layer);
+
+  layer_ = layer;
 
   voxel_size_ = layer_->voxel_size();
   block_size_ = layer_->block_size();
@@ -19,11 +30,6 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
   voxel_size_inv_ = 1.0 / voxel_size_;
   block_size_inv_ = 1.0 / block_size_;
   voxels_per_side_inv_ = 1.0 / voxels_per_side_;
-
-  if (config_.integrator_threads == 0) {
-    LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
-    config_.integrator_threads = 1;
-  }
 }
 
 // Thread safe.

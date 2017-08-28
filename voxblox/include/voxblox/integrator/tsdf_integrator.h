@@ -68,6 +68,8 @@ class TsdfIntegratorBase {
   // Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
 
+  void setLayer(Layer<TsdfVoxel>* layer);
+
  protected:
   // Thread safe.
   inline bool isPointValid(const Point& point_C, bool* is_clearing) const;
