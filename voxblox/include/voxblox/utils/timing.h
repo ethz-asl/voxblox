@@ -28,6 +28,8 @@
 #include <string>
 #include <vector>
 
+#include <Eigen/Core>
+
 namespace voxblox {
 
 namespace timing {
@@ -35,6 +37,8 @@ namespace timing {
 template <typename T, typename Total, int N>
 class Accumulator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Accumulator()
       : window_samples_(0),
         totalsamples_(0),
@@ -111,8 +115,11 @@ struct TimerMapValue {
 // timing. Because all of the functions are inline, they should just disappear.
 class DummyTimer {
  public:
-  DummyTimer(size_t /*handle*/, bool /*constructStopped*/ = false) {}
-  DummyTimer(std::string const& /*tag*/, bool /*constructStopped*/ = false) {}
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  explicit DummyTimer(size_t /*handle*/, bool /*constructStopped*/ = false) {}
+  explicit DummyTimer(std::string const& /*tag*/,
+                      bool /*constructStopped*/ = false) {}
   ~DummyTimer() {}
 
   void Start() {}
@@ -122,6 +129,8 @@ class DummyTimer {
 
 class Timer {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Timer(size_t handle, bool constructStopped = false);
   Timer(std::string const& tag, bool constructStopped = false);
   ~Timer();
@@ -139,6 +148,8 @@ class Timer {
 
 class Timing {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::map<std::string, size_t> map_t;
   friend class Timer;
   // Definition of static functions to query the timers.

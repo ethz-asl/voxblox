@@ -12,6 +12,8 @@ namespace test {
 template <typename VoxelType>
 class LayerTest {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   void CompareLayers(const Layer<VoxelType>& layer_A,
                      const Layer<VoxelType>& layer_B) const {
     EXPECT_NEAR(layer_A.voxel_size(), layer_B.voxel_size(), kTolerance);

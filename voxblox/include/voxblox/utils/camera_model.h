@@ -17,6 +17,8 @@ typedef kindr::minimal::RotationQuaternionTemplate<double> Rotation;
 // distance calculations to points.
 class Plane {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Plane() : normal_(Eigen::Vector3d::Identity()), distance_(0) {}
   virtual ~Plane() {}
 
@@ -37,6 +39,8 @@ class Plane {
 
 class CameraModel {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   CameraModel() : initialized_(false) {}
   virtual ~CameraModel() {}
 

@@ -20,7 +20,11 @@ namespace voxblox {
 // https://arxiv.org/abs/1611.03631
 class EsdfIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     // Maximum distance to calculate the actual distance to.
     // Any values above this will be set to default_distance_m.
     FloatingPoint max_distance_m = 2.0;

@@ -43,7 +43,11 @@ namespace voxblox {
 template <typename VoxelType>
 class MeshIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     bool use_color = true;
     float min_weight = 1e-4;
     size_t integrator_threads = std::thread::hardware_concurrency();

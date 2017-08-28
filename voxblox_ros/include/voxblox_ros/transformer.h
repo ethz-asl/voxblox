@@ -14,6 +14,8 @@ namespace voxblox {
 // ROS parameter server, depending on settings loaded from ROS params.
 class Transformer {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Transformer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
   bool lookupTransform(const std::string& from_frame,
@@ -69,4 +71,4 @@ class Transformer {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_ROS_TSDF_SERVER_H_
+#endif  // VOXBLOX_ROS_TRANSFORMER_H_

@@ -31,9 +31,13 @@ namespace voxblox {
 // accessed by other threads.
 class TsdfIntegratorBase {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef AnyIndexHashMapType<TsdfVoxel>::type VoxelMap;
 
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     float default_truncation_distance = 0.1;
     float max_weight = 10000.0;
     bool voxel_carving_enabled = true;
@@ -122,6 +126,8 @@ class TsdfIntegratorBase {
 
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   SimpleTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
@@ -136,6 +142,8 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
 class MergedTsdfIntegrator : public TsdfIntegratorBase {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   MergedTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
@@ -172,6 +180,8 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 
 class FastTsdfIntegrator : public TsdfIntegratorBase {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
