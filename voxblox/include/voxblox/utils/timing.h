@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-#include <Eigen/Core>
+#include "voxblox/core/common.h"
 
 namespace voxblox {
 
@@ -183,7 +183,7 @@ class Timing {
   Timing();
   ~Timing();
 
-  typedef std::vector<TimerMapValue> list_t;
+  typedef AlignedVector<TimerMapValue> list_t;
 
   list_t timers_;
   map_t tagMap_;

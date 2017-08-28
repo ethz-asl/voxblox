@@ -6,6 +6,8 @@
 #include <queue>
 #include <vector>
 
+#include "voxblox/core/common.h"
+
 // Bucketed priority queue, mostly following L. Yatziv et al in
 // O(N) Implementation of the Fast Marching Algorithm, though skipping the
 // circular aspect (don't care about a bit more memory used for this).
@@ -86,7 +88,8 @@ class BucketQueue {
  private:
   int num_buckets_;
   double max_val_;
-  std::vector<std::queue<T, std::deque<T, Eigen::aligned_allocator<T>>>>
+  voxblox::AlignedVector<
+      std::queue<T, std::deque<T, Eigen::aligned_allocator<T>>>>
       buckets_;
 
   // Speed up retrivals.

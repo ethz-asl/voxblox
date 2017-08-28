@@ -47,11 +47,10 @@ class EsdfOccIntegrator {
   // Directions is the direction that the neighbor voxel lives in. If you
   // need the direction FROM the neighbor voxel TO the current voxel, take
   // negative of the given direction.
-  void getNeighborsAndDistances(const BlockIndex& block_index,
-                                const VoxelIndex& voxel_index,
-                                std::vector<VoxelKey>* neighbors,
-                                std::vector<float>* distances,
-                                std::vector<Eigen::Vector3i>* directions) const;
+  void getNeighborsAndDistances(
+      const BlockIndex& block_index, const VoxelIndex& voxel_index,
+      AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
+      AlignedVector<Eigen::Vector3i>* directions) const;
   void getNeighbor(const BlockIndex& block_index, const VoxelIndex& voxel_index,
                    const Eigen::Vector3i& direction,
                    BlockIndex* neighbor_block_index,

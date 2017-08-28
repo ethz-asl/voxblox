@@ -7,6 +7,8 @@
 #include <kindr/minimal/quat-transformation.h>
 #include <Eigen/Core>
 
+#include "voxblox/core/common.h"
+
 namespace voxblox {
 
 // Transformation type for defining sensor orientation.
@@ -74,11 +76,11 @@ class CameraModel {
 
   // The original vertices of the frustum, in the axis-aligned coordinate frame
   // (before rotation).
-  std::vector<Eigen::Vector3d> untransformed_corners_;
+  AlignedVector<Eigen::Vector3d> untransformed_corners_;
 
   // The 6 bounding planes for the current camera pose, and their corresponding
   // AABB (Axis Aligned Bounding Box).
-  std::vector<Plane> bounding_planes_;
+  AlignedVector<Plane> bounding_planes_;
   Eigen::Vector3d aabb_min_;
   Eigen::Vector3d aabb_max_;
 };

@@ -171,9 +171,8 @@ class RayCaster {
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
 // should map to voxel indices.
-inline void castRay(
-    const Point& start_scaled, const Point& end_scaled,
-    std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex> >* indices) {
+inline void castRay(const Point& start_scaled, const Point& end_scaled,
+                    AlignedVector<AnyIndex>* indices) {
   CHECK_NOTNULL(indices);
 
   RayCaster ray_caster(start_scaled, end_scaled);

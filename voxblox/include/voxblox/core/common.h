@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_CORE_COMMON_H_
 #define VOXBLOX_CORE_COMMON_H_
 
+#include <deque>
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -13,6 +14,19 @@
 #include <Eigen/Core>
 
 namespace voxblox {
+
+// Aligned Eigen containers
+template <typename Type>
+using AlignedVector = std::vector<Type, Eigen::aligned_allocator<Type>>;
+template <typename Type>
+using AlignedDeque = std::deque<Type, Eigen::aligned_allocator<Type>>;
+
+template <typename Type, typename... Arguments>
+inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
+  typedef typename std::remove_const<Type>::type TypeNonConst;
+  return std::allocate_shared<Type>(Eigen::aligned_allocator<TypeNonConst>(),
+                                    std::forward<Arguments>(arguments)...);
+}
 
 // Types.
 typedef double FloatingPoint;
@@ -27,7 +41,7 @@ typedef AnyIndex BlockIndex;
 
 typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 
-typedef std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> IndexVector;
+typedef AlignedVector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
@@ -35,16 +49,15 @@ struct Color;
 typedef uint32_t Label;
 
 // Pointcloud types for external interface.
-typedef std::vector<Point, Eigen::aligned_allocator<Point>> Pointcloud;
-typedef std::vector<Color> Colors;
-typedef std::vector<Label> Labels;
+typedef AlignedVector<Point> Pointcloud;
+typedef AlignedVector<Color> Colors;
+typedef AlignedVector<Label> Labels;
 
 // For triangle meshing/vertex access.
 typedef size_t VertexIndex;
-typedef std::vector<VertexIndex> VertexIndexList;
+typedef AlignedVector<VertexIndex> VertexIndexList;
 typedef Eigen::Matrix<FloatingPoint, 3, 3> Triangle;
-typedef std::vector<Triangle, Eigen::aligned_allocator<Triangle>>
-    TriangleVector;
+typedef AlignedVector<Triangle> TriangleVector;
 
 // Transformation type for defining sensor orientation.
 typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
@@ -194,12 +207,6 @@ inline float probabilityFromLogOdds(float log_odds) {
   return 1.0 - (1.0 / (1.0 + exp(log_odds)));
 }
 
-template <typename Type, typename... Arguments>
-inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
-  typedef typename std::remove_const<Type>::type TypeNonConst;
-  return std::allocate_shared<Type>(Eigen::aligned_allocator<TypeNonConst>(),
-                                    std::forward<Arguments>(arguments)...);
-}
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_COMMON_H_

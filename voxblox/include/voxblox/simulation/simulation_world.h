@@ -65,7 +65,7 @@ class SimulationWorld {
   void setVoxel(FloatingPoint dist, const Color& color, VoxelType* voxel) const;
 
   // Vector storing pointers to all the objects in this world.
-  std::vector<std::unique_ptr<Object> > objects_;
+  AlignedVector<std::unique_ptr<Object> > objects_;
 
   // World boundaries... Can be changed arbitrarily, just sets ground truth
   // generation and visualization bounds, accurate only up to block size.
