@@ -24,6 +24,9 @@
 #ifndef VOXBLOX_ROS_MESH_PCL_H_
 #define VOXBLOX_ROS_MESH_PCL_H_
 
+#include <string>
+#include <vector>
+
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
@@ -40,8 +43,7 @@ inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
   pcl::PointCloud<pcl::PointXYZ> pointcloud;
   std::vector<pcl::Vertices> polygons;
 
-  Mesh::Ptr mesh =
-      std::make_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
+  Mesh::Ptr mesh = aligned_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
   mesh_layer.combineMesh(mesh);
 
   // add points
@@ -53,7 +55,7 @@ inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
   }
   // add triangles
   pcl::Vertices vertices_idx;
-  polygons.reserve(mesh->indices.size()/3);
+  polygons.reserve(mesh->indices.size() / 3);
   for (const VertexIndex& idx : mesh->indices) {
     vertices_idx.vertices.push_back(idx);
 

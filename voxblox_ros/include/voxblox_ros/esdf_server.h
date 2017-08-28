@@ -11,6 +11,8 @@ namespace voxblox {
 
 class EsdfServer : public TsdfServer {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   virtual ~EsdfServer() {}
 

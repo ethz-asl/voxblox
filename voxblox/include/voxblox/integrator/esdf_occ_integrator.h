@@ -18,7 +18,11 @@ namespace voxblox {
 
 class EsdfOccIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     // Maximum distance to calculate the actual distance to.
     // Any values above this will be set to default_distance_m.
     FloatingPoint max_distance_m = 2.0;
@@ -43,11 +47,10 @@ class EsdfOccIntegrator {
   // Directions is the direction that the neighbor voxel lives in. If you
   // need the direction FROM the neighbor voxel TO the current voxel, take
   // negative of the given direction.
-  void getNeighborsAndDistances(const BlockIndex& block_index,
-                                const VoxelIndex& voxel_index,
-                                std::vector<VoxelKey>* neighbors,
-                                std::vector<float>* distances,
-                                std::vector<Eigen::Vector3i>* directions) const;
+  void getNeighborsAndDistances(
+      const BlockIndex& block_index, const VoxelIndex& voxel_index,
+      AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
+      AlignedVector<Eigen::Vector3i>* directions) const;
   void getNeighbor(const BlockIndex& block_index, const VoxelIndex& voxel_index,
                    const Eigen::Vector3i& direction,
                    BlockIndex* neighbor_block_index,
@@ -66,7 +69,7 @@ class EsdfOccIntegrator {
   // Raise set for updates; these are values that used to be in the fixed
   // frontier and now have a higher value, or their children which need to have
   // their values invalidated.
-  std::queue<VoxelKey> raise_;
+  AlignedQueue<VoxelKey> raise_;
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;

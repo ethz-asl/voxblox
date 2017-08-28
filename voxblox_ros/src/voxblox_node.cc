@@ -12,7 +12,6 @@
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <deque>
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>
@@ -160,7 +159,7 @@ class VoxbloxNode {
   std::shared_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
 
   // Transform queue, used only when use_tf_transforms is false.
-  std::deque<geometry_msgs::TransformStamped> transform_queue_;
+  AlignedDeque<geometry_msgs::TransformStamped> transform_queue_;
 };
 
 VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
@@ -690,7 +689,7 @@ bool VoxbloxNode::lookupTransformQueue(const std::string& from_frame,
                                        Transformation* transform) {
   // Try to match the transforms in the queue.
   bool match_found = false;
-  std::deque<geometry_msgs::TransformStamped>::iterator it =
+  AlignedDeque<geometry_msgs::TransformStamped>::iterator it =
       transform_queue_.begin();
   for (; it != transform_queue_.end(); ++it) {
     // If the current transform is newer than the requested timestamp, we need

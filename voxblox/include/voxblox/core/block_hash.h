@@ -12,6 +12,8 @@
 namespace voxblox {
 
 struct AnyIndexHash {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   static constexpr size_t prime1 = 73856093;
   static constexpr size_t prime2 = 19349663;
   static constexpr size_t prime3 = 83492791;
@@ -24,6 +26,8 @@ struct AnyIndexHash {
 
 template <typename ValueType>
 struct AnyIndexHashMapType {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::unordered_map<
       BlockIndex, ValueType, AnyIndexHash, std::equal_to<BlockIndex>,
       Eigen::aligned_allocator<std::pair<const BlockIndex, ValueType> > >

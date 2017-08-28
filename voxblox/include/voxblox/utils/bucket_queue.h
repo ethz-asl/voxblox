@@ -2,8 +2,11 @@
 #define VOXBLOX_UTILS_BUCKET_QUEUE_H_
 
 #include <glog/logging.h>
+#include <deque>
 #include <queue>
 #include <vector>
+
+#include "voxblox/core/common.h"
 
 // Bucketed priority queue, mostly following L. Yatziv et al in
 // O(N) Implementation of the Fast Marching Algorithm, though skipping the
@@ -12,6 +15,8 @@
 template <typename T>
 class BucketQueue {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   BucketQueue() : last_bucket_index_(0) {}
   explicit BucketQueue(int num_buckets, double max_val)
       : num_buckets_(num_buckets),
@@ -83,8 +88,7 @@ class BucketQueue {
  private:
   int num_buckets_;
   double max_val_;
-  std::vector<std::queue<T, std::deque<T, Eigen::aligned_allocator<T>>>>
-      buckets_;
+  voxblox::AlignedVector<voxblox::AlignedQueue<T>> buckets_;
 
   // Speed up retrivals.
   int last_bucket_index_;

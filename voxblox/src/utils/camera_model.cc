@@ -112,7 +112,7 @@ void CameraModel::calculateBoundingPlanes() {
     bounding_planes_.resize(6);
   }
 
-  std::vector<Eigen::Vector3d> transformed_corners;
+  AlignedVector<Eigen::Vector3d> transformed_corners;
   transformed_corners.resize(untransformed_corners_.size());
 
   // Transform all the points.
