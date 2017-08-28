@@ -19,6 +19,8 @@ namespace voxblox {
 // time a thread must wait on a lock is minimized.
 class ThreadSafeIndex {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   ThreadSafeIndex(const size_t number_of_points, const size_t number_of_threads)
       : number_of_points_(number_of_points),
         number_of_threads_(number_of_threads),
@@ -64,6 +66,8 @@ class ThreadSafeIndex {
 // map to voxel indices.
 class RayCaster {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   RayCaster(const Point& origin, const Point& point_G,
             const bool is_clearing_ray, const bool voxel_carving_enabled,
             const FloatingPoint max_ray_length_m,
@@ -167,9 +171,8 @@ class RayCaster {
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
 // should map to voxel indices.
-inline void castRay(
-    const Point& start_scaled, const Point& end_scaled,
-    std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex> >* indices) {
+inline void castRay(const Point& start_scaled, const Point& end_scaled,
+                    AlignedVector<AnyIndex>* indices) {
   CHECK_NOTNULL(indices);
 
   RayCaster ray_caster(start_scaled, end_scaled);

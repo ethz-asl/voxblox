@@ -27,6 +27,7 @@ namespace voxblox {
 
 class TsdfServer {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   virtual ~TsdfServer() {}

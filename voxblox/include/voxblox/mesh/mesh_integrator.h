@@ -43,7 +43,11 @@ namespace voxblox {
 template <typename VoxelType>
 class MeshIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     bool use_color = true;
     float min_weight = 1e-4;
     size_t integrator_threads = std::thread::hardware_concurrency();
@@ -88,7 +92,7 @@ class MeshIntegrator {
     ThreadSafeIndex index_getter(all_tsdf_blocks.size(),
                                  config_.integrator_threads);
 
-    std::vector<std::thread> integration_threads;
+    AlignedVector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(
           &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,

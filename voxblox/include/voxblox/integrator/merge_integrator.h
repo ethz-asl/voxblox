@@ -16,6 +16,8 @@ namespace voxblox {
 
 class MergeIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   // all methods are static so the class does not need a constructor
   MergeIntegrator() = delete;
 

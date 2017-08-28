@@ -29,6 +29,8 @@ namespace voxblox {
 template <size_t unmasked_bits, typename StoredElement>
 class ApproxHashArray {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   StoredElement& get(const size_t& hash) {
     return pseudo_map_[hash & bit_mask_];
   }
@@ -65,6 +67,8 @@ class ApproxHashArray {
 template <size_t unmasked_bits, size_t full_reset_threshold>
 class ApproxHashSet {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   ApproxHashSet() : reset_counter_(0) {
     pseudo_set_ptr_ = &pseudo_set_[reset_counter_++];
 
