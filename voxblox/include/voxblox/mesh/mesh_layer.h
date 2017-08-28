@@ -16,7 +16,7 @@ class MeshLayer {
  public:
   typedef std::shared_ptr<MeshLayer> Ptr;
   typedef std::shared_ptr<const MeshLayer> ConstPtr;
-  typedef typename BlockHashMapType<Mesh::Ptr>::type MeshMap;
+  typedef typename AnyIndexHashMapType<Mesh::Ptr>::type MeshMap;
 
   explicit MeshLayer(FloatingPoint block_size) : block_size_(block_size) {}
   virtual ~MeshLayer() {}
@@ -126,15 +126,16 @@ class MeshLayer {
 
   void combineMesh(Mesh::Ptr combined_mesh) const {
     // Used to prevent double ups in vertices
-    BlockHashMapType<IndexElement>::type uniques;
+    AnyIndexHashMapType<IndexElement>::type uniques;
 
     // Some triangles will have zero area we store them here first then filter
     // them
     VertexIndexList temp_indices;
 
-    // If two vertices closer than (voxel_size / key_multiplication_factor) then
-    // the second vertice will be discarded and the first one used in its place
-    constexpr FloatingPoint key_multiplication_factor = 100;
+    // If two vertexes are closer together than (voxel_size /
+    // key_multiplication_factor), then the second vertex will be discarded and
+    // the first one used in its place
+    constexpr FloatingPoint key_multiplication_factor = 10;
 
     // Combine everything in the layer into one giant combined mesh.
     size_t v = 0;

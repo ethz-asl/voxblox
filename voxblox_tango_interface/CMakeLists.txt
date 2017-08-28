@@ -50,7 +50,7 @@ cs_add_library(${PROJECT_NAME}
   ${${PROJECT_NAME}_SRCS}
   ${PROTO_SRCS}
 )
-target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBRARIES} pthread)
 
 ############
 # BINARIES #

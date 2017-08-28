@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_CORE_BLOCK_H_
 #define VOXBLOX_CORE_BLOCK_H_
 
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -143,9 +144,9 @@ class Block {
   FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
-  bool updated() const { return updated_; }
+  const bool updated() const { return updated_; }
 
-  bool& updated() { return updated_; }
+  std::atomic<bool>& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
   // Serialization.
@@ -157,7 +158,7 @@ class Block {
 
   size_t getMemorySize() const;
 
-protected:
+ protected:
   std::unique_ptr<VoxelType[]> voxels_;
 
   // Derived, cached parameters.
@@ -181,7 +182,7 @@ protected:
   FloatingPoint block_size_inv_;
 
   // Is set to true when data is updated.
-  bool updated_;
+  std::atomic<bool> updated_;
 };
 
 }  // namespace voxblox

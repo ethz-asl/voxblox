@@ -24,6 +24,7 @@
 #define VOXBLOX_MESH_MESH_INTEGRATOR_H_
 
 #include <algorithm>
+#include <thread>
 #include <vector>
 
 #include <glog/logging.h>
@@ -31,6 +32,7 @@
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/interpolator/interpolator.h"
 #include "voxblox/mesh/marching_cubes.h"
 #include "voxblox/mesh/mesh_layer.h"
@@ -43,8 +45,8 @@ class MeshIntegrator {
  public:
   struct Config {
     bool use_color = true;
-    bool compute_normals = true;
     float min_weight = 1e-4;
+    size_t integrator_threads = std::thread::hardware_concurrency();
   };
 
   MeshIntegrator(const Config& config, Layer<VoxelType>* tsdf_layer,
@@ -62,40 +64,65 @@ class MeshIntegrator {
 
     cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
         0, 0, 1, 1, 1, 1;
-  }
 
-  // Generates mesh for the entire tsdf layer from scratch.
-  void generateWholeMesh() {
-    mesh_layer_->clear();
-    // Get all of the blocks in the TSDF layer, and mesh each one.
-    BlockIndexList all_tsdf_blocks;
-    tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
-
-    for (const BlockIndex& block_index : all_tsdf_blocks) {
-      updateMeshForBlock(block_index);
+    if (config_.integrator_threads == 0) {
+      LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
+      config_.integrator_threads = 1;
     }
   }
 
-  void generateMeshForUpdatedBlocks(bool clear_updated_flag) {
-    // Only update parts of the mesh for blocks that have updated.
-    // clear_updated_flag decides whether to reset 'updated' after updating the
-    // mesh.
+  // Generates mesh for the tsdf layer.
+  void generateMesh(bool only_mesh_updated_blocks, bool clear_updated_flag) {
     BlockIndexList all_tsdf_blocks;
-    tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
+    if (only_mesh_updated_blocks) {
+      tsdf_layer_->getAllUpdatedBlocks(&all_tsdf_blocks);
+    } else {
+      tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
+    }
 
+    // Allocate all the mesh memory
     for (const BlockIndex& block_index : all_tsdf_blocks) {
+      mesh_layer_->allocateMeshPtrByIndex(block_index);
+    }
+
+    ThreadSafeIndex index_getter(all_tsdf_blocks.size(),
+                                 config_.integrator_threads);
+
+    std::vector<std::thread> integration_threads;
+    for (size_t i = 0; i < config_.integrator_threads; ++i) {
+      integration_threads.emplace_back(
+          &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
+          clear_updated_flag, &index_getter);
+    }
+
+    for (std::thread& thread : integration_threads) {
+      thread.join();
+    }
+  }
+
+  void generateMeshBlocksFunction(const BlockIndexList& all_tsdf_blocks,
+                                  bool clear_updated_flag,
+                                  ThreadSafeIndex* index_getter) {
+    DCHECK(index_getter != nullptr);
+
+    size_t list_idx;
+    while (index_getter->getNextIndex(&list_idx)) {
+      const BlockIndex& block_idx = all_tsdf_blocks[list_idx];
       typename Block<VoxelType>::Ptr block =
-          tsdf_layer_->getBlockPtrByIndex(block_index);
-      if (block->updated()) {
-        updateMeshForBlock(block_index);
-        if (clear_updated_flag) {
-          block->updated() = false;
-        }
+          tsdf_layer_->getBlockPtrByIndex(block_idx);
+
+      updateMeshForBlock(block_idx);
+      if (clear_updated_flag) {
+        block->updated() = false;
       }
     }
   }
 
-  void extractBlockMesh(typename Block<VoxelType>::ConstPtr block, Mesh::Ptr mesh) {
+  void extractBlockMesh(typename Block<VoxelType>::ConstPtr block,
+                        Mesh::Ptr mesh) {
+    DCHECK(block != nullptr);
+    DCHECK(mesh != nullptr);
+
     size_t vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
@@ -143,7 +170,7 @@ class MeshIntegrator {
   }
 
   virtual void updateMeshForBlock(const BlockIndex& block_index) {
-    Mesh::Ptr mesh = mesh_layer_->allocateMeshPtrByIndex(block_index);
+    Mesh::Ptr mesh = mesh_layer_->getMeshPtrByIndex(block_index);
     mesh->clear();
     // This block should already exist, otherwise it makes no sense to update
     // the mesh for it. ;)
@@ -155,24 +182,26 @@ class MeshIntegrator {
                  << block_index.transpose();
       return;
     }
-
     extractBlockMesh(block, mesh);
-
     // Update colors if needed.
     if (config_.use_color) {
       updateMeshColor(*block, mesh.get());
-    }
-
-    if (config_.compute_normals) {
-      computeMeshNormals(*block, mesh.get());
     }
   }
 
   void extractMeshInsideBlock(const Block<VoxelType>& block,
                               const VoxelIndex& index, const Point& coords,
                               VertexIndex* next_mesh_index, Mesh* mesh) {
-    DCHECK_NOTNULL(next_mesh_index);
-    DCHECK_NOTNULL(mesh);
+    DCHECK(next_mesh_index != nullptr);
+    DCHECK(mesh != nullptr);
+
+    // If the distance to the surface is greater than the length of two voxels,
+    // the mesh will be empty.
+    if ((2.0 * block.voxel_size()) <=
+        std::abs(block.getVoxelByVoxelIndex(index).distance)) {
+      return;
+    }
+
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
     Eigen::Matrix<FloatingPoint, 3, 8> corner_coords;
@@ -183,11 +212,7 @@ class MeshIntegrator {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
       const VoxelType& voxel = block.getVoxelByVoxelIndex(corner_index);
 
-      // Do not extract a mesh here if one of the corner is unobserved and
-      // outside the truncation region.
-      // TODO(helenol): comment above from open_chisel, but no actual checks
-      // on distance are ever made. Definitely we should skip doing checks of
-      // voxels that are too far from the surface...
+      // Do not extract a mesh here if one of the corner is unobserved.
       if (voxel.weight <= config_.min_weight) {
         all_neighbors_observed = false;
         break;
@@ -204,7 +229,15 @@ class MeshIntegrator {
   void extractMeshOnBorder(const Block<VoxelType>& block,
                            const VoxelIndex& index, const Point& coords,
                            VertexIndex* next_mesh_index, Mesh* mesh) {
-    DCHECK_NOTNULL(mesh);
+    DCHECK(mesh != nullptr);
+
+    // If the distance to the surface is greater than the length of two voxels,
+    // the mesh will be empty.
+    if ((2.0 * block.voxel_size()) <=
+        std::abs(block.getVoxelByVoxelIndex(index).distance)) {
+      return;
+    }
+
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
     Eigen::Matrix<FloatingPoint, 3, 8> corner_coords;
@@ -268,7 +301,7 @@ class MeshIntegrator {
   }
 
   void updateMeshColor(const Block<VoxelType>& block, Mesh* mesh) {
-    CHECK_NOTNULL(mesh);
+    DCHECK(mesh != nullptr);
 
     mesh->colors.clear();
     mesh->colors.resize(mesh->indices.size());
@@ -280,7 +313,8 @@ class MeshIntegrator {
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
-        if (voxel.weight >= config_.min_weight) {
+        if (((2.0 * block.voxel_size()) > std::abs(voxel.distance)) &&
+            (voxel.weight >= config_.min_weight)) {
           mesh->colors[i] = voxel.color;
         }
       } else {
@@ -290,24 +324,6 @@ class MeshIntegrator {
         if (voxel.weight >= config_.min_weight) {
           mesh->colors[i] = voxel.color;
         }
-      }
-    }
-  }
-
-  void computeMeshNormals(const Block<VoxelType>& block, Mesh* mesh) {
-    mesh->normals.clear();
-    mesh->normals.resize(mesh->indices.size(), Point::Zero());
-
-    Interpolator<VoxelType> interpolator(tsdf_layer_);
-
-    Point grad;
-    for (size_t i = 0; i < mesh->vertices.size(); i++) {
-      const Point& pos = mesh->vertices[i];
-      // Otherwise the norm stays 0.
-      if (interpolator.getGradient(pos, &grad, true)) {
-        mesh->normals[i] = grad.normalized();
-      } else if (interpolator.getGradient(pos, &grad, false)) {
-        mesh->normals[i] = grad.normalized();
       }
     }
   }
