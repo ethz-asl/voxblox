@@ -88,9 +88,7 @@ class BucketQueue {
  private:
   int num_buckets_;
   double max_val_;
-  voxblox::AlignedVector<
-      std::queue<T, std::deque<T, Eigen::aligned_allocator<T>>>>
-      buckets_;
+  voxblox::AlignedVector<voxblox::AlignedQueue<T>> buckets_;
 
   // Speed up retrivals.
   int last_bucket_index_;

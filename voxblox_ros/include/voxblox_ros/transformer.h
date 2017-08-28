@@ -1,7 +1,6 @@
 #ifndef VOXBLOX_ROS_TRANSFORMER_H_
 #define VOXBLOX_ROS_TRANSFORMER_H_
 
-#include <deque>
 #include <geometry_msgs/TransformStamped.h>
 #include <string>
 #include <tf/transform_listener.h>
@@ -66,7 +65,7 @@ class Transformer {
   ros::Subscriber transform_sub_;
 
   // Transform queue, used only when use_tf_transforms is false.
-  std::deque<geometry_msgs::TransformStamped> transform_queue_;
+  AlignedDeque<geometry_msgs::TransformStamped> transform_queue_;
 };
 
 }  // namespace voxblox

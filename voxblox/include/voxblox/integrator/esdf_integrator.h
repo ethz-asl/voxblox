@@ -123,7 +123,7 @@ class EsdfIntegrator {
   void clear() {
     updated_blocks_.clear();
     open_.clear();
-    raise_ = std::queue<VoxelKey>();
+    raise_ = AlignedQueue<VoxelKey>();
   }
 
  protected:
@@ -144,7 +144,7 @@ class EsdfIntegrator {
   // Raise set for updates; these are values that used to be in the fixed
   // frontier and now have a higher value, or their children which need to
   // have their values invalidated.
-  std::queue<VoxelKey> raise_;
+  AlignedQueue<VoxelKey> raise_;
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;

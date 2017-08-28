@@ -2,8 +2,11 @@
 #define VOXBLOX_CORE_COMMON_H_
 
 #include <deque>
+#include <list>
 #include <memory>
+#include <queue>
 #include <set>
+#include <stack>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -20,6 +23,12 @@ template <typename Type>
 using AlignedVector = std::vector<Type, Eigen::aligned_allocator<Type>>;
 template <typename Type>
 using AlignedDeque = std::deque<Type, Eigen::aligned_allocator<Type>>;
+template <typename Type>
+using AlignedQueue = std::queue<Type, AlignedDeque<Type>>;
+template <typename Type>
+using AlignedStack = std::stack<Type, AlignedDeque<Type>>;
+template <typename Type>
+using AlignedList = std::list<Type, Eigen::aligned_allocator<Type>>;
 
 template <typename Type, typename... Arguments>
 inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
