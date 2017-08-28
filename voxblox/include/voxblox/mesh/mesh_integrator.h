@@ -199,13 +199,6 @@ class MeshIntegrator {
     DCHECK(next_mesh_index != nullptr);
     DCHECK(mesh != nullptr);
 
-    // If the distance to the surface is greater than the length of two voxels,
-    // the mesh will be empty.
-    if ((2.0 * block.voxel_size()) <=
-        std::abs(block.getVoxelByVoxelIndex(index).distance)) {
-      return;
-    }
-
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
     Eigen::Matrix<FloatingPoint, 3, 8> corner_coords;
@@ -234,13 +227,6 @@ class MeshIntegrator {
                            const VoxelIndex& index, const Point& coords,
                            VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK(mesh != nullptr);
-
-    // If the distance to the surface is greater than the length of two voxels,
-    // the mesh will be empty.
-    if ((2.0 * block.voxel_size()) <=
-        std::abs(block.getVoxelByVoxelIndex(index).distance)) {
-      return;
-    }
 
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
@@ -317,8 +303,7 @@ class MeshIntegrator {
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
-        if (((2.0 * block.voxel_size()) > std::abs(voxel.distance)) &&
-            (voxel.weight >= config_.min_weight)) {
+        if (voxel.weight >= config_.min_weight) {
           mesh->colors[i] = voxel.color;
         }
       } else {
