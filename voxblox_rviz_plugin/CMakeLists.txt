@@ -33,9 +33,13 @@ endif()
 ## Avoid Qt signals and slots defining "emit", "slots", etc.
 add_definitions(-DQT_NO_KEYWORDS)
 
+set(HEADER_FILES include/voxblox_rviz_plugin/voxblox_mesh_display.h include/voxblox_rviz_plugin/voxblox_mesh_visual.h)
+
+set(SRC_FILES src/voxblox_mesh_display.cc src/voxblox_mesh_visual.cc )
+
 add_library(${PROJECT_NAME}
-  src/voxblox_mesh_display.cc
-  src/voxblox_mesh_visual.cc
+  ${SRC_FILES} 
+  ${HEADER_FILES}
   ${MOC_FILES}
 )
 

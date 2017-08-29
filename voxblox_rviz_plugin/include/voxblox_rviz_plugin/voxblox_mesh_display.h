@@ -4,10 +4,6 @@
 #include <rviz/message_filter_display.h>
 #include <voxblox_msgs/Mesh.h>
 
-namespace Ogre {
-class SceneNode;
-}
-
 namespace voxblox_rviz_plugin {
 
 class VoxbloxMeshVisual;

@@ -20,44 +20,46 @@ VoxbloxMeshVisual::~VoxbloxMeshVisual() {
 }
 
 void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
-  const voxblox::BlockIndex index(msg->index[0], msg->index[1], msg->index[2]);
+  for (const voxblox_msgs::MeshBlock& mesh_block : msg->mesh_blocks) {
+    const voxblox::BlockIndex index(mesh_block.index[0], mesh_block.index[1],
+                                    mesh_block.index[2]);
 
-  Ogre::ManualObject* ogre_object;
-  const voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type::const_iterator
-      it = object_map_.find(index);
-  if (it != object_map_.end()) {
-    ogre_object = it->second;
-    ogre_object->clear();
-  } else {
-    std::string object_name = std::to_string(index.x()) + std::string(" ") +
-                              std::to_string(index.y()) + std::string(" ") +
-                              std::to_string(index.z());
-    ogre_object = scene_manager_->createManualObject(object_name);
-    object_map_.insert(std::make_pair(index, ogre_object));
+    Ogre::ManualObject* ogre_object;
+    const voxblox::AnyIndexHashMapType<
+        Ogre::ManualObject*>::type::const_iterator it = object_map_.find(index);
+    if (it != object_map_.end()) {
+      ogre_object = it->second;
+      ogre_object->clear();
+    } else {
+      std::string object_name = std::to_string(index.x()) + std::string(" ") +
+                                std::to_string(index.y()) + std::string(" ") +
+                                std::to_string(index.z());
+      ogre_object = scene_manager_->createManualObject(object_name);
+      object_map_.insert(std::make_pair(index, ogre_object));
 
-    frame_node_->attachObject(ogre_object);
-  }
-
-  size_t nVertices = msg->triangles.size();
-  ogre_object->estimateVertexCount(3 * msg->triangles.size());
-  ogre_object->begin("BaseWhiteNoLighting",
-                     Ogre::RenderOperation::OT_TRIANGLE_LIST);
-
-  for (const voxblox_msgs::Triangle& triangle : msg->triangles) {
-    for (size_t i = 0; i < 3; ++i) {
-      ogre_object->position(triangle.x[i], triangle.y[i], triangle.z[i]);
-      ogre_object->normal(triangle.nx[i], triangle.ny[i], triangle.nz[i]);
-
-      constexpr float color_conv_factor = 1 / 255;
-      ogre_object->colour(
-          color_conv_factor * static_cast<float>(triangle.r[i]),
-          color_conv_factor * static_cast<float>(triangle.g[i]),
-          color_conv_factor * static_cast<float>(triangle.b[i]),
-          color_conv_factor * static_cast<float>(triangle.a[i]));
+      frame_node_->attachObject(ogre_object);
     }
-  }
 
-  ogre_object->end();
+    ogre_object->estimateVertexCount(3 * mesh_block.triangles.size());
+    ogre_object->begin("BaseWhiteNoLighting",
+                       Ogre::RenderOperation::OT_TRIANGLE_LIST);
+
+    for (const voxblox_msgs::Triangle& triangle : mesh_block.triangles) {
+      for (size_t i = 0; i < 3; ++i) {
+        ogre_object->position(triangle.x[i], triangle.y[i], triangle.z[i]);
+        ogre_object->normal(triangle.nx[i], triangle.ny[i], triangle.nz[i]);
+
+        constexpr float color_conv_factor = 1.0f / 255.0f;
+        ogre_object->colour(
+            color_conv_factor * static_cast<float>(triangle.r[i]),
+            color_conv_factor * static_cast<float>(triangle.g[i]),
+            color_conv_factor * static_cast<float>(triangle.b[i]),
+            color_conv_factor * static_cast<float>(triangle.a[i]));
+      }
+    }
+
+    ogre_object->end();
+  }
 }
 
 void VoxbloxMeshVisual::setFramePosition(const Ogre::Vector3& position) {

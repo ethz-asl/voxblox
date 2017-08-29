@@ -24,15 +24,16 @@
 #ifndef VOXBLOX_ROS_MESH_VIS_H_
 #define VOXBLOX_ROS_MESH_VIS_H_
 
-#include <algorithm>
 #include <eigen_conversions/eigen_msg.h>
 #include <visualization_msgs/Marker.h>
+#include <algorithm>
 
 #include <voxblox/core/common.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/mesh/mesh.h>
 #include <voxblox/mesh/mesh_layer.h>
+#include <voxblox_msgs/Mesh.h>
 
 #include "voxblox_ros/conversions.h"
 
@@ -96,6 +97,79 @@ inline void heightColorFromVertex(const Point& vertex,
       std::max<FloatingPoint>((vertex.z() - min_z) / (max_z - min_z), 0.0),
       1.0);
   colorVoxbloxToMsg(rainbowColorMap(mapped_height), color_msg);
+}
+
+inline void fillVoxbloxMeshWithMesh(const MeshLayer::Ptr& mesh_layer,
+                                    ColorMode color_mode,
+                                    voxblox_msgs::Mesh* mesh_msg) {
+  CHECK_NOTNULL(mesh_msg);
+  mesh_msg->header.stamp = ros::Time::now();
+
+  BlockIndexList mesh_indices;
+  mesh_layer->getAllUpdatedMeshes(&mesh_indices);
+
+  mesh_msg->mesh_blocks.reserve(mesh_indices.size());
+
+  for (const BlockIndex& block_index : mesh_indices) {
+    Mesh::Ptr mesh = mesh_layer->getMeshPtrByIndex(block_index);
+
+    if (!mesh->hasVertices()) {
+      continue;
+    }
+
+    voxblox_msgs::MeshBlock mesh_block;
+    mesh_block.index[0] = block_index.x();
+    mesh_block.index[1] = block_index.y();
+    mesh_block.index[2] = block_index.z();
+
+    for (size_t i = 0u; i < mesh->vertices.size(); i += 3u) {
+      voxblox_msgs::Triangle triangle;
+
+      for (size_t j = 0u; j < 3; ++j) {
+        triangle.x[j] = mesh->vertices[i + j].x();
+        triangle.y[j] = mesh->vertices[i + j].y();
+        triangle.z[j] = mesh->vertices[i + j].z();
+
+        triangle.nx[j] = mesh->normals[i + j].x();
+        triangle.ny[j] = mesh->normals[i + j].y();
+        triangle.nz[j] = mesh->normals[i + j].z();
+
+        std_msgs::ColorRGBA color_msg;
+        switch (color_mode) {
+          case kColor:
+            colorVoxbloxToMsg(mesh->colors[i + j], &color_msg);
+            break;
+          case kHeight:
+            heightColorFromVertex(mesh->vertices[i + j], &color_msg);
+            break;
+          case kNormals:
+            normalColorFromNormal(mesh->normals[i + j], &color_msg);
+            break;
+          case kLambert:
+            lambertColorFromNormal(mesh->normals[i + j], &color_msg);
+            break;
+          case kLambertColor:
+            lambertColorFromColorAndNormal(mesh->colors[i + j],
+                                           mesh->normals[i], &color_msg);
+            break;
+          case kGray:
+            color_msg.r = color_msg.g = color_msg.b = 0.5;
+            break;
+        }
+
+        triangle.r[j] = static_cast<uint8_t>(255 * color_msg.r);
+        triangle.g[j] = static_cast<uint8_t>(255 * color_msg.g);
+        triangle.b[j] = static_cast<uint8_t>(255 * color_msg.b);
+        triangle.a[j] = 255;
+      }
+
+      mesh_block.triangles.push_back(triangle);
+    }
+
+    mesh_msg->mesh_blocks.push_back(mesh_block);
+
+    mesh->updated = false;
+  }
 }
 
 inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,

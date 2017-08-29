@@ -6,12 +6,6 @@
 #include <voxblox/core/block_hash.h>
 #include <voxblox_msgs/Mesh.h>
 
-namespace Ogre {
-class Vector3;
-class Quaternion;
-class ManualObject;
-}
-
 namespace voxblox_rviz_plugin {
 
 // Visualizes a single grid_map_msgs::GridMap message.

@@ -21,8 +21,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   nh_private_.param("world_frame", world_frame_, world_frame_);
 
   // Advertise topics.
-  mesh_pub_ =
-      nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
+  mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
   surface_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
           "surface_pointcloud", 1, true);
@@ -286,13 +285,11 @@ void TsdfServer::updateMesh() {
   mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
   generate_mesh_timer.Stop();
 
-  // TODO(helenol): also think about how to update markers incrementally?
   timing::Timer publish_mesh_timer("mesh/publish");
-  visualization_msgs::MarkerArray marker_array;
-  marker_array.markers.resize(1);
-  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
-  marker_array.markers[0].header.frame_id = world_frame_;
-  mesh_pub_.publish(marker_array);
+  voxblox_msgs::Mesh mesh_msg;
+  fillVoxbloxMeshWithMesh(mesh_layer_, color_mode_, &mesh_msg);
+  mesh_msg.header.frame_id = world_frame_;
+  mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
 }
 
@@ -313,11 +310,10 @@ bool TsdfServer::generateMesh() {
   generate_mesh_timer.Stop();
 
   timing::Timer publish_mesh_timer("mesh/publish");
-  visualization_msgs::MarkerArray marker_array;
-  marker_array.markers.resize(1);
-  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
-  marker_array.markers[0].header.frame_id = world_frame_;
-  mesh_pub_.publish(marker_array);
+  voxblox_msgs::Mesh mesh_msg;
+  fillVoxbloxMeshWithMesh(mesh_layer_, color_mode_, &mesh_msg);
+  mesh_msg.header.frame_id = world_frame_;
+  mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
 
   if (!mesh_filename_.empty()) {
