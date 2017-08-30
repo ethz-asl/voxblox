@@ -191,6 +191,8 @@ class MeshIntegrator {
     if (config_.use_color) {
       updateMeshColor(*block, mesh.get());
     }
+
+    mesh->updated = true;
   }
 
   void extractMeshInsideBlock(const Block<VoxelType>& block,
