@@ -99,9 +99,37 @@ inline void heightColorFromVertex(const Point& vertex,
   colorVoxbloxToMsg(rainbowColorMap(mapped_height), color_msg);
 }
 
-inline void fillVoxbloxMeshWithMesh(const MeshLayer::Ptr& mesh_layer,
-                                    ColorMode color_mode,
-                                    voxblox_msgs::Mesh* mesh_msg) {
+inline std_msgs::ColorRGBA getVertexColor(const Mesh::ConstPtr& mesh,
+                                          const size_t index) {
+  std_msgs::ColorRGBA color_msg;
+  switch (color_mode) {
+    case kColor:
+      colorVoxbloxToMsg(mesh->colors[index], &color_msg);
+      break;
+    case kHeight:
+      heightColorFromVertex(mesh->vertices[index], &color_msg);
+      break;
+    case kNormals:
+      normalColorFromNormal(mesh->normals[index], &color_msg);
+      break;
+    case kLambert:
+      lambertColorFromNormal(mesh->normals[index], &color_msg);
+      break;
+    case kLambertColor:
+      lambertColorFromColorAndNormal(mesh->colors[index], mesh->normals[index],
+                                     &color_msg);
+      break;
+    case kGray:
+      color_msg.r = color_msg.g = color_msg.b = 0.5;
+      color_msg.a = 1.0;
+      break;
+  }
+  return color_msg;
+}
+
+inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
+                                   ColorMode color_mode,
+                                   voxblox_msgs::Mesh* mesh_msg) {
   CHECK_NOTNULL(mesh_msg);
   mesh_msg->header.stamp = ros::Time::now();
 
@@ -113,10 +141,6 @@ inline void fillVoxbloxMeshWithMesh(const MeshLayer::Ptr& mesh_layer,
   for (const BlockIndex& block_index : mesh_indices) {
     Mesh::Ptr mesh = mesh_layer->getMeshPtrByIndex(block_index);
 
-    if (!mesh->hasVertices()) {
-      continue;
-    }
-
     voxblox_msgs::MeshBlock mesh_block;
     mesh_block.index[0] = block_index.x();
     mesh_block.index[1] = block_index.y();
@@ -125,42 +149,22 @@ inline void fillVoxbloxMeshWithMesh(const MeshLayer::Ptr& mesh_layer,
     for (size_t i = 0u; i < mesh->vertices.size(); i += 3u) {
       voxblox_msgs::Triangle triangle;
 
-      for (size_t j = 0u; j < 3; ++j) {
-        triangle.x[j] = mesh->vertices[i + j].x();
-        triangle.y[j] = mesh->vertices[i + j].y();
-        triangle.z[j] = mesh->vertices[i + j].z();
+      for (size_t local_vert_idx = 0u; local_vert_idx < 3; ++local_vert_idx) {
+        const size_t global_vert_idx = local_vert_idx + i;
+        triangle.x[local_vert_idx] = mesh->vertices[global_vert_idx].x();
+        triangle.y[local_vert_idx] = mesh->vertices[global_vert_idx].y();
+        triangle.z[local_vert_idx] = mesh->vertices[global_vert_idx].z();
 
-        triangle.nx[j] = mesh->normals[i + j].x();
-        triangle.ny[j] = mesh->normals[i + j].y();
-        triangle.nz[j] = mesh->normals[i + j].z();
+        triangle.nx[local_vert_idx] = mesh->normals[global_vert_idx].x();
+        triangle.ny[local_vert_idx] = mesh->normals[global_vert_idx].y();
+        triangle.nz[local_vert_idx] = mesh->normals[global_vert_idx].z();
 
-        std_msgs::ColorRGBA color_msg;
-        switch (color_mode) {
-          case kColor:
-            colorVoxbloxToMsg(mesh->colors[i + j], &color_msg);
-            break;
-          case kHeight:
-            heightColorFromVertex(mesh->vertices[i + j], &color_msg);
-            break;
-          case kNormals:
-            normalColorFromNormal(mesh->normals[i + j], &color_msg);
-            break;
-          case kLambert:
-            lambertColorFromNormal(mesh->normals[i + j], &color_msg);
-            break;
-          case kLambertColor:
-            lambertColorFromColorAndNormal(mesh->colors[i + j],
-                                           mesh->normals[i], &color_msg);
-            break;
-          case kGray:
-            color_msg.r = color_msg.g = color_msg.b = 0.5;
-            break;
-        }
+        std_msgs::ColorRGBA color_msg = getVertexColor(mesh, global_vert_idx);
 
-        triangle.r[j] = static_cast<uint8_t>(255 * color_msg.r);
-        triangle.g[j] = static_cast<uint8_t>(255 * color_msg.g);
-        triangle.b[j] = static_cast<uint8_t>(255 * color_msg.b);
-        triangle.a[j] = 255;
+        triangle.r[local_vert_idx] = static_cast<uint8_t>(255 * color_msg.r);
+        triangle.g[local_vert_idx] = static_cast<uint8_t>(255 * color_msg.g);
+        triangle.b[local_vert_idx] = static_cast<uint8_t>(255 * color_msg.b);
+        triangle.a[local_vert_idx] = 255;
       }
 
       mesh_block.triangles.push_back(triangle);
@@ -209,30 +213,7 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
       geometry_msgs::Point point_msg;
       tf::pointEigenToMsg(mesh->vertices[i].cast<double>(), point_msg);
       marker->points.push_back(point_msg);
-      std_msgs::ColorRGBA color_msg;
-      switch (color_mode) {
-        case kColor:
-          colorVoxbloxToMsg(mesh->colors[i], &color_msg);
-          break;
-        case kHeight:
-          heightColorFromVertex(mesh->vertices[i], &color_msg);
-          break;
-        case kNormals:
-          normalColorFromNormal(mesh->normals[i], &color_msg);
-          break;
-        case kLambert:
-          lambertColorFromNormal(mesh->normals[i], &color_msg);
-          break;
-        case kLambertColor:
-          lambertColorFromColorAndNormal(mesh->colors[i], mesh->normals[i],
-                                         &color_msg);
-          break;
-        case kGray:
-          color_msg.r = color_msg.g = color_msg.b = 0.5;
-          break;
-      }
-      color_msg.a = 1.0;
-      marker->colors.push_back(color_msg);
+      marker->colors.push_back(getVertexColor(mesh, i));
     }
   }
 }
@@ -267,30 +248,8 @@ inline void fillPointcloudWithMesh(
       point.y = mesh->vertices[i].y();
       point.z = mesh->vertices[i].z();
 
-      std_msgs::ColorRGBA color_msg;
-      switch (color_mode) {
-        case kColor:
-          colorVoxbloxToMsg(mesh->colors[i], &color_msg);
-          break;
-        case kHeight:
-          heightColorFromVertex(mesh->vertices[i], &color_msg);
-          break;
-        case kNormals:
-          normalColorFromNormal(mesh->normals[i], &color_msg);
-          break;
-        case kLambert:
-          lambertColorFromNormal(mesh->normals[i], &color_msg);
-          break;
-        case kLambertColor:
-          lambertColorFromColorAndNormal(mesh->colors[i], mesh->normals[i],
-                                         &color_msg);
-          break;
-        case kGray:
-          color_msg.r = color_msg.g = color_msg.b = 0.5;
-          break;
-      }
       Color color;
-      colorMsgToVoxblox(color_msg, &color);
+      colorMsgToVoxblox(getVertexColor(mesh, i), &color);
       point.r = color.r;
       point.g = color.g;
       point.b = color.b;

@@ -40,6 +40,8 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
       frame_node_->attachObject(ogre_object);
     }
 
+    DCHECK(ogre_object != nullptr);
+
     ogre_object->estimateVertexCount(3 * mesh_block.triangles.size());
     ogre_object->begin("BaseWhiteNoLighting",
                        Ogre::RenderOperation::OT_TRIANGLE_LIST);
