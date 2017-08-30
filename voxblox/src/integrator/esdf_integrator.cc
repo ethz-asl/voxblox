@@ -440,9 +440,9 @@ void EsdfIntegrator::updateFromTsdfBlocksAsOccupancy(
 
 void EsdfIntegrator::pushNeighborsToOpen(const BlockIndex& block_index,
                                          const VoxelIndex& voxel_index) {
-  std::vector<VoxelKey> neighbors;
-  std::vector<float> distances;
-  std::vector<Eigen::Vector3i> directions;
+  AlignedVector<VoxelKey> neighbors;
+  AlignedVector<float> distances;
+  AlignedVector<Eigen::Vector3i> directions;
   getNeighborsAndDistances(block_index, voxel_index, &neighbors, &distances,
                            &directions);
 
@@ -486,9 +486,9 @@ void EsdfIntegrator::processRaiseSet() {
         esdf_layer_->getBlockPtrByIndex(kv.first);
 
     // See if you can update the neighbors.
-    std::vector<VoxelKey> neighbors;
-    std::vector<float> distances;
-    std::vector<Eigen::Vector3i> directions;
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
     getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                              &directions);
 
@@ -566,9 +566,9 @@ void EsdfIntegrator::processOpenSet() {
       continue;
     }
     // See if you can update the neighbors.
-    std::vector<VoxelKey> neighbors;
-    std::vector<float> distances;
-    std::vector<Eigen::Vector3i> directions;
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
     getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                              &directions);
 
@@ -712,9 +712,9 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
         esdf_voxel.distance - esdf_voxel.parent.norm() * esdf_voxel_size_;
 
     // See if you can update the neighbors.
-    std::vector<VoxelKey> neighbors;
-    std::vector<float> distances;
-    std::vector<Eigen::Vector3i> directions;
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
     getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                              &directions);
 
@@ -793,8 +793,8 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
 // negative of the given direction.
 void EsdfIntegrator::getNeighborsAndDistances(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
-    std::vector<VoxelKey>* neighbors, std::vector<float>* distances,
-    std::vector<Eigen::Vector3i>* directions) const {
+    AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
+    AlignedVector<Eigen::Vector3i>* directions) const {
   CHECK_NOTNULL(neighbors);
   CHECK_NOTNULL(distances);
   CHECK_NOTNULL(directions);

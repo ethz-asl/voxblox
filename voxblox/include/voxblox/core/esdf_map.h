@@ -3,6 +3,7 @@
 
 #include <glog/logging.h>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "voxblox/core/common.h"
@@ -16,9 +17,13 @@ namespace voxblox {
 
 class EsdfMap {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<EsdfMap> Ptr;
 
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     FloatingPoint esdf_voxel_size = 0.2;
     size_t esdf_voxels_per_side = 16u;
   };
@@ -45,7 +50,7 @@ class EsdfMap {
 
   // Creates a new EsdfMap based on a COPY of this layer.
   explicit EsdfMap(const Layer<EsdfVoxel>& layer)
-      : EsdfMap(std::make_shared<Layer<EsdfVoxel>>(layer)) {}
+      : EsdfMap(aligned_shared<Layer<EsdfVoxel>>(layer)) {}
 
   // Creates a new EsdfMap that contains this layer.
   explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer)

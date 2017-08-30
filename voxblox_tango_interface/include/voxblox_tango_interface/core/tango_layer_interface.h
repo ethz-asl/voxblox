@@ -11,7 +11,9 @@
 namespace voxblox {
 
 class TangoLayerInterface : public Layer<TsdfVoxel> {
-public:
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   // NOTE(mereweth@jpl.nasa.gov) - need this typedef
   typedef std::shared_ptr<TangoLayerInterface> Ptr;
 
@@ -21,7 +23,8 @@ public:
   bool isCompatible(const tsdf2::VolumeProto& block_proto) const;
   bool addBlockFromProto(const tsdf2::VolumeProto& block_proto,
                          TangoLayerInterface::BlockMergingStrategy strategy);
-private:
+
+ private:
   unsigned int max_ntsdf_voxel_weight_;
   FloatingPoint meters_to_ntsdf_;
 };

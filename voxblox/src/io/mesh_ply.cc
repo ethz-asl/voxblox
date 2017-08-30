@@ -27,7 +27,7 @@ namespace voxblox {
 bool outputMeshLayerAsPly(const std::string& filename,
                           const MeshLayer& mesh_layer) {
   Mesh::Ptr combined_mesh =
-      std::make_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
+      aligned_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
   mesh_layer.combineMesh(combined_mesh);
 
   bool success = outputMeshAsPly(filename, *combined_mesh);

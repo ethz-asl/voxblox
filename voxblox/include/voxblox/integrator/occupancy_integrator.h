@@ -17,7 +17,11 @@ namespace voxblox {
 
 class OccupancyIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     float probability_hit = 0.65f;
     float probability_miss = 0.4f;
     float threshold_min = 0.12f;

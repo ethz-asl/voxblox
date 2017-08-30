@@ -31,7 +31,7 @@ TEST_F(ApproxHashArrayTest, ArrayRandomWriteRead) {
   ApproxHashArray<16, size_t> approx_hash_array;
 
   // generate 1000 random elements
-  std::vector<AnyIndex> rand_indexes;
+  AlignedVector<AnyIndex> rand_indexes;
   std::mt19937 gen(1);
   std::uniform_int_distribution<> dis(1, 1000000);
   for (int i = 0; i < 1000; ++i) {
@@ -63,7 +63,7 @@ TEST_F(ApproxHashArrayTest, SetRandomWriteRead) {
   ApproxHashSet<16, 10> approx_hash_set;
 
   // generate 1000 random elements
-  std::vector<AnyIndex> rand_indexes;
+  AlignedVector<AnyIndex> rand_indexes;
   std::mt19937 gen(1);
   std::uniform_int_distribution<> dis(1, 1000000);
   for (int i = 0; i < 1000; ++i) {

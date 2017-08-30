@@ -2,13 +2,16 @@
 #define VOXBLOX_CORE_VOXEL_H_
 
 #include <cstdint>
+#include <string>
 
-#include "voxblox/core/common.h"
 #include "voxblox/core/color.h"
+#include "voxblox/core/common.h"
 
 namespace voxblox {
 
 struct TsdfVoxel {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   float distance = 0.0f;
   float weight = 0.0f;
   Color color;
@@ -27,16 +30,18 @@ struct EsdfVoxel {
 };
 
 struct OccupancyVoxel {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   float probability_log = 0.0f;
   bool observed = false;
 };
 
 // Used for serialization only.
 namespace voxel_types {
-  const std::string kNotSerializable = "not_serializable";
-  const std::string kTsdf = "tsdf";
-  const std::string kEsdf = "esdf";
-  const std::string kOccupancy = "occupancy";
+const std::string kNotSerializable = "not_serializable";
+const std::string kTsdf = "tsdf";
+const std::string kEsdf = "esdf";
+const std::string kOccupancy = "occupancy";
 }  // namespace voxel_types
 
 template <typename Type>

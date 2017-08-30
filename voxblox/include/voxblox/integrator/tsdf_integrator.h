@@ -31,9 +31,13 @@ namespace voxblox {
 // accessed by other threads.
 class TsdfIntegratorBase {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef AnyIndexHashMapType<TsdfVoxel>::type VoxelMap;
 
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     float default_truncation_distance = 0.1;
     float max_weight = 10000.0;
     bool voxel_carving_enabled = true;
@@ -122,6 +126,8 @@ class TsdfIntegratorBase {
 
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   SimpleTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
@@ -136,6 +142,8 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
 class MergedTsdfIntegrator : public TsdfIntegratorBase {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   MergedTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
@@ -146,32 +154,34 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
   inline void bundleRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, ThreadSafeIndex* index_getter,
-      AnyIndexHashMapType<std::vector<size_t>>::type* voxel_map,
-      AnyIndexHashMapType<std::vector<size_t>>::type* clear_map);
+      AnyIndexHashMapType<AlignedVector<size_t>>::type* voxel_map,
+      AnyIndexHashMapType<AlignedVector<size_t>>::type* clear_map);
 
   void integrateVoxel(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const std::pair<AnyIndex, std::vector<size_t>>& kv,
-      const AnyIndexHashMapType<std::vector<size_t>>::type& voxel_map,
+      const std::pair<AnyIndex, AlignedVector<size_t>>& kv,
+      const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
       VoxelMap* temp_voxel_storage);
 
   void integrateVoxels(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const AnyIndexHashMapType<std::vector<size_t>>::type& voxel_map,
-      const AnyIndexHashMapType<std::vector<size_t>>::type& clear_map,
+      const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
+      const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
       size_t thread_idx, VoxelMap* temp_voxel_storage);
 
   void integrateRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const AnyIndexHashMapType<std::vector<size_t>>::type& voxel_map,
-      const AnyIndexHashMapType<std::vector<size_t>>::type& clear_map);
+      const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
+      const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map);
 };
 
 class FastTsdfIntegrator : public TsdfIntegratorBase {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 

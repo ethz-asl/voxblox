@@ -15,6 +15,8 @@ namespace io {
 //  http://paulbourke.net/dataformats/ply/
 class PlyWriter {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   explicit PlyWriter(const std::string& filename)
       : header_written_(false),
         parameters_set_(false),

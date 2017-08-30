@@ -19,6 +19,8 @@ namespace voxblox {
 // time a thread must wait on a lock is minimized.
 class ThreadSafeIndex {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   ThreadSafeIndex(const size_t number_of_points, const size_t number_of_threads)
       : number_of_points_(number_of_points),
         number_of_threads_(number_of_threads),
@@ -64,6 +66,8 @@ class ThreadSafeIndex {
 // map to voxel indices.
 class RayCaster {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   RayCaster(const Point& origin, const Point& point_G,
             const bool is_clearing_ray, const bool voxel_carving_enabled,
             const FloatingPoint max_ray_length_m,
@@ -95,12 +99,12 @@ class RayCaster {
 
   // returns false if ray terminates at ray_index, true otherwise
   bool nextRayIndex(AnyIndex* ray_index) {
-    if (at_end_) {
+    if (current_step_++ > ray_length_in_steps_) {
       return false;
     }
+
     DCHECK(ray_index != nullptr);
     *ray_index = curr_index_;
-    at_end_ = curr_index_ == end_index_;
 
     int t_min_idx;
     t_to_next_boundary_.minCoeff(&t_min_idx);
@@ -112,12 +116,14 @@ class RayCaster {
 
  private:
   void setupRayCaster(const Point& start_scaled, const Point& end_scaled) {
-    constexpr FloatingPoint kTolerance = 1e-6;
-
     curr_index_ = getGridIndexFromPoint(start_scaled);
-    end_index_ = getGridIndexFromPoint(end_scaled);
+    const AnyIndex end_index = getGridIndexFromPoint(end_scaled);
+    const AnyIndex diff_index = end_index - curr_index_;
 
-    at_end_ = false;
+    ray_length_in_steps_ = std::abs(diff_index.x()) + std::abs(diff_index.y()) +
+                           std::abs(diff_index.z());
+
+    current_step_ = 0;
 
     const Ray ray_scaled = end_scaled - start_scaled;
 
@@ -134,42 +140,39 @@ class RayCaster {
     Ray distance_to_boundaries(corrected_step.cast<FloatingPoint>() -
                                start_scaled_shifted);
 
-    t_to_next_boundary_ =
-        Ray((std::abs(ray_scaled.x()) < kTolerance)
-                ? 2.0
-                : distance_to_boundaries.x() / ray_scaled.x(),
-            (std::abs(ray_scaled.y()) < kTolerance)
-                ? 2.0
-                : distance_to_boundaries.y() / ray_scaled.y(),
-            (std::abs(ray_scaled.z()) < kTolerance)
-                ? 2.0
-                : distance_to_boundaries.z() / ray_scaled.z());
+    t_to_next_boundary_ = Ray(
+        (std::abs(ray_scaled.x()) < 0.0) ? 2.0 : distance_to_boundaries.x() /
+                                                     ray_scaled.x(),
+        (std::abs(ray_scaled.y()) < 0.0) ? 2.0 : distance_to_boundaries.y() /
+                                                     ray_scaled.y(),
+        (std::abs(ray_scaled.z()) < 0.0) ? 2.0 : distance_to_boundaries.z() /
+                                                     ray_scaled.z());
 
     // Distance to cross one grid cell along the ray in t.
     // Same as absolute inverse value of delta_coord.
     t_step_size_ = Ray(
-        (std::abs(ray_scaled.x()) < kTolerance) ? 2.0 : ray_step_signs_.x() /
-                                                            ray_scaled.x(),
-        (std::abs(ray_scaled.y()) < kTolerance) ? 2.0 : ray_step_signs_.y() /
-                                                            ray_scaled.y(),
-        (std::abs(ray_scaled.z()) < kTolerance) ? 2.0 : ray_step_signs_.z() /
-                                                            ray_scaled.z());
+        (std::abs(ray_scaled.x()) < 0.0) ? 2.0
+                                         : ray_step_signs_.x() / ray_scaled.x(),
+        (std::abs(ray_scaled.y()) < 0.0) ? 2.0
+                                         : ray_step_signs_.y() / ray_scaled.y(),
+        (std::abs(ray_scaled.z()) < 0.0) ? 2.0 : ray_step_signs_.z() /
+                                                     ray_scaled.z());
   }
 
   Ray t_to_next_boundary_;
   AnyIndex curr_index_;
-  AnyIndex end_index_;
   AnyIndex ray_step_signs_;
   Ray t_step_size_;
-  bool at_end_;
+
+  uint ray_length_in_steps_;
+  uint current_step_;
 };
 
 // This function assumes PRE-SCALED coordinates, where one unit = one voxel
 // size. The indices are also returned in this scales coordinate system, which
 // should map to voxel indices.
-inline void castRay(
-    const Point& start_scaled, const Point& end_scaled,
-    std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex> >* indices) {
+inline void castRay(const Point& start_scaled, const Point& end_scaled,
+                    AlignedVector<AnyIndex>* indices) {
   CHECK_NOTNULL(indices);
 
   RayCaster ray_caster(start_scaled, end_scaled);

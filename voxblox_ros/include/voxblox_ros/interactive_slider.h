@@ -13,6 +13,8 @@ namespace voxblox {
 // InteractiveSlider class which can be used for visualizing voxel map slices.
 class InteractiveSlider {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   InteractiveSlider(
       const std::string& slider_name,
       const std::function<void(const double& slice_level)>& slider_callback,

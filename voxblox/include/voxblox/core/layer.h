@@ -17,6 +17,8 @@ namespace voxblox {
 template <typename VoxelType>
 class Layer {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<Layer> Ptr;
   typedef Block<VoxelType> BlockType;
   typedef
