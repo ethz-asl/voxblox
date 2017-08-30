@@ -48,15 +48,20 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
 
     for (const voxblox_msgs::Triangle& triangle : mesh_block.triangles) {
       for (size_t i = 0; i < 3; ++i) {
-        ogre_object->position(triangle.x[i], triangle.y[i], triangle.z[i]);
-        ogre_object->normal(triangle.nx[i], triangle.ny[i], triangle.nz[i]);
+        // sanity checks
+        if (std::isfinite(triangle.x[i]) && std::isfinite(triangle.y[i]) &&
+            std::isfinite(triangle.z[i]) && std::isfinite(triangle.nx[i]) &&
+            std::isfinite(triangle.ny[i]) && std::isfinite(triangle.nz[i])) {
+          ogre_object->position(triangle.x[i], triangle.y[i], triangle.z[i]);
+          ogre_object->normal(triangle.nx[i], triangle.ny[i], triangle.nz[i]);
 
-        constexpr float color_conv_factor = 1.0f / 255.0f;
-        ogre_object->colour(
-            color_conv_factor * static_cast<float>(triangle.r[i]),
-            color_conv_factor * static_cast<float>(triangle.g[i]),
-            color_conv_factor * static_cast<float>(triangle.b[i]),
-            color_conv_factor * static_cast<float>(triangle.a[i]));
+          constexpr float color_conv_factor = 1.0f / 255.0f;
+          ogre_object->colour(
+              color_conv_factor * static_cast<float>(triangle.r[i]),
+              color_conv_factor * static_cast<float>(triangle.g[i]),
+              color_conv_factor * static_cast<float>(triangle.b[i]),
+              color_conv_factor * static_cast<float>(triangle.a[i]));
+        }
       }
     }
 

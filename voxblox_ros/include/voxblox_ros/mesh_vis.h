@@ -100,6 +100,7 @@ inline void heightColorFromVertex(const Point& vertex,
 }
 
 inline std_msgs::ColorRGBA getVertexColor(const Mesh::ConstPtr& mesh,
+                                          const ColorMode& color_mode,
                                           const size_t index) {
   std_msgs::ColorRGBA color_msg;
   switch (color_mode) {
@@ -159,7 +160,8 @@ inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
         triangle.ny[local_vert_idx] = mesh->normals[global_vert_idx].y();
         triangle.nz[local_vert_idx] = mesh->normals[global_vert_idx].z();
 
-        std_msgs::ColorRGBA color_msg = getVertexColor(mesh, global_vert_idx);
+        std_msgs::ColorRGBA color_msg =
+            getVertexColor(mesh, color_mode, global_vert_idx);
 
         triangle.r[local_vert_idx] = static_cast<uint8_t>(255 * color_msg.r);
         triangle.g[local_vert_idx] = static_cast<uint8_t>(255 * color_msg.g);
@@ -213,7 +215,7 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
       geometry_msgs::Point point_msg;
       tf::pointEigenToMsg(mesh->vertices[i].cast<double>(), point_msg);
       marker->points.push_back(point_msg);
-      marker->colors.push_back(getVertexColor(mesh, i));
+      marker->colors.push_back(getVertexColor(mesh, color_mode, i));
     }
   }
 }
@@ -249,7 +251,7 @@ inline void fillPointcloudWithMesh(
       point.z = mesh->vertices[i].z();
 
       Color color;
-      colorMsgToVoxblox(getVertexColor(mesh, i), &color);
+      colorMsgToVoxblox(getVertexColor(mesh, color_mode, i), &color);
       point.r = color.r;
       point.g = color.g;
       point.b = color.b;

@@ -287,7 +287,7 @@ void TsdfServer::updateMesh() {
 
   timing::Timer publish_mesh_timer("mesh/publish");
   voxblox_msgs::Mesh mesh_msg;
-  fillVoxbloxMeshWithMesh(mesh_layer_, color_mode_, &mesh_msg);
+  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
@@ -311,7 +311,7 @@ bool TsdfServer::generateMesh() {
 
   timing::Timer publish_mesh_timer("mesh/publish");
   voxblox_msgs::Mesh mesh_msg;
-  fillVoxbloxMeshWithMesh(mesh_layer_, color_mode_, &mesh_msg);
+  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
