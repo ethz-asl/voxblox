@@ -136,6 +136,16 @@ class Layer {
     return allocateNewBlock(computeBlockIndexFromCoordinates(coords));
   }
 
+  inline void insertBlock(
+      const std::pair<const BlockIndex, Block<TsdfVoxel>::Ptr>& block_pair) {
+    auto insert_status = block_map_.insert(block_pair);
+
+    DCHECK(insert_status.second) << "Block already exists when inserting at "
+                                 << insert_status.first->first.transpose();
+
+    DCHECK(insert_status.first->second);
+  }
+
   void removeBlock(const BlockIndex& index) { block_map_.erase(index); }
   void removeAllBlocks() { block_map_.clear(); }
 
