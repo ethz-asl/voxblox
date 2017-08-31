@@ -33,8 +33,6 @@ class TsdfIntegratorBase {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  typedef AnyIndexHashMapType<TsdfVoxel>::type VoxelMap;
-
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -75,16 +73,18 @@ class TsdfIntegratorBase {
   // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
   // layer. Thread safe.
   // Takes in the last_block_idx and last_block to prevent unneeded map lookups.
-  // If the block this voxel would be in has not been allocated, a voxel in
-  // temp_voxel_storage is allocated and returned instead.
-  // This can be merged into the layer later by calling
-  // updateLayerWithStoredVoxels(temp_voxel_storage)
-  inline TsdfVoxel* findOrTempAllocateVoxelPtr(
+  // If this voxel belongs to a block that has not been allocated, a block in
+  // temp_block_map_ is created/accessed and a voxel from this map is returned
+  // instead. Unlike the layer, accessing temp_block_map_ is controlled via a
+  // mutex allowing it to grow during integration.
+  // These temporary blocks can be merged into the layer later by calling
+  // updateLayerWithStoredBlocks()
+  inline TsdfVoxel* allocateStorageAndGetVoxelPtr(
       const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
-      BlockIndex* last_block_idx, VoxelMap* temp_voxel_storage) const;
+      BlockIndex* last_block_idx);
 
   // NOT thread safe
-  inline void updateLayerWithStoredVoxels(const VoxelMap& temp_voxel_storage);
+  inline void updateLayerWithStoredBlocks();
 
   // Updates tsdf_voxel. Thread safe.
   inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
@@ -112,6 +112,11 @@ class TsdfIntegratorBase {
   FloatingPoint voxels_per_side_inv_;
   FloatingPoint block_size_inv_;
 
+  // Temporary block storage, used to hold blocks that need to be created while
+  // integrating a new pointcloud
+  std::mutex temp_block_mutex_;
+  Layer<TsdfVoxel>::BlockHashMap temp_block_map_;
+
   // We need to prevent simultaneous access to the voxels in the map. We could
   // put a single mutex on the map or on the blocks, but as voxel updating is
   // the most expensive operation in integration and most voxels are close
@@ -136,8 +141,7 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
-                         ThreadSafeIndex* index_getter,
-                         VoxelMap* temp_voxel_storage);
+                         ThreadSafeIndex* index_getter);
 };
 
 class MergedTsdfIntegrator : public TsdfIntegratorBase {
@@ -161,15 +165,14 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const std::pair<AnyIndex, AlignedVector<size_t>>& kv,
-      const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
-      VoxelMap* temp_voxel_storage);
+      const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map);
 
   void integrateVoxels(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
       const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
-      size_t thread_idx, VoxelMap* temp_voxel_storage);
+      size_t thread_idx);
 
   void integrateRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
@@ -187,8 +190,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
-                         ThreadSafeIndex* index_getter,
-                         VoxelMap* temp_voxel_storage);
+                         ThreadSafeIndex* index_getter);
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors);
