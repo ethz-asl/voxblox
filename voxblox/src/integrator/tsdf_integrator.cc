@@ -55,7 +55,7 @@ inline bool TsdfIntegratorBase::isPointValid(const Point& point_C,
 // mutex allowing it to grow during integration.
 // These temporary blocks can be merged into the layer later by calling
 // updateLayerWithStoredBlocks()
-inline TsdfVoxel* TsdfIntegratorBase::getVoxelPtr(
+inline TsdfVoxel* TsdfIntegratorBase::allocateStorageAndGetVoxelPtr(
     const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
     BlockIndex* last_block_idx) {
   DCHECK(last_block != nullptr);
@@ -80,11 +80,10 @@ inline TsdfVoxel* TsdfIntegratorBase::getVoxelPtr(
     if (it != temp_block_map_.end()) {
       *last_block = it->second;
     } else {
-      auto insert_status = temp_block_map_.insert(std::make_pair(
-          block_idx,
-          std::shared_ptr<Block<TsdfVoxel>>(new Block<TsdfVoxel>(
-              voxels_per_side_, voxel_size_,
-              getOriginPointFromGridIndex(block_idx, block_size_)))));
+      auto insert_status = temp_block_map_.emplace(
+          block_idx, std::make_shared<Block<TsdfVoxel>>(
+                         voxels_per_side_, voxel_size_,
+                         getOriginPointFromGridIndex(block_idx, block_size_)));
 
       DCHECK(insert_status.second) << "Block already exists when allocating at "
                                    << block_idx.transpose();
@@ -255,7 +254,8 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     BlockIndex block_idx;
     VoxelIndex global_voxel_idx;
     while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-      TsdfVoxel* voxel = getVoxelPtr(global_voxel_idx, &block, &block_idx);
+      TsdfVoxel* voxel =
+          allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
 
       const float weight = getVoxelWeight(point_C);
       const Point voxel_center_G =
@@ -377,7 +377,8 @@ void MergedTsdfIntegrator::integrateVoxel(
 
     Block<TsdfVoxel>::Ptr block = nullptr;
     BlockIndex block_idx;
-    TsdfVoxel* voxel = getVoxelPtr(global_voxel_idx, &block, &block_idx);
+    TsdfVoxel* voxel =
+        allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
     const Point voxel_center_G =
         getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
@@ -420,8 +421,9 @@ void MergedTsdfIntegrator::integrateRays(
 
   // if only 1 thread just do function call, otherwise spawn threads
   if (config_.integrator_threads == 1) {
+    constexpr size_t thread_idx = 0;
     integrateVoxels(T_G_C, points_C, colors, enable_anti_grazing, clearing_ray,
-                    voxel_map, clear_map, 0);
+                    voxel_map, clear_map, thread_idx);
   } else {
     AlignedVector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
@@ -493,7 +495,8 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
         break;
       }
 
-      TsdfVoxel* voxel = getVoxelPtr(global_voxel_idx, &block, &block_idx);
+      TsdfVoxel* voxel =
+          allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
 
       const float weight = getVoxelWeight(point_C);
       const Point voxel_center_G =

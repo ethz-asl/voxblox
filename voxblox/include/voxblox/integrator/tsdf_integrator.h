@@ -73,15 +73,15 @@ class TsdfIntegratorBase {
   // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
   // layer. Thread safe.
   // Takes in the last_block_idx and last_block to prevent unneeded map lookups.
-  // If the block this voxel would be in has not been allocated, a block in
+  // If this voxel belongs to a block that has not been allocated, a block in
   // temp_block_map_ is created/accessed and a voxel from this map is returned
   // instead. Unlike the layer, accessing temp_block_map_ is controlled via a
   // mutex allowing it to grow during integration.
   // These temporary blocks can be merged into the layer later by calling
   // updateLayerWithStoredBlocks()
-  inline TsdfVoxel* getVoxelPtr(const VoxelIndex& global_voxel_idx,
-                                Block<TsdfVoxel>::Ptr* last_block,
-                                BlockIndex* last_block_idx);
+  inline TsdfVoxel* allocateStorageAndGetVoxelPtr(
+      const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
+      BlockIndex* last_block_idx);
 
   // NOT thread safe
   inline void updateLayerWithStoredBlocks();
