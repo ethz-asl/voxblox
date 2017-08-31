@@ -196,7 +196,7 @@ inline VoxelIndex getLocalFromGlobalVoxelIndex(const AnyIndex& global_voxel_idx,
 
   DCHECK(isPowerOfTwo(voxels_per_side));
 
-  // assume that voxels_per_side is a power of 2 and use bit shifting as a
+  // assume that voxels_per_side is a power of 2 and uses a bitwise and as a
   // computationally cheap substitute for the modulus operator
   return VoxelIndex((global_voxel_idx.x() + offset) & (voxels_per_side - 1),
                     (global_voxel_idx.y() + offset) & (voxels_per_side - 1),
