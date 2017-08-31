@@ -120,10 +120,10 @@ class RayCaster {
     const AnyIndex end_index = getGridIndexFromPoint(end_scaled);
     const AnyIndex diff_index = end_index - curr_index_;
 
+    current_step_ = 0;
+
     ray_length_in_steps_ = std::abs(diff_index.x()) + std::abs(diff_index.y()) +
                            std::abs(diff_index.z());
-
-    current_step_ = 0;
 
     const Ray ray_scaled = end_scaled - start_scaled;
 

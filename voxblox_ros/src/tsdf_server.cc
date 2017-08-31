@@ -83,6 +83,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   nh_private_.param("max_consecutive_ray_collisions",
                     integrator_config.max_consecutive_ray_collisions,
                     integrator_config.max_consecutive_ray_collisions);
+  nh_private_.param("clear_checks_every_n_frames",
+                    integrator_config.clear_checks_every_n_frames,
+                    integrator_config.clear_checks_every_n_frames);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);

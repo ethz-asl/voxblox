@@ -54,6 +54,7 @@ class TsdfIntegratorBase {
     // fast integrator specific
     float start_voxel_subsampling_factor = 2.0f;
     int max_consecutive_ray_collisions = 2;
+    int clear_checks_every_n_frames = 1;
   };
 
   TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer);

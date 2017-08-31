@@ -301,6 +301,9 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   nh_private_.param("max_consecutive_ray_collisions",
                     integrator_config.max_consecutive_ray_collisions,
                     integrator_config.max_consecutive_ray_collisions);
+  nh_private_.param("clear_checks_every_n_frames",
+                    integrator_config.clear_checks_every_n_frames,
+                    integrator_config.clear_checks_every_n_frames);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
@@ -484,10 +487,6 @@ void VoxbloxNode::insertPointcloudWithTf(
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
 
     timing::Timer ptcloud_timer("ptcloud_preprocess");
-
-    // Filter out NaNs. :|
-    std::vector<int> indices;
-    pcl::removeNaNFromPointCloud(pointcloud_pcl, pointcloud_pcl, indices);
 
     Pointcloud points_C;
     Colors colors;
