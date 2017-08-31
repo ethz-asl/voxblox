@@ -69,9 +69,7 @@ class ApproxHashSet {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ApproxHashSet() : reset_counter_(0) {
-    pseudo_set_ptr_ = &pseudo_set_[reset_counter_++];
-
+  ApproxHashSet() : offset_(0) {
     for (std::atomic<size_t>& value : pseudo_set_) {
       value.store(0, std::memory_order_relaxed);
     }
@@ -80,29 +78,29 @@ class ApproxHashSet {
     // zeroth bin can actually store the 0 hash. Because of this to prevent a
     // false positive on looking up a 0 hash this bin needs to initially store a
     // different value.
-    pseudo_set_ptr_[0].store(std::numeric_limits<size_t>::max());
+    pseudo_set_[offset_].store(std::numeric_limits<size_t>::max());
   }
 
   // Returns true if an element with the same hash is currently in the set,
   // false otherwise.
   // Note due to the masking of bits, many elements that were previously
   // inserted into the ApproxHashSet have been overwritten by other values.
-  bool isHashCurrentlyPresent(const size_t& hash) {
-    if (pseudo_set_ptr_[hash & bit_mask_].load(std::memory_order_relaxed) ==
-        hash) {
+  inline bool isHashCurrentlyPresent(const size_t& hash) {
+    if (pseudo_set_[hash & bit_mask_ + offset_].load(
+            std::memory_order_relaxed) == hash) {
       return true;
     } else {
       return false;
     }
   }
 
-  bool isHashCurrentlyPresent(const AnyIndex& index, size_t* hash) {
+  inline bool isHashCurrentlyPresent(const AnyIndex& index, size_t* hash) {
     DCHECK(hash);
     *hash = hasher_(index);
     return isHashCurrentlyPresent(hash);
   }
 
-  bool isHashCurrentlyPresent(const AnyIndex& index) {
+  inline bool isHashCurrentlyPresent(const AnyIndex& index) {
     size_t hash = hasher_(index);
     return isHashCurrentlyPresent(hash);
   }
@@ -110,24 +108,29 @@ class ApproxHashSet {
   // Returns true if it replaced the element in the masked_hash's with the hash
   // of the given element.
   // Returns false if this hash was already there and no replacement was needed.
-  bool replaceHash(const size_t& hash) {
-    const size_t masked_hash = hash & bit_mask_;
-    if (pseudo_set_ptr_[masked_hash].load(std::memory_order_relaxed) == hash) {
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // !! This is the most expensive function in all of voxblox.                !!
+  // !! Profile and test after even the most superficial change.              !!
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  inline bool replaceHash(const size_t& hash) {
+    const size_t index = (hash & bit_mask_) + offset_;
+
+    if (pseudo_set_[index].load(std::memory_order_relaxed) == hash) {
       return false;
     } else {
-      pseudo_set_ptr_[masked_hash].store(hash, std::memory_order_relaxed);
+      pseudo_set_[index].store(hash, std::memory_order_relaxed);
       return true;
     }
   }
 
-  bool replaceHash(const AnyIndex& index, size_t* hash) {
+  inline bool replaceHash(const AnyIndex& index, size_t* hash) {
     DCHECK(hash);
     *hash = hasher_(index);
     return replaceHash(hash);
   }
 
-  bool replaceHash(const AnyIndex& index) {
-    size_t hash = hasher_(index);
+  inline bool replaceHash(const AnyIndex& index) {
+    const size_t hash = hasher_(index);
     return replaceHash(hash);
   }
 
@@ -138,21 +141,17 @@ class ApproxHashSet {
   // clear the memory).
   // This function is not thread safe.
   void resetApproxSet() {
-    if (reset_counter_ >= full_reset_threshold) {
+    if (++offset_ >= full_reset_threshold) {
       for (std::atomic<size_t>& value : pseudo_set_) {
         value.store(0, std::memory_order_relaxed);
       }
-      reset_counter_ = 0;
-      pseudo_set_ptr_ = &pseudo_set_[reset_counter_++];
+      offset_ = 0;
 
       // The array used for storing values is initialized with zeros. However,
       // the zeroth bin can actually store the 0 hash. Because of this to
       // prevent a false positive on looking up a 0 hash this bin needs to
       // initially store a different value.
-      pseudo_set_ptr_[0].store(std::numeric_limits<size_t>::max());
-
-    } else {
-      pseudo_set_ptr_ = &pseudo_set_[reset_counter_++];
+      pseudo_set_[offset_].store(std::numeric_limits<size_t>::max());
     }
   }
 
@@ -161,9 +160,9 @@ class ApproxHashSet {
       (1 << unmasked_bits) + full_reset_threshold;
   static constexpr size_t bit_mask_ = (1 << unmasked_bits) - 1;
 
-  size_t reset_counter_;
+  size_t offset_;
   std::array<std::atomic<size_t>, pseudo_set_size_> pseudo_set_;
-  std::atomic<size_t>* pseudo_set_ptr_;
+
   AnyIndexHash hasher_;
 };
 }  // namespace voxblox
