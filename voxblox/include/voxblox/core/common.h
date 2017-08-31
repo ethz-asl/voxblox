@@ -187,20 +187,20 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
                  voxels_per_side_inv_));
 }
 
+inline bool isPowerOfTwo(int x) { return (x & (x - 1)) == 0; }
+
 inline VoxelIndex getLocalFromGlobalVoxelIndex(const AnyIndex& global_voxel_idx,
                                                int voxels_per_side) {
-  VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side,
-                             global_voxel_idx.y() % voxels_per_side,
-                             global_voxel_idx.z() % voxels_per_side);
+  // add a big number to the index to make it positive
+  constexpr int offset = 1 << (8 * sizeof(IndexElement) - 1);
 
-  // Make sure we're within bounds.
-  for (unsigned int i = 0u; i < 3u; ++i) {
-    if (local_voxel_idx(i) < 0) {
-      local_voxel_idx(i) += voxels_per_side;
-    }
-  }
+  DCHECK(isPowerOfTwo(voxels_per_side));
 
-  return local_voxel_idx;
+  // assume that voxels_per_side is a power of 2 and use bit shifting as a
+  // computationally cheap substitute for the modulus operator
+  return VoxelIndex((global_voxel_idx.x() + offset) & (voxels_per_side - 1),
+                    (global_voxel_idx.y() + offset) & (voxels_per_side - 1),
+                    (global_voxel_idx.z() + offset) & (voxels_per_side - 1));
 }
 
 // Math functions.

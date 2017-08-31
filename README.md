@@ -178,7 +178,7 @@ A summary of the user setable voxblox_node parameters:
 | `color_ptcloud_by_weight` | If the pointcloud should be colored by the voxel weighting | false |
 | `method` | Method to use for integrating new readings into the tsdf. Options are "merged", "simple", "merged_discard" and "fast" | "merged" |
 | `tsdf_voxel_size` | The size of the tsdf voxels | 0.2 |
-| `tsdf_voxels_per_side` | TSDF voxels per side of an allocated block | 16 |
+| `tsdf_voxels_per_side` | TSDF voxels per side of an allocated block. Must be a power of 2 | 16 |
 | `voxel_carving_enabled` | If true, the entire length of a ray is integrated, if false only the region inside the trunaction distance is used. | true |
 | `truncation_distance` | The truncation distance for the TSDF | 2`tsdf_voxel_size` |
 | `max_ray_length_m` | The maximum range out to which a ray will be cast | 5.0 |

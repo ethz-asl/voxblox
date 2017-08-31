@@ -28,6 +28,10 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   // workaround.
   int voxels_per_side = esdf_config.esdf_voxels_per_side;
   nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
+  if (!isPowerOfTwo(voxels_per_side)) {
+    ROS_ERROR("voxels_per_side must be a power of 2, setting to default value");
+    voxels_per_side = esdf_config.esdf_voxels_per_side;
+  }
   esdf_config.esdf_voxels_per_side = voxels_per_side;
 
   esdf_map_.reset(new EsdfMap(esdf_config));
