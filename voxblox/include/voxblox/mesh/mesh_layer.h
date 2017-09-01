@@ -126,6 +126,16 @@ class MeshLayer {
     }
   }
 
+  void getAllUpdatedMeshes(BlockIndexList* meshes) const {
+    meshes->clear();
+    for (const std::pair<const BlockIndex, typename Mesh::Ptr>& kv :
+         mesh_map_) {
+      if (kv.second->updated) {
+        meshes->emplace_back(kv.first);
+      }
+    }
+  }
+
   void combineMesh(Mesh::Ptr combined_mesh) const {
     // Used to prevent double ups in vertices
     AnyIndexHashMapType<IndexElement>::type uniques;

@@ -118,10 +118,10 @@ class Layer {
   }
 
   typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) {
-    auto insert_status = block_map_.insert(std::make_pair(
-        index, std::shared_ptr<BlockType>(new BlockType(
+    auto insert_status = block_map_.emplace(
+        index, std::make_shared<BlockType>(
                    voxels_per_side_, voxel_size_,
-                   getOriginPointFromGridIndex(index, block_size_)))));
+                   getOriginPointFromGridIndex(index, block_size_)));
 
     DCHECK(insert_status.second)
         << "Block already exists when allocating at " << index.transpose();
@@ -134,6 +134,16 @@ class Layer {
   inline typename BlockType::Ptr allocateNewBlockByCoordinates(
       const Point& coords) {
     return allocateNewBlock(computeBlockIndexFromCoordinates(coords));
+  }
+
+  inline void insertBlock(
+      const std::pair<const BlockIndex, Block<TsdfVoxel>::Ptr>& block_pair) {
+    auto insert_status = block_map_.insert(block_pair);
+
+    DCHECK(insert_status.second) << "Block already exists when inserting at "
+                                 << insert_status.first->first.transpose();
+
+    DCHECK(insert_status.first->second);
   }
 
   void removeBlock(const BlockIndex& index) { block_map_.erase(index); }

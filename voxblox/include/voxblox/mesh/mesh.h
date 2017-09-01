@@ -37,7 +37,7 @@ struct Mesh {
   typedef std::shared_ptr<const Mesh> ConstPtr;
 
   Mesh(FloatingPoint _block_size, const Point& _origin)
-      : block_size(_block_size), origin(_origin) {}
+      : block_size(_block_size), origin(_origin), updated(false) {}
   virtual ~Mesh() {}
 
   inline bool hasVertices() const { return !vertices.empty(); }
@@ -61,6 +61,8 @@ struct Mesh {
 
   FloatingPoint block_size;
   Point origin;
+
+  bool updated;
 };
 
 }  // namespace voxblox
