@@ -38,7 +38,7 @@ class ApproxHashArray {
   StoredElement& get(const AnyIndex& index, size_t* hash) {
     DCHECK(hash);
     *hash = hasher_(index);
-    return get(hash);
+    return get(*hash);
   }
 
   StoredElement& get(const AnyIndex& index) {
@@ -86,18 +86,15 @@ class ApproxHashSet {
   // Note due to the masking of bits, many elements that were previously
   // inserted into the ApproxHashSet have been overwritten by other values.
   inline bool isHashCurrentlyPresent(const size_t& hash) {
-    if (pseudo_set_[hash & bit_mask_ + offset_].load(
-            std::memory_order_relaxed) == hash) {
-      return true;
-    } else {
-      return false;
-    }
+    const size_t array_index = (hash & bit_mask_) + offset_;
+
+    return (pseudo_set_[array_index].load(std::memory_order_relaxed) == hash);
   }
 
   inline bool isHashCurrentlyPresent(const AnyIndex& index, size_t* hash) {
     DCHECK(hash);
     *hash = hasher_(index);
-    return isHashCurrentlyPresent(hash);
+    return isHashCurrentlyPresent(*hash);
   }
 
   inline bool isHashCurrentlyPresent(const AnyIndex& index) {
@@ -113,12 +110,12 @@ class ApproxHashSet {
   // !! Profile and test after even the most superficial change.              !!
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   inline bool replaceHash(const size_t& hash) {
-    const size_t index = (hash & bit_mask_) + offset_;
+    const size_t array_index = (hash & bit_mask_) + offset_;
 
-    if (pseudo_set_[index].load(std::memory_order_relaxed) == hash) {
+    if (pseudo_set_[array_index].load(std::memory_order_relaxed) == hash) {
       return false;
     } else {
-      pseudo_set_[index].store(hash, std::memory_order_relaxed);
+      pseudo_set_[array_index].store(hash, std::memory_order_relaxed);
       return true;
     }
   }
@@ -126,7 +123,7 @@ class ApproxHashSet {
   inline bool replaceHash(const AnyIndex& index, size_t* hash) {
     DCHECK(hash);
     *hash = hasher_(index);
-    return replaceHash(hash);
+    return replaceHash(*hash);
   }
 
   inline bool replaceHash(const AnyIndex& index) {
