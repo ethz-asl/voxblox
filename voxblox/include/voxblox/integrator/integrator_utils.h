@@ -76,9 +76,16 @@ class RayCaster {
             const bool cast_from_origin = true) {
     const Ray unit_ray = (point_G - origin).normalized();
 
-    const Point ray_end = is_clearing_ray
-                              ? origin + unit_ray * max_ray_length_m
-                              : point_G + unit_ray * truncation_distance;
+    Point ray_end;
+    if (is_clearing_ray) {
+      FloatingPoint ray_length = (point_G - origin).norm();
+      ray_length = std::min(std::max(ray_length - truncation_distance,
+                                     static_cast<FloatingPoint>(0.0)),
+                            max_ray_length_m);
+      ray_end = origin + unit_ray * ray_length;
+    } else {
+      ray_end = point_G + unit_ray * truncation_distance;
+    }
     const Point ray_start = voxel_carving_enabled
                                 ? origin
                                 : (point_G - unit_ray * truncation_distance);
