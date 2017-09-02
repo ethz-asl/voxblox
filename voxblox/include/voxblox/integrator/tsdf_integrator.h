@@ -61,14 +61,16 @@ class TsdfIntegratorBase {
   // NOT thread safe.
   virtual void integratePointCloud(const Transformation& T_G_C,
                                    const Pointcloud& points_C,
-                                   const Colors& colors) = 0;
+                                   const Colors& colors,
+                                   const bool freespace_points = false) = 0;
 
   // Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
 
  protected:
   // Thread safe.
-  inline bool isPointValid(const Point& point_C, bool* is_clearing) const;
+  inline bool isPointValid(const Point& point_C, const bool freespace_point,
+                           bool* is_clearing) const;
 
   // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
   // layer. Thread safe.
@@ -137,10 +139,12 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
       : TsdfIntegratorBase(config, layer) {}
 
   void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors);
+                           const Pointcloud& points_C, const Colors& colors,
+                           const bool freespace_points = false);
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
+                         const bool freespace_points,
                          ThreadSafeIndex* index_getter);
 };
 
@@ -152,12 +156,14 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       : TsdfIntegratorBase(config, layer) {}
 
   void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors);
+                           const Pointcloud& points_C, const Colors& colors,
+                           const bool freespace_points = false);
 
  private:
   inline void bundleRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
-      const Colors& colors, ThreadSafeIndex* index_getter,
+      const Colors& colors, const bool freespace_points,
+      ThreadSafeIndex* index_getter,
       AnyIndexHashMapType<AlignedVector<size_t>>::type* voxel_map,
       AnyIndexHashMapType<AlignedVector<size_t>>::type* clear_map);
 
@@ -190,10 +196,12 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
+                         const bool freespace_points,
                          ThreadSafeIndex* index_getter);
 
   void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors);
+                           const Pointcloud& points_C, const Colors& colors,
+                           const bool freespace_points = false);
 
  private:
   // Two approximate sets are used below. The limitations of these sets are

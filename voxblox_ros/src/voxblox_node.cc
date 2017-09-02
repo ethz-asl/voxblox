@@ -34,7 +34,14 @@ class VoxbloxNode {
  public:
   VoxbloxNode(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
+  void processPointCloudMessageAndInsert(
+      const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
+      const bool is_freespace_pointcloud = false);
+
   void insertPointcloudWithTf(const sensor_msgs::PointCloud2::Ptr& pointcloud);
+
+  void insertFreespacePointcloudWithTf(
+      const sensor_msgs::PointCloud2::Ptr& freespace_pointcloud);
 
   bool lookupTransform(const std::string& from_frame,
                        const std::string& to_frame, const ros::Time& timestamp,
@@ -105,6 +112,9 @@ class VoxbloxNode {
   // Pointcloud visualization settings.
   double slice_level_;
 
+  // If the system should subscribe to a pointcloud giving points in freespace
+  bool use_freespace_pointcloud_;
+
   // Mesh output settings. Mesh is only written to file if mesh_filename_ is
   // not empty.
   std::string mesh_filename_;
@@ -113,7 +123,6 @@ class VoxbloxNode {
 
   // Keep track of these for throttling.
   ros::Duration min_time_between_msgs_;
-  ros::Time last_msg_time_;
 
   // To be replaced (at least optionally) with odometry + static transform
   // from IMU to visual frame.
@@ -121,6 +130,8 @@ class VoxbloxNode {
 
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
+  ros::Subscriber freespace_pointcloud_sub_;
+
   // Only used if use_tf_transforms_ set to false.
   ros::Subscriber transform_sub_;
 
@@ -179,7 +190,8 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
       use_tf_transforms_(true),
       // 10 ms here:
       timestamp_tolerance_ns_(10000000),
-      slice_level_(0.5) {
+      slice_level_(0.5),
+      use_freespace_pointcloud_(false) {
   // Before subscribing, determine minimum time between messages.
   // 0 by default.
   double min_time_between_msgs_sec = 0.0;
@@ -254,6 +266,16 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
 
   pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size,
                                   &VoxbloxNode::insertPointcloudWithTf, this);
+
+  nh_private_.param("use_freespace_pointcloud", use_freespace_pointcloud_,
+                    use_freespace_pointcloud_);
+  if (use_freespace_pointcloud_) {
+    // points that are not inside an object, but may also not be on a surface.
+    // These will only be used to mark freespace beyond the truncation distance.
+    freespace_pointcloud_sub_ =
+        nh_.subscribe("freespace_pointcloud", pointcloud_queue_size,
+                      &VoxbloxNode::insertFreespacePointcloudWithTf, this);
+  }
 
   nh_private_.param("verbose", verbose_, verbose_);
   nh_private_.param("color_ptcloud_by_weight", color_ptcloud_by_weight_,
@@ -458,14 +480,9 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
   ros::spinOnce();
 }
 
-void VoxbloxNode::insertPointcloudWithTf(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
-  // Figure out if we should insert this.
-  if (pointcloud_msg->header.stamp - last_msg_time_ < min_time_between_msgs_) {
-    return;
-  }
-  last_msg_time_ = pointcloud_msg->header.stamp;
-
+void VoxbloxNode::processPointCloudMessageAndInsert(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
+    const bool is_freespace_pointcloud) {
   // Look up transform from sensor frame to world frame.
   Transformation T_G_C;
   if (lookupTransform(pointcloud_msg->header.frame_id, world_frame_,
@@ -515,9 +532,10 @@ void VoxbloxNode::insertPointcloudWithTf(
     }
     ros::WallTime start = ros::WallTime::now();
 
-    tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors);
+    tsdf_integrator_->integratePointCloud(T_G_C, points_C, colors,
+                                          is_freespace_pointcloud);
 
-    if (generate_occupancy_) {
+    if (generate_occupancy_ && !is_freespace_pointcloud) {
       occupancy_integrator_->integratePointCloud(T_G_C, points_C);
     }
     ros::WallTime end = ros::WallTime::now();
@@ -531,25 +549,51 @@ void VoxbloxNode::insertPointcloudWithTf(
                      ->getNumberOfAllocatedBlocks());
       }
     }
-
-    if (publish_tsdf_info_) {
-      publishAllUpdatedTsdfVoxels();
-      publishTsdfSurfacePoints();
-      publishTsdfOccupiedNodes();
-    }
-    if (generate_occupancy_) {
-      publishOccupancy();
-    }
-    if (publish_slices_) {
-      publishSlices();
-    }
-
-    if (verbose_) {
-      ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
-      ROS_INFO_STREAM(
-          "Layer memory: " << tsdf_map_->getTsdfLayer().getMemorySize());
-    }
   }
+}
+
+void VoxbloxNode::insertPointcloudWithTf(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+  // Figure out if we should insert this.
+  static ros::Time last_msg_time;
+  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
+    return;
+  }
+  last_msg_time = pointcloud_msg->header.stamp;
+
+  constexpr bool is_freespace_pointcloud = false;
+  processPointCloudMessageAndInsert(pointcloud_msg, is_freespace_pointcloud);
+
+  if (publish_tsdf_info_) {
+    publishAllUpdatedTsdfVoxels();
+    publishTsdfSurfacePoints();
+    publishTsdfOccupiedNodes();
+  }
+  if (generate_occupancy_) {
+    publishOccupancy();
+  }
+  if (publish_slices_) {
+    publishSlices();
+  }
+
+  if (verbose_) {
+    ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
+    ROS_INFO_STREAM(
+        "Layer memory: " << tsdf_map_->getTsdfLayer().getMemorySize());
+  }
+}
+
+void VoxbloxNode::insertFreespacePointcloudWithTf(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+  // Figure out if we should insert this.
+  static ros::Time last_msg_time;
+  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
+    return;
+  }
+  last_msg_time = pointcloud_msg->header.stamp;
+
+  constexpr bool is_freespace_pointcloud = true;
+  processPointCloudMessageAndInsert(pointcloud_msg, is_freespace_pointcloud);
 }
 
 void VoxbloxNode::transformCallback(
