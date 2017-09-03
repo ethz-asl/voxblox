@@ -3,6 +3,7 @@
 
 #include <glog/logging.h>
 #include <deque>
+#include <mutex>
 #include <queue>
 #include <vector>
 
@@ -28,6 +29,7 @@ class BucketQueue {
 
   // WARNING: will CLEAR THE QUEUE!
   void setNumBuckets(int num_buckets, double max_val) {
+    std::lock_guard<std::mutex> lock(mutex_);
     max_val_ = max_val;
     num_buckets_ = num_buckets;
     buckets_.clear();
@@ -36,6 +38,7 @@ class BucketQueue {
   }
 
   void push(const T& key, double value) {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_NE(num_buckets_, 0);
     if (value > max_val_) {
       value = max_val_;
@@ -53,6 +56,7 @@ class BucketQueue {
   }
 
   void pop() {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (empty()) {
       return;
     }
@@ -67,6 +71,7 @@ class BucketQueue {
   }
 
   T front() {
+    std::lock_guard<std::mutex> lock(mutex_);
     CHECK_NE(num_buckets_, 0);
     CHECK(!empty());
     while (buckets_[last_bucket_index_].empty() &&
@@ -76,9 +81,13 @@ class BucketQueue {
     return buckets_[last_bucket_index_].front();
   }
 
-  bool empty() { return num_elements_ == 0; }
+  bool empty() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return num_elements_ == 0;
+  }
 
   void clear() {
+    std::lock_guard<std::mutex> lock(mutex_);
     buckets_.clear();
     buckets_.resize(num_buckets_);
     last_bucket_index_ = 0;
@@ -94,6 +103,9 @@ class BucketQueue {
   int last_bucket_index_;
   // This is also to speed up empty checks.
   size_t num_elements_;
+
+  // Lets threading happen
+  std::mutex mutex_;
 };
 
 #endif  // VOXBLOX_UTILS_BUCKET_QUEUE_H_

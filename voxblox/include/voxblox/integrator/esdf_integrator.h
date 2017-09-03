@@ -11,6 +11,7 @@
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
+#include "voxblox/utils/approx_hash_array.h"
 #include "voxblox/utils/bucket_queue.h"
 #include "voxblox/utils/timing.h"
 
@@ -34,8 +35,8 @@ class EsdfIntegrator {
     // Default distance set for unknown values and values > max_distance_m.
     FloatingPoint default_distance_m = 2.0;
     // For cheaper but less accurate map updates: the minimum difference in
-    // a voxel distance to require adding it to the raise queue.
-    FloatingPoint min_raise_diff_m = 0.0;
+    // a voxel distance, before the change is propagated.
+    FloatingPoint min_diff_m = 0.01;
     // Minimum weight to consider a TSDF value seen at.
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.
@@ -150,6 +151,17 @@ class EsdfIntegrator {
   FloatingPoint esdf_voxel_size_;
 
   IndexSet updated_blocks_;
+
+  // We need to prevent simultaneous access to the voxels in the map. We could
+  // put a single mutex on the map or on the blocks, but as voxel updating is
+  // the most expensive operation in integration and most voxels are close
+  // together, both strategies would bottleneck the system. We could make a
+  // mutex per voxel, but this is too ram heavy as one mutex = 40 bytes.
+  // Because of this we create an array that is indexed by the first n bits of
+  // the voxels hash. Assuming a uniform hash distribution, this means the
+  // chance of two threads needing the same lock for unrelated voxels is
+  // (num_threads / (2^n)). For 8 threads and 12 bits this gives 0.2%.
+  ApproxHashArray<12, std::mutex> mutexes_;
 };
 
 }  // namespace voxblox
