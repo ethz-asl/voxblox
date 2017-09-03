@@ -1,4 +1,5 @@
 #include "voxblox/integrator/tsdf_integrator.h"
+#include <iostream>
 
 namespace voxblox {
 
@@ -520,8 +521,12 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
 
-  start_voxel_approx_set_.resetApproxSet();
-  voxel_observed_approx_set_.resetApproxSet();
+  static size_t reset_counter = 0;
+  if ((++reset_counter) >= config_.clear_checks_every_n_frames) {
+    reset_counter = 0;
+    start_voxel_approx_set_.resetApproxSet();
+    voxel_observed_approx_set_.resetApproxSet();
+  }
 
   ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
 

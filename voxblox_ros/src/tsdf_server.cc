@@ -66,6 +66,11 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   int voxels_per_side = config.tsdf_voxels_per_side;
   nh_private_.param("tsdf_voxel_size", voxel_size, voxel_size);
   nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
+  if (!isPowerOfTwo(voxels_per_side)) {
+    ROS_ERROR("voxels_per_side must be a power of 2, setting to default value");
+    voxels_per_side = config.tsdf_voxels_per_side;
+  }
+
   config.tsdf_voxel_size = static_cast<FloatingPoint>(voxel_size);
   config.tsdf_voxels_per_side = voxels_per_side;
   tsdf_map_.reset(new TsdfMap(config));
@@ -99,6 +104,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   nh_private_.param("max_consecutive_ray_collisions",
                     integrator_config.max_consecutive_ray_collisions,
                     integrator_config.max_consecutive_ray_collisions);
+  nh_private_.param("clear_checks_every_n_frames",
+                    integrator_config.clear_checks_every_n_frames,
+                    integrator_config.clear_checks_every_n_frames);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
@@ -194,15 +202,17 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
     timing::Timer ptcloud_timer("ptcloud_preprocess");
 
-    // Filter out NaNs. :|
-    std::vector<int> indices;
-    pcl::removeNaNFromPointCloud(pointcloud_pcl, pointcloud_pcl, indices);
-
     Pointcloud points_C;
     Colors colors;
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
+          !std::isfinite(pointcloud_pcl.points[i].y) ||
+          !std::isfinite(pointcloud_pcl.points[i].z)) {
+        continue;
+      }
+
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
