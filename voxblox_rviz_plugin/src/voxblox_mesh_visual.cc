@@ -5,7 +5,7 @@
 
 namespace voxblox_rviz_plugin {
 
-uint VoxbloxMeshVisual::instance_counter_ = 0;
+unsigned int VoxbloxMeshVisual::instance_counter_ = 0;
 
 VoxbloxMeshVisual::VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
                                      Ogre::SceneNode* parent_node) {
