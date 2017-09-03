@@ -151,17 +151,6 @@ class EsdfIntegrator {
   FloatingPoint esdf_voxel_size_;
 
   IndexSet updated_blocks_;
-
-  // We need to prevent simultaneous access to the voxels in the map. We could
-  // put a single mutex on the map or on the blocks, but as voxel updating is
-  // the most expensive operation in integration and most voxels are close
-  // together, both strategies would bottleneck the system. We could make a
-  // mutex per voxel, but this is too ram heavy as one mutex = 40 bytes.
-  // Because of this we create an array that is indexed by the first n bits of
-  // the voxels hash. Assuming a uniform hash distribution, this means the
-  // chance of two threads needing the same lock for unrelated voxels is
-  // (num_threads / (2^n)). For 8 threads and 12 bits this gives 0.2%.
-  ApproxHashArray<12, std::mutex> mutexes_;
 };
 
 }  // namespace voxblox

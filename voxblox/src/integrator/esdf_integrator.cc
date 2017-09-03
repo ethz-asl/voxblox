@@ -520,10 +520,6 @@ void EsdfIntegrator::processRaiseSet() {
       EsdfVoxel& neighbor_voxel =
           neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
 
-      VoxelIndex global_voxel_index =
-          neighbor_block_index * esdf_voxels_per_side_ + neighbor_voxel_index;
-      std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_index));
-
       // Do NOT update unobserved distances.
       if (!neighbor_voxel.observed) {
         continue;
@@ -563,10 +559,6 @@ void EsdfIntegrator::processOpenSet() {
     }
 
     EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
-
-    VoxelIndex global_voxel_index =
-        kv.first * esdf_voxels_per_side_ + kv.second;
-    std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_index));
 
     // Again, no point updating unobserved voxels.
     if (!esdf_voxel.observed) {
