@@ -25,6 +25,9 @@ class VoxbloxMeshVisual {
   Ogre::SceneNode* frame_node_;
   Ogre::SceneManager* scene_manager_;
 
+  unsigned int instance_number_;
+  static unsigned int instance_counter_;
+
   voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type object_map_;
 };
 
