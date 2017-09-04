@@ -43,6 +43,8 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   nh_private_.param("esdf_default_distance_m",
                     esdf_integrator_config.default_distance_m,
                     esdf_integrator_config.default_distance_m);
+  nh_private_.param("esdf_min_diff_m", esdf_integrator_config.min_diff_m,
+                    esdf_integrator_config.min_diff_m);
 
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                             tsdf_map_->getTsdfLayerPtr(),
