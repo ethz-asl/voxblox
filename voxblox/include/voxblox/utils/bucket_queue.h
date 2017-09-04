@@ -3,7 +3,6 @@
 
 #include <glog/logging.h>
 #include <deque>
-#include <mutex>
 #include <queue>
 #include <vector>
 
@@ -77,9 +76,7 @@ class BucketQueue {
     return buckets_[last_bucket_index_].front();
   }
 
-  bool empty() {
-    return num_elements_ == 0;
-  }
+  bool empty() { return num_elements_ == 0; }
 
   void clear() {
     buckets_.clear();
