@@ -34,8 +34,8 @@ class EsdfIntegrator {
     // Default distance set for unknown values and values > max_distance_m.
     FloatingPoint default_distance_m = 2.0;
     // For cheaper but less accurate map updates: the minimum difference in
-    // a voxel distance to require adding it to the raise queue.
-    FloatingPoint min_raise_diff_m = 0.0;
+    // a voxel distance, before the change is propagated.
+    FloatingPoint min_diff_m = 0.001;
     // Minimum weight to consider a TSDF value seen at.
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.

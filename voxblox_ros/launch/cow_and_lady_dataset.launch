@@ -2,7 +2,7 @@
   <arg name="play_bag" default="true" />
   <arg name="bag_file" default="/home/z/Datasets/cow_and_lady/data.bag"/>
   <arg name="voxel_size" default="0.05"/>
-  <arg name="generate_esdf" default="false" />
+  <arg name="generate_esdf" default="true" />
 
   <node name="player" pkg="rosbag" type="play" output="screen" args="-r 1.0 -s 10 -u 30 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
@@ -13,7 +13,7 @@
     <param name="voxel_carving_enabled" value="true" />
     <param name="color_mode" value="color" />
     <param name="use_tf_transforms" value="false" />
-    <param name="update_mesh_every_n_sec" value="0.5" />
+    <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="min_time_between_msgs_sec" value="0.0" />
     <param name="method" value="fast" />
     <param name="generate_esdf" value="$(arg generate_esdf)" />
