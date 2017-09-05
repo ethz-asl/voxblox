@@ -178,7 +178,7 @@ A summary of the user setable voxblox_node parameters:
 | `color_ptcloud_by_weight` | If the pointcloud should be colored by the voxel weighting | false |
 | `method` | Method to use for integrating new readings into the tsdf. Options are "merged", "simple", "merged_discard" and "fast" | "merged" |
 | `tsdf_voxel_size` | The size of the tsdf voxels | 0.2 |
-| `tsdf_voxels_per_side` | TSDF voxels per side of an allocated block | 16 |
+| `tsdf_voxels_per_side` | TSDF voxels per side of an allocated block. Must be a power of 2 | 16 |
 | `voxel_carving_enabled` | If true, the entire length of a ray is integrated, if false only the region inside the trunaction distance is used. | true |
 | `truncation_distance` | The truncation distance for the TSDF | 2`tsdf_voxel_size` |
 | `max_ray_length_m` | The maximum range out to which a ray will be cast | 5.0 |
@@ -186,6 +186,9 @@ A summary of the user setable voxblox_node parameters:
 | `max_weight` | The upper limit for the weight assigned to a voxel | 10000.0 |
 | `use_const_weight` | If true all points along a ray have equal weighting | false |
 | `allow_clear` | If true points beyond the `max_ray_length_m` will be integrated up to this distance | true |
+| `start_voxel_subsampling_factor` | Only used by the fast integrator. Before integration points are inserted into a sub-voxel, only one point is allowed per sub-voxel. This can be thought of as subsampling the pointcloud. The edge length of the sub-voxel is the voxel edge length divided by `start_voxel_subsampling_factor`. | 2 |
+| `max_consecutive_ray_collisions` | Only used by the fast integrator. When a ray is cast by this integrator it detects if any other ray has already passed through the current voxel this scan. If it passes through more than `max_consecutive_ray_collisions` voxels other rays have seen in a row, it is taken to be adding no new information and the casting stops  | 2 |
+| `clear_checks_every_n_frames` | Only used by the fast integrator. Governs how often the sets that indicate if a sub-voxel is full or a voxel has had a ray passed through it are cleared. | 1 |
 | `esdf_max_distance_m` | The maximum distance that the esdf will be calculated out to | 2.0 |
 | `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
 | `mesh_filename` | Filename output mesh will be saved to, leave blank if no file should be generated | "" |
