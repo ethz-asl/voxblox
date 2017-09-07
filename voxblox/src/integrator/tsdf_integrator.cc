@@ -329,9 +329,9 @@ inline void MergedTsdfIntegrator::bundleRays(
     }
   }
 
-  LOG(INFO) << "Went from " << points_C.size() << " points to "
-            << voxel_map->size() << " raycasts  and " << clear_map->size()
-            << " clear rays.";
+  VLOG(3) << "Went from " << points_C.size() << " points to "
+          << voxel_map->size() << " raycasts  and " << clear_map->size()
+          << " clear rays.";
 }
 
 void MergedTsdfIntegrator::integrateVoxel(
