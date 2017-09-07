@@ -2,23 +2,21 @@
 
 namespace voxblox {
 
-void Plane::setFromPoints(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2,
-                          const Eigen::Vector3d& p3) {
-  Eigen::Vector3d p1p2 = p2 - p1;
-  Eigen::Vector3d p1p3 = p3 - p1;
+void Plane::setFromPoints(const Point& p1, const Point& p2, const Point& p3) {
+  Point p1p2 = p2 - p1;
+  Point p1p3 = p3 - p1;
 
-  Eigen::Vector3d cross = p1p2.cross(p1p3);
+  Point cross = p1p2.cross(p1p3);
   normal_ = cross.normalized();
   distance_ = normal_.dot(p1);
 }
 
-void Plane::setFromDistanceNormal(const Eigen::Vector3d& normal,
-                                  double distance) {
+void Plane::setFromDistanceNormal(const Point& normal, double distance) {
   normal_ = normal;
   distance_ = distance;
 }
 
-bool Plane::isPointInside(const Eigen::Vector3d& point) const {
+bool Plane::isPointInside(const Point& point) const {
   VLOG(5) << "Plane: normal: " << normal_.transpose()
           << " distance: " << distance_ << " point: " << point.transpose();
   VLOG(5) << "Distance: " << point.dot(normal_) + distance_;
@@ -30,8 +28,8 @@ bool Plane::isPointInside(const Eigen::Vector3d& point) const {
 
 // Set up the camera model, intrinsics and extrinsics.
 void CameraModel::setIntrinsicsFromFocalLength(
-    const Eigen::Vector2d& resolution, double focal_length, double min_distance,
-    double max_distance) {
+    const Eigen::Matrix<FloatingPoint, 2, 1>& resolution, double focal_length,
+    double min_distance, double max_distance) {
   // Figure out FOV from the given data...
   double horizontal_fov = 2 * std::atan(resolution.x() / (2 * focal_length));
   double vertical_fov = 2 * std::atan(resolution.y() / (2 * focal_length));
@@ -55,31 +53,31 @@ void CameraModel::setIntrinsicsFromFoV(double horizontal_fov,
   double tan_half_horizontal_fov = std::tan(horizontal_fov / 2.0);
   double tan_half_vertical_fov = std::tan(vertical_fov / 2.0);
   untransformed_corners_.emplace_back(
-      Eigen::Vector3d(min_distance, min_distance * tan_half_horizontal_fov,
-                      min_distance * tan_half_vertical_fov));
+      Point(min_distance, min_distance * tan_half_horizontal_fov,
+            min_distance * tan_half_vertical_fov));
   untransformed_corners_.emplace_back(
-      Eigen::Vector3d(min_distance, min_distance * tan_half_horizontal_fov,
-                      -min_distance * tan_half_vertical_fov));
+      Point(min_distance, min_distance * tan_half_horizontal_fov,
+            -min_distance * tan_half_vertical_fov));
   untransformed_corners_.emplace_back(
-      Eigen::Vector3d(min_distance, -min_distance * tan_half_horizontal_fov,
-                      -min_distance * tan_half_vertical_fov));
+      Point(min_distance, -min_distance * tan_half_horizontal_fov,
+            -min_distance * tan_half_vertical_fov));
   untransformed_corners_.emplace_back(
-      Eigen::Vector3d(min_distance, -min_distance * tan_half_horizontal_fov,
-                      min_distance * tan_half_vertical_fov));
+      Point(min_distance, -min_distance * tan_half_horizontal_fov,
+            min_distance * tan_half_vertical_fov));
 
   // Then the far plane is more or less the same.
   untransformed_corners_.emplace_back(
-      Eigen::Vector3d(max_distance, max_distance * tan_half_horizontal_fov,
-                      max_distance * tan_half_vertical_fov));
+      Point(max_distance, max_distance * tan_half_horizontal_fov,
+            max_distance * tan_half_vertical_fov));
   untransformed_corners_.emplace_back(
-      Eigen::Vector3d(max_distance, max_distance * tan_half_horizontal_fov,
-                      -max_distance * tan_half_vertical_fov));
+      Point(max_distance, max_distance * tan_half_horizontal_fov,
+            -max_distance * tan_half_vertical_fov));
   untransformed_corners_.emplace_back(
-      Eigen::Vector3d(max_distance, -max_distance * tan_half_horizontal_fov,
-                      -max_distance * tan_half_vertical_fov));
+      Point(max_distance, -max_distance * tan_half_horizontal_fov,
+            -max_distance * tan_half_vertical_fov));
   untransformed_corners_.emplace_back(
-      Eigen::Vector3d(max_distance, -max_distance * tan_half_horizontal_fov,
-                      max_distance * tan_half_vertical_fov));
+      Point(max_distance, -max_distance * tan_half_horizontal_fov,
+            max_distance * tan_half_vertical_fov));
 
   initialized_ = true;
 }
@@ -112,7 +110,7 @@ void CameraModel::calculateBoundingPlanes() {
     bounding_planes_.resize(6);
   }
 
-  AlignedVector<Eigen::Vector3d> transformed_corners;
+  AlignedVector<Point> transformed_corners;
   transformed_corners.resize(untransformed_corners_.size());
 
   // Transform all the points.
@@ -172,13 +170,12 @@ void CameraModel::calculateBoundingPlanes() {
           << aabb_max_.transpose();
 }
 
-void CameraModel::getAabb(Eigen::Vector3d* aabb_min,
-                          Eigen::Vector3d* aabb_max) const {
+void CameraModel::getAabb(Point* aabb_min, Point* aabb_max) const {
   *aabb_min = aabb_min_;
   *aabb_max = aabb_max_;
 }
 
-bool CameraModel::isPointInView(const Eigen::Vector3d& point) const {
+bool CameraModel::isPointInView(const Point& point) const {
   // Skip the AABB check, assume already been done.
   for (size_t i = 0; i < bounding_planes_.size(); i++) {
     if (!bounding_planes_[i].isPointInside(point)) {

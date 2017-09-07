@@ -273,9 +273,11 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         // Gets put into lower frontier (open_).
         if (!esdf_voxel.observed ||
             (tsdf_voxel.distance >= 0.0 &&
-             esdf_voxel.distance > tsdf_voxel.distance) ||
+             esdf_voxel.distance >
+                 (tsdf_voxel.distance + config_.min_diff_m)) ||
             (tsdf_voxel.distance < 0.0 &&
-             esdf_voxel.distance < tsdf_voxel.distance)) {
+             esdf_voxel.distance <
+                 (tsdf_voxel.distance - config_.min_diff_m))) {
           esdf_voxel.distance = tsdf_voxel.distance;
           esdf_voxel.observed = true;
           esdf_voxel.fixed = true;
@@ -285,7 +287,12 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           open_.push(std::make_pair(block_index, voxel_index),
                      esdf_voxel.distance);
           num_lower++;
-        } else {
+        } else if ((tsdf_voxel.distance >= 0.0 &&
+                    esdf_voxel.distance <
+                        (tsdf_voxel.distance - config_.min_diff_m)) ||
+                   (tsdf_voxel.distance < 0.0 &&
+                    esdf_voxel.distance >
+                        (tsdf_voxel.distance + config_.min_diff_m))) {
           // In case the fixed voxel has a HIGHER distance than the esdf
           // voxel. Need to raise it, and burn its children.
           esdf_voxel.distance = tsdf_voxel.distance;
@@ -610,7 +617,7 @@ void EsdfIntegrator::processOpenSet() {
       // I think this can easily be combined with that below...
       if (esdf_voxel.distance + distance_to_neighbor >= 0.0 &&
           neighbor_voxel.distance >= 0.0 && esdf_voxel.distance >= 0.0 &&
-          esdf_voxel.distance + distance_to_neighbor + 1e-4 <
+          esdf_voxel.distance + distance_to_neighbor + config_.min_diff_m <
               neighbor_voxel.distance) {
         neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
         // Also update parent.
@@ -627,7 +634,7 @@ void EsdfIntegrator::processOpenSet() {
       // Everything inside the surface.
       if (esdf_voxel.distance - distance_to_neighbor < 0.0 &&
           neighbor_voxel.distance <= 0.0 && esdf_voxel.distance <= 0.0 &&
-          esdf_voxel.distance - distance_to_neighbor - 1e-4 >
+          esdf_voxel.distance - distance_to_neighbor - config_.min_diff_m >
               neighbor_voxel.distance) {
         neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
         // Also update parent.

@@ -5,10 +5,13 @@
 
 namespace voxblox_rviz_plugin {
 
+unsigned int VoxbloxMeshVisual::instance_counter_ = 0;
+
 VoxbloxMeshVisual::VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
                                      Ogre::SceneNode* parent_node) {
   scene_manager_ = scene_manager;
   frame_node_ = parent_node->createChildSceneNode();
+  instance_number_ = instance_counter_++;
 }
 
 VoxbloxMeshVisual::~VoxbloxMeshVisual() {
@@ -33,7 +36,8 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
     } else {
       std::string object_name = std::to_string(index.x()) + std::string(" ") +
                                 std::to_string(index.y()) + std::string(" ") +
-                                std::to_string(index.z());
+                                std::to_string(index.z()) + std::string(" ") +
+                                std::to_string(instance_number_);
       ogre_object = scene_manager_->createManualObject(object_name);
       object_map_.insert(std::make_pair(index, ogre_object));
 
@@ -50,10 +54,8 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
       for (size_t i = 0; i < 3; ++i) {
         // sanity checks
         if (std::isfinite(triangle.x[i]) && std::isfinite(triangle.y[i]) &&
-            std::isfinite(triangle.z[i]) && std::isfinite(triangle.nx[i]) &&
-            std::isfinite(triangle.ny[i]) && std::isfinite(triangle.nz[i])) {
+            std::isfinite(triangle.z[i])) {
           ogre_object->position(triangle.x[i], triangle.y[i], triangle.z[i]);
-          ogre_object->normal(triangle.nx[i], triangle.ny[i], triangle.nz[i]);
 
           constexpr float color_conv_factor = 1.0f / 255.0f;
           ogre_object->colour(

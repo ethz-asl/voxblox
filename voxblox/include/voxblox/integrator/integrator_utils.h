@@ -76,9 +76,16 @@ class RayCaster {
             const bool cast_from_origin = true) {
     const Ray unit_ray = (point_G - origin).normalized();
 
-    const Point ray_end = is_clearing_ray
-                              ? origin + unit_ray * max_ray_length_m
-                              : point_G + unit_ray * truncation_distance;
+    Point ray_end;
+    if (is_clearing_ray) {
+      FloatingPoint ray_length = (point_G - origin).norm();
+      ray_length = std::min(std::max(ray_length - truncation_distance,
+                                     static_cast<FloatingPoint>(0.0)),
+                            max_ray_length_m);
+      ray_end = origin + unit_ray * ray_length;
+    } else {
+      ray_end = point_G + unit_ray * truncation_distance;
+    }
     const Point ray_start = voxel_carving_enabled
                                 ? origin
                                 : (point_G - unit_ray * truncation_distance);
@@ -120,10 +127,10 @@ class RayCaster {
     const AnyIndex end_index = getGridIndexFromPoint(end_scaled);
     const AnyIndex diff_index = end_index - curr_index_;
 
+    current_step_ = 0;
+
     ray_length_in_steps_ = std::abs(diff_index.x()) + std::abs(diff_index.y()) +
                            std::abs(diff_index.z());
-
-    current_step_ = 0;
 
     const Ray ray_scaled = end_scaled - start_scaled;
 
