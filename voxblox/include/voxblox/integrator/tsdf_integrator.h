@@ -55,6 +55,7 @@ class TsdfIntegratorBase {
     float start_voxel_subsampling_factor = 2.0f;
     int max_consecutive_ray_collisions = 2;
     int clear_checks_every_n_frames = 1;
+    float max_integration_time_s = std::numeric_limits<float>::max();
   };
 
   TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer);
@@ -227,6 +228,9 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   // already been seen this scan, it is deemed to be adding no new information
   // and the casting stops.
   ApproxHashSet<masked_bits_, full_reset_threshold> voxel_observed_approx_set_;
+
+  // Used in terminating the integration early if it exceeds a time limit.
+  std::chrono::time_point<std::chrono::steady_clock> integration_start_time_;
 };
 
 }  // namespace voxblox
