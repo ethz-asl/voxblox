@@ -6,7 +6,9 @@ namespace voxblox {
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private), clear_sphere_for_planning_(false) {
+    : TsdfServer(nh, nh_private),
+      clear_sphere_for_planning_(false),
+      publish_esdf_map_(false) {
   esdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
                                                               1, true);
@@ -15,7 +17,6 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
 
   esdf_map_pub_ =
       nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
-
   esdf_map_sub_ = nh_private_.subscribe("esdf_map_in", 1,
                                         &EsdfServer::esdfMapCallback, this);
 
@@ -58,6 +59,7 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   // around it to occupied.
   nh_private_.param("clear_sphere_for_planning", clear_sphere_for_planning_,
                     clear_sphere_for_planning_);
+  nh_private_.param("publish_esdf_map", publish_esdf_map_, publish_esdf_map_);
 }
 
 void EsdfServer::publishAllUpdatedEsdfVoxels() {
@@ -106,8 +108,7 @@ void EsdfServer::updateMesh() {
   }
   publishAllUpdatedEsdfVoxels();
 
-  if (esdf_map_pub_.getNumSubscribers() > 0) {
-    // TODO(helenol): make param!
+  if (publish_esdf_map_ && esdf_map_pub_.getNumSubscribers() > 0) {
     const bool only_updated = false;
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<EsdfVoxel>(esdf_map_->getEsdfLayer(), only_updated,
@@ -138,7 +139,7 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
   if (!success) {
     ROS_ERROR_THROTTLE(10, "Got an invalid ESDF map message!");
   } else {
-    ROS_INFO("Map callback.");
+    ROS_INFO_ONCE("Got an ESDF map from ROS topic!");
     publishAllUpdatedEsdfVoxels();
     publishSlices();
   }

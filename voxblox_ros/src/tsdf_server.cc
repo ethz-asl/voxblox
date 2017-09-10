@@ -12,6 +12,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       use_freespace_pointcloud_(false),
       publish_tsdf_info_(false),
       publish_slices_(false),
+      publish_tsdf_map_(false),
       transformer_(nh, nh_private) {
   // Before subscribing, determine minimum time between messages.
   // 0 by default.
@@ -57,6 +58,13 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   }
 
   nh_private_.param("verbose", verbose_, verbose_);
+
+  // Publishing/subscribing to a layer from another node (when using this as
+  // a library, for example within a planner).
+  tsdf_map_pub_ =
+      nh_private_.advertise<voxblox_msgs::Layer>("tsdf_map_out", 1, false);
+  tsdf_map_sub_ = nh_private_.subscribe("tsdf_map_in", 1,
+                                        &TsdfServer::tsdfMapCallback, this);
 
   // Determine map parameters.
   TsdfMap::Config config;
@@ -171,6 +179,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   double update_mesh_every_n_sec = 0.0;
   nh_private_.param("update_mesh_every_n_sec", update_mesh_every_n_sec,
                     update_mesh_every_n_sec);
+  nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
 
   if (update_mesh_every_n_sec > 0.0) {
     update_mesh_timer_ =
@@ -346,6 +355,14 @@ void TsdfServer::updateMesh() {
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
+
+  if (publish_tsdf_map_ && tsdf_map_pub_.getNumSubscribers() > 0) {
+    const bool only_updated = false;
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<TsdfVoxel>(tsdf_map_->getTsdfLayer(), only_updated,
+                                   &layer_msg);
+    tsdf_map_pub_.publish(layer_msg);
+  }
 }
 
 bool TsdfServer::generateMesh() {
@@ -413,6 +430,23 @@ void TsdfServer::updateMeshEvent(const ros::TimerEvent& event) { updateMesh(); }
 void TsdfServer::clear() {
   tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
   mesh_layer_->clear();
+}
+
+void TsdfServer::tsdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  bool success =
+      deserializeMsgToLayer<TsdfVoxel>(layer_msg, tsdf_map_->getTsdfLayerPtr());
+
+  if (!success) {
+    ROS_ERROR_THROTTLE(10, "Got an invalid TSDF map message!");
+  } else {
+    ROS_INFO_ONCE("Got an TSDF map from ROS topic!");
+    if (publish_tsdf_info_) {
+      publishAllUpdatedTsdfVoxels();
+    }
+    if (publish_slices_) {
+      publishSlices();
+    }
+  }
 }
 
 }  // namespace voxblox
