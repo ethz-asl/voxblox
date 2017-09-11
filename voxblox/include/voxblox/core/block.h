@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_CORE_BLOCK_H_
 #define VOXBLOX_CORE_BLOCK_H_
 
+#include <algorithm>
 #include <atomic>
 #include <memory>
 #include <vector>
@@ -38,9 +39,12 @@ class Block {
   // Index calculations.
   inline size_t computeLinearIndexFromVoxelIndex(
       const VoxelIndex& index) const {
-    size_t linear_index =
-        static_cast<size_t>(index.x()) +
-        voxels_per_side_ * (index.y() + index.z() * voxels_per_side_);
+    const IndexElement max_index_value = voxels_per_side_ - 1;
+    size_t linear_index = static_cast<size_t>(
+        std::min(index.x(), max_index_value) +
+        voxels_per_side_ *
+            (std::min(index.y(), max_index_value) +
+             std::min(index.z(), max_index_value) * voxels_per_side_));
 
     DCHECK(index.x() >= 0 && index.x() < static_cast<int>(voxels_per_side_));
     DCHECK(index.y() >= 0 && index.y() < static_cast<int>(voxels_per_side_));

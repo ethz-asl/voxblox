@@ -22,6 +22,7 @@
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
+#include "voxblox/integrator/merge_integrator.h"
 
 #include <voxblox_msgs/FilePath.h>
 #include "voxblox_ros/mesh_pcl.h"

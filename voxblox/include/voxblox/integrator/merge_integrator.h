@@ -124,18 +124,21 @@ class MergeIntegrator {
     Interpolator<VoxelType> interpolator(&layer_in);
 
     for (const BlockIndex& block_idx : block_idx_list_in) {
-      typename const Block<VoxelType>& input_block =
-          layer_in->getBlockByIndex(block_idx);
+      const Block<VoxelType>& input_block = layer_in.getBlockByIndex(block_idx);
 
-      for (IndexElement voxel_idx = 0; voxel_idx < block->num_voxels();
-           ++voxel_idx) {
-        const VoxelType& input_voxel = block->getVoxelByLinearIndex(voxel_idx);
+      for (IndexElement input_linear_voxel_idx = 0;
+           input_linear_voxel_idx < input_block.num_voxels();
+           ++input_linear_voxel_idx) {
+        const VoxelType& input_voxel =
+            input_block.getVoxelByLinearIndex(input_linear_voxel_idx);
 
         // find voxel centers location in the output
         const Point voxel_center =
-            T_in_out * block->computeCoordinatesFromLinearIndex(voxel_idx);
+            T_in_out *
+            input_block.computeCoordinatesFromLinearIndex(
+                input_linear_voxel_idx);
 
-        const VoxexlIndex global_output_voxel_idx =
+        const VoxelIndex global_output_voxel_idx =
             getGridIndexFromPoint(voxel_center, layer_out->voxel_size_inv());
 
         // allocate it in the output
@@ -146,12 +149,12 @@ class MergeIntegrator {
 
         // get the output voxel
         VoxelType& output_voxel =
-            block->getVoxelByVoxelIndex(getLocalFromGlobalVoxelIndex(
-                global_output_voxel_idx, layer_out->voxels_per_side_inv()));
+            output_block->getVoxelByVoxelIndex(getLocalFromGlobalVoxelIndex(
+                global_output_voxel_idx, layer_out->voxels_per_side()));
 
         // interpolate voxel
         if (interpolator.getVoxel(voxel_center, &output_voxel, false)) {
-          block->has_data() = true;
+          output_block->has_data() = true;
         }
       }
     }
