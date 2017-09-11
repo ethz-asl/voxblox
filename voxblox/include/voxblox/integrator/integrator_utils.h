@@ -65,7 +65,7 @@ class ThreadSafeIndex {
   // Lookup table for the order points in a group should be read in. This is
   // simply a list from 0 to 1023 where each number has had the order of its
   // bits reversed.
-  static constexpr std::array<size_t, step_size_> offset_lookup_ = {
+  static const std::array<size_t, step_size_> offset_lookup_ = {
       {0,   512, 256, 768,  128, 640, 384, 896,  64,  576, 320, 832,
        192, 704, 448, 960,  32,  544, 288, 800,  160, 672, 416, 928,
        96,  608, 352, 864,  224, 736, 480, 992,  16,  528, 272, 784,
