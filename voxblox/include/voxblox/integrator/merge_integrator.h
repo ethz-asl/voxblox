@@ -147,12 +147,15 @@ class MergeIntegrator {
                 getBlockIndexFromGlobalVoxelIndex(
                     global_output_voxel_idx, layer_out->voxels_per_side_inv()));
 
+        if (output_block == nullptr) {
+          std::cerr << "invalid block" << std::endl;
+        }
+
         // get the output voxel
         VoxelType& output_voxel =
             output_block->getVoxelByVoxelIndex(getLocalFromGlobalVoxelIndex(
                 global_output_voxel_idx, layer_out->voxels_per_side()));
 
-        // interpolate voxel
         if (interpolator.getVoxel(voxel_center, &output_voxel, false)) {
           output_block->has_data() = true;
         }

@@ -91,8 +91,9 @@ class TsdfIntegratorBase {
 
   // Updates tsdf_voxel. Thread safe.
   inline void updateTsdfVoxel(const Point& origin, const Point& point_G,
-                              const Point& voxel_center, const Color& color,
-                              const float weight, TsdfVoxel* tsdf_voxel);
+                              const VoxelIndex& global_voxel_index,
+                              const Color& color, const float weight,
+                              TsdfVoxel* tsdf_voxel);
 
   // Thread safe.
   inline float computeDistance(const Point& origin, const Point& point_G,
