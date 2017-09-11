@@ -59,8 +59,7 @@ class Block {
     VoxelIndex voxel_index =
         getGridIndexFromPoint(coords - origin_, voxel_size_inv_);
     // check is needed as getGridIndexFromPoint gives results that have a tiny
-    // chance of being outside the valid voxel
-    // range.
+    // chance of being outside the valid voxel range.
     return VoxelIndex(std::max(std::min(voxel_index.x(), max_value), 0),
                       std::max(std::min(voxel_index.y(), max_value), 0),
                       std::max(std::min(voxel_index.z(), max_value), 0));
