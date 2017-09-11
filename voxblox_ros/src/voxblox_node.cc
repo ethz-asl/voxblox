@@ -555,15 +555,6 @@ void VoxbloxNode::processPointCloudMessageAndInsert(
                      ->getNumberOfAllocatedBlocks());
       }
     }
-
-    // ugly merge hack
-    Layer<TsdfVoxel> copied_layer(tsdf_map_->getTsdfLayer());
-    Transformation T;
-    T = T.setRandom(0.1f, 0.01f);
-    timing::Timer merge_timer("merging");
-    MergeIntegrator::MergeLayerAintoLayerB(*(tsdf_map_->getTsdfLayerPtr()), T,
-                                           &copied_layer, true);
-    merge_timer.Stop();
   }
 }
 
