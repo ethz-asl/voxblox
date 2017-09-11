@@ -5,7 +5,7 @@ find_package(catkin_simple REQUIRED)
 catkin_simple()
 
 set(CMAKE_MACOSX_RPATH 0)
-add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value -g)
+add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
 if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../pybind11/CMakeLists.txt")
   set(HAVE_PYBIND11 TRUE)
