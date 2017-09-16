@@ -2,6 +2,7 @@
 #define VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <vector>
 
