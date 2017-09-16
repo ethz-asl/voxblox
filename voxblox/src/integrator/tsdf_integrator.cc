@@ -117,9 +117,13 @@ inline void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
 
 // Updates tsdf_voxel. Thread safe.
 inline void TsdfIntegratorBase::updateTsdfVoxel(
-    const Point& origin, const Point& point_G, const Point& voxel_center,
-    const Color& color, const float weight, TsdfVoxel* tsdf_voxel) {
+    const Point& origin, const Point& point_G,
+    const VoxelIndex& global_voxel_idx, const Color& color, const float weight,
+    TsdfVoxel* tsdf_voxel) {
   DCHECK(tsdf_voxel != nullptr);
+
+  const Point voxel_center =
+      getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
   const float sdf = computeDistance(origin, point_G, voxel_center);
 
@@ -147,8 +151,7 @@ inline void TsdfIntegratorBase::updateTsdfVoxel(
   }
 
   // Lookup the mutex that is responsible for this voxel and lock it
-  std::lock_guard<std::mutex> lock(
-      mutexes_.get(getGridIndexFromPoint(point_G, voxel_size_inv_)));
+  std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
 
   const float new_weight = tsdf_voxel->weight + updated_weight;
 
@@ -262,10 +265,8 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
           allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
 
       const float weight = getVoxelWeight(point_C);
-      const Point voxel_center_G =
-          getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
-      updateTsdfVoxel(origin, point_G, voxel_center_G, color, weight, voxel);
+      updateTsdfVoxel(origin, point_G, global_voxel_idx, color, weight, voxel);
     }
   }
 }
@@ -386,10 +387,8 @@ void MergedTsdfIntegrator::integrateVoxel(
     BlockIndex block_idx;
     TsdfVoxel* voxel =
         allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
-    const Point voxel_center_G =
-        getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
-    updateTsdfVoxel(origin, merged_point_G, voxel_center_G, merged_color,
+    updateTsdfVoxel(origin, merged_point_G, global_voxel_idx, merged_color,
                     merged_weight, voxel);
   }
 }
@@ -510,10 +509,8 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
           allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
 
       const float weight = getVoxelWeight(point_C);
-      const Point voxel_center_G =
-          getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
-      updateTsdfVoxel(origin, point_G, voxel_center_G, color, weight, voxel);
+      updateTsdfVoxel(origin, point_G, global_voxel_idx, color, weight, voxel);
     }
   }
 }
