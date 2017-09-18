@@ -43,7 +43,11 @@ namespace voxblox {
 template <typename VoxelType>
 class MeshIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     bool use_color = true;
     float min_weight = 1e-4;
     size_t integrator_threads = std::thread::hardware_concurrency();
@@ -85,10 +89,9 @@ class MeshIntegrator {
       mesh_layer_->allocateMeshPtrByIndex(block_index);
     }
 
-    ThreadSafeIndex index_getter(all_tsdf_blocks.size(),
-                                 config_.integrator_threads);
+    ThreadSafeIndex index_getter(all_tsdf_blocks.size());
 
-    std::vector<std::thread> integration_threads;
+    AlignedVector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(
           &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
@@ -187,6 +190,8 @@ class MeshIntegrator {
     if (config_.use_color) {
       updateMeshColor(*block, mesh.get());
     }
+
+    mesh->updated = true;
   }
 
   void extractMeshInsideBlock(const Block<VoxelType>& block,
@@ -194,13 +199,6 @@ class MeshIntegrator {
                               VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK(next_mesh_index != nullptr);
     DCHECK(mesh != nullptr);
-
-    // If the distance to the surface is greater than the length of two voxels,
-    // the mesh will be empty.
-    if ((2.0 * block.voxel_size()) <=
-        std::abs(block.getVoxelByVoxelIndex(index).distance)) {
-      return;
-    }
 
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
@@ -230,13 +228,6 @@ class MeshIntegrator {
                            const VoxelIndex& index, const Point& coords,
                            VertexIndex* next_mesh_index, Mesh* mesh) {
     DCHECK(mesh != nullptr);
-
-    // If the distance to the surface is greater than the length of two voxels,
-    // the mesh will be empty.
-    if ((2.0 * block.voxel_size()) <=
-        std::abs(block.getVoxelByVoxelIndex(index).distance)) {
-      return;
-    }
 
     Eigen::Matrix<FloatingPoint, 3, 8> cube_coord_offsets =
         cube_index_offsets_.cast<FloatingPoint>() * voxel_size_;
@@ -313,8 +304,7 @@ class MeshIntegrator {
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
-        if (((2.0 * block.voxel_size()) > std::abs(voxel.distance)) &&
-            (voxel.weight >= config_.min_weight)) {
+        if (voxel.weight >= config_.min_weight) {
           mesh->colors[i] = voxel.color;
         }
       } else {

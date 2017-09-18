@@ -9,6 +9,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       verbose_(true),
       world_frame_("world"),
       slice_level_(0.5),
+      use_freespace_pointcloud_(false),
+      publish_tsdf_info_(false),
+      publish_slices_(false),
       transformer_(nh, nh_private) {
   // Before subscribing, determine minimum time between messages.
   // 0 by default.
@@ -19,10 +22,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   nh_private_.param("slice_level", slice_level_, slice_level_);
   nh_private_.param("world_frame", world_frame_, world_frame_);
+  nh_private_.param("publish_tsdf_info", publish_tsdf_info_,
+                    publish_tsdf_info_);
+  nh_private_.param("publish_slices", publish_slices_, publish_slices_);
 
   // Advertise topics.
-  mesh_pub_ =
-      nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
+  mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
   surface_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
           "surface_pointcloud", 1, true);
@@ -41,6 +46,16 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size,
                                   &TsdfServer::insertPointcloud, this);
 
+  nh_private_.param("use_freespace_pointcloud", use_freespace_pointcloud_,
+                    use_freespace_pointcloud_);
+  if (use_freespace_pointcloud_) {
+    // points that are not inside an object, but may also not be on a surface.
+    // These will only be used to mark freespace beyond the truncation distance.
+    freespace_pointcloud_sub_ =
+        nh_.subscribe("freespace_pointcloud", pointcloud_queue_size,
+                      &TsdfServer::insertFreespacePointcloud, this);
+  }
+
   nh_private_.param("verbose", verbose_, verbose_);
 
   // Determine map parameters.
@@ -51,6 +66,11 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   int voxels_per_side = config.tsdf_voxels_per_side;
   nh_private_.param("tsdf_voxel_size", voxel_size, voxel_size);
   nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
+  if (!isPowerOfTwo(voxels_per_side)) {
+    ROS_ERROR("voxels_per_side must be a power of 2, setting to default value");
+    voxels_per_side = config.tsdf_voxels_per_side;
+  }
+
   config.tsdf_voxel_size = static_cast<FloatingPoint>(voxel_size);
   config.tsdf_voxels_per_side = voxels_per_side;
   tsdf_map_.reset(new TsdfMap(config));
@@ -84,6 +104,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   nh_private_.param("max_consecutive_ray_collisions",
                     integrator_config.max_consecutive_ray_collisions,
                     integrator_config.max_consecutive_ray_collisions);
+  nh_private_.param("clear_checks_every_n_frames",
+                    integrator_config.clear_checks_every_n_frames,
+                    integrator_config.clear_checks_every_n_frames);
+  nh_private_.param("max_integration_time_s",
+                    integrator_config.max_integration_time_s,
+                    integrator_config.max_integration_time_s);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
@@ -156,14 +182,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   }
 }
 
-void TsdfServer::insertPointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
-  // Figure out if we should insert this.
-  if (pointcloud_msg->header.stamp - last_msg_time_ < min_time_between_msgs_) {
-    return;
-  }
-  last_msg_time_ = pointcloud_msg->header.stamp;
-
+void TsdfServer::processPointCloudMessageAndInsert(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
+    const bool is_freespace_pointcloud) {
   // Look up transform from sensor frame to world frame.
   Transformation T_G_C;
   if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
@@ -184,15 +205,17 @@ void TsdfServer::insertPointcloud(
 
     timing::Timer ptcloud_timer("ptcloud_preprocess");
 
-    // Filter out NaNs. :|
-    std::vector<int> indices;
-    pcl::removeNaNFromPointCloud(pointcloud_pcl, pointcloud_pcl, indices);
-
     Pointcloud points_C;
     Colors colors;
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
+          !std::isfinite(pointcloud_pcl.points[i].y) ||
+          !std::isfinite(pointcloud_pcl.points[i].z)) {
+        continue;
+      }
+
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
                                pointcloud_pcl.points[i].y,
                                pointcloud_pcl.points[i].z));
@@ -207,7 +230,7 @@ void TsdfServer::insertPointcloud(
       ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
     }
     ros::WallTime start = ros::WallTime::now();
-    integratePointcloud(T_G_C, points_C, colors);
+    integratePointcloud(T_G_C, points_C, colors, is_freespace_pointcloud);
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
       ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
@@ -215,24 +238,58 @@ void TsdfServer::insertPointcloud(
                tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
     }
 
+    // Callback for inheriting classes.
+    newPoseCallback(T_G_C);
+  }
+}
+
+void TsdfServer::insertPointcloud(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+  // Figure out if we should insert this.
+  static ros::Time last_msg_time;
+  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
+    return;
+  }
+  last_msg_time = pointcloud_msg->header.stamp;
+
+  constexpr bool is_freespace_pointcloud = false;
+  processPointCloudMessageAndInsert(pointcloud_msg, is_freespace_pointcloud);
+
+  if (publish_tsdf_info_) {
     publishAllUpdatedTsdfVoxels();
     publishTsdfSurfacePoints();
     publishTsdfOccupiedNodes();
-    publishSlices();
-
-    // Callback for inheriting classes.
-    newPoseCallback(T_G_C);
-
-    if (verbose_) {
-      ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
-    }
   }
+  if (publish_slices_) {
+    publishSlices();
+  }
+
+  if (verbose_) {
+    ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
+    ROS_INFO_STREAM(
+        "Layer memory: " << tsdf_map_->getTsdfLayer().getMemorySize());
+  }
+}
+
+void TsdfServer::insertFreespacePointcloud(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+  // Figure out if we should insert this.
+  static ros::Time last_msg_time;
+  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
+    return;
+  }
+  last_msg_time = pointcloud_msg->header.stamp;
+
+  constexpr bool is_freespace_pointcloud = true;
+  processPointCloudMessageAndInsert(pointcloud_msg, is_freespace_pointcloud);
 }
 
 void TsdfServer::integratePointcloud(const Transformation& T_G_C,
                                      const Pointcloud& ptcloud_C,
-                                     const Colors& colors) {
-  tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors);
+                                     const Colors& colors,
+                                     const bool is_freespace_pointcloud) {
+  tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors,
+                                        is_freespace_pointcloud);
 }
 
 void TsdfServer::publishAllUpdatedTsdfVoxels() {
@@ -286,13 +343,11 @@ void TsdfServer::updateMesh() {
   mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
   generate_mesh_timer.Stop();
 
-  // TODO(helenol): also think about how to update markers incrementally?
   timing::Timer publish_mesh_timer("mesh/publish");
-  visualization_msgs::MarkerArray marker_array;
-  marker_array.markers.resize(1);
-  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
-  marker_array.markers[0].header.frame_id = world_frame_;
-  mesh_pub_.publish(marker_array);
+  voxblox_msgs::Mesh mesh_msg;
+  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
+  mesh_msg.header.frame_id = world_frame_;
+  mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
 }
 
@@ -313,11 +368,10 @@ bool TsdfServer::generateMesh() {
   generate_mesh_timer.Stop();
 
   timing::Timer publish_mesh_timer("mesh/publish");
-  visualization_msgs::MarkerArray marker_array;
-  marker_array.markers.resize(1);
-  fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
-  marker_array.markers[0].header.frame_id = world_frame_;
-  mesh_pub_.publish(marker_array);
+  voxblox_msgs::Mesh mesh_msg;
+  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
+  mesh_msg.header.frame_id = world_frame_;
+  mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
 
   if (!mesh_filename_.empty()) {

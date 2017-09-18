@@ -14,6 +14,8 @@ namespace voxblox {
 // as a layer of blocks, but only contains a single thing, not a set of voxels.
 class MeshLayer {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<MeshLayer> Ptr;
   typedef std::shared_ptr<const MeshLayer> ConstPtr;
   typedef typename AnyIndexHashMapType<Mesh::Ptr>::type MeshMap;
@@ -121,6 +123,16 @@ class MeshLayer {
     for (const std::pair<const BlockIndex, typename Mesh::Ptr>& kv :
          mesh_map_) {
       meshes->emplace_back(kv.first);
+    }
+  }
+
+  void getAllUpdatedMeshes(BlockIndexList* meshes) const {
+    meshes->clear();
+    for (const std::pair<const BlockIndex, typename Mesh::Ptr>& kv :
+         mesh_map_) {
+      if (kv.second->updated) {
+        meshes->emplace_back(kv.first);
+      }
     }
   }
 

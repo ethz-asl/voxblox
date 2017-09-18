@@ -20,7 +20,11 @@ namespace voxblox {
 // https://arxiv.org/abs/1611.03631
 class EsdfIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     // Maximum distance to calculate the actual distance to.
     // Any values above this will be set to default_distance_m.
     FloatingPoint max_distance_m = 2.0;
@@ -30,8 +34,8 @@ class EsdfIntegrator {
     // Default distance set for unknown values and values > max_distance_m.
     FloatingPoint default_distance_m = 2.0;
     // For cheaper but less accurate map updates: the minimum difference in
-    // a voxel distance to require adding it to the raise queue.
-    FloatingPoint min_raise_diff_m = 0.0;
+    // a voxel distance, before the change is propagated.
+    FloatingPoint min_diff_m = 0.001;
     // Minimum weight to consider a TSDF value seen at.
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.
@@ -96,11 +100,10 @@ class EsdfIntegrator {
   // Directions is the direction that the neighbor voxel lives in. If you
   // need the direction FROM the neighbor voxel TO the current voxel, take
   // negative of the given direction.
-  void getNeighborsAndDistances(const BlockIndex& block_index,
-                                const VoxelIndex& voxel_index,
-                                std::vector<VoxelKey>* neighbors,
-                                std::vector<float>* distances,
-                                std::vector<Eigen::Vector3i>* directions) const;
+  void getNeighborsAndDistances(
+      const BlockIndex& block_index, const VoxelIndex& voxel_index,
+      AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
+      AlignedVector<Eigen::Vector3i>* directions) const;
   // Get a single neighbor in a particular direction.
   void getNeighbor(const BlockIndex& block_index, const VoxelIndex& voxel_index,
                    const Eigen::Vector3i& direction,
@@ -120,7 +123,7 @@ class EsdfIntegrator {
   void clear() {
     updated_blocks_.clear();
     open_.clear();
-    raise_ = std::queue<VoxelKey>();
+    raise_ = AlignedQueue<VoxelKey>();
   }
 
  protected:
@@ -141,7 +144,7 @@ class EsdfIntegrator {
   // Raise set for updates; these are values that used to be in the fixed
   // frontier and now have a higher value, or their children which need to
   // have their values invalidated.
-  std::queue<VoxelKey> raise_;
+  AlignedQueue<VoxelKey> raise_;
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;

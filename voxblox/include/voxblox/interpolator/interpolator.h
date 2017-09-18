@@ -12,6 +12,8 @@ namespace voxblox {
 template <typename VoxelType>
 class Interpolator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<Interpolator> Ptr;
 
   explicit Interpolator(const Layer<VoxelType>* layer);

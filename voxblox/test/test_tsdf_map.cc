@@ -12,7 +12,7 @@ class TsdfMapTest : public ::testing::Test {
     TsdfMap::Config config;
     config.tsdf_voxel_size = 0.1f;
     config.tsdf_voxels_per_side = 8u;
-    map_ = std::make_shared<TsdfMap>(config);
+    map_ = aligned_shared<TsdfMap>(config);
   }
 
   TsdfMap::Ptr map_;
