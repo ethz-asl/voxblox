@@ -3,6 +3,7 @@
 
 #include <glog/logging.h>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "voxblox/core/common.h"
@@ -16,9 +17,13 @@ namespace voxblox {
 
 class EsdfMap {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<EsdfMap> Ptr;
 
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     FloatingPoint esdf_voxel_size = 0.2;
     size_t esdf_voxels_per_side = 16u;
   };
@@ -40,6 +45,16 @@ class EsdfMap {
                                " in EsdfMap constructor");
     }
     block_size_ = esdf_layer_->block_size();
+  }
+
+  // Creates a new EsdfMap based on a COPY of this layer.
+  explicit EsdfMap(const Layer<EsdfVoxel>& layer)
+      : EsdfMap(aligned_shared<Layer<EsdfVoxel>>(layer)) {}
+
+  // Creates a new EsdfMap that contains this layer.
+  explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer)
+      : esdf_layer_(layer), interpolator_(CHECK_NOTNULL(esdf_layer_.get())) {
+    block_size_ = layer->block_size();
   }
 
   virtual ~EsdfMap() {}
@@ -72,32 +87,33 @@ class EsdfMap {
 
   // convenience alias borrowed from pybind11
   using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
-  template <typename MatrixType> using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
+  template <typename MatrixType>
+  using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
 
   void batchGetDistanceAtPosition(
-    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXd> distances,
-    Eigen::Ref<Eigen::VectorXi> observed) const;
+      EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXd> distances,
+      Eigen::Ref<Eigen::VectorXi> observed) const;
 
   void batchGetDistanceAndGradientAtPosition(
-    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXd> distances,
-    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients,
-    Eigen::Ref<Eigen::VectorXi> observed) const;
+      EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXd> distances,
+      EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& gradients,
+      Eigen::Ref<Eigen::VectorXi> observed) const;
 
   void batchIsObserved(
-    EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXi> observed) const;
+      EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXi> observed) const;
 
   unsigned int coordPlaneSliceGetCount(unsigned int free_plane_index,
                                        double free_plane_val) const;
 
   unsigned int coordPlaneSliceGetDistance(
-    unsigned int free_plane_index,
-    double free_plane_val,
-    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXd> distances,
-    unsigned int max_points = 100000) const;
+      unsigned int free_plane_index,
+      double free_plane_val,
+      EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXd> distances,
+      unsigned int max_points = 100000) const;
 
  protected:
   FloatingPoint block_size_;

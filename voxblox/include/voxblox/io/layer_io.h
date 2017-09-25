@@ -18,6 +18,7 @@ template <typename VoxelType>
 bool LoadLayer(const std::string& file_path,
                typename Layer<VoxelType>::Ptr* layer_ptr) {
   CHECK_NOTNULL(layer_ptr);
+  CHECK(!file_path.empty());
 
   // Open and check the file
   std::fstream proto_file;
@@ -72,8 +73,10 @@ bool LoadLayer(const std::string& file_path,
       return false;
     }
 
-    if (!(*layer_ptr)->addBlockFromProto(
-             block_proto, Layer<VoxelType>::BlockMergingStrategy::kProhibit)) {
+    if (!(*layer_ptr)
+             ->addBlockFromProto(
+                 block_proto,
+                 Layer<VoxelType>::BlockMergingStrategy::kProhibit)) {
       LOG(ERROR) << "Could not add the block protobuf message to the layer!";
       return false;
     }
@@ -88,6 +91,7 @@ bool LoadBlocksFromFile(
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
     Layer<VoxelType>* layer_ptr) {
   CHECK_NOTNULL(layer_ptr);
+  CHECK(!file_path.empty());
 
   // Open and check the file
   std::fstream proto_file;
@@ -165,6 +169,7 @@ Layer<VoxelType> LoadLayer(const std::string& file_path) {
 
 template <typename VoxelType>
 bool SaveLayer(const Layer<VoxelType>& layer, const std::string& file_path) {
+  CHECK(!file_path.empty());
   return layer.saveToFile(file_path);
 }
 
@@ -173,6 +178,7 @@ bool SaveLayerSubset(const Layer<VoxelType>& layer,
                      const std::string& file_path,
                      BlockIndexList blocks_to_include,
                      bool include_all_blocks) {
+  CHECK(!file_path.empty());
   return layer.saveSubsetToFile(file_path, blocks_to_include,
                                 include_all_blocks);
 }

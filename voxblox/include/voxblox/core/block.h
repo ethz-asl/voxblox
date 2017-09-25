@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_CORE_BLOCK_H_
 #define VOXBLOX_CORE_BLOCK_H_
 
+#include <algorithm>
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -18,10 +20,10 @@ class Block {
   typedef std::shared_ptr<const Block<VoxelType> > ConstPtr;
 
   Block(size_t voxels_per_side, FloatingPoint voxel_size, const Point& origin)
-      : voxels_per_side_(voxels_per_side),
+      : has_data_(false),
+        voxels_per_side_(voxels_per_side),
         voxel_size_(voxel_size),
         origin_(origin),
-        has_data_(false),
         updated_(false) {
     num_voxels_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
     voxel_size_inv_ = 1.0 / voxel_size_;
@@ -37,9 +39,9 @@ class Block {
   // Index calculations.
   inline size_t computeLinearIndexFromVoxelIndex(
       const VoxelIndex& index) const {
-    size_t linear_index =
-        static_cast<size_t>(index.x()) +
-        voxels_per_side_ * (index.y() + index.z() * voxels_per_side_);
+    size_t linear_index = static_cast<size_t>(
+        index.x() +
+        voxels_per_side_ * (index.y() + index.z() * voxels_per_side_));
 
     DCHECK(index.x() >= 0 && index.x() < static_cast<int>(voxels_per_side_));
     DCHECK(index.y() >= 0 && index.y() < static_cast<int>(voxels_per_side_));
@@ -53,7 +55,14 @@ class Block {
 
   inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Point& coords) const {
-    return getGridIndexFromPoint(coords - origin_, voxel_size_inv_);
+    const IndexElement max_value = voxels_per_side_ - 1;
+    VoxelIndex voxel_index =
+        getGridIndexFromPoint(coords - origin_, voxel_size_inv_);
+    // check is needed as getGridIndexFromPoint gives results that have a tiny
+    // chance of being outside the valid voxel range.
+    return VoxelIndex(std::max(std::min(voxel_index.x(), max_value), 0),
+                      std::max(std::min(voxel_index.y(), max_value), 0),
+                      std::max(std::min(voxel_index.z(), max_value), 0));
   }
 
   inline size_t computeLinearIndexFromCoordinates(const Point& coords) const {
@@ -148,9 +157,9 @@ class Block {
   FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
-  bool updated() const { return updated_; }
+  const bool updated() const { return updated_; }
 
-  bool& updated() { return updated_; }
+  std::atomic<bool>& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
   // NOTE(mereweth@jpl.nasa.gov) - convenience function for Python bindings
@@ -166,7 +175,7 @@ class Block {
 
   size_t getMemorySize() const;
 
-protected:
+ protected:
   std::unique_ptr<VoxelType[]> voxels_;
 
   // Derived, cached parameters.
@@ -190,7 +199,7 @@ protected:
   FloatingPoint block_size_inv_;
 
   // Is set to true when data is updated.
-  bool updated_;
+  std::atomic<bool> updated_;
 };
 
 }  // namespace voxblox

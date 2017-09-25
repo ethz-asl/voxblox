@@ -2,8 +2,8 @@
 #define VOXBLOX_CORE_LAYER_INL_H_
 
 #include <fstream>  // NOLINT
-#include <utility>
 #include <string>
+#include <utility>
 
 #include <glog/logging.h>
 #include <google/protobuf/io/coded_stream.h>
@@ -29,11 +29,12 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
       << " layer type: " << getType();
 
   // Derived config parameter.
-  block_size_ = voxel_size_ * voxels_per_side_;
-  block_size_inv_ = 1.0 / block_size_;
-
   CHECK_GT(proto.voxel_size(), 0.0);
+  block_size_ = voxel_size_ * voxels_per_side_;
+  CHECK_GT(block_size_, 0.0);
+  block_size_inv_ = 1.0 / block_size_;
   CHECK_GT(proto.voxels_per_side(), 0u);
+  voxels_per_side_inv_ = 1.0f / static_cast<FloatingPoint>(voxels_per_side_);
 }
 
 template <typename VoxelType>
@@ -46,6 +47,29 @@ void Layer<VoxelType>::getProto(LayerProto* proto) const {
   proto->set_voxel_size(voxel_size_);
   proto->set_voxels_per_side(voxels_per_side_);
   proto->set_type(getType());
+}
+
+template <typename VoxelType>
+Layer<VoxelType>::Layer(const Layer& other) {
+  voxel_size_ = other.voxel_size_;
+  voxels_per_side_ = other.voxels_per_side_;
+  block_size_ = other.block_size_;
+  block_size_inv_ = other.block_size_inv_;
+
+  for (const typename BlockHashMap::value_type& key_value_pair :
+       other.block_map_) {
+    const BlockIndex& block_idx = key_value_pair.first;
+    const typename BlockType::Ptr& block_ptr = key_value_pair.second;
+
+    typename BlockType::Ptr new_block = allocateBlockPtrByIndex(block_idx);
+
+    for (size_t linear_idx = 0u; linear_idx < block_ptr->num_voxels();
+         ++linear_idx) {
+      const VoxelType& voxel = block_ptr->getVoxelByLinearIndex(linear_idx);
+      VoxelType& new_voxel = new_block->getVoxelByLinearIndex(linear_idx);
+      new_voxel = voxel;
+    }
+  }
 }
 
 template <typename VoxelType>
@@ -153,7 +177,7 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
         CHECK_EQ(block_map_.count(block_index), 0u)
             << "Block collision at index: " << block_index;
         block_map_[block_index] = block_ptr;
-      break;
+        break;
       case BlockMergingStrategy::kReplace:
         block_map_[block_index] = block_ptr;
         break;

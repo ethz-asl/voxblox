@@ -21,7 +21,9 @@ class ProtobufTest : public ::testing::Test,
     SetUpLayer();
   }
 
-  void SetUpLayer() const;
+  void SetUpLayer() const {
+    voxblox::test::SetUpTestLayer(kBlockVolumeDiameter, layer_.get());
+  }
 
   typename Layer<VoxelType>::Ptr layer_;
 
@@ -31,38 +33,9 @@ class ProtobufTest : public ::testing::Test,
   static constexpr size_t kBlockVolumeDiameter = 10u;
 };
 
-template <>
-void ProtobufTest<TsdfVoxel>::SetUpLayer() const {
-  CHECK(layer_);
-
-  int32_t half_index_range = kBlockVolumeDiameter / 2;
-
-  for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
-    for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
-      for (int32_t z = -half_index_range; z <= half_index_range; ++z) {
-        BlockIndex block_idx = {x, y, z};
-        Block<TsdfVoxel>::Ptr block =
-            layer_->allocateBlockPtrByIndex(block_idx);
-        TsdfVoxel& voxel =
-            block->getVoxelByLinearIndex((x * z + y) % voxels_per_side_);
-        voxel.distance = x * y * 0.66 + z;
-        voxel.weight = y * z * 0.33 + x;
-        voxel.color.r = static_cast<uint8_t>(x % 255);
-        voxel.color.g = static_cast<uint8_t>(y % 255);
-        voxel.color.b = static_cast<uint8_t>(z % 255);
-        voxel.color.a = static_cast<uint8_t>(x + y % 255);
-
-        block->has_data() = true;
-      }
-    }
-  }
-
-  double size_in_MB = static_cast<double>(layer_->getMemorySize()) * 1e-6;
-  std::cout << std::endl << "Set up a test TSDF layer of size " << size_in_MB
-            << " MB";
-}
-
 typedef ProtobufTest<TsdfVoxel> ProtobufTsdfTest;
+typedef ProtobufTest<EsdfVoxel> ProtobufEsdfTest;
+typedef ProtobufTest<OccupancyVoxel> ProtobufOccupancyTest;
 
 TEST_F(ProtobufTsdfTest, BlockSerialization) {
   BlockIndexList block_index_list;
@@ -89,6 +62,70 @@ TEST_F(ProtobufTsdfTest, LayerSerialization) {
 
   // Create from LayerProto header.
   Layer<TsdfVoxel> layer_from_proto(proto_layer);
+
+  // Remove all blocks for comparison.
+  layer_->removeAllBlocks();
+
+  CompareLayers(*layer_, layer_from_proto);
+}
+
+TEST_F(ProtobufOccupancyTest, BlockSerialization) {
+  BlockIndexList block_index_list;
+  layer_->getAllAllocatedBlocks(&block_index_list);
+  for (const BlockIndex& index : block_index_list) {
+    Block<OccupancyVoxel>::Ptr block = layer_->getBlockPtrByIndex(index);
+    ASSERT_NE(block.get(), nullptr);
+
+    // Convert to BlockProto.
+    BlockProto proto_block;
+    block->getProto(&proto_block);
+
+    // Create from BlockProto.
+    Block<OccupancyVoxel> block_from_proto(proto_block);
+
+    CompareBlocks(*block, block_from_proto);
+  }
+}
+
+TEST_F(ProtobufOccupancyTest, LayerSerialization) {
+  // Convert to LayerProto.
+  LayerProto proto_layer;
+  layer_->getProto(&proto_layer);
+
+  // Create from LayerProto header.
+  Layer<OccupancyVoxel> layer_from_proto(proto_layer);
+
+  // Remove all blocks for comparison.
+  layer_->removeAllBlocks();
+
+  CompareLayers(*layer_, layer_from_proto);
+}
+
+TEST_F(ProtobufEsdfTest, BlockSerialization) {
+  BlockIndexList block_index_list;
+  layer_->getAllAllocatedBlocks(&block_index_list);
+  for (const BlockIndex& index : block_index_list) {
+    Block<EsdfVoxel>::Ptr block = layer_->getBlockPtrByIndex(index);
+    ASSERT_NE(block.get(), nullptr);
+
+    // Convert to BlockProto.
+    BlockProto proto_block;
+    block->getProto(&proto_block);
+
+    // Create from BlockProto.
+    Block<EsdfVoxel> block_from_proto(proto_block);
+
+    CompareBlocks(*block, block_from_proto);
+  }
+}
+
+TEST_F(ProtobufEsdfTest, LayerSerialization) {
+  // Convert to LayerProto.
+  LayerProto proto_layer;
+  layer_->getProto(&proto_layer);
+
+  // Create from LayerProto header.
+  Layer<EsdfVoxel> layer_from_proto(proto_layer);
 
   // Remove all blocks for comparison.
   layer_->removeAllBlocks();

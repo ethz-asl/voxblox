@@ -16,6 +16,8 @@ namespace voxblox {
 
 class MergeIntegrator {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   // all methods are static so the class does not need a constructor
   //MergeIntegrator() = delete;
 
@@ -92,10 +94,16 @@ class MergeIntegrator {
   template <typename VoxelType>
   static void MergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
                                     const Transformation& T_A_B,
-                                    Layer<VoxelType>* layer_B) {
+                                    Layer<VoxelType>* layer_B,
+                                    bool use_naive_method = false) {
     Layer<VoxelType> layer_A_transformed(layer_B->voxel_size(),
                                          layer_B->voxels_per_side());
-    transformLayer(layer_A, T_A_B, &layer_A_transformed);
+
+    if (use_naive_method) {
+      naiveTransformLayer(layer_A, T_A_B, &layer_A_transformed);
+    } else {
+      transformLayer(layer_A, T_A_B, &layer_A_transformed);
+    }
 
     MergeLayerAintoLayerB(layer_A_transformed, layer_B);
   }
@@ -107,6 +115,59 @@ class MergeIntegrator {
                             Layer<VoxelType>* layer_out) {
     CHECK_NOTNULL(layer_out);
     transformLayer(layer_in, Transformation(), layer_out);
+  }
+
+  // Similar to transformLayer in functionality, however the system only makes
+  // use of the forward transform and nearest neighbor interpolation. This will
+  // result in artifacts and other issues in the result, however it should be
+  // several orders of magnitude faster.
+  template <typename VoxelType>
+  static void naiveTransformLayer(const Layer<VoxelType>& layer_in,
+                                  const Transformation& T_in_out,
+                                  Layer<VoxelType>* layer_out) {
+    BlockIndexList block_idx_list_in;
+    layer_in.getAllAllocatedBlocks(&block_idx_list_in);
+
+    Interpolator<VoxelType> interpolator(&layer_in);
+
+    for (const BlockIndex& block_idx : block_idx_list_in) {
+      const Block<VoxelType>& input_block = layer_in.getBlockByIndex(block_idx);
+
+      for (IndexElement input_linear_voxel_idx = 0;
+           input_linear_voxel_idx < input_block.num_voxels();
+           ++input_linear_voxel_idx) {
+        const VoxelType& input_voxel =
+            input_block.getVoxelByLinearIndex(input_linear_voxel_idx);
+
+        // find voxel centers location in the output
+        const Point voxel_center =
+            T_in_out *
+            input_block.computeCoordinatesFromLinearIndex(
+                input_linear_voxel_idx);
+
+        const VoxelIndex global_output_voxel_idx =
+            getGridIndexFromPoint(voxel_center, layer_out->voxel_size_inv());
+
+        // allocate it in the output
+        typename Block<VoxelType>::Ptr output_block =
+            layer_out->allocateBlockPtrByIndex(
+                getBlockIndexFromGlobalVoxelIndex(
+                    global_output_voxel_idx, layer_out->voxels_per_side_inv()));
+
+        if (output_block == nullptr) {
+          std::cerr << "invalid block" << std::endl;
+        }
+
+        // get the output voxel
+        VoxelType& output_voxel =
+            output_block->getVoxelByVoxelIndex(getLocalFromGlobalVoxelIndex(
+                global_output_voxel_idx, layer_out->voxels_per_side()));
+
+        if (interpolator.getVoxel(voxel_center, &output_voxel, false)) {
+          output_block->has_data() = true;
+        }
+      }
+    }
   }
 
   // Performs a 3D transform on the input layer and writes the results to the
@@ -191,8 +252,7 @@ class MergeIntegrator {
   static const FloatingPoint kUnitCubeDiagonalLength;
 };
 
-const FloatingPoint MergeIntegrator::kUnitCubeDiagonalLength =
-    std::sqrt(3.0);
+const FloatingPoint MergeIntegrator::kUnitCubeDiagonalLength = std::sqrt(3.0);
 
 template <>
 void MergeIntegrator::mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A,

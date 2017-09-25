@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_TANGO_INTERFACE_IO_TANGO_LAYER_IO_H_
-#define VOXBLOX_TANGO_INTERFACE_IO_TANGO_LAYER_IO_H_
+#ifndef VOXBLOX_TANGO_INTERFACE_CORE_IO_TANGO_LAYER_IO_H_
+#define VOXBLOX_TANGO_INTERFACE_CORE_IO_TANGO_LAYER_IO_H_
 
 #include <string>
 
@@ -184,4 +184,4 @@ inline TangoLayerInterface TangoLoadLayer(const std::string& file_path,
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_TANGO_INTERFACE_IO_TANGO_LAYER_IO_H_
+#endif  // VOXBLOX_TANGO_INTERFACE_CORE_IO_TANGO_LAYER_IO_H_

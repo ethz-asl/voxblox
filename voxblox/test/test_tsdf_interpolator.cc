@@ -145,7 +145,7 @@ TEST_F(TsdfMergeIntegratorTest, BetweenBlocks) {
   Interpolator<TsdfVoxel> interpolator(&tsdf_layer);
 
   // Points to interpolate (below origin block)
-  std::vector<Point> points_below;
+  AlignedVector<Point> points_below;
   points_below.push_back(Point(1.0, 1.0, 0.5));
   points_below.push_back(Point(1.0, 1.0, 0.25));
   points_below.push_back(Point(1.0, 1.0, 0.0));

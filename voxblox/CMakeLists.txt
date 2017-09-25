@@ -50,10 +50,14 @@ set("${PROJECT_NAME}_SRCS"
   src/core/tsdf_map.cc
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
+  src/integrator/tsdf_integrator.cc
+  src/integrator/integrator_utils.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
+  src/utils/camera_model.cc
+  src/utils/layer_utils.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
 )
@@ -141,6 +145,11 @@ add_custom_command(TARGET test_data
 
 #add_definitions(-DVISUALIZE_UNIT_TEST_RESULTS)
 
+catkin_add_gtest(test_approx_hash_array
+  test/test_approx_hash_array.cc
+)
+target_link_libraries(test_approx_hash_array ${PROJECT_NAME})
+
 catkin_add_gtest(test_tsdf_map
   test/test_tsdf_map.cc
 )
@@ -155,6 +164,11 @@ catkin_add_gtest(test_tsdf_interpolator
   test/test_tsdf_interpolator.cc
 )
 target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+catkin_add_gtest(test_layer
+  test/test_layer.cc
+)
+target_link_libraries(test_layer ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 ##########
 # EXPORT #

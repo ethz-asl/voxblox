@@ -1,15 +1,15 @@
 #include <ros/ros.h>
 
-#include <voxblox/simulation/simulation_world.h>
-#include <voxblox/mesh/mesh_integrator.h>
 #include <voxblox/integrator/esdf_integrator.h>
-#include <voxblox/integrator/tsdf_integrator.h>
-#include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/esdf_occ_integrator.h>
+#include <voxblox/integrator/occupancy_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/mesh/mesh_integrator.h>
+#include <voxblox/simulation/simulation_world.h>
 
-#include "voxblox_ros/ptcloud_vis.h"
-#include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/conversions.h"
+#include "voxblox_ros/mesh_vis.h"
+#include "voxblox_ros/ptcloud_vis.h"
 
 namespace voxblox {
 
@@ -85,7 +85,7 @@ class SimulationServer {
   std::unique_ptr<Layer<OccupancyVoxel> > occ_test_;
 
   // Integrators:
-  std::unique_ptr<TsdfIntegrator> tsdf_integrator_;
+  std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
   std::unique_ptr<EsdfIntegrator> esdf_integrator_;
   std::unique_ptr<OccupancyIntegrator> occ_integrator_;
   std::unique_ptr<EsdfOccIntegrator> esdf_occ_integrator_;
@@ -123,7 +123,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
   }
 
   // Make some integrators.
-  TsdfIntegrator::Config integrator_config;
+  TsdfIntegratorBase::Config integrator_config;
   integrator_config.voxel_carving_enabled = true;
   // Used to be * 4 according to Marius's experience, now * 2.
   // This should be made bigger again if behind-surface weighting is improved.
@@ -153,7 +153,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
       static_cast<float>(truncation_distance_);
 
   tsdf_integrator_.reset(
-      new TsdfIntegrator(integrator_config, tsdf_test_.get()));
+      new MergedTsdfIntegrator(integrator_config, tsdf_test_.get()));
 
   EsdfIntegrator::Config esdf_integrator_config;
   // Make sure that this is the same as the truncation distance OR SMALLER!
@@ -303,18 +303,16 @@ void SimulationServer::generateSDF() {
                                       fov_h_rad, max_dist, &ptcloud, &colors);
 
     // Get T_G_C from ray origin and ray direction.
-    Transformation T_G_C(
-        view_origin, Eigen::Quaterniond::FromTwoVectors(Point(0.0, 0.0, 1.0),
-                                                        view_direction));
+    Transformation T_G_C(view_origin,
+                         Eigen::Quaternion<FloatingPoint>::FromTwoVectors(
+                             Point(0.0, 0.0, 1.0), view_direction));
 
     // Transform back into camera frame.
     Pointcloud ptcloud_C;
     transformPointcloud(T_G_C.inverse(), ptcloud, &ptcloud_C);
 
     // Put into the real map.
-    bool discard = false;
-    tsdf_integrator_->integratePointCloudMerged(T_G_C, ptcloud_C, colors,
-                                                discard);
+    tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors);
 
     if (generate_occupancy_) {
       occ_integrator_->integratePointCloud(T_G_C, ptcloud_C);
@@ -474,8 +472,13 @@ void SimulationServer::visualize() {
     // Generate TSDF GT mesh.
     MeshIntegrator<TsdfVoxel>::Config mesh_config;
     MeshLayer::Ptr mesh(new MeshLayer(tsdf_gt_->block_size()));
-    MeshIntegrator<TsdfVoxel> mesh_integrator(mesh_config, tsdf_gt_.get(), mesh.get());
-    mesh_integrator.generateWholeMesh();
+    MeshIntegrator<TsdfVoxel> mesh_integrator(mesh_config, tsdf_gt_.get(),
+                                              mesh.get());
+
+    constexpr bool only_mesh_updated_blocks = false;
+    constexpr bool clear_updated_flag = true;
+    mesh_integrator.generateMesh(only_mesh_updated_blocks, clear_updated_flag);
+
     visualization_msgs::MarkerArray marker_array;
     marker_array.markers.resize(1);
     ColorMode color_mode = ColorMode::kNormals;
@@ -485,9 +488,10 @@ void SimulationServer::visualize() {
 
     // Also generate test mesh
     MeshLayer::Ptr mesh_test(new MeshLayer(tsdf_test_->block_size()));
-    MeshIntegrator<TsdfVoxel> mesh_integrator_test(mesh_config, tsdf_test_.get(),
-                                        mesh_test.get());
-    mesh_integrator_test.generateWholeMesh();
+    MeshIntegrator<TsdfVoxel> mesh_integrator_test(
+        mesh_config, tsdf_test_.get(), mesh_test.get());
+    mesh_integrator_test.generateMesh(only_mesh_updated_blocks,
+                                      clear_updated_flag);
     marker_array.markers.clear();
     marker_array.markers.resize(1);
     fillMarkerWithMesh(mesh_test, color_mode, &marker_array.markers[0]);

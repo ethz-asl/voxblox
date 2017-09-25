@@ -10,7 +10,8 @@
 
 namespace voxblox {
 
-inline TangoLayerInterface::TangoLayerInterface(const tsdf2::MapHeaderProto& proto)
+inline TangoLayerInterface::TangoLayerInterface(
+    const tsdf2::MapHeaderProto& proto)
     : Layer<TsdfVoxel>(proto.voxel_size(), proto.voxels_per_volume_side()),
       max_ntsdf_voxel_weight_(proto.max_ntsdf_voxel_weight()),
       meters_to_ntsdf_(proto.meters_to_ntsdf()) {
@@ -28,18 +29,16 @@ inline TangoLayerInterface::TangoLayerInterface(const tsdf2::MapHeaderProto& pro
 /* TODO (mereweth@jpl.nasa.gov) - is there a way to reuse some of
  * Layer::addBlockFromProto easily?
  */
-inline bool TangoLayerInterface ::
-    addBlockFromProto(const tsdf2::VolumeProto& block_proto,
-                      TangoLayerInterface::BlockMergingStrategy strategy,
-                      bool audit) {
+inline bool TangoLayerInterface::addBlockFromProto(
+    const tsdf2::VolumeProto& block_proto,
+    TangoLayerInterface::BlockMergingStrategy strategy,
+    bool audit) {
   CHECK_EQ(getType().compare(voxel_types::kTsdf), 0)
       << "The voxel type of this layer is not TsdfVoxel!";
 
   if (isCompatible(block_proto)) {
-    TangoBlockInterface::Ptr block_ptr(new TangoBlockInterface(block_proto,
-                                                    max_ntsdf_voxel_weight_,
-                                                    meters_to_ntsdf_,
-                                                    audit));
+    TangoBlockInterface::Ptr block_ptr(new TangoBlockInterface(
+        block_proto, max_ntsdf_voxel_weight_, meters_to_ntsdf_, audit));
 
     const BlockIndex block_index =
         getGridIndexFromOriginPoint(block_ptr->origin(), block_size_inv_);
@@ -48,7 +47,7 @@ inline bool TangoLayerInterface ::
         CHECK_EQ(block_map_.count(block_index), 0u)
             << "Block collision at index: " << block_index;
         block_map_[block_index] = block_ptr;
-      break;
+        break;
       case TangoLayerInterface::BlockMergingStrategy::kReplace:
         block_map_[block_index] = block_ptr;
         break;
@@ -79,7 +78,7 @@ inline bool TangoLayerInterface ::
 }
 
 inline bool TangoLayerInterface::isCompatible(
-                              const tsdf2::MapHeaderProto& layer_proto) const {
+    const tsdf2::MapHeaderProto& layer_proto) const {
   bool compatible = true;
   compatible &= (layer_proto.voxel_size() == voxel_size_);
   compatible &= (layer_proto.voxels_per_volume_side() == voxels_per_side_);
@@ -87,7 +86,7 @@ inline bool TangoLayerInterface::isCompatible(
 }
 
 inline bool TangoLayerInterface::isCompatible(
-                                  const tsdf2::VolumeProto& block_proto) const {
+    const tsdf2::VolumeProto& block_proto) const {
   bool compatible = true;
   compatible &= (block_proto.voxel_size() == voxel_size_);
   compatible &= (block_proto.voxels_per_side() == voxels_per_side_);

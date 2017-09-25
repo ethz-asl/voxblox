@@ -5,7 +5,7 @@ import numpy as np
 import timeit
 
 import sys;
-sys.path.append('/home/mereweth/snappy/torq_gcs_catkin_ws/devel/.private/voxblox/lib/')
+sys.path.append('/Users/mereweth/snappy/tsdf_catkin_ws/devel/.private/voxblox/lib/')
 
 import voxblox
 dir(voxblox.EsdfMap)
@@ -22,12 +22,12 @@ except RuntimeError as e:
     #print(e)
 
 # convert Tango TSDF to TSDF and serialize
-#ntl = voxblox_tango_interfacepy.tangoLoadLayer("/Users/mereweth/Desktop/terra_bella/terra_bella.ntsdf.proto")
-#ntl.saveToFile("/Users/mereweth/Desktop/_test_terra_bella.tsdf.proto")
+#ntl = voxblox_tango_interfacepy.tangoLoadLayer("/Users/mereweth/Desktop/map.ntsdf.proto")
+#ntl.saveToFile("/Users/mereweth/Desktop/map.tsdf.proto")
 
 # make sure this throws an exception rather than segfaulting
 try:
-    voxblox.loadTsdfLayer("/Users/mereweth/Desktop/terra_bella/terra_bella.ntsdf.proto")
+    voxblox.loadTsdfLayer("/Users/mereweth/Desktop/map.ntsdf.proto")
 except RuntimeError as e:
     print(e)
 
@@ -51,7 +51,6 @@ el.saveToFile("/Users/mereweth/Desktop/_test_cow_and_lady.esdf.proto")
 layer = voxblox.loadEsdfLayer('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
 assert(layer is not None)
 map = voxblox.EsdfMap(layer)
-#map = voxblox.EsdfMap('/Users/mereweth/Desktop/terra_bella/terra_bella_10cm_16per_full_euclidean.esdf.proto')
 
 print map.voxel_size
 print map.block_size

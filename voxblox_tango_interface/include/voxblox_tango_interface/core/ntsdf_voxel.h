@@ -2,6 +2,7 @@
 #define VOXBLOX_TANGO_INTERFACE_CORE_VOXEL_H_
 
 #include <cstdint>
+#include <string>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/color.h"
@@ -14,6 +15,8 @@ namespace voxblox {
  * a Layer<TsdfVoxel>
  */
 struct NtsdfVoxel {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   uint32_t ntsdf = 0;
   uint32_t color = 0;
 

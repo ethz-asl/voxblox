@@ -2,14 +2,15 @@
 #define VOXBLOX_CORE_LAYER_H_
 
 #include <glog/logging.h>
+#include <memory>
 #include <string>
 #include <utility>
 
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
-#include "voxblox/core/common.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/block_hash.h"
+#include "voxblox/core/common.h"
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
@@ -17,13 +18,19 @@ namespace voxblox {
 template <typename VoxelType>
 class Layer {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<Layer> Ptr;
   typedef Block<VoxelType> BlockType;
-  typedef typename BlockHashMapType<typename BlockType::Ptr>::type BlockHashMap;
+  typedef
+      typename AnyIndexHashMapType<typename BlockType::Ptr>::type BlockHashMap;
   typedef typename std::pair<BlockIndex, typename BlockType::Ptr> BlockMapPair;
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
+    CHECK_GT(voxel_size_, 0.0f);
+    voxel_size_inv_ = 1.0 / voxel_size_;
+
     block_size_ = voxel_size_ * voxels_per_side_;
     CHECK_GT(block_size_, 0.0f);
     block_size_inv_ = 1.0 / block_size_;
@@ -33,6 +40,9 @@ class Layer {
 
   // Create the layer from protobuf layer header.
   explicit Layer(const LayerProto& proto);
+
+  // Deep copy constructor.
+  explicit Layer(const Layer& other);
 
   virtual ~Layer() {}
 
@@ -112,13 +122,13 @@ class Layer {
   }
 
   typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) {
-    auto insert_status = block_map_.insert(std::make_pair(
-        index, std::shared_ptr<BlockType>(new BlockType(
+    auto insert_status = block_map_.emplace(
+        index, std::make_shared<BlockType>(
                    voxels_per_side_, voxel_size_,
-                   getOriginPointFromGridIndex(index, block_size_)))));
+                   getOriginPointFromGridIndex(index, block_size_)));
 
-    DCHECK(insert_status.second) << "Block already exists when allocating at "
-                                 << index.transpose();
+    DCHECK(insert_status.second)
+        << "Block already exists when allocating at " << index.transpose();
 
     DCHECK(insert_status.first->second);
     DCHECK_EQ(insert_status.first->first, index);
@@ -128,6 +138,16 @@ class Layer {
   inline typename BlockType::Ptr allocateNewBlockByCoordinates(
       const Point& coords) {
     return allocateNewBlock(computeBlockIndexFromCoordinates(coords));
+  }
+
+  inline void insertBlock(
+      const std::pair<const BlockIndex, Block<TsdfVoxel>::Ptr>& block_pair) {
+    auto insert_status = block_map_.insert(block_pair);
+
+    DCHECK(insert_status.second) << "Block already exists when inserting at "
+                                 << insert_status.first->first.transpose();
+
+    DCHECK(insert_status.first->second);
   }
 
   void removeBlock(const BlockIndex& index) { block_map_.erase(index); }
@@ -173,8 +193,8 @@ class Layer {
     if (!hasBlock(block_index)) {
       return nullptr;
     }
-    const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
-        global_voxel_index, voxels_per_side_);
+    const VoxelIndex local_voxel_index =
+        getLocalFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_);
     const Block<VoxelType>& block = getBlockByIndex(block_index);
     return &block.getVoxelByVoxelIndex(local_voxel_index);
   }
@@ -186,15 +206,18 @@ class Layer {
     if (!hasBlock(block_index)) {
       return nullptr;
     }
-    const VoxelIndex local_voxel_index = getLocalFromGlobalVoxelIndex(
-        global_voxel_index, voxels_per_side_);
+    const VoxelIndex local_voxel_index =
+        getLocalFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_);
     Block<VoxelType>& block = getBlockByIndex(block_index);
     return &block.getVoxelByVoxelIndex(local_voxel_index);
   }
 
   FloatingPoint block_size() const { return block_size_; }
+  FloatingPoint block_size_inv() const { return block_size_inv_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
+  FloatingPoint voxel_size_inv() const { return voxel_size_inv_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
+  FloatingPoint voxels_per_side_inv() const { return voxels_per_side_inv_; }
 
   // Serialization tools.
   void getProto(LayerProto* proto) const;
@@ -209,12 +232,13 @@ class Layer {
 
   size_t getMemorySize() const;
 
-protected:
+ protected:
   FloatingPoint voxel_size_;
   size_t voxels_per_side_;
   FloatingPoint block_size_;
 
   // Derived types.
+  FloatingPoint voxel_size_inv_;
   FloatingPoint block_size_inv_;
   FloatingPoint voxels_per_side_inv_;
 

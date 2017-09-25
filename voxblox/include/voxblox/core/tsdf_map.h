@@ -13,9 +13,13 @@ namespace voxblox {
 
 class TsdfMap {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<TsdfMap> Ptr;
 
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     FloatingPoint tsdf_voxel_size = 0.2;
     size_t tsdf_voxels_per_side = 16u;
   };
@@ -35,6 +39,16 @@ class TsdfMap {
                                " in TsdfMap constructor");
     }
     block_size_ = tsdf_layer_->block_size();
+  }
+    
+  // Creates a new TsdfMap based on a COPY of this layer.
+  explicit TsdfMap(const Layer<TsdfVoxel>& layer)
+      : TsdfMap(aligned_shared<Layer<TsdfVoxel>>(layer)) {}
+
+  // Creates a new TsdfMap that contains this layer.
+  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer) : tsdf_layer_(layer) {
+    CHECK(layer);
+    block_size_ = layer->block_size();
   }
 
   virtual ~TsdfMap() {}

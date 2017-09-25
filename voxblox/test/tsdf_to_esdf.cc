@@ -1,18 +1,15 @@
-#include <iostream>  // NOLINT
+#include <string>
+#include <memory>
+#include <stdexcept>
 
-#include "./Block.pb.h"
-#include "./Layer.pb.h"
+#include <glog/logging.h>
+
 #include "voxblox/core/block.h"
+#include "voxblox/core/esdf_map.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/integrator/esdf_integrator.h"
 #include "voxblox/io/layer_io.h"
-#include "voxblox/test/layer_test_utils.h"
-
-#include <voxblox/io/mesh_ply.h>
-#include <voxblox/mesh/mesh_integrator.h>
-
-#include <voxblox/core/esdf_map.h>
-#include <voxblox/integrator/esdf_integrator.h>
 
 using namespace voxblox;  // NOLINT
 
