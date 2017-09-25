@@ -103,6 +103,14 @@ class TsdfIntegratorBase {
   // Thread safe.
   inline float getVoxelWeight(const Point& point_C) const;
 
+  void fillSphereAroundPoint(const Point& center,
+                             FloatingPoint radius,
+                             FloatingPoint weight) const;
+
+  void clearSphereAroundPoint(const Point& center,
+                              FloatingPoint radius,
+                              FloatingPoint weight) const;
+
   Config config_;
 
   Layer<TsdfVoxel>* layer_;

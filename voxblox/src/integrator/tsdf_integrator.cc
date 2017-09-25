@@ -208,6 +208,94 @@ inline float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
   return 0.0f;
 }
 
+void TsdfIntegratorBase::fillSphereAroundPoint(const Point& center,
+                                               FloatingPoint radius,
+                                               FloatingPoint weight) const {
+  // search a cube with side length 2*radius
+  for (FloatingPoint x = -radius; x <= radius; x += voxel_size_) {
+    for (FloatingPoint y = -radius; y <= radius; y += voxel_size_) {
+      for (FloatingPoint z = -radius; z <= radius; z += voxel_size_) {
+        Point point(x, y, z);
+
+        // check if point is inside the spheres radius
+        FloatingPoint radius_squared_norm = radius * radius;
+        if (point.squaredNorm() <= radius_squared_norm) {
+          // convert to global coordinate
+          point += center;
+
+          Block<TsdfVoxel>::Ptr block_ptr =
+                          layer_->allocateBlockPtrByCoordinates(point);
+          VoxelIndex voxel_index =
+                          block_ptr->computeVoxelIndexFromCoordinates(point);
+          TsdfVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+          Point voxel_center =
+                          block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
+
+          Point voxel_center_vec = voxel_center - point;
+
+          // how far is voxel from center of filled sphere
+          FloatingPoint new_distance = sqrt(voxel_center_vec.squaredNorm());
+
+          if ((voxel.distance == 0) ||
+              (new_distance < voxel.distance)) {
+            voxel.distance = new_distance;
+            voxel.weight = weight;
+            block_ptr->updated() = true;
+            block_ptr->has_data() = true;
+          }
+        }
+      }
+    }
+  }
+}
+
+// TODO(mereweth@jpl.nasa.gov) - make a version of this that only allocates or
+// increases the free radius
+void TsdfIntegratorBase::clearSphereAroundPoint(const Point& center,
+                                                FloatingPoint radius,
+                                                FloatingPoint weight) const {
+  // search a cube with side length 2*radius
+  for (FloatingPoint x = -radius; x <= radius; x += voxel_size_) {
+    for (FloatingPoint y = -radius; y <= radius; y += voxel_size_) {
+      for (FloatingPoint z = -radius; z <= radius; z += voxel_size_) {
+        Point point(x, y, z);
+
+        // check if point is inside the spheres radius
+        FloatingPoint radius_squared_norm = radius * radius;
+        if (point.squaredNorm() <= radius_squared_norm) {
+          // convert to global coordinate
+          point += center;
+
+          Block<TsdfVoxel>::Ptr block_ptr =
+                          layer_->allocateBlockPtrByCoordinates(point);
+          VoxelIndex voxel_index =
+                          block_ptr->computeVoxelIndexFromCoordinates(point);
+          TsdfVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+          Point voxel_center =
+                          block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
+
+          Point voxel_center_vec = voxel_center - point;
+          /* TODO(mereweth@jpl.nasa.gov) - depending on the minimum distance for
+           * TSDF voxels to be considered fixed, this may effectively fix voxels
+           * near the edge of the free spheres. How to handle this?
+           */
+
+          // how far is voxel from edge of free sphere
+          FloatingPoint new_distance = sqrt(radius_squared_norm) -
+                                       sqrt(voxel_center_vec.squaredNorm());
+
+          if (new_distance > voxel.distance) {
+            voxel.distance = new_distance;
+            voxel.weight = weight;
+            block_ptr->updated() = true;
+            block_ptr->has_data() = true;
+          }
+        }
+      }
+    }
+  }
+}
+
 void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
