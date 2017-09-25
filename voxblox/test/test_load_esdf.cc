@@ -22,6 +22,9 @@ int main(int argc, char** argv) {
   Layer<EsdfVoxel>::Ptr layer_from_file;
   io::LoadLayer<EsdfVoxel>(file, &layer_from_file);
 
+  //TODO(mereweth@jpl.nasa.gov) - why doesn't this compile?
+  //Layer<EsdfVoxel> layer_from_file = io::LoadLayer<EsdfVoxel>(file);
+
   LOG(INFO) << "Layer memory size: " << layer_from_file->getMemorySize()
             << "\n";
 

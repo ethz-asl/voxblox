@@ -21,7 +21,9 @@ void tsdf_map_bind(py::module &m) {
 
     py::class_<TsdfMap, std::shared_ptr<TsdfMap> >(m, "TsdfMap")
         .def(py::init<const TsdfMap::Config &>())
-        .def(py::init<TsdfLayer::Ptr>())
+        .def(py::init<TsdfLayer::Ptr, bool>(),
+             py::arg("layer"),
+             py::arg("no_except") = false)
         .def_property_readonly("block_size", &TsdfMap::block_size)
         .def_property_readonly("voxel_size", &TsdfMap::voxel_size)
 

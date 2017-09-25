@@ -10,6 +10,12 @@ void tsdf_map_bind(py::module &);
 void esdf_integrator_bind(py::module &);
 void tsdf_integrator_bind(py::module &);
 
+#include "voxblox/io/layer_io.h"
+using voxblox::TsdfVoxel;
+using voxblox::EsdfVoxel;
+using TsdfLayer = voxblox::Layer<TsdfVoxel>;
+using EsdfLayer = voxblox::Layer<EsdfVoxel>;
+
 PYBIND11_MODULE(voxbloxpy, m) {
   voxel_bind(m);
   layer_bind(m);

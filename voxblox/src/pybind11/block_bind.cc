@@ -25,7 +25,7 @@ void block_bind(py::module &m) {
         .def_property_readonly("voxel_size", &TsdfBlock::voxel_size)
         .def_property_readonly("voxels_per_side", &TsdfBlock::voxels_per_side)
         .def_property_readonly("origin", &TsdfBlock::origin)
-        .def_property_readonly("updated", (bool& (TsdfBlock::*)(void))&TsdfBlock::updated)
+        .def_property_readonly("updated", (const bool (TsdfBlock::*)(void) const)&TsdfBlock::updated)
         .def_property_readonly("has_data", (bool& (TsdfBlock::*)(void))&TsdfBlock::has_data)
 
         .def("set_updated", &TsdfBlock::set_updated)
@@ -42,7 +42,7 @@ void block_bind(py::module &m) {
         .def_property_readonly("voxel_size", &EsdfBlock::voxel_size)
         .def_property_readonly("voxels_per_side", &EsdfBlock::voxels_per_side)
         .def_property_readonly("origin", &EsdfBlock::origin)
-        .def_property_readonly("updated", (bool& (EsdfBlock::*)(void))&EsdfBlock::updated)
+        .def_property_readonly("updated", (const bool (EsdfBlock::*)(void) const)&EsdfBlock::updated)
         .def_property_readonly("has_data", (bool& (EsdfBlock::*)(void))&EsdfBlock::has_data)
 
         .def("set_updated", &EsdfBlock::set_updated)

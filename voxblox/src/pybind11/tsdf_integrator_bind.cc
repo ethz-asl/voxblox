@@ -5,18 +5,19 @@
 #include <pybind11/eigen.h>
 namespace py = pybind11;
 
-using voxblox::TsdfIntegrator;
+using voxblox::TsdfIntegratorBase;
+using voxblox::SimpleTsdfIntegrator;
 
 using voxblox::TsdfVoxel;
 using TsdfLayer = voxblox::Layer<TsdfVoxel>;
 
 void tsdf_integrator_bind(py::module &m) {
-    py::class_<TsdfIntegrator::Config>(m, "TsdfIntegratorConfig")
+    py::class_<TsdfIntegratorBase::Config>(m, "TsdfIntegratorConfig")
         .def(py::init<>());
 
-    py::class_<TsdfIntegrator>(m, "TsdfIntegrator")
-        .def(py::init<const TsdfIntegrator::Config &, TsdfLayer* >())
+    py::class_<SimpleTsdfIntegrator>(m, "SimpleTsdfIntegrator")
+        .def(py::init<const TsdfIntegratorBase::Config &, TsdfLayer* >())
 
-        .def("clearSphereAroundPoint", &TsdfIntegrator::clearSphereAroundPoint)
-        .def("fillSphereAroundPoint", &TsdfIntegrator::fillSphereAroundPoint);
+        .def("clearSphereAroundPoint", &TsdfIntegratorBase::clearSphereAroundPoint)
+        .def("fillSphereAroundPoint", &TsdfIntegratorBase::fillSphereAroundPoint);
 }

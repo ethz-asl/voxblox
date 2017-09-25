@@ -30,23 +30,24 @@ class TsdfMap {
     block_size_ = config.tsdf_voxel_size * config.tsdf_voxels_per_side;
   }
 
-  // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
-  TsdfMap(Layer<TsdfVoxel>::Ptr tsdf_layer)
-     : tsdf_layer_(tsdf_layer) {
-    if (!tsdf_layer) {
-      // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
-      throw std::runtime_error(std::string("Null Layer<TsdfVoxel>::Ptr") +
-                               " in TsdfMap constructor");
-    }
-    block_size_ = tsdf_layer_->block_size();
-  }
-    
   // Creates a new TsdfMap based on a COPY of this layer.
   explicit TsdfMap(const Layer<TsdfVoxel>& layer)
       : TsdfMap(aligned_shared<Layer<TsdfVoxel>>(layer)) {}
 
   // Creates a new TsdfMap that contains this layer.
-  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer) : tsdf_layer_(layer) {
+  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer, bool no_except = true)
+      : tsdf_layer_(layer) {
+
+    // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
+    if (!no_except && !layer) {
+      /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
+       * This is idiomatic when wrapping C++ code for Python, especially with
+       * pybind11
+       */
+      throw std::runtime_error(std::string("Null Layer<TsdfVoxel>::Ptr") +
+                               " in TsdfMap constructor");
+    }
+
     CHECK(layer);
     block_size_ = layer->block_size();
   }

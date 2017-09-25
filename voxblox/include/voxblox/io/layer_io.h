@@ -152,11 +152,14 @@ bool LoadBlocksFromFile(
 // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
 template <typename VoxelType>
 Layer<VoxelType> LoadLayer(const std::string& file_path) {
-  bool success = true;
+  if (file_path.empty()) {
+    throw std::runtime_error(std::string("Empty file path: ")
+                             + file_path);
+  }
+
   typename Layer<VoxelType>::Ptr layer_ptr;
 
-  if (!success ||
-      !LoadLayer<VoxelType>(file_path, &layer_ptr)) {
+  if (!LoadLayer<VoxelType>(file_path, &layer_ptr)) {
     // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
     throw std::runtime_error(std::string("Could not load layer from: ")
                              + file_path);

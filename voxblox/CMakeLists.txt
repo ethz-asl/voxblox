@@ -7,7 +7,7 @@ catkin_simple()
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 
-if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../pybind11/CMakeLists.txt")
+if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../tools/pybind11/CMakeLists.txt")
   set(HAVE_PYBIND11 TRUE)
   message(STATUS "Found pybind11; generating Python bindings")
 endif()
@@ -92,7 +92,7 @@ if(HAVE_PYBIND11)
 
   # TODO(mereweth@jpl.nasa.gov) - how to tell pybind11 about an existing library?
   # or should we just use the pybind library for everything?
-  add_subdirectory(../pybind11 pybind11)
+  add_subdirectory(../tools/pybind11 pybind11)
   message("Building Python bindings for voxblox")
   pybind11_add_module(voxbloxpy
     ${${PROJECT_NAME}_SRCS}

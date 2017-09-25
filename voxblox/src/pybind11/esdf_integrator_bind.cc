@@ -18,7 +18,6 @@ void esdf_integrator_bind(py::module &m) {
         .def_readwrite("max_distance_m", &EsdfIntegrator::Config::max_distance_m)
         .def_readwrite("min_distance_m", &EsdfIntegrator::Config::min_distance_m)
         .def_readwrite("default_distance_m", &EsdfIntegrator::Config::default_distance_m)
-        .def_readwrite("min_raise_diff_m", &EsdfIntegrator::Config::min_raise_diff_m)
         .def_readwrite("min_weight", &EsdfIntegrator::Config::min_weight)
         .def_readwrite("num_buckets", &EsdfIntegrator::Config::num_buckets)
         .def_readwrite("clear_sphere_radius", &EsdfIntegrator::Config::clear_sphere_radius)

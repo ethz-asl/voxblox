@@ -35,25 +35,24 @@ class EsdfMap {
     block_size_ = config.esdf_voxel_size * config.esdf_voxels_per_side;
   }
 
-  // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
-  EsdfMap(Layer<EsdfVoxel>::Ptr esdf_layer)
-     : esdf_layer_(esdf_layer),
-       interpolator_(esdf_layer_.get()) {
-    if (!esdf_layer) {
-      // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
-      throw std::runtime_error(std::string("Null Layer<EsdfVoxel>::Ptr") +
-                               " in EsdfMap constructor");
-    }
-    block_size_ = esdf_layer_->block_size();
-  }
-
   // Creates a new EsdfMap based on a COPY of this layer.
   explicit EsdfMap(const Layer<EsdfVoxel>& layer)
       : EsdfMap(aligned_shared<Layer<EsdfVoxel>>(layer)) {}
 
   // Creates a new EsdfMap that contains this layer.
-  explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer)
+  explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer, bool no_except = true)
       : esdf_layer_(layer), interpolator_(CHECK_NOTNULL(esdf_layer_.get())) {
+
+    // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
+    if (!no_except && !layer) {
+      /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
+       * This is idiomatic when wrapping C++ code for Python, especially with
+       * pybind11
+       */
+      throw std::runtime_error(std::string("Null Layer<EsdfVoxel>::Ptr") +
+                               " in EsdfMap constructor");
+    }
+
     block_size_ = layer->block_size();
   }
 

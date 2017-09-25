@@ -69,6 +69,14 @@ class TsdfIntegratorBase {
   // Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
 
+  void fillSphereAroundPoint(const Point& center,
+                             FloatingPoint radius,
+                             FloatingPoint weight) const;
+
+  void clearSphereAroundPoint(const Point& center,
+                              FloatingPoint radius,
+                              FloatingPoint weight) const;
+
  protected:
   // Thread safe.
   inline bool isPointValid(const Point& point_C, const bool freespace_point,
@@ -102,14 +110,6 @@ class TsdfIntegratorBase {
 
   // Thread safe.
   inline float getVoxelWeight(const Point& point_C) const;
-
-  void fillSphereAroundPoint(const Point& center,
-                             FloatingPoint radius,
-                             FloatingPoint weight) const;
-
-  void clearSphereAroundPoint(const Point& center,
-                              FloatingPoint radius,
-                              FloatingPoint weight) const;
 
   Config config_;
 
