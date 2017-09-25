@@ -149,6 +149,9 @@ bool LoadBlocksFromFile(
   return true;
 }
 
+/*TODO(mereweth@jpl.nasa.gov) - why doesn't this compile when template is
+ * specialized?
+ */
 // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
 template <typename VoxelType>
 Layer<VoxelType> LoadLayer(const std::string& file_path) {
