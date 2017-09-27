@@ -156,10 +156,6 @@ inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
         triangle.y[local_vert_idx] = mesh->vertices[global_vert_idx].y();
         triangle.z[local_vert_idx] = mesh->vertices[global_vert_idx].z();
 
-        triangle.nx[local_vert_idx] = mesh->normals[global_vert_idx].x();
-        triangle.ny[local_vert_idx] = mesh->normals[global_vert_idx].y();
-        triangle.nz[local_vert_idx] = mesh->normals[global_vert_idx].z();
-
         std_msgs::ColorRGBA color_msg =
             getVertexColor(mesh, color_mode, global_vert_idx);
 
