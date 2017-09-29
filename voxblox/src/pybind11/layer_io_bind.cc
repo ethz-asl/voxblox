@@ -8,7 +8,9 @@ using voxblox::EsdfVoxel;
 using TsdfLayer = voxblox::Layer<TsdfVoxel>;
 using EsdfLayer = voxblox::Layer<EsdfVoxel>;
 
-//TODO(mereweth@jpl.nasa.gov) - why doesn't this compile?
+//TODO(mereweth@jpl.nasa.gov) - why doesn't this compile anymore?
+// Potential quickfix is to return Layer::Ptr, as this is compatible with Python
+// reference counting
 //auto loadTsdfLayer = (TsdfLayer (*)(const std::string &)) &voxblox::io::LoadLayer<TsdfVoxel>;
 //auto loadEsdfLayer = (EsdfLayer (*)(const std::string &)) &voxblox::io::LoadLayer<EsdfVoxel>;
 
