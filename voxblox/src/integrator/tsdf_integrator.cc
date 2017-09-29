@@ -208,7 +208,7 @@ inline float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
   return 0.0f;
 }
 
-void TsdfIntegratorBase::fillSphereAroundPoint(const Point& center,
+void SimpleTsdfIntegrator::fillSphereAroundPoint(const Point& center,
                                                FloatingPoint radius,
                                                FloatingPoint weight) const {
   // search a cube with side length 2*radius
@@ -251,7 +251,7 @@ void TsdfIntegratorBase::fillSphereAroundPoint(const Point& center,
 
 // TODO(mereweth@jpl.nasa.gov) - make a version of this that only allocates or
 // increases the free radius
-void TsdfIntegratorBase::clearSphereAroundPoint(const Point& center,
+void SimpleTsdfIntegrator::clearSphereAroundPoint(const Point& center,
                                                 FloatingPoint radius,
                                                 FloatingPoint weight) const {
   // search a cube with side length 2*radius

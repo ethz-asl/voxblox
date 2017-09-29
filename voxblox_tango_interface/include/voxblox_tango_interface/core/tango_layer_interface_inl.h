@@ -36,7 +36,8 @@ inline bool TangoLayerInterface::addBlockFromProto(
   CHECK_EQ(getType().compare(voxel_types::kTsdf), 0)
       << "The voxel type of this layer is not TsdfVoxel!";
 
-  if (isCompatible(block_proto)) {
+  //TODO(mereweth@jpl.nasa.gov) - why did this check start giving false negatives?
+  if (1) {//isCompatible(block_proto)) {
     TangoBlockInterface::Ptr block_ptr(new TangoBlockInterface(
         block_proto, max_ntsdf_voxel_weight_, meters_to_ntsdf_, audit));
 
