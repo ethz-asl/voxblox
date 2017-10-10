@@ -23,10 +23,9 @@ int main(int argc, char** argv) {
 
   LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize()
                << "\n";
-  LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size()
-               << "\n";
-  LOG(WARNING) << "Layer voxels per side: " << layer_from_file->voxels_per_side()
-               << "\n";
+  LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size() << "\n";
+  LOG(WARNING) << "Layer voxels per side: "
+               << layer_from_file->voxels_per_side() << "\n";
 
   // Mesh accessories.
   MeshIntegrator<TsdfVoxel>::Config mesh_config;

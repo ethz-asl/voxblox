@@ -37,7 +37,6 @@ class TsdfMap {
   // Creates a new TsdfMap that contains this layer.
   explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer, bool no_except = true)
       : tsdf_layer_(layer) {
-
     // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
     if (!no_except && !layer) {
       /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
@@ -65,15 +64,15 @@ class TsdfMap {
 
   // convenience alias borrowed from pybind11
   using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
-  template <typename MatrixType> using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
+  template <typename MatrixType>
+  using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
 
   unsigned int coordPlaneSliceGetDistanceWeight(
-    unsigned int free_plane_index,
-    double free_plane_val,
-    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-    Eigen::Ref<Eigen::VectorXd> distances,
-    Eigen::Ref<Eigen::VectorXd> weights,
-    unsigned int max_points = 100000) const;
+      unsigned int free_plane_index, double free_plane_val,
+      EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXd> distances,
+      Eigen::Ref<Eigen::VectorXd> weights,
+      unsigned int max_points = 100000) const;
 
  protected:
   FloatingPoint block_size_;

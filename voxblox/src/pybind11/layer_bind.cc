@@ -1,7 +1,7 @@
 #include "voxblox/core/layer.h"
 
-#include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
 namespace py = pybind11;
 
 using voxblox::TsdfVoxel;
@@ -15,29 +15,31 @@ void layer_bind(py::module &m) {
   /* TODO(mereweth@jpl.nasa.gov) - use shared_ptr instead of default unique_ptr
    * for Python reference counting?
    */
-    py::class_<TsdfLayer, std::shared_ptr<TsdfLayer> >(m, "TsdfLayer")
-        .def(py::init<FloatingPoint, size_t>())
+  py::class_<TsdfLayer, std::shared_ptr<TsdfLayer> >(m, "TsdfLayer")
+      .def(py::init<FloatingPoint, size_t>())
 
-        .def_property_readonly("block_size", &TsdfLayer::block_size)
-        .def_property_readonly("voxel_size", &TsdfLayer::voxel_size)
-        .def_property_readonly("voxels_per_side", &TsdfLayer::voxels_per_side)
+      .def_property_readonly("block_size", &TsdfLayer::block_size)
+      .def_property_readonly("voxel_size", &TsdfLayer::voxel_size)
+      .def_property_readonly("voxels_per_side", &TsdfLayer::voxels_per_side)
 
-        // TODO(mereweth@jpl.nasa.gov) - can this still cause segfault?
-        .def("saveToFile", &TsdfLayer::saveToFile)
+      // TODO(mereweth@jpl.nasa.gov) - can this still cause segfault?
+      .def("saveToFile", &TsdfLayer::saveToFile)
 
-        .def("allocateBlockPtrByCoordinates", &TsdfLayer::allocateBlockPtrByCoordinates)
-        .def("removeBlockByCoordinates", &TsdfLayer::removeBlockByCoordinates);
+      .def("allocateBlockPtrByCoordinates",
+           &TsdfLayer::allocateBlockPtrByCoordinates)
+      .def("removeBlockByCoordinates", &TsdfLayer::removeBlockByCoordinates);
 
-    py::class_<EsdfLayer, std::shared_ptr<EsdfLayer> >(m, "EsdfLayer")
-        .def(py::init<FloatingPoint, size_t>())
+  py::class_<EsdfLayer, std::shared_ptr<EsdfLayer> >(m, "EsdfLayer")
+      .def(py::init<FloatingPoint, size_t>())
 
-        .def_property_readonly("block_size", &EsdfLayer::block_size)
-        .def_property_readonly("voxel_size", &EsdfLayer::voxel_size)
-        .def_property_readonly("voxels_per_side", &EsdfLayer::voxels_per_side)
+      .def_property_readonly("block_size", &EsdfLayer::block_size)
+      .def_property_readonly("voxel_size", &EsdfLayer::voxel_size)
+      .def_property_readonly("voxels_per_side", &EsdfLayer::voxels_per_side)
 
-        // TODO(mereweth@jpl.nasa.gov) - can this still cause segfault?
-        .def("saveToFile", &EsdfLayer::saveToFile)
+      // TODO(mereweth@jpl.nasa.gov) - can this still cause segfault?
+      .def("saveToFile", &EsdfLayer::saveToFile)
 
-        .def("allocateBlockPtrByCoordinates", &EsdfLayer::allocateBlockPtrByCoordinates)
-        .def("removeBlockByCoordinates", &EsdfLayer::removeBlockByCoordinates);
+      .def("allocateBlockPtrByCoordinates",
+           &EsdfLayer::allocateBlockPtrByCoordinates)
+      .def("removeBlockByCoordinates", &EsdfLayer::removeBlockByCoordinates);
 }

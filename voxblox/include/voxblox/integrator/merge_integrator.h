@@ -19,7 +19,7 @@ class MergeIntegrator {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   // all methods are static so the class does not need a constructor
-  //MergeIntegrator() = delete;
+  // MergeIntegrator() = delete;
 
   template <typename VoxelType>
   static void mergeVoxelAIntoVoxelB(const VoxelType& voxel_A,
@@ -80,10 +80,9 @@ class MergeIntegrator {
         block_B_ptr = layer_B->allocateBlockPtrByIndex(block_idx);
       }
 
-      //CHECK_NOTNULL(block_A_ptr);
-      //CHECK_NOTNULL(block_B_ptr);
-      if ((block_A_ptr != nullptr) &&
-          (block_B_ptr != nullptr)){
+      // CHECK_NOTNULL(block_A_ptr);
+      // CHECK_NOTNULL(block_B_ptr);
+      if ((block_A_ptr != nullptr) && (block_B_ptr != nullptr)) {
         MergeBlockAIntoBlockB(*block_A_ptr, block_B_ptr.get());
       }
     }

@@ -4,8 +4,8 @@
 #include "./MapHeader.pb.h"
 #include "./Volume.pb.h"
 
-/* TODO(mereweth@jpl.nasa.gov) - this is not a template class, so no need to have
- * these definitions here
+/* TODO(mereweth@jpl.nasa.gov) - this is not a template class, so no need to
+ * have these definitions here
  */
 
 namespace voxblox {
@@ -31,13 +31,13 @@ inline TangoLayerInterface::TangoLayerInterface(
  */
 inline bool TangoLayerInterface::addBlockFromProto(
     const tsdf2::VolumeProto& block_proto,
-    TangoLayerInterface::BlockMergingStrategy strategy,
-    bool audit) {
+    TangoLayerInterface::BlockMergingStrategy strategy, bool audit) {
   CHECK_EQ(getType().compare(voxel_types::kTsdf), 0)
       << "The voxel type of this layer is not TsdfVoxel!";
 
-  //TODO(mereweth@jpl.nasa.gov) - why did this check start giving false negatives?
-  if (1) {//isCompatible(block_proto)) {
+  // TODO(mereweth@jpl.nasa.gov) - why did this check start giving false
+  // negatives?
+  if (1) {  // isCompatible(block_proto)) {
     TangoBlockInterface::Ptr block_ptr(new TangoBlockInterface(
         block_proto, max_ntsdf_voxel_weight_, meters_to_ntsdf_, audit));
 

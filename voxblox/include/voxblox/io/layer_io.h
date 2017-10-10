@@ -52,10 +52,10 @@ bool LoadLayer(const std::string& file_path,
     return false;
   }
 
-  if ((layer_proto.voxel_size()      <= 0) ||
-      (layer_proto.voxels_per_side() <= 0) ||
+  if ((layer_proto.voxel_size() <= 0) || (layer_proto.voxels_per_side() <= 0) ||
       (getVoxelType<VoxelType>().compare(layer_proto.type()))) {
-    LOG(ERROR) << "Invalid parameter in layer protobuf message. Check the format.";
+    LOG(ERROR)
+        << "Invalid parameter in layer protobuf message. Check the format.";
     return false;
   }
 
@@ -156,16 +156,15 @@ bool LoadBlocksFromFile(
 template <typename VoxelType>
 Layer<VoxelType> LoadLayer(const std::string& file_path) {
   if (file_path.empty()) {
-    throw std::runtime_error(std::string("Empty file path: ")
-                             + file_path);
+    throw std::runtime_error(std::string("Empty file path: ") + file_path);
   }
 
   typename Layer<VoxelType>::Ptr layer_ptr;
 
   if (!LoadLayer<VoxelType>(file_path, &layer_ptr)) {
     // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
-    throw std::runtime_error(std::string("Could not load layer from: ")
-                             + file_path);
+    throw std::runtime_error(std::string("Could not load layer from: ") +
+                             file_path);
   }
 
   CHECK(layer_ptr);

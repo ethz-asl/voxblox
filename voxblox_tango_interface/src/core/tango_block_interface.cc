@@ -23,14 +23,12 @@ void TangoBlockInterface::deserializeFromIntegers(
     if (audit) {
       voxel.distance = static_cast<int16_t>(bytes_1 >> 16);
       voxel.weight = static_cast<uint16_t>(bytes_1 & 0x0000FFFF);
-    }
-    else {
-      voxel.distance = static_cast<int16_t>(bytes_1 >> 16)
-                       / meters_to_ntsdf_;
+    } else {
+      voxel.distance = static_cast<int16_t>(bytes_1 >> 16) / meters_to_ntsdf_;
 
-      voxel.weight = static_cast<float>(max_ntsdf_voxel_weight_)
-                     / static_cast<float>(UINT16_MAX)
-                     * static_cast<uint16_t>(bytes_1 & 0x0000FFFF);
+      voxel.weight = static_cast<float>(max_ntsdf_voxel_weight_) /
+                     static_cast<float>(UINT16_MAX) *
+                     static_cast<uint16_t>(bytes_1 & 0x0000FFFF);
     }
 
     voxel.color.r = static_cast<uint8_t>(bytes_2 >> 24);

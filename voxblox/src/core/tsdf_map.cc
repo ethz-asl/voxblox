@@ -2,17 +2,15 @@
 
 namespace voxblox {
 
-/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for Python bindings.
- * std::exceptions are bound to Python exceptions by pybind11, allowing them to be handled
- * in Python code idiomatically.
+/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
+ * Python bindings. std::exceptions are bound to Python exceptions by pybind11,
+ * allowing them to be handled in Python code idiomatically.
  */
 unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
-                unsigned int free_plane_index,
-                double free_plane_val,
-                EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-                Eigen::Ref<Eigen::VectorXd> distances,
-                Eigen::Ref<Eigen::VectorXd> weights,
-                unsigned int max_points) const {
+    unsigned int free_plane_index, double free_plane_val,
+    EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+    Eigen::Ref<Eigen::VectorXd> distances, Eigen::Ref<Eigen::VectorXd> weights,
+    unsigned int max_points) const {
   BlockIndexList blocks;
   tsdf_layer_->getAllAllocatedBlocks(&blocks);
 
@@ -24,8 +22,8 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
   bool did_all_fit = true;
   unsigned int count = 0;
 
-  /* TODO(mereweth@jpl.nasa.gov) - store min/max index (per axis) allocated in Layer
-   * This extra bookeeping will make this much faster
+  /* TODO(mereweth@jpl.nasa.gov) - store min/max index (per axis) allocated in
+   * Layer This extra bookeeping will make this much faster
    * // Iterate over all blocks corresponding to slice plane
    * Point on_slice_plane(0, 0, 0);
    * on_slice_plane(free_plane_index) = free_plane_val;
@@ -42,8 +40,8 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
     }
 
     Point origin = block.origin();
-    if (std::abs(origin(free_plane_index) - free_plane_val)
-                                        > block.block_size()) {
+    if (std::abs(origin(free_plane_index) - free_plane_val) >
+        block.block_size()) {
       continue;
     }
 
@@ -51,26 +49,25 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
          ++linear_index) {
       Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
       const TsdfVoxel& voxel = block.getVoxelByLinearIndex(linear_index);
-      if (std::abs(coord(free_plane_index) - free_plane_val)
-                                          <= block.voxel_size()) {
+      if (std::abs(coord(free_plane_index) - free_plane_val) <=
+          block.voxel_size()) {
         double distance = voxel.distance;
-        double weight   = voxel.weight;
+        double weight = voxel.weight;
 
         /*if (weight == 0) {
           continue;
         }*/
 
         if (count < positions.cols()) {
-          positions.col(count) = Eigen::Vector3d(coord.x(), coord.y(), coord.z());
-        }
-        else {
+          positions.col(count) =
+              Eigen::Vector3d(coord.x(), coord.y(), coord.z());
+        } else {
           did_all_fit = false;
         }
         if (count < distances.size()) {
           distances(count) = distance;
           weights(count) = weight;
-        }
-        else {
+        } else {
           did_all_fit = false;
         }
         count++;
@@ -82,7 +79,8 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
   }
 
   if (!did_all_fit) {
-    throw std::runtime_error(std::string("Unable to store ") + std::to_string(count) + " values.");
+    throw std::runtime_error(std::string("Unable to store ") +
+                             std::to_string(count) + " values.");
   }
 
   return count;

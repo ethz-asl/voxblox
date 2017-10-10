@@ -42,7 +42,6 @@ class EsdfMap {
   // Creates a new EsdfMap that contains this layer.
   explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer, bool no_except = true)
       : esdf_layer_(layer), interpolator_(CHECK_NOTNULL(esdf_layer_.get())) {
-
     // NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
     if (!no_except && !layer) {
       /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
@@ -108,8 +107,7 @@ class EsdfMap {
                                        double free_plane_val) const;
 
   unsigned int coordPlaneSliceGetDistance(
-      unsigned int free_plane_index,
-      double free_plane_val,
+      unsigned int free_plane_index, double free_plane_val,
       EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
       Eigen::Ref<Eigen::VectorXd> distances,
       unsigned int max_points = 100000) const;

@@ -209,8 +209,8 @@ inline float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
 }
 
 void SimpleTsdfIntegrator::fillSphereAroundPoint(const Point& center,
-                                               FloatingPoint radius,
-                                               FloatingPoint weight) const {
+                                                 FloatingPoint radius,
+                                                 FloatingPoint weight) const {
   // search a cube with side length 2*radius
   for (FloatingPoint x = -radius; x <= radius; x += voxel_size_) {
     for (FloatingPoint y = -radius; y <= radius; y += voxel_size_) {
@@ -224,20 +224,19 @@ void SimpleTsdfIntegrator::fillSphereAroundPoint(const Point& center,
           point += center;
 
           Block<TsdfVoxel>::Ptr block_ptr =
-                          layer_->allocateBlockPtrByCoordinates(point);
+              layer_->allocateBlockPtrByCoordinates(point);
           VoxelIndex voxel_index =
-                          block_ptr->computeVoxelIndexFromCoordinates(point);
+              block_ptr->computeVoxelIndexFromCoordinates(point);
           TsdfVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
           Point voxel_center =
-                          block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
+              block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
 
           Point voxel_center_vec = voxel_center - point;
 
           // how far is voxel from center of filled sphere
           FloatingPoint new_distance = sqrt(voxel_center_vec.squaredNorm());
 
-          if ((voxel.distance == 0) ||
-              (new_distance < voxel.distance)) {
+          if ((voxel.distance == 0) || (new_distance < voxel.distance)) {
             voxel.distance = new_distance;
             voxel.weight = weight;
             block_ptr->updated() = true;
@@ -252,8 +251,8 @@ void SimpleTsdfIntegrator::fillSphereAroundPoint(const Point& center,
 // TODO(mereweth@jpl.nasa.gov) - make a version of this that only allocates or
 // increases the free radius
 void SimpleTsdfIntegrator::clearSphereAroundPoint(const Point& center,
-                                                FloatingPoint radius,
-                                                FloatingPoint weight) const {
+                                                  FloatingPoint radius,
+                                                  FloatingPoint weight) const {
   // search a cube with side length 2*radius
   for (FloatingPoint x = -radius; x <= radius; x += voxel_size_) {
     for (FloatingPoint y = -radius; y <= radius; y += voxel_size_) {
@@ -267,12 +266,12 @@ void SimpleTsdfIntegrator::clearSphereAroundPoint(const Point& center,
           point += center;
 
           Block<TsdfVoxel>::Ptr block_ptr =
-                          layer_->allocateBlockPtrByCoordinates(point);
+              layer_->allocateBlockPtrByCoordinates(point);
           VoxelIndex voxel_index =
-                          block_ptr->computeVoxelIndexFromCoordinates(point);
+              block_ptr->computeVoxelIndexFromCoordinates(point);
           TsdfVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
           Point voxel_center =
-                          block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
+              block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
 
           Point voxel_center_vec = voxel_center - point;
           /* TODO(mereweth@jpl.nasa.gov) - depending on the minimum distance for
@@ -281,8 +280,8 @@ void SimpleTsdfIntegrator::clearSphereAroundPoint(const Point& center,
            */
 
           // how far is voxel from edge of free sphere
-          FloatingPoint new_distance = sqrt(radius_squared_norm) -
-                                       sqrt(voxel_center_vec.squaredNorm());
+          FloatingPoint new_distance =
+              sqrt(radius_squared_norm) - sqrt(voxel_center_vec.squaredNorm());
 
           if (new_distance > voxel.distance) {
             voxel.distance = new_distance;

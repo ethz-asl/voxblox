@@ -17,9 +17,10 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
 
   if (argc != 7) {
-    throw std::runtime_error(std::string("Args: filename to load, filename to save to")
-                             + ", min weight, min fixed distance"
-                             + ", max esdf distance, default esdf distance");
+    throw std::runtime_error(
+        std::string("Args: filename to load, filename to save to") +
+        ", min weight, min fixed distance" +
+        ", max esdf distance, default esdf distance");
   }
 
   const std::string file = argv[1];
@@ -31,15 +32,18 @@ int main(int argc, char** argv) {
   Layer<TsdfVoxel>::Ptr layer_from_file;
   io::LoadLayer<TsdfVoxel>(file, &layer_from_file);
 
-  // TODO(mereweth@jpl.nasa.gov) - can we get truncation distance from ntsdf proto?
+  // TODO(mereweth@jpl.nasa.gov) - can we get truncation distance from ntsdf
+  // proto?
   if (min_distance_m > layer_from_file->block_size()) {
     // Make sure that this is the same as the truncation distance OR SMALLER!
     min_distance_m = layer_from_file->block_size();
   }
 
-  LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize() << "\n";
+  LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize()
+               << "\n";
   LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size() << "\n";
-  LOG(WARNING) << "Layer voxels per side: " << layer_from_file->voxels_per_side() << "\n";
+  LOG(WARNING) << "Layer voxels per side: "
+               << layer_from_file->voxels_per_side() << "\n";
 
   // ESDF maps.
   EsdfMap::Config esdf_config;
@@ -55,8 +59,7 @@ int main(int argc, char** argv) {
   esdf_integrator_config.default_distance_m = default_distance_m;
 
   EsdfMap esdf_map(esdf_config);
-  EsdfIntegrator esdf_integrator(esdf_integrator_config,
-                                 layer_from_file.get(),
+  EsdfIntegrator esdf_integrator(esdf_integrator_config, layer_from_file.get(),
                                  esdf_map.getEsdfLayerPtr());
 
   esdf_integrator.updateFromTsdfLayerBatchFullEuclidean();

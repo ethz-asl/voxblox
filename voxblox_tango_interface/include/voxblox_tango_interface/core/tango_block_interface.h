@@ -21,8 +21,7 @@ class TangoBlockInterface : public Block<TsdfVoxel> {
 
   TangoBlockInterface(const tsdf2::VolumeProto& proto,
                       unsigned int max_ntsdf_voxel_weight,
-                      FloatingPoint meters_to_ntsdf,
-                      bool audit = false);
+                      FloatingPoint meters_to_ntsdf, bool audit = false);
 
  private:
   void deserializeProto(const tsdf2::VolumeProto& proto);
