@@ -56,9 +56,9 @@ void SimulationWorld::getPointcloudFromViewpoint(
   // Calculate transformation between nominal camera view direction and our
   // view direction. Nominal view is positive x direction.
   Point nominal_view_direction(1.0, 0.0, 0.0);
-  // TODO(helenol): fix type for floats.
-  Eigen::Quaterniond ray_rotation = Eigen::Quaterniond::FromTwoVectors(
-      nominal_view_direction, view_direction);
+  Eigen::Quaternion<FloatingPoint> ray_rotation =
+      Eigen::Quaternion<FloatingPoint>::FromTwoVectors(nominal_view_direction,
+                                                       view_direction);
 
   // Now actually iterate over all pixels.
   for (int u = -camera_res.x() / 2; u < camera_res.x() / 2; ++u) {

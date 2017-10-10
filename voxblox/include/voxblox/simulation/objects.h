@@ -15,6 +15,8 @@ namespace voxblox {
 // Should this be full virtual?
 class Object {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   // A wall is an infinite plane.
   enum Type { kSphere = 0, kCube, kPlane, kCylinder };
 
@@ -47,6 +49,8 @@ class Object {
 
 class Sphere : public Object {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Sphere(const Point& center, FloatingPoint radius)
       : Object(center, Type::kSphere), radius_(radius) {}
   Sphere(const Point& center, FloatingPoint radius, const Color& color)
@@ -98,6 +102,8 @@ class Sphere : public Object {
 
 class Cube : public Object {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Cube(const Point& center, const Point& size)
       : Object(center, Type::kCube), size_(size) {}
   Cube(const Point& center, const Point& size, const Color& color)
@@ -195,6 +201,8 @@ class Cube : public Object {
 // Requires normal being passed in to ALREADY BE NORMALIZED!!!!
 class Plane : public Object {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Plane(const Point& center, const Point& normal)
       : Object(center, Type::kPlane), normal_(normal) {}
   Plane(const Point& center, const Point& normal, const Color& color)
@@ -244,6 +252,8 @@ class Plane : public Object {
 
 class Cylinder : public Object {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Cylinder(const Point& center, FloatingPoint radius, FloatingPoint height)
       : Object(center, Type::kCylinder), radius_(radius), height_(height) {}
   Cylinder(const Point& center, FloatingPoint radius, FloatingPoint height,
@@ -268,14 +278,14 @@ class Cylinder : public Object {
       distance = std::sqrt(
           std::max((point.head<2>() - center_.head<2>()).squaredNorm() -
                        radius_ * radius_,
-                   0.0) +
+                   static_cast<FloatingPoint>(0.0)) +
           (point.z() - max_z_limit) * (point.z() - max_z_limit));
     } else {
       // Case 3: below cylinder.
       distance = std::sqrt(
           std::max((point.head<2>() - center_.head<2>()).squaredNorm() -
                        radius_ * radius_,
-                   0.0) +
+                   static_cast<FloatingPoint>(0.0)) +
           (point.z() - min_z_limit) * (point.z() - min_z_limit));
     }
     return distance;

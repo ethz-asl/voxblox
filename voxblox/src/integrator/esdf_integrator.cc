@@ -84,6 +84,9 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_layer_->allocateBlockPtrByIndex(kv.first);
 
     for (const VoxelIndex& voxel_index : kv.second) {
+      if (!block_ptr->isValidVoxelIndex(voxel_index)) {
+        continue;
+      }
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
       if (!esdf_voxel.observed) {
         esdf_voxel.distance = -config_.default_distance_m;
@@ -270,9 +273,11 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         // Gets put into lower frontier (open_).
         if (!esdf_voxel.observed ||
             (tsdf_voxel.distance >= 0.0 &&
-             esdf_voxel.distance > tsdf_voxel.distance) ||
+             esdf_voxel.distance >
+                 (tsdf_voxel.distance + config_.min_diff_m)) ||
             (tsdf_voxel.distance < 0.0 &&
-             esdf_voxel.distance < tsdf_voxel.distance)) {
+             esdf_voxel.distance <
+                 (tsdf_voxel.distance - config_.min_diff_m))) {
           esdf_voxel.distance = tsdf_voxel.distance;
           esdf_voxel.observed = true;
           esdf_voxel.fixed = true;
@@ -282,7 +287,12 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           open_.push(std::make_pair(block_index, voxel_index),
                      esdf_voxel.distance);
           num_lower++;
-        } else {
+        } else if ((tsdf_voxel.distance >= 0.0 &&
+                    esdf_voxel.distance <
+                        (tsdf_voxel.distance - config_.min_diff_m)) ||
+                   (tsdf_voxel.distance < 0.0 &&
+                    esdf_voxel.distance >
+                        (tsdf_voxel.distance + config_.min_diff_m))) {
           // In case the fixed voxel has a HIGHER distance than the esdf
           // voxel. Need to raise it, and burn its children.
           esdf_voxel.distance = tsdf_voxel.distance;
@@ -437,9 +447,9 @@ void EsdfIntegrator::updateFromTsdfBlocksAsOccupancy(
 
 void EsdfIntegrator::pushNeighborsToOpen(const BlockIndex& block_index,
                                          const VoxelIndex& voxel_index) {
-  std::vector<VoxelKey> neighbors;
-  std::vector<float> distances;
-  std::vector<Eigen::Vector3i> directions;
+  AlignedVector<VoxelKey> neighbors;
+  AlignedVector<float> distances;
+  AlignedVector<Eigen::Vector3i> directions;
   getNeighborsAndDistances(block_index, voxel_index, &neighbors, &distances,
                            &directions);
 
@@ -483,9 +493,9 @@ void EsdfIntegrator::processRaiseSet() {
         esdf_layer_->getBlockPtrByIndex(kv.first);
 
     // See if you can update the neighbors.
-    std::vector<VoxelKey> neighbors;
-    std::vector<float> distances;
-    std::vector<Eigen::Vector3i> directions;
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
     getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                              &directions);
 
@@ -547,6 +557,7 @@ void EsdfIntegrator::processOpenSet() {
     if (!esdf_block) {
       continue;
     }
+
     EsdfVoxel& esdf_voxel = esdf_block->getVoxelByVoxelIndex(kv.second);
 
     // Again, no point updating unobserved voxels.
@@ -562,9 +573,9 @@ void EsdfIntegrator::processOpenSet() {
       continue;
     }
     // See if you can update the neighbors.
-    std::vector<VoxelKey> neighbors;
-    std::vector<float> distances;
-    std::vector<Eigen::Vector3i> directions;
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
     getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                              &directions);
 
@@ -606,7 +617,7 @@ void EsdfIntegrator::processOpenSet() {
       // I think this can easily be combined with that below...
       if (esdf_voxel.distance + distance_to_neighbor >= 0.0 &&
           neighbor_voxel.distance >= 0.0 && esdf_voxel.distance >= 0.0 &&
-          esdf_voxel.distance + distance_to_neighbor + 1e-4 <
+          esdf_voxel.distance + distance_to_neighbor + config_.min_diff_m <
               neighbor_voxel.distance) {
         neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
         // Also update parent.
@@ -623,7 +634,7 @@ void EsdfIntegrator::processOpenSet() {
       // Everything inside the surface.
       if (esdf_voxel.distance - distance_to_neighbor < 0.0 &&
           neighbor_voxel.distance <= 0.0 && esdf_voxel.distance <= 0.0 &&
-          esdf_voxel.distance - distance_to_neighbor - 1e-4 >
+          esdf_voxel.distance - distance_to_neighbor - config_.min_diff_m >
               neighbor_voxel.distance) {
         neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
         // Also update parent.
@@ -708,9 +719,9 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
         esdf_voxel.distance - esdf_voxel.parent.norm() * esdf_voxel_size_;
 
     // See if you can update the neighbors.
-    std::vector<VoxelKey> neighbors;
-    std::vector<float> distances;
-    std::vector<Eigen::Vector3i> directions;
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
     getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                              &directions);
 
@@ -789,8 +800,8 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
 // negative of the given direction.
 void EsdfIntegrator::getNeighborsAndDistances(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
-    std::vector<VoxelKey>* neighbors, std::vector<float>* distances,
-    std::vector<Eigen::Vector3i>* directions) const {
+    AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
+    AlignedVector<Eigen::Vector3i>* directions) const {
   CHECK_NOTNULL(neighbors);
   CHECK_NOTNULL(distances);
   CHECK_NOTNULL(directions);

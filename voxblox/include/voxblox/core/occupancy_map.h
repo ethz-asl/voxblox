@@ -13,9 +13,13 @@ namespace voxblox {
 
 class OccupancyMap {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef std::shared_ptr<OccupancyMap> Ptr;
 
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     FloatingPoint occupancy_voxel_size = 0.2;
     size_t occupancy_voxels_per_side = 16u;
   };
@@ -27,12 +31,23 @@ class OccupancyMap {
         config.occupancy_voxel_size * config.occupancy_voxels_per_side;
   }
 
+  // Creates a new OccupancyMap based on a COPY of this layer.
+  explicit OccupancyMap(const Layer<OccupancyVoxel>& layer)
+      : OccupancyMap(aligned_shared<Layer<OccupancyVoxel>>(layer)) {}
+
+  // Creates a new OccupancyMap that contains this layer.
+  explicit OccupancyMap(Layer<OccupancyVoxel>::Ptr layer)
+      : occupancy_layer_(layer) {
+    CHECK(layer);
+    block_size_ = layer->block_size();
+  }
+
   virtual ~OccupancyMap() {}
 
   Layer<OccupancyVoxel>* getOccupancyLayerPtr() {
     return occupancy_layer_.get();
   }
-  const Layer<OccupancyVoxel>& getOccupancyLayerPtr() const {
+  const Layer<OccupancyVoxel>& getOccupancyLayer() const {
     return *occupancy_layer_;
   }
 

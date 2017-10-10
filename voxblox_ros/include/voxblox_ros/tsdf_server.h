@@ -9,14 +9,16 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
-#include <string>
 #include <visualization_msgs/MarkerArray.h>
+#include <memory>
+#include <string>
 
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
+#include <voxblox_msgs/Mesh.h>
 
 #include <voxblox_msgs/FilePath.h>
 #include "voxblox_ros/mesh_vis.h"
@@ -27,17 +29,23 @@ namespace voxblox {
 
 class TsdfServer {
  public:
-  // Merging method for new pointclouds.
-  enum Method { kSimple = 0, kMerged, kMergedDiscard };
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   virtual ~TsdfServer() {}
 
-  virtual void insertPointcloud(
+  void insertPointcloud(const sensor_msgs::PointCloud2::Ptr& pointcloud);
+
+  void insertFreespacePointcloud(
       const sensor_msgs::PointCloud2::Ptr& pointcloud);
 
+  virtual void processPointCloudMessageAndInsert(
+      const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
+      const bool is_freespace_pointcloud);
+
   void integratePointcloud(const Transformation& T_G_C,
-                           const Pointcloud& ptcloud_C, const Colors& colors);
+                           const Pointcloud& ptcloud_C, const Colors& colors,
+                           const bool is_freespace_pointcloud = false);
   virtual void newPoseCallback(const Transformation& new_pose) {}
 
   void publishAllUpdatedTsdfVoxels();
@@ -72,9 +80,6 @@ class TsdfServer {
 
   bool verbose_;
 
-  // Merging method for new pointclouds, chosen from enum above.
-  Method method_;
-
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
@@ -82,18 +87,25 @@ class TsdfServer {
   // Pointcloud visualization settings.
   double slice_level_;
 
+  // If the system should subscribe to a pointcloud giving points in freespace
+  bool use_freespace_pointcloud_;
+
   // Mesh output settings. Mesh is only written to file if mesh_filename_ is
   // not empty.
   std::string mesh_filename_;
   // How to color the mesh.
   ColorMode color_mode_;
 
-  // Keep track of these for throttling.
+  // Will throttle to this message rate.
   ros::Duration min_time_between_msgs_;
-  ros::Time last_msg_time_;
+
+  // What output information to publish
+  bool publish_tsdf_info_;
+  bool publish_slices_;
 
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
+  ros::Subscriber freespace_pointcloud_sub_;
 
   // Publish markers for visualization.
   ros::Publisher mesh_pub_;
@@ -112,11 +124,11 @@ class TsdfServer {
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
-  std::unique_ptr<TsdfIntegrator> tsdf_integrator_;
+  std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
 
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;
-  std::unique_ptr<MeshIntegrator> mesh_integrator_;
+  std::unique_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
 
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.

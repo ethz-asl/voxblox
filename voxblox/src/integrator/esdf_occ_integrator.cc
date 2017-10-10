@@ -125,9 +125,9 @@ void EsdfOccIntegrator::processOpenSet() {
       continue;
     }
     // See if you can update the neighbors.
-    std::vector<VoxelKey> neighbors;
-    std::vector<float> distances;
-    std::vector<Eigen::Vector3i> directions;
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
     getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
                              &directions);
 
@@ -201,8 +201,8 @@ void EsdfOccIntegrator::processOpenSet() {
 // negative of the given direction.
 void EsdfOccIntegrator::getNeighborsAndDistances(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
-    std::vector<VoxelKey>* neighbors, std::vector<float>* distances,
-    std::vector<Eigen::Vector3i>* directions) const {
+    AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
+    AlignedVector<Eigen::Vector3i>* directions) const {
   CHECK_NOTNULL(neighbors);
   CHECK_NOTNULL(distances);
   CHECK_NOTNULL(directions);

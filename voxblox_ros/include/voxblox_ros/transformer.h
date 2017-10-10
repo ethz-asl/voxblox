@@ -1,7 +1,6 @@
 #ifndef VOXBLOX_ROS_TRANSFORMER_H_
 #define VOXBLOX_ROS_TRANSFORMER_H_
 
-#include <deque>
 #include <geometry_msgs/TransformStamped.h>
 #include <string>
 #include <tf/transform_listener.h>
@@ -14,6 +13,8 @@ namespace voxblox {
 // ROS parameter server, depending on settings loaded from ROS params.
 class Transformer {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Transformer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
   bool lookupTransform(const std::string& from_frame,
@@ -64,9 +65,9 @@ class Transformer {
   ros::Subscriber transform_sub_;
 
   // Transform queue, used only when use_tf_transforms is false.
-  std::deque<geometry_msgs::TransformStamped> transform_queue_;
+  AlignedDeque<geometry_msgs::TransformStamped> transform_queue_;
 };
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_ROS_TSDF_SERVER_H_
+#endif  // VOXBLOX_ROS_TRANSFORMER_H_

@@ -1,8 +1,12 @@
 #ifndef VOXBLOX_CORE_COMMON_H_
 #define VOXBLOX_CORE_COMMON_H_
 
+#include <deque>
+#include <list>
 #include <memory>
+#include <queue>
 #include <set>
+#include <stack>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -14,8 +18,27 @@
 
 namespace voxblox {
 
+// Aligned Eigen containers
+template <typename Type>
+using AlignedVector = std::vector<Type, Eigen::aligned_allocator<Type>>;
+template <typename Type>
+using AlignedDeque = std::deque<Type, Eigen::aligned_allocator<Type>>;
+template <typename Type>
+using AlignedQueue = std::queue<Type, AlignedDeque<Type>>;
+template <typename Type>
+using AlignedStack = std::stack<Type, AlignedDeque<Type>>;
+template <typename Type>
+using AlignedList = std::list<Type, Eigen::aligned_allocator<Type>>;
+
+template <typename Type, typename... Arguments>
+inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
+  typedef typename std::remove_const<Type>::type TypeNonConst;
+  return std::allocate_shared<Type>(Eigen::aligned_allocator<TypeNonConst>(),
+                                    std::forward<Arguments>(arguments)...);
+}
+
 // Types.
-typedef double FloatingPoint;
+typedef float FloatingPoint;
 typedef int IndexElement;
 
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Point;
@@ -27,7 +50,7 @@ typedef AnyIndex BlockIndex;
 
 typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 
-typedef std::vector<AnyIndex, Eigen::aligned_allocator<AnyIndex>> IndexVector;
+typedef AlignedVector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 
@@ -35,16 +58,15 @@ struct Color;
 typedef uint32_t Label;
 
 // Pointcloud types for external interface.
-typedef std::vector<Point, Eigen::aligned_allocator<Point>> Pointcloud;
-typedef std::vector<Color> Colors;
-typedef std::vector<Label> Labels;
+typedef AlignedVector<Point> Pointcloud;
+typedef AlignedVector<Color> Colors;
+typedef AlignedVector<Label> Labels;
 
 // For triangle meshing/vertex access.
 typedef size_t VertexIndex;
-typedef std::vector<VertexIndex> VertexIndexList;
+typedef AlignedVector<VertexIndex> VertexIndexList;
 typedef Eigen::Matrix<FloatingPoint, 3, 3> Triangle;
-typedef std::vector<Triangle, Eigen::aligned_allocator<Triangle>>
-    TriangleVector;
+typedef AlignedVector<Triangle> TriangleVector;
 
 // Transformation type for defining sensor orientation.
 typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
@@ -165,20 +187,20 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
                  voxels_per_side_inv_));
 }
 
+inline bool isPowerOfTwo(int x) { return (x & (x - 1)) == 0; }
+
 inline VoxelIndex getLocalFromGlobalVoxelIndex(const AnyIndex& global_voxel_idx,
                                                int voxels_per_side) {
-  VoxelIndex local_voxel_idx(global_voxel_idx.x() % voxels_per_side,
-                             global_voxel_idx.y() % voxels_per_side,
-                             global_voxel_idx.z() % voxels_per_side);
+  // add a big number to the index to make it positive
+  constexpr int offset = 1 << (8 * sizeof(IndexElement) - 1);
 
-  // Make sure we're within bounds.
-  for (unsigned int i = 0u; i < 3u; ++i) {
-    if (local_voxel_idx(i) < 0) {
-      local_voxel_idx(i) += voxels_per_side;
-    }
-  }
+  DCHECK(isPowerOfTwo(voxels_per_side));
 
-  return local_voxel_idx;
+  // assume that voxels_per_side is a power of 2 and uses a bitwise and as a
+  // computationally cheap substitute for the modulus operator
+  return VoxelIndex((global_voxel_idx.x() + offset) & (voxels_per_side - 1),
+                    (global_voxel_idx.y() + offset) & (voxels_per_side - 1),
+                    (global_voxel_idx.z() + offset) & (voxels_per_side - 1));
 }
 
 // Math functions.
@@ -194,12 +216,6 @@ inline float probabilityFromLogOdds(float log_odds) {
   return 1.0 - (1.0 / (1.0 + exp(log_odds)));
 }
 
-template <typename Type, typename... Arguments>
-inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
-  typedef typename std::remove_const<Type>::type TypeNonConst;
-  return std::allocate_shared<Type>(Eigen::aligned_allocator<TypeNonConst>(),
-                                    std::forward<Arguments>(arguments)...);
-}
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_COMMON_H_
