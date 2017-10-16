@@ -35,8 +35,6 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
 
   integrator_config.voxel_carving_enabled = true;
 
-  // Used to be * 4 according to Marius's experience, now * 2.
-  // This should be made bigger again if behind-surface weighting is improved.
   TsdfMap::Config tsdf_config;
   nh_private.param("tsdf_voxel_size", tsdf_config.tsdf_voxel_size,
                    tsdf_config.tsdf_voxel_size);
@@ -109,6 +107,7 @@ inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
   // Make sure that this is the same as the truncation distance OR SMALLER!
   nh_private.param("tsdf_voxel_size", esdf_integrator_config.min_distance_m,
                    esdf_integrator_config.min_distance_m);
+
   nh_private.param("esdf_max_distance_m", esdf_integrator_config.max_distance_m,
                    esdf_integrator_config.max_distance_m);
   nh_private.param("esdf_default_distance_m",
@@ -123,5 +122,3 @@ inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
 }  // namespace voxblox
 
 #endif  // VOXBLOX_ROS_ROS_PARAMS_H_
-
-#include "voxblox_ros/conversions_inl.h"
