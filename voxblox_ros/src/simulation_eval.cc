@@ -1,5 +1,7 @@
 #include <ros/ros.h>
 
+#include <voxblox/core/esdf_map.h>
+#include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/esdf_occ_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
@@ -10,6 +12,7 @@
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
+#include "voxblox_ros/ros_params.h"
 
 namespace voxblox {
 
@@ -17,6 +20,12 @@ class SimulationServer {
  public:
   SimulationServer(const ros::NodeHandle& nh,
                    const ros::NodeHandle& nh_private);
+
+  SimulationServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+                   const EsdfMap::Config& esdf_config,
+                   const EsdfIntegrator::Config& esdf_integrator_config,
+                   const TsdfMap::Config& tsdf_config,
+                   const TsdfIntegratorBase::Config& tsdf_integrator_config);
 
   // Runs all of the below functions in the correct order:
   void run();
@@ -34,6 +43,8 @@ class SimulationServer {
   void visualize();
 
  private:
+  void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
+
   // Convenience function to generate valid viewpoints.
   bool generatePlausibleViewpoint(FloatingPoint min_distance, Point* ray_origin,
                                   Point* ray_direction) const;
@@ -64,6 +75,8 @@ class SimulationServer {
   ros::Publisher view_ptcloud_pub_;
 
   // Settings
+  FloatingPoint voxel_size_;
+  int voxels_per_side_;
   std::string world_frame_;
   bool generate_occupancy_;
   bool visualize_;
@@ -91,85 +104,62 @@ class SimulationServer {
   std::unique_ptr<EsdfOccIntegrator> esdf_occ_integrator_;
 };
 
-SimulationServer::SimulationServer(const ros::NodeHandle& nh,
-                                   const ros::NodeHandle& nh_private)
+void SimulationServer::getServerConfigFromRosParam(
+    const ros::NodeHandle& nh_private) {
+  // Settings for simulation.
+  nh_private_.param("tsdf_voxel_size", voxel_size_, voxel_size_);
+  nh_private_.param("voxels_per_side", voxels_per_side_, voxels_per_side_);
+  nh_private.param("incremental", incremental_, incremental_);
+  nh_private.param("generate_mesh", generate_mesh_, generate_mesh_);
+  nh_private.param("visualize", visualize_, visualize_);
+  nh_private.param("generate_occupancy", generate_occupancy_,
+                   generate_occupancy_);
+  nh_private_.param("truncation_distance", truncation_distance_,
+                    truncation_distance_);
+}
+
+SimulationServer::SimulationServer(
+    const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+    const EsdfMap::Config& esdf_config,
+    const EsdfIntegrator::Config& esdf_integrator_config,
+    const TsdfMap::Config& tsdf_config,
+    const TsdfIntegratorBase::Config& tsdf_integrator_config)
     : nh_(nh),
       nh_private_(nh_private),
+      voxel_size_(tsdf_config.tsdf_voxel_size),
+      voxels_per_side_(tsdf_config.tsdf_voxels_per_side),
       world_frame_("world"),
       generate_occupancy_(false),
       visualize_(true),
       generate_mesh_(true),
-      incremental_(true) {
-  // Settings for simulation.
-  nh_private_.param("incremental", incremental_, incremental_);
-  nh_private_.param("generate_mesh", generate_mesh_, generate_mesh_);
-  nh_private_.param("visualize", visualize_, visualize_);
-  nh_private_.param("generate_occupancy", generate_occupancy_,
-                    generate_occupancy_);
+      incremental_(true),
+      truncation_distance_(tsdf_integrator_config.default_truncation_distance),
+      esdf_max_distance_(esdf_integrator_config.max_distance_m) {
+  CHECK_EQ(voxel_size_, tsdf_config.tsdf_voxel_size);
+  CHECK_EQ(voxel_size_, esdf_config.esdf_voxel_size);
+  CHECK_EQ(voxels_per_side_, tsdf_config.tsdf_voxels_per_side);
+  CHECK_EQ(voxels_per_side_, esdf_config.esdf_voxels_per_side);
 
-  FloatingPoint voxel_size = 0.1;
-  int voxels_per_side = 16;
+  getServerConfigFromRosParam(nh_private);
 
-  nh_private_.param("voxel_size", voxel_size, voxel_size);
+  tsdf_gt_.reset(new Layer<TsdfVoxel>(voxel_size_, voxels_per_side_));
+  esdf_gt_.reset(new Layer<EsdfVoxel>(voxel_size_, voxels_per_side_));
 
-  tsdf_gt_.reset(new Layer<TsdfVoxel>(voxel_size, voxels_per_side));
-  esdf_gt_.reset(new Layer<EsdfVoxel>(voxel_size, voxels_per_side));
-
-  tsdf_test_.reset(new Layer<TsdfVoxel>(voxel_size, voxels_per_side));
-  esdf_test_.reset(new Layer<EsdfVoxel>(voxel_size, voxels_per_side));
-
-  if (generate_occupancy_) {
-    occ_test_.reset(new Layer<OccupancyVoxel>(voxel_size, voxels_per_side));
-  }
-
-  // Make some integrators.
-  TsdfIntegratorBase::Config integrator_config;
-  integrator_config.voxel_carving_enabled = true;
-  // Used to be * 4 according to Marius's experience, now * 2.
-  // This should be made bigger again if behind-surface weighting is improved.
-  integrator_config.default_truncation_distance = voxel_size * 4;
-  integrator_config.allow_clear = false;
-  integrator_config.use_const_weight = false;
-  integrator_config.use_weight_dropoff = true;
-  integrator_config.max_ray_length_m = 5.0;
-  truncation_distance_ = integrator_config.default_truncation_distance;
-
-  nh_private_.param("voxel_carving_enabled",
-                    integrator_config.voxel_carving_enabled,
-                    integrator_config.voxel_carving_enabled);
-  nh_private_.param("truncation_distance", truncation_distance_,
-                    truncation_distance_);
-  nh_private_.param("max_ray_length_m", integrator_config.max_ray_length_m,
-                    integrator_config.max_ray_length_m);
-  nh_private_.param("min_ray_length_m", integrator_config.min_ray_length_m,
-                    integrator_config.min_ray_length_m);
-  nh_private_.param("max_weight", integrator_config.max_weight,
-                    integrator_config.max_weight);
-  nh_private_.param("use_const_weight", integrator_config.use_const_weight,
-                    integrator_config.use_const_weight);
-  nh_private_.param("allow_clear", integrator_config.allow_clear,
-                    integrator_config.allow_clear);
-  integrator_config.default_truncation_distance =
-      static_cast<float>(truncation_distance_);
+  tsdf_test_.reset(new Layer<TsdfVoxel>(voxel_size_, voxels_per_side_));
+  esdf_test_.reset(new Layer<EsdfVoxel>(voxel_size_, voxels_per_side_));
 
   tsdf_integrator_.reset(
-      new MergedTsdfIntegrator(integrator_config, tsdf_test_.get()));
-
-  EsdfIntegrator::Config esdf_integrator_config;
-  // Make sure that this is the same as the truncation distance OR SMALLER!
-  esdf_integrator_config.min_distance_m = truncation_distance_ / 2.0;
-  nh_private_.param("esdf_max_distance_m",
-                    esdf_integrator_config.max_distance_m,
-                    esdf_integrator_config.max_distance_m);
-  esdf_max_distance_ = esdf_integrator_config.max_distance_m;
-  esdf_integrator_config.default_distance_m = esdf_max_distance_;
+      new MergedTsdfIntegrator(tsdf_integrator_config, tsdf_test_.get()));
 
   esdf_integrator_.reset(new EsdfIntegrator(
       esdf_integrator_config, tsdf_test_.get(), esdf_test_.get()));
 
   if (generate_occupancy_) {
+    occ_test_.reset(new Layer<OccupancyVoxel>(voxel_size_, voxels_per_side_));
+
     OccupancyIntegrator::Config occ_integrator_config;
-    occ_integrator_config.max_ray_length_m = integrator_config.max_ray_length_m;
+    occ_integrator_config.max_ray_length_m =
+        tsdf_integrator_config.max_ray_length_m;
     occ_integrator_.reset(
         new OccupancyIntegrator(occ_integrator_config, occ_test_.get()));
 
@@ -203,6 +193,13 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
   // Set random seed to a fixed value.
   srand(0);
 }
+
+SimulationServer::SimulationServer(const ros::NodeHandle& nh,
+                                   const ros::NodeHandle& nh_private)
+    : SimulationServer(nh, nh_private, getEsdfMapConfigFromRosParam(nh_private),
+                       getEsdfIntegratorConfigFromRosParam(nh_private),
+                       getTsdfMapConfigFromRosParam(nh_private),
+                       getTsdfIntegratorConfigFromRosParam(nh_private)) {}
 
 void SimulationServer::prepareWorld() {
   world_.addObject(std::unique_ptr<Object>(
