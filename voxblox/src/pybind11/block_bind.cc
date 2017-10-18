@@ -42,7 +42,7 @@ void block_bind(py::module& m) {
       .def(py::init<size_t, FloatingPoint, const Point&>())
 
       .def_property_readonly("block_size", &EsdfBlock::block_size)
-      .def_property_readonly("num_voxels", &TsdfBlock::num_voxels)
+      .def_property_readonly("num_voxels", &EsdfBlock::num_voxels)
       .def_property_readonly("voxel_size", &EsdfBlock::voxel_size)
       .def_property_readonly("voxels_per_side", &EsdfBlock::voxels_per_side)
       .def_property_readonly("origin", &EsdfBlock::origin)
