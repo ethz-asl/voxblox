@@ -152,7 +152,7 @@ class Block {
   FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
-  const bool updated() const { return updated_; }
+  bool updated() const { return updated_; }
 
   std::atomic<bool>& updated() { return updated_; }
   bool& has_data() { return has_data_; }
