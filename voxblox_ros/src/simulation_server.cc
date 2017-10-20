@@ -42,6 +42,8 @@ void SimulationServer::getServerConfigFromRosParam(
   nh_private_.param("min_dist", min_dist_, min_dist_);
 
   nh_private_.param("num_viewpoints", num_viewpoints_, num_viewpoints_);
+
+  nh_private_.param("world_frame", world_frame_, world_frame_);
 }
 
 SimulationServer::SimulationServer(
@@ -402,6 +404,7 @@ void SimulationServer::visualize() {
     marker_array.markers[0].header.frame_id = world_frame_;
     tsdf_test_mesh_pub_.publish(marker_array);
   }
+  ros::spinOnce();
 }
 
 void SimulationServer::run() {
