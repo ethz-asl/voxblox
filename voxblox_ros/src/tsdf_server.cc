@@ -65,6 +65,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       nh_private_.advertise<voxblox_msgs::Layer>("tsdf_map_out", 1, false);
   tsdf_map_sub_ = nh_private_.subscribe("tsdf_map_in", 1,
                                         &TsdfServer::tsdfMapCallback, this);
+  nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
 
   // Determine map parameters.
   TsdfMap::Config config;
@@ -179,7 +180,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   double update_mesh_every_n_sec = 0.0;
   nh_private_.param("update_mesh_every_n_sec", update_mesh_every_n_sec,
                     update_mesh_every_n_sec);
-  nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
 
   if (update_mesh_every_n_sec > 0.0) {
     update_mesh_timer_ =
