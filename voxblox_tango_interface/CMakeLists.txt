@@ -74,21 +74,14 @@ target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES
 # PYTHON BINDINGS #
 ###################
 
-# TODO(mereweth@jpl.nasa.gov) - how to deal with voxbloxpy.TsdfLayer vs
-# voxblox_tango_interfacepy.TsdfLayer? One option is to only use
-# voxblox_tango_interfacepy for conversion and serialization
 if(HAVE_PYBIND11)
   catkin_python_setup()
 
-  # TODO(mereweth@jpl.nasa.gov) - how to tell pybind11 about an existing library?
-  # or should we just use the pybind library for everything?
   add_subdirectory(../tools/pybind11 pybind11)
   message("Building Python bindings for voxblox")
   pybind11_add_module(voxblox_tango_interfacepy
     ${${PROJECT_NAME}_SRCS}
     src/pybind11/bind.cc
-    # TODO(mereweth@jpl.nasa.gov) - how to reuse bindings from voxblox for
-    # derived classes?
     ../voxblox/src/pybind11/layer_bind.cc
     src/pybind11/tango_layer_interface_bind.cc
     src/pybind11/tango_layer_io_bind.cc)
@@ -97,10 +90,6 @@ if(HAVE_PYBIND11)
                                                          ${PROTOBUF_LIBRARIES}
                                                          ${catkin_LIBRARIES})
 
-  # TODO(mereweth@jpl.nasa.gov) - is there a better way to make this importable?
-  #cs_add_targets_to_package(voxbloxpy)
-
-  # TODO(mereweth@jpl.nasa.gov) - this is a bit hacky but it works
   set_target_properties(voxblox_tango_interfacepy
     PROPERTIES LIBRARY_OUTPUT_DIRECTORY
     ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}/../

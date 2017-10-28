@@ -4,10 +4,6 @@
 #include "./MapHeader.pb.h"
 #include "./Volume.pb.h"
 
-/* TODO(mereweth@jpl.nasa.gov) - this is not a template class, so no need to
- * have these definitions here
- */
-
 namespace voxblox {
 
 inline TangoLayerInterface::TangoLayerInterface(
@@ -26,12 +22,10 @@ inline TangoLayerInterface::TangoLayerInterface(
   CHECK_GT(proto.voxels_per_volume_side(), 0u);
 }
 
-/* TODO (mereweth@jpl.nasa.gov) - is there a way to reuse some of
- * Layer::addBlockFromProto easily?
- */
 inline bool TangoLayerInterface::addBlockFromProto(
     const tsdf2::VolumeProto& block_proto,
-    TangoLayerInterface::BlockMergingStrategy strategy, bool audit) {
+    const TangoLayerInterface::BlockMergingStrategy strategy,
+    const bool audit) {
   CHECK_EQ(getType().compare(voxel_types::kTsdf), 0)
       << "The voxel type of this layer is not TsdfVoxel!";
 

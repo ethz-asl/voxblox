@@ -2,10 +2,6 @@
 
 namespace voxblox {
 
-/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
- * Python bindings. std::exceptions are bound to Python exceptions by pybind11,
- * allowing them to be handled in Python code idiomatically.
- */
 unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
     unsigned int free_plane_index, double free_plane_val,
     EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
@@ -15,8 +11,8 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
   tsdf_layer_->getAllAllocatedBlocks(&blocks);
 
   // Cache layer settings.
-  size_t vps = tsdf_layer_->voxels_per_side();
-  size_t num_voxels_per_block = vps * vps * vps;
+  const size_t vps = tsdf_layer_->voxels_per_side();
+  const size_t num_voxels_per_block = vps * vps * vps;
 
   // Temp variables.
   bool did_all_fit = true;
@@ -39,7 +35,7 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
       continue;
     }
 
-    Point origin = block.origin();
+    const Point origin = block.origin();
     if (std::abs(origin(free_plane_index) - free_plane_val) >
         block.block_size()) {
       continue;
@@ -47,16 +43,12 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
 
     for (size_t linear_index = 0; linear_index < num_voxels_per_block;
          ++linear_index) {
-      Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
+      const Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
       const TsdfVoxel& voxel = block.getVoxelByLinearIndex(linear_index);
       if (std::abs(coord(free_plane_index) - free_plane_val) <=
           block.voxel_size()) {
-        double distance = voxel.distance;
-        double weight = voxel.weight;
-
-        /*if (weight == 0) {
-          continue;
-        }*/
+        const double distance = voxel.distance;
+        const double weight = voxel.weight;
 
         if (count < positions.cols()) {
           positions.col(count) =

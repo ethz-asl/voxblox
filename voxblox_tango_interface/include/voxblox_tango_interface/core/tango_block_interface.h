@@ -12,21 +12,27 @@ class TangoBlockInterface : public Block<TsdfVoxel> {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  TangoBlockInterface(size_t voxels_per_side, FloatingPoint voxel_size,
-                      const Point& origin, unsigned int max_ntsdf_voxel_weight,
-                      FloatingPoint meters_to_ntsdf)
+  TangoBlockInterface(const size_t voxels_per_side,
+                      const FloatingPoint voxel_size,
+                      const Point& origin,
+                      const unsigned int max_ntsdf_voxel_weight,
+                      const FloatingPoint meters_to_ntsdf)
       : Block<TsdfVoxel>(voxels_per_side, voxel_size, origin),
         max_ntsdf_voxel_weight_(max_ntsdf_voxel_weight),
         meters_to_ntsdf_(meters_to_ntsdf) {}
 
+  /* The audit flag allows converting a Tango NTSDF dump to TSDF without
+   * scaling the distances or weights. This is a debugging feature.
+   */
   TangoBlockInterface(const tsdf2::VolumeProto& proto,
-                      unsigned int max_ntsdf_voxel_weight,
-                      FloatingPoint meters_to_ntsdf, bool audit = false);
+                      const unsigned int max_ntsdf_voxel_weight,
+                      const FloatingPoint meters_to_ntsdf,
+                      const bool audit = false);
 
  private:
   void deserializeProto(const tsdf2::VolumeProto& proto);
   void deserializeFromIntegers(const AlignedVector<uint32_t>& data,
-                               bool audit = false);
+                               const bool audit = false);
 
   unsigned int max_ntsdf_voxel_weight_;
   FloatingPoint meters_to_ntsdf_;

@@ -19,26 +19,17 @@ int main(int argc, char** argv) {
   }
 
   const std::string file = argv[1];
-  FloatingPoint min_weight = std::stof(argv[3]);
-  FloatingPoint min_distance_m = std::stof(argv[4]);
-  FloatingPoint max_distance_m = std::stof(argv[5]);
-  FloatingPoint default_distance_m = std::stof(argv[6]);
+  const FloatingPoint min_weight = std::stof(argv[3]);
+  const FloatingPoint min_distance_m = std::stof(argv[4]);
+  const FloatingPoint max_distance_m = std::stof(argv[5]);
+  const FloatingPoint default_distance_m = std::stof(argv[6]);
 
   TangoLayerInterface::Ptr layer_from_file;
   io::TangoLoadLayer(file, &layer_from_file);
 
-  // TODO(mereweth@jpl.nasa.gov) - can we get truncation distance from ntsdf
-  // proto?
-  if (min_distance_m > layer_from_file->block_size()) {
-    // Make sure that this is the same as the truncation distance OR SMALLER!
-    min_distance_m = layer_from_file->block_size();
-  }
-
-  LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize()
-               << "\n";
-  LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size() << "\n";
-  LOG(WARNING) << "Layer voxels per side: "
-               << layer_from_file->voxels_per_side() << "\n";
+  LOG(INFO) << "Layer memory size: " << layer_from_file->getMemorySize();
+  LOG(INFO) << "Layer voxel size: " << layer_from_file->voxel_size();
+  LOG(INFO) << "Layer voxels per side: " << layer_from_file->voxels_per_side();
 
   // ESDF maps.
   EsdfMap::Config esdf_config;
@@ -59,9 +50,9 @@ int main(int argc, char** argv) {
 
   esdf_integrator.updateFromTsdfLayerBatchFullEuclidean();
 
-  bool esdfSuccess = io::SaveLayer(esdf_map.getEsdfLayer(), argv[2]);
+  const bool esdf_success = io::SaveLayer(esdf_map.getEsdfLayer(), argv[2]);
 
-  if (esdfSuccess == false) {
+  if (esdf_success == false) {
     throw std::runtime_error("Failed to save ESDF");
   }
 

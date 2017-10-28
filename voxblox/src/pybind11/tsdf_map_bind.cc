@@ -21,8 +21,7 @@ void tsdf_map_bind(py::module &m) {
 
   py::class_<TsdfMap, std::shared_ptr<TsdfMap> >(m, "TsdfMap")
       .def(py::init<const TsdfMap::Config &>())
-      .def(py::init<TsdfLayer::Ptr, bool>(), py::arg("layer"),
-           py::arg("no_except") = false)
+      .def(py::init<TsdfLayer::Ptr>())
       .def_property_readonly("block_size", &TsdfMap::block_size)
       .def_property_readonly("voxel_size", &TsdfMap::voxel_size)
 
@@ -34,5 +33,5 @@ void tsdf_map_bind(py::module &m) {
            "slice",
            py::arg("free_plane_index"), py::arg("free_plane_val"),
            py::arg("positions"), py::arg("distances"), py::arg("weights"),
-           py::arg("max_points") = 100000);
+           py::arg("max_points") = 100000u);
 }

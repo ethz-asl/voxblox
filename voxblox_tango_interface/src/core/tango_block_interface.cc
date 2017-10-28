@@ -5,7 +5,7 @@
 namespace voxblox {
 
 void TangoBlockInterface::deserializeFromIntegers(
-    const AlignedVector<uint32_t>& data, bool audit) {
+    const AlignedVector<uint32_t>& data, const bool audit) {
   constexpr size_t kNumDataPacketsPerVoxel = 2u;
   const size_t num_data_packets = data.size();
 

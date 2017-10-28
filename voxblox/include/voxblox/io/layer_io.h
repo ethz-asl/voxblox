@@ -52,7 +52,8 @@ bool LoadLayer(const std::string& file_path,
     return false;
   }
 
-  if ((layer_proto.voxel_size() <= 0) || (layer_proto.voxels_per_side() <= 0) ||
+  if ((layer_proto.voxel_size() <= 0.0f)    ||
+      (layer_proto.voxels_per_side() == 0u) ||
       (getVoxelType<VoxelType>().compare(layer_proto.type()))) {
     LOG(ERROR)
         << "Invalid parameter in layer protobuf message. Check the format.";
@@ -147,29 +148,6 @@ bool LoadBlocksFromFile(
     }
   }
   return true;
-}
-
-/*TODO(mereweth@jpl.nasa.gov) - why doesn't this compile when template is
- * specialized?
- */
-// NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
-template <typename VoxelType>
-Layer<VoxelType> LoadLayer(const std::string& file_path) {
-  if (file_path.empty()) {
-    throw std::runtime_error(std::string("Empty file path: ") + file_path);
-  }
-
-  typename Layer<VoxelType>::Ptr layer_ptr;
-
-  if (!LoadLayer<VoxelType>(file_path, &layer_ptr)) {
-    // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
-    throw std::runtime_error(std::string("Could not load layer from: ") +
-                             file_path);
-  }
-
-  CHECK(layer_ptr);
-
-  return *layer_ptr;
 }
 
 template <typename VoxelType>

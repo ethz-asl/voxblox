@@ -117,10 +117,6 @@ void EsdfMap::batchIsObserved(
   }
 }
 
-/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
- * Python bindings. std::exceptions are bound to Python exceptions by pybind11,
- * allowing them to be handled in Python code idiomatically.
- */
 unsigned int EsdfMap::coordPlaneSliceGetDistance(
     unsigned int free_plane_index, double free_plane_val,
     EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,

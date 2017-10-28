@@ -21,11 +21,9 @@ int main(int argc, char** argv) {
   TangoLayerInterface::Ptr layer_from_file;
   io::TangoLoadLayer(file, &layer_from_file);
 
-  LOG(WARNING) << "Layer memory size: " << layer_from_file->getMemorySize()
-               << "\n";
-  LOG(WARNING) << "Layer voxel size: " << layer_from_file->voxel_size() << "\n";
-  LOG(WARNING) << "Layer voxels per side: "
-               << layer_from_file->voxels_per_side() << "\n";
+  LOG(INFO) << "Layer memory size: " << layer_from_file->getMemorySize();
+  LOG(INFO) << "Layer voxel size: " << layer_from_file->voxel_size();
+  LOG(INFO) << "Layer voxels per side: " << layer_from_file->voxels_per_side();
 
   // Mesh accessories.
   MeshIntegrator<TsdfVoxel>::Config mesh_config;
@@ -39,11 +37,10 @@ int main(int argc, char** argv) {
   constexpr bool only_mesh_updated_blocks = false;
   constexpr bool clear_updated_flag = true;
   mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
-  std::cout << "Number of meshes: " << mesh_layer_->getNumberOfAllocatedMeshes()
-            << "\n";
-  bool meshSuccess = outputMeshLayerAsPly(argv[2], *mesh_layer_);
+  LOG(INFO) << "Number of meshes: " << mesh_layer_->getNumberOfAllocatedMeshes();
+  const bool mesh_success = outputMeshLayerAsPly(argv[2], *mesh_layer_);
 
-  if (meshSuccess == false) {
+  if (mesh_success == false) {
     throw std::runtime_error("Failed to save mesh");
   }
 

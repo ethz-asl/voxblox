@@ -66,7 +66,7 @@ set("${PROJECT_NAME}_SRCS"
 # LIBRARIES #
 #############
 # NOTE(mereweth@jpl.nasa.gov) - Be careful when compiling Proto cc files. It is
-# best to do so only once (make a shared library for each set of Proto files.
+# best to do so only once (make a shared library for each set of Proto files).
 # Otherwise, at some point, you will get errors from double-adding protobuf
 # formats, of the following form:
 # [libprotobuf ERROR google/protobuf/descriptor_database.cc:57]
@@ -90,8 +90,6 @@ target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES
 if(HAVE_PYBIND11)
   catkin_python_setup()
 
-  # TODO(mereweth@jpl.nasa.gov) - how to tell pybind11 about an existing library?
-  # or should we just use the pybind library for everything?
   add_subdirectory(../tools/pybind11 pybind11)
   message("Building Python bindings for voxblox")
   pybind11_add_module(voxbloxpy
@@ -110,10 +108,6 @@ if(HAVE_PYBIND11)
                                          ${PROTOBUF_LIBRARIES}
                                          ${catkin_LIBRARIES})
 
-  # TODO(mereweth@jpl.nasa.gov) - is there a better way to make this importable?
-  #cs_add_targets_to_package(voxbloxpy)
-
-  # TODO(mereweth@jpl.nasa.gov) - this is a bit hacky but it works
   set_target_properties(voxbloxpy
     PROPERTIES LIBRARY_OUTPUT_DIRECTORY
   ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}/../)

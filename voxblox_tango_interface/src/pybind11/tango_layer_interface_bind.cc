@@ -12,10 +12,6 @@ using voxblox::FloatingPoint;
 using voxblox::TangoLayerInterface;
 
 void tango_layer_interface_bind(py::module& m) {
-  /* TODO(mereweth@jpl.nasa.gov) - use shared_ptr or default unique_ptr for
-   * Python reference counting?
-   */
-
   // NOTE(mereweth@jpl.nasa.gov) - second template arg is to get the base class
   // methods
   py::class_<TangoLayerInterface, TsdfLayer,
@@ -27,6 +23,5 @@ void tango_layer_interface_bind(py::module& m) {
       .def_property_readonly("voxels_per_side",
                              &TangoLayerInterface::voxels_per_side)
 
-      // TODO(mereweth@jpl.nasa.gov) - can this still cause segfault?
       .def("saveToFile", &TangoLayerInterface::saveToFile);
 }

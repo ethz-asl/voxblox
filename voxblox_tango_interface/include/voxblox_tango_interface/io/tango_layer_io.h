@@ -25,7 +25,7 @@ namespace io {
 
 inline bool TangoLoadLayer(const std::string& file_path,
                            TangoLayerInterface::Ptr* layer_ptr,
-                           bool audit = false) {
+                           const bool audit = false) {
   CHECK_NOTNULL(layer_ptr);
 
   // Open and check the file
@@ -62,10 +62,10 @@ inline bool TangoLoadLayer(const std::string& file_path,
     return false;
   }
 
-  if ((layer_proto.voxel_size() <= 0) ||
-      (layer_proto.voxels_per_volume_side() <= 0) ||
-      (layer_proto.max_ntsdf_voxel_weight() <= 0) ||
-      (layer_proto.meters_to_ntsdf() <= 0)) {
+  if ((layer_proto.voxel_size() <= 0.0f) ||
+      (layer_proto.voxels_per_volume_side() <= 0.0f) ||
+      (layer_proto.max_ntsdf_voxel_weight() <= 0u) ||
+      (layer_proto.meters_to_ntsdf() <= 0.0f)) {
     LOG(ERROR)
         << "Invalid parameter in layer protobuf message. Check the format.";
     return false;
@@ -103,8 +103,8 @@ inline bool TangoLoadLayer(const std::string& file_path,
 
 inline bool TangoLoadBlocksFromFile(
     const std::string& file_path,
-    Layer<TsdfVoxel>::BlockMergingStrategy strategy,
-    TangoLayerInterface* layer_ptr, bool audit = false) {
+    const Layer<TsdfVoxel>::BlockMergingStrategy strategy,
+    TangoLayerInterface* layer_ptr, const bool audit = false) {
   CHECK_NOTNULL(layer_ptr);
 
   // Open and check the file
@@ -161,23 +161,6 @@ inline bool TangoLoadBlocksFromFile(
     }
   }
   return true;
-}
-
-// NOTE(mereweth@jpl.nasa.gov) - for convenience with Python bindings
-inline TangoLayerInterface TangoLoadLayer(const std::string& file_path,
-                                          bool audit = false) {
-  bool success = true;
-  TangoLayerInterface::Ptr layer_ptr;
-
-  if (!success || !TangoLoadLayer(file_path, &layer_ptr, audit)) {
-    // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
-    throw std::runtime_error(std::string("Could not load layer from: ") +
-                             file_path);
-  }
-
-  CHECK(layer_ptr);
-
-  return *layer_ptr;
 }
 
 }  // namespace io

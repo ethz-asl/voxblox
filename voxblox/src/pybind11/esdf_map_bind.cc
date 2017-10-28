@@ -21,8 +21,7 @@ void esdf_map_bind(py::module &m) {
 
   py::class_<EsdfMap, std::shared_ptr<EsdfMap> >(m, "EsdfMap")
       .def(py::init<const EsdfMap::Config &>())
-      .def(py::init<EsdfLayer::Ptr, bool>(), py::arg("layer"),
-           py::arg("no_except") = false)
+      .def(py::init<EsdfLayer::Ptr>())
       .def_property_readonly("block_size", &EsdfMap::block_size)
       .def_property_readonly("voxel_size", &EsdfMap::voxel_size)
 
@@ -38,5 +37,5 @@ void esdf_map_bind(py::module &m) {
            "slice",
            py::arg("free_plane_index"), py::arg("free_plane_val"),
            py::arg("positions"), py::arg("distances"),
-           py::arg("max_points") = 100000);
+           py::arg("max_points") = 100000u);
 }

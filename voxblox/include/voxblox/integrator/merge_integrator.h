@@ -80,8 +80,6 @@ class MergeIntegrator {
         block_B_ptr = layer_B->allocateBlockPtrByIndex(block_idx);
       }
 
-      // CHECK_NOTNULL(block_A_ptr);
-      // CHECK_NOTNULL(block_B_ptr);
       if ((block_A_ptr != nullptr) && (block_B_ptr != nullptr)) {
         MergeBlockAIntoBlockB(*block_A_ptr, block_B_ptr.get());
       }

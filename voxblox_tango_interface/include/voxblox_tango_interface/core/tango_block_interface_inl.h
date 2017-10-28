@@ -10,8 +10,8 @@
 namespace voxblox {
 
 inline TangoBlockInterface::TangoBlockInterface(
-    const tsdf2::VolumeProto& proto, unsigned int max_ntsdf_voxel_weight,
-    FloatingPoint meters_to_ntsdf, bool audit)
+    const tsdf2::VolumeProto& proto, const unsigned int max_ntsdf_voxel_weight,
+    const FloatingPoint meters_to_ntsdf, const bool audit)
     : TangoBlockInterface(proto.voxels_per_side(), proto.voxel_size(),
                           proto.has_origin()
                               ? Point(proto.origin().x(), proto.origin().y(),
