@@ -31,7 +31,7 @@ try:
 except RuntimeError as e:
     print(e)
 
-tl = voxblox.loadTsdfLayer("/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.tsdf.proto")
+tl = voxblox.loadTsdfLayer("/Users/mereweth/Desktop/environments/cow_and_lady/cow_and_lady.tsdf.proto")
 el = voxblox.EsdfLayer(tl.voxel_size, tl.voxels_per_side)
 m = voxblox.EsdfMap(el)
 ei = voxblox.EsdfIntegrator(voxblox.EsdfIntegratorConfig(), tl, el)
@@ -43,12 +43,12 @@ v = b.getVoxelByCoordinates(np.array([0, 0, 0.5], dtype='double'))
 v.distance = 0.3
 b.set_updated(True)
 
-ti = voxblox.TsdfIntegrator(voxblox.TsdfIntegratorConfig(), tl)
-ti.clearSphereAroundPoint(np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
+tl.clearSphereAroundPoint(np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
+tl.fillSphereAroundPoint(np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
 
 el.saveToFile("/Users/mereweth/Desktop/_test_cow_and_lady.esdf.proto")
 
-layer = voxblox.loadEsdfLayer('/Users/mereweth/Desktop/cow_and_lady/cow_and_lady.esdf.proto')
+layer = voxblox.loadEsdfLayer('/Users/mereweth/Desktop/environments/cow_and_lady/cow_and_lady.esdf.proto')
 assert(layer is not None)
 map = voxblox.EsdfMap(layer)
 

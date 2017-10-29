@@ -149,18 +149,6 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
                          const Pointcloud& points_C, const Colors& colors,
                          const bool freespace_points,
                          ThreadSafeIndex* index_getter);
-
-  /*TODO(mereweth@jpl.nasa.gov) - figure out how to bind this in pybind11
-   * as part of the base class
-   */
-  void fillSphereAroundPoint(const Point& center, const FloatingPoint radius,
-                             const FloatingPoint weight) const;
-
-  /*TODO(mereweth@jpl.nasa.gov) - figure out how to bind this in pybind11
-   * as part of the base class
-   */
-  void clearSphereAroundPoint(const Point& center, const FloatingPoint radius,
-                              const FloatingPoint weight) const;
 };
 
 class MergedTsdfIntegrator : public TsdfIntegratorBase {

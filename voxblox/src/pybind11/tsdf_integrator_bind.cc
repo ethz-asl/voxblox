@@ -16,9 +16,5 @@ void tsdf_integrator_bind(py::module &m) {
       .def(py::init<>());
 
   py::class_<SimpleTsdfIntegrator>(m, "SimpleTsdfIntegrator")
-      .def(py::init<const SimpleTsdfIntegrator::Config &, TsdfLayer *>())
-      .def("clearSphereAroundPoint",
-           &SimpleTsdfIntegrator::clearSphereAroundPoint)
-      .def("fillSphereAroundPoint",
-           &SimpleTsdfIntegrator::fillSphereAroundPoint);
+      .def(py::init<const SimpleTsdfIntegrator::Config &, TsdfLayer *>());
 }

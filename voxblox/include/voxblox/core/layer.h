@@ -230,6 +230,13 @@ class Layer {
   bool addBlockFromProto(const BlockProto& block_proto,
                          BlockMergingStrategy strategy);
 
+
+  // Tools for manually editing a set of voxels
+  void fillSphereAroundPoint(const Point& center, const FloatingPoint radius,
+                             const FloatingPoint weight);
+  void clearSphereAroundPoint(const Point& center, const FloatingPoint radius,
+                              const FloatingPoint weight);
+
   size_t getMemorySize() const;
 
  protected:

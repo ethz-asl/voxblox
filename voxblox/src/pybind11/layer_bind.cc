@@ -22,12 +22,14 @@ void layer_bind(py::module &m) {
       .def_property_readonly("voxel_size", &TsdfLayer::voxel_size)
       .def_property_readonly("voxels_per_side", &TsdfLayer::voxels_per_side)
 
-      // TODO(mereweth@jpl.nasa.gov) - can this still cause segfault?
       .def("saveToFile", &TsdfLayer::saveToFile)
 
       .def("allocateBlockPtrByCoordinates",
            &TsdfLayer::allocateBlockPtrByCoordinates)
-      .def("removeBlockByCoordinates", &TsdfLayer::removeBlockByCoordinates);
+      .def("removeBlockByCoordinates", &TsdfLayer::removeBlockByCoordinates)
+
+      .def("fillSphereAroundPoint", &TsdfLayer::fillSphereAroundPoint)
+      .def("clearSphereAroundPoint", &TsdfLayer::clearSphereAroundPoint);
 
   py::class_<EsdfLayer, std::shared_ptr<EsdfLayer> >(m, "EsdfLayer")
       .def(py::init<FloatingPoint, size_t>())
@@ -36,10 +38,12 @@ void layer_bind(py::module &m) {
       .def_property_readonly("voxel_size", &EsdfLayer::voxel_size)
       .def_property_readonly("voxels_per_side", &EsdfLayer::voxels_per_side)
 
-      // TODO(mereweth@jpl.nasa.gov) - can this still cause segfault?
       .def("saveToFile", &EsdfLayer::saveToFile)
 
       .def("allocateBlockPtrByCoordinates",
            &EsdfLayer::allocateBlockPtrByCoordinates)
       .def("removeBlockByCoordinates", &EsdfLayer::removeBlockByCoordinates);
+
+      /*.def("fillSphereAroundPoint", &EsdfLayer::fillSphereAroundPoint)
+      .def("clearSphereAroundPoint", &EsdfLayer::clearSphereAroundPoint);*/
 }
