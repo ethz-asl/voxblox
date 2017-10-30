@@ -12,6 +12,7 @@ add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
 cs_add_library(${PROJECT_NAME}
   src/esdf_server.cc
   src/interactive_slider.cc
+  src/simulation_server.cc
   src/transformer.cc
   src/tsdf_server.cc
 )
