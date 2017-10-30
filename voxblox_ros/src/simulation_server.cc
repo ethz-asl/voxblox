@@ -25,7 +25,11 @@ void SimulationServer::getServerConfigFromRosParam(
   nh_private_.param("voxels_per_side", voxels_per_side_, voxels_per_side_);
   nh_private.param("incremental", incremental_, incremental_);
   nh_private.param("generate_mesh", generate_mesh_, generate_mesh_);
+
   nh_private.param("visualize", visualize_, visualize_);
+  nh_private.param("visualization_slice_level", visualization_slice_level_,
+                   visualization_slice_level_);
+
   nh_private.param("generate_occupancy", generate_occupancy_,
                    generate_occupancy_);
   nh_private_.param("truncation_distance", truncation_distance_,
@@ -69,6 +73,7 @@ SimulationServer::SimulationServer(
       world_frame_("world"),
       generate_occupancy_(false),
       visualize_(true),
+      visualization_slice_level_(2.0),
       generate_mesh_(true),
       incremental_(true),
       truncation_distance_(tsdf_integrator_config.default_truncation_distance),
@@ -318,9 +323,6 @@ bool SimulationServer::evaluateVoxel(const TsdfVoxel& voxel_test,
 
   *error = voxel_gt.distance - voxel_test.distance;
 
-  /* if (voxel_gt.distance < -truncation_distance_) {
-    *error = -truncation_distance_ - voxel_test.distance;
-  } */
   return true;
 }
 
@@ -355,32 +357,31 @@ void SimulationServer::visualize() {
   if (!visualize_) {
     return;
   }
-  FloatingPoint slice_level = 2.0;
 
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
   pointcloud.header.frame_id = world_frame_;
-  createDistancePointcloudFromTsdfLayerSlice(*tsdf_gt_, 2, slice_level,
-                                             &pointcloud);
+  createDistancePointcloudFromTsdfLayerSlice(
+      *tsdf_gt_, 2, visualization_slice_level_, &pointcloud);
   // createDistancePointcloudFromTsdfLayer(*tsdf_gt_, &pointcloud);
   tsdf_gt_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromEsdfLayerSlice(*esdf_gt_, 2, slice_level,
-                                             &pointcloud);
+  createDistancePointcloudFromEsdfLayerSlice(
+      *esdf_gt_, 2, visualization_slice_level_, &pointcloud);
   // createDistancePointcloudFromEsdfLayer(*esdf_gt_, &pointcloud);
   esdf_gt_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromTsdfLayerSlice(*tsdf_test_, 2, slice_level,
-                                             &pointcloud);
+  createDistancePointcloudFromTsdfLayerSlice(
+      *tsdf_test_, 2, visualization_slice_level_, &pointcloud);
 
   // createDistancePointcloudFromTsdfLayer(*tsdf_test_, &pointcloud);
   tsdf_test_pub_.publish(pointcloud);
 
   pointcloud.clear();
-  createDistancePointcloudFromEsdfLayerSlice(*esdf_test_, 2, slice_level,
-                                             &pointcloud);
+  createDistancePointcloudFromEsdfLayerSlice(
+      *esdf_test_, 2, visualization_slice_level_, &pointcloud);
   // createDistancePointcloudFromEsdfLayer(*esdf_test_, &pointcloud);
   esdf_test_pub_.publish(pointcloud);
 

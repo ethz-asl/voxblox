@@ -87,6 +87,7 @@ class SimulationServer {
   std::string world_frame_;
   bool generate_occupancy_;
   bool visualize_;
+  FloatingPoint visualization_slice_level_;
   bool generate_mesh_;
   bool incremental_;
   FloatingPoint truncation_distance_;
