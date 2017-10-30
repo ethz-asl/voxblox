@@ -43,6 +43,16 @@ void SimulationServer::getServerConfigFromRosParam(
 
   nh_private_.param("num_viewpoints", num_viewpoints_, num_viewpoints_);
 
+  // NOTE(mfehr): needed because ros params does not support size_t.
+  int max_attempts_to_generate_viewpoint =
+      static_cast<int>(max_attempts_to_generate_viewpoint_);
+  nh_private_.param("max_attempts_to_generate_viewpoint",
+                    max_attempts_to_generate_viewpoint,
+                    max_attempts_to_generate_viewpoint);
+  CHECK_GT(max_attempts_to_generate_viewpoint, 0);
+  max_attempts_to_generate_viewpoint_ =
+      static_cast<size_t>(max_attempts_to_generate_viewpoint);
+
   nh_private_.param("world_frame", world_frame_, world_frame_);
 }
 
@@ -63,6 +73,7 @@ SimulationServer::SimulationServer(
       incremental_(true),
       truncation_distance_(tsdf_integrator_config.default_truncation_distance),
       esdf_max_distance_(esdf_integrator_config.max_distance_m),
+      max_attempts_to_generate_viewpoint_(50u),
       depth_camera_resolution_(Eigen::Vector2i(320, 240)),
       fov_h_rad_(1.5708),
       max_dist_(10.0),
@@ -139,7 +150,6 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
                                                   Point* ray_direction) const {
   // Generate a viewpoint at least min_distance from any objects (if you want
   // just outside an object, just call this with min_distance = 0).
-  constexpr int max_tries = 50;
 
   FloatingPoint max_distance = min_distance * 2.0;
 
@@ -150,7 +160,7 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
   Point position = Point::Zero();
   bool success = false;
   // Generate a position, and check if it's ok.
-  for (int i = 0; i < max_tries; ++i) {
+  for (int i = 0; i < max_attempts_to_generate_viewpoint_; ++i) {
     position.setRandom();
     // Make this span the whole space.
     position =

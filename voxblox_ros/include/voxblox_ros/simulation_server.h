@@ -91,6 +91,7 @@ class SimulationServer {
   bool incremental_;
   FloatingPoint truncation_distance_;
   FloatingPoint esdf_max_distance_;
+  size_t max_attempts_to_generate_viewpoint_;
 
   // Camera settings
   Eigen::Vector2i depth_camera_resolution_;
