@@ -43,8 +43,8 @@ v = b.getVoxelByCoordinates(np.array([0, 0, 0.5], dtype='double'))
 v.distance = 0.3
 b.set_updated(True)
 
-voxblox.clearSphereAroundPoint(tl, np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
-voxblox.fillSphereAroundPoint(tl, np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
+voxblox.clearSphereAroundPoint(el, np.array([0, 0, 0.5], dtype='double'), 0.5)
+voxblox.fillSphereAroundPoint(el, np.array([0, 0, 0.5], dtype='double'), 0.5)
 
 el.saveToFile("/Users/mereweth/Desktop/_test_cow_and_lady.esdf.proto")
 
