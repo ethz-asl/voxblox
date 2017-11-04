@@ -26,10 +26,7 @@ void layer_bind(py::module &m) {
 
       .def("allocateBlockPtrByCoordinates",
            &TsdfLayer::allocateBlockPtrByCoordinates)
-      .def("removeBlockByCoordinates", &TsdfLayer::removeBlockByCoordinates)
-
-      .def("fillSphereAroundPoint", &TsdfLayer::fillSphereAroundPoint)
-      .def("clearSphereAroundPoint", &TsdfLayer::clearSphereAroundPoint);
+      .def("removeBlockByCoordinates", &TsdfLayer::removeBlockByCoordinates);
 
   py::class_<EsdfLayer, std::shared_ptr<EsdfLayer> >(m, "EsdfLayer")
       .def(py::init<FloatingPoint, size_t>())
@@ -43,7 +40,4 @@ void layer_bind(py::module &m) {
       .def("allocateBlockPtrByCoordinates",
            &EsdfLayer::allocateBlockPtrByCoordinates)
       .def("removeBlockByCoordinates", &EsdfLayer::removeBlockByCoordinates);
-
-      /*.def("fillSphereAroundPoint", &EsdfLayer::fillSphereAroundPoint)
-      .def("clearSphereAroundPoint", &EsdfLayer::clearSphereAroundPoint);*/
 }

@@ -31,7 +31,7 @@ try:
 except RuntimeError as e:
     print(e)
 
-tl = voxblox.loadTsdfLayer("/Users/mereweth/Desktop/environments/cow_and_lady/cow_and_lady.tsdf.proto")
+tl = voxblox.loadTsdfLayer("/Users/mereweth/Desktop/environments/bldg_344_huge/map_cleared.tsdf.proto")
 el = voxblox.EsdfLayer(tl.voxel_size, tl.voxels_per_side)
 m = voxblox.EsdfMap(el)
 ei = voxblox.EsdfIntegrator(voxblox.EsdfIntegratorConfig(), tl, el)
@@ -43,12 +43,12 @@ v = b.getVoxelByCoordinates(np.array([0, 0, 0.5], dtype='double'))
 v.distance = 0.3
 b.set_updated(True)
 
-tl.clearSphereAroundPoint(np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
-tl.fillSphereAroundPoint(np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
+voxblox.clearSphereAroundPoint(tl, np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
+voxblox.fillSphereAroundPoint(tl, np.array([0, 0, 0.5], dtype='double'), 0.5, 10)
 
 el.saveToFile("/Users/mereweth/Desktop/_test_cow_and_lady.esdf.proto")
 
-layer = voxblox.loadEsdfLayer('/Users/mereweth/Desktop/environments/cow_and_lady/cow_and_lady.esdf.proto')
+layer = voxblox.loadEsdfLayer('/Users/mereweth/Desktop/environments/bldg_344_huge/map_cleared.esdf.proto')
 assert(layer is not None)
 map = voxblox.EsdfMap(layer)
 
@@ -76,8 +76,6 @@ obs = np.matrix(np.zeros((np.shape(query)[1], 1), dtype='int32'))
 
 map.isObserved(query, obs)
 map.getDistanceAtPosition(query, dist, obs)
-
-import pdb; pdb.set_trace()
 
 def interp_fun():
     map.getDistanceAndGradientAtPosition(query, dist, grad, obs)
