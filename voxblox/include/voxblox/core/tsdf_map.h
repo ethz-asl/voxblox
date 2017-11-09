@@ -35,7 +35,17 @@ class TsdfMap {
       : TsdfMap(aligned_shared<Layer<TsdfVoxel>>(layer)) {}
 
   // Creates a new TsdfMap that contains this layer.
-  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer) : tsdf_layer_(layer) {
+  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer)
+      : tsdf_layer_(layer) {
+    if (!layer) {
+      /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
+       * This is idiomatic when wrapping C++ code for Python, especially with
+       * pybind11
+       */
+      throw std::runtime_error(std::string("Null Layer<TsdfVoxel>::Ptr") +
+                               " in TsdfMap constructor");
+    }
+
     CHECK(layer);
     block_size_ = layer->block_size();
   }
@@ -46,6 +56,28 @@ class TsdfMap {
   const Layer<TsdfVoxel>& getTsdfLayer() const { return *tsdf_layer_; }
 
   FloatingPoint block_size() const { return block_size_; }
+  FloatingPoint voxel_size() const { return tsdf_layer_->voxel_size(); }
+
+  /* NOTE(mereweth@jpl.nasa.gov)
+   * EigenDRef is fully dynamic stride type alias for Numpy array slices
+   * Use column-major matrices; column-by-column traversal is faster
+   * Convenience alias borrowed from pybind11
+   */
+  using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+  template <typename MatrixType>
+  using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
+
+  /* Extract all voxels on a slice plane that is parallel to one of the
+   * axis-aligned planes.
+   * free_plane_index specifies the free coordinate (zero-based; x, y, z order)
+   * free_plane_val specifies the plane intercept coordinate along that axis
+   */
+  unsigned int coordPlaneSliceGetDistanceWeight(
+      unsigned int free_plane_index, double free_plane_val,
+      EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
+      Eigen::Ref<Eigen::VectorXd> distances,
+      Eigen::Ref<Eigen::VectorXd> weights,
+      unsigned int max_points) const;
 
  protected:
   FloatingPoint block_size_;
