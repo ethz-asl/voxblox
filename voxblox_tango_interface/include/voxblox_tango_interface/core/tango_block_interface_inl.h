@@ -3,11 +3,15 @@
 
 #include "./Volume.pb.h"
 
+/* TODO(mereweth@jpl.nasa.gov) - this is not a template class, so no need to
+ * have these definitions here
+ */
+
 namespace voxblox {
 
 inline TangoBlockInterface::TangoBlockInterface(
-    const tsdf2::VolumeProto& proto, unsigned int max_ntsdf_voxel_weight,
-    FloatingPoint meters_to_ntsdf)
+    const tsdf2::VolumeProto& proto, const unsigned int max_ntsdf_voxel_weight,
+    const FloatingPoint meters_to_ntsdf, const bool audit)
     : TangoBlockInterface(proto.voxels_per_side(), proto.voxel_size(),
                           proto.has_origin()
                               ? Point(proto.origin().x(), proto.origin().y(),
@@ -46,7 +50,7 @@ inline TangoBlockInterface::TangoBlockInterface(
     LOG(FATAL) << "Unequal number of tsdf and color voxels in Tango TSDF";
   }
 
-  deserializeFromIntegers(data);
+  deserializeFromIntegers(data, audit);
 }
 
 }  // namespace voxblox
