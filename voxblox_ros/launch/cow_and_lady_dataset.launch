@@ -2,9 +2,9 @@
   <arg name="play_bag" default="true" />
   <arg name="bag_file" default="/home/z/Datasets/cow_and_lady/data.bag"/>
   <arg name="voxel_size" default="0.05"/>
-  <arg name="generate_esdf" default="true" />
+  <arg name="generate_esdf" default="false" />
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args="-r 1.0 -s 10 -u 30 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args="-r 1.0 -s 10 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
    <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="/camera/depth_registered/points"/>
