@@ -120,6 +120,10 @@ class Block {
     return voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
+  inline VoxelType* getVoxelPtrByCoordinates(const Point& coords) {
+    return &voxels_[computeLinearIndexFromCoordinates(coords)];
+  }
+
   inline bool isValidVoxelIndex(const VoxelIndex& index) const {
     if (index.x() < 0 || index.x() >= voxels_per_side_) {
       return false;
@@ -152,10 +156,13 @@ class Block {
   FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
-  const bool updated() const { return updated_; }
+  bool updated() const { return updated_; }
 
   std::atomic<bool>& updated() { return updated_; }
   bool& has_data() { return has_data_; }
+
+  void set_updated(bool updated) { updated_ = updated; }
+  void set_has_data(bool has_data) { has_data_ = has_data; }
 
   // Serialization.
   void getProto(BlockProto* proto) const;

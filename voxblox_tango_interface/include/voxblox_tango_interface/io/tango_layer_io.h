@@ -15,8 +15,17 @@
 namespace voxblox {
 namespace io {
 
-bool TangoLoadLayer(const std::string& file_path,
-               TangoLayerInterface::Ptr* layer_ptr) {
+/* NOTE(mereweth@jpl.nasa.gov) - when adding functions here, inline them
+ * or split into hpp/cpp
+ */
+
+/* TODO(mereweth@jpl.nasa.gov) - if we load into NTSDF voxel later, what to call
+ * those functions?
+ */
+
+inline bool TangoLoadLayer(const std::string& file_path,
+                           TangoLayerInterface::Ptr* layer_ptr,
+                           const bool audit = false) {
   CHECK_NOTNULL(layer_ptr);
 
   // Open and check the file
@@ -43,6 +52,8 @@ bool TangoLoadLayer(const std::string& file_path,
     return false;
   }
 
+  // TODO(mereweth@jpl.nasa.gov) - how to check if compatible?
+
   // Get header and create the layer if compatible
   tsdf2::MapHeaderProto layer_proto;
   if (!utils::readProtoMsgFromStream(&proto_file, &layer_proto,
@@ -50,6 +61,16 @@ bool TangoLoadLayer(const std::string& file_path,
     LOG(ERROR) << "Could not read layer protobuf message.";
     return false;
   }
+
+  if ((layer_proto.voxel_size() <= 0.0f) ||
+      (layer_proto.voxels_per_volume_side() <= 0.0f) ||
+      (layer_proto.max_ntsdf_voxel_weight() <= 0u) ||
+      (layer_proto.meters_to_ntsdf() <= 0.0f)) {
+    LOG(ERROR)
+        << "Invalid parameter in layer protobuf message. Check the format.";
+    return false;
+  }
+
   *layer_ptr = aligned_shared<TangoLayerInterface >(layer_proto);
   CHECK(*layer_ptr);
 
@@ -64,20 +85,26 @@ bool TangoLoadLayer(const std::string& file_path,
       return false;
     }
 
-    if (!(*layer_ptr)->addBlockFromProto(
-             block_proto, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit)) {
-      LOG(ERROR) << "Could not add the block protobuf message to the layer!";
-      return false;
+    // TODO(mereweth@jpl.nasa.gov) - how to check if compatible?
+
+    if (block_proto.has_data()) {
+      if (!(*layer_ptr)
+               ->addBlockFromProto(
+                   block_proto,
+                   Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit, audit)) {
+        LOG(ERROR) << "Could not add the block protobuf message to the layer!";
+        return false;
+      }
     }
   }
 
   return true;
 }
 
-bool LoadBlocksFromFile(
+inline bool TangoLoadBlocksFromFile(
     const std::string& file_path,
-    Layer<TsdfVoxel>::BlockMergingStrategy strategy,
-    TangoLayerInterface* layer_ptr) {
+    const Layer<TsdfVoxel>::BlockMergingStrategy strategy,
+    TangoLayerInterface* layer_ptr, const bool audit = false) {
   CHECK_NOTNULL(layer_ptr);
 
   // Open and check the file
@@ -128,7 +155,7 @@ bool LoadBlocksFromFile(
       return false;
     }
 
-    if (!layer_ptr->addBlockFromProto(block_proto, strategy)) {
+    if (!layer_ptr->addBlockFromProto(block_proto, strategy, audit)) {
       LOG(ERROR) << "Could not add the block protobuf message to the layer!";
       return false;
     }

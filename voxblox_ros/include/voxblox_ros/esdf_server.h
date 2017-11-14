@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_ROS_ESDF_SERVER_H_
 #define VOXBLOX_ROS_ESDF_SERVER_H_
 
+#include <memory>
+
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox_msgs/Layer.h>
@@ -14,6 +16,11 @@ class EsdfServer : public TsdfServer {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+             const EsdfMap::Config& esdf_config,
+             const EsdfIntegrator::Config& esdf_integrator_config,
+             const TsdfMap::Config& tsdf_config,
+             const TsdfIntegratorBase::Config& tsdf_integrator_config);
   virtual ~EsdfServer() {}
 
   void publishAllUpdatedEsdfVoxels();

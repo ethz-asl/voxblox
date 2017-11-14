@@ -220,7 +220,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
 
-  ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
+  ThreadSafeIndex index_getter(points_C.size());
 
   AlignedVector<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
@@ -290,7 +290,7 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   // cleared.
   AnyIndexHashMapType<AlignedVector<size_t>>::type clear_map;
 
-  ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
+  ThreadSafeIndex index_getter(points_C.size());
 
   bundleRays(T_G_C, points_C, colors, freespace_points, &index_getter,
              &voxel_map, &clear_map);
@@ -463,7 +463,10 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
   DCHECK(index_getter != nullptr);
 
   size_t point_idx;
-  while (index_getter->getNextIndex(&point_idx)) {
+  while (index_getter->getNextIndex(&point_idx) &&
+         (std::chrono::duration_cast<std::chrono::microseconds>(
+              std::chrono::steady_clock::now() - integration_start_time_)
+              .count() < config_.max_integration_time_s * 1000000)) {
     const Point& point_C = points_C[point_idx];
     const Color& color = colors[point_idx];
     bool is_clearing;
@@ -524,6 +527,8 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
 
+  integration_start_time_ = std::chrono::steady_clock::now();
+
   static size_t reset_counter = 0;
   if ((++reset_counter) >= config_.clear_checks_every_n_frames) {
     reset_counter = 0;
@@ -531,7 +536,7 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
     voxel_observed_approx_set_.resetApproxSet();
   }
 
-  ThreadSafeIndex index_getter(points_C.size(), config_.integrator_threads);
+  ThreadSafeIndex index_getter(points_C.size());
 
   AlignedVector<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {

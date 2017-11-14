@@ -141,7 +141,8 @@ class Layer {
   }
 
   inline void insertBlock(
-      const std::pair<const BlockIndex, Block<TsdfVoxel>::Ptr>& block_pair) {
+      const std::pair<const BlockIndex, typename Block<VoxelType>::Ptr>&
+          block_pair) {
     auto insert_status = block_map_.insert(block_pair);
 
     DCHECK(insert_status.second) << "Block already exists when inserting at "

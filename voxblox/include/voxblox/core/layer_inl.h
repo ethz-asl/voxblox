@@ -222,16 +222,34 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
 template <typename VoxelType>
 bool Layer<VoxelType>::isCompatible(const LayerProto& layer_proto) const {
   bool compatible = true;
-  compatible &= (layer_proto.voxel_size() == voxel_size_);
+  compatible &= (std::fabs(layer_proto.voxel_size() - voxel_size_) <
+                 std::numeric_limits<FloatingPoint>::epsilon());
   compatible &= (layer_proto.voxels_per_side() == voxels_per_side_);
   compatible &= (getType().compare(layer_proto.type()) == 0);
+
+  if (!compatible) {
+    LOG(WARNING)
+        << "Voxel size of the loaded map is: " << layer_proto.voxel_size()
+        << " but the current map is: " << voxel_size_ << " check passed? "
+        << (std::fabs(layer_proto.voxel_size() - voxel_size_) <
+            std::numeric_limits<FloatingPoint>::epsilon())
+        << "\nVPS of the loaded map is: " << layer_proto.voxels_per_side()
+        << " but the current map is: " << voxels_per_side_ << " check passed? "
+        << (layer_proto.voxels_per_side() == voxels_per_side_)
+        << "\nLayer type of the loaded map is: " << getType()
+        << " but the current map is: " << layer_proto.type()
+        << " check passed? " << (getType().compare(layer_proto.type()) == 0)
+        << "\nAre the maps using the same floating-point type? "
+        << (layer_proto.voxel_size() == voxel_size_) << std::endl;
+  }
   return compatible;
 }
 
 template <typename VoxelType>
 bool Layer<VoxelType>::isCompatible(const BlockProto& block_proto) const {
   bool compatible = true;
-  compatible &= (block_proto.voxel_size() == voxel_size_);
+  compatible &= (std::fabs(block_proto.voxel_size() - voxel_size_) <
+                 std::numeric_limits<FloatingPoint>::epsilon());
   compatible &=
       (block_proto.voxels_per_side() == static_cast<int>(voxels_per_side_));
   return compatible;
