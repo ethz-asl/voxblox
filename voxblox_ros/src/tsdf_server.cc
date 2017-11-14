@@ -80,7 +80,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
 
-  nh_private_.param("pointcloud_queue_size_", pointcloud_queue_size_,
+  nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
                     pointcloud_queue_size_);
   pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size_,
                                   &TsdfServer::insertPointcloud, this);
