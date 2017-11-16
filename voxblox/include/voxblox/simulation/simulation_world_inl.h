@@ -48,11 +48,11 @@ void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
       // Iterate over all objects and get distances to this thing.
       FloatingPoint voxel_dist = max_dist;
       Color color;
-      for (size_t j = 0; j < objects_.size(); ++j) {
-        FloatingPoint object_dist = objects_[j]->getDistanceToPoint(coords);
+      for (const std::unique_ptr<Object>& object : objects_) {
+        FloatingPoint object_dist = object->getDistanceToPoint(coords);
         if (object_dist < voxel_dist) {
           voxel_dist = object_dist;
-          color = objects_[j]->getColor();
+          color = object->getColor();
         }
       }
 
