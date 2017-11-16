@@ -6,7 +6,7 @@ SimulationWorld::SimulationWorld()
     : min_bound_(-5.0, -5.0, -1.0), max_bound_(5.0, 5.0, 9.0) {}
 
 void SimulationWorld::addObject(std::unique_ptr<Object> object) {
-  objects_.push_back(std::move(object));
+  objects_.emplace_back(std::move(object));
 }
 
 void SimulationWorld::addGroundLevel(FloatingPoint height) {
@@ -36,8 +36,8 @@ void SimulationWorld::clear() { objects_.clear(); }
 FloatingPoint SimulationWorld::getDistanceToPoint(
     const Point& coords, FloatingPoint max_dist) const {
   FloatingPoint min_dist = max_dist;
-  for (size_t j = 0; j < objects_.size(); ++j) {
-    FloatingPoint object_dist = objects_[j]->getDistanceToPoint(coords);
+  for (const std::unique_ptr<Object>& object : objects_) {
+    FloatingPoint object_dist = object->getDistanceToPoint(coords);
     if (object_dist < min_dist) {
       min_dist = object_dist;
     }
@@ -72,10 +72,10 @@ void SimulationWorld::getPointcloudFromViewpoint(
       FloatingPoint ray_dist = max_dist;
       Point ray_intersect = Point::Zero();
       Color ray_color;
-      for (size_t i = 0; i < objects_.size(); ++i) {
+      for (const std::unique_ptr<Object>& object : objects_) {
         Point object_intersect;
         FloatingPoint object_dist;
-        bool intersects = objects_[i]->getRayIntersection(
+        bool intersects = object->getRayIntersection(
             view_origin, ray_direction, max_dist, &object_intersect,
             &object_dist);
         if (intersects) {
@@ -83,7 +83,7 @@ void SimulationWorld::getPointcloudFromViewpoint(
             ray_valid = true;
             ray_dist = object_dist;
             ray_intersect = object_intersect;
-            ray_color = objects_[i]->getColor();
+            ray_color = object->getColor();
           }
         }
       }
