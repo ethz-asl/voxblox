@@ -80,6 +80,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
 
+  tsdf_map_pub_ = nh_private_.advertise<voxblox_msgs::Layer>("tsdf_map_out",1,false);
+
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
                     pointcloud_queue_size_);
   pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size_,
@@ -293,11 +295,24 @@ void TsdfServer::publishSlices() {
   tsdf_slice_pub_.publish(pointcloud);
 }
 
+void TsdfServer::publishMap() {
+  if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
+    const bool only_updated = false;
+    timing::Timer publish_map_timer("map/update");
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(), only_updated,
+                                   &layer_msg);
+    this->tsdf_map_pub_.publish(layer_msg);
+    publish_map_timer.Stop();
+  }
+}
+
 void TsdfServer::publishPointclouds() {
   // Combined function to publish everything we got.
   publishAllUpdatedTsdfVoxels();
   publishTsdfSurfacePoints();
   publishTsdfOccupiedNodes();
+  publishMap();
 }
 
 void TsdfServer::updateMesh() {
@@ -317,6 +332,8 @@ void TsdfServer::updateMesh() {
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
+
+  publishMap();
 }
 
 bool TsdfServer::generateMesh() {
