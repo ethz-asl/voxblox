@@ -1,10 +1,10 @@
 <launch>
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="/home/z/Datasets/cow_and_lady/data.bag"/>
-  <arg name="voxel_size" default="0.05"/>
-  <arg name="generate_esdf" default="true" />
+  <arg name="bag_file" default="/home/marius/experiment_ws/exploration/voxblox/data.bag"/>
+  <arg name="voxel_size" default="0.01"/>
+  <arg name="generate_esdf" default="false" />
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args="-r 1.0 -s 10 -u 30 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args="-r 1.0 -s 10 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
    <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="/camera/depth_registered/points"/>
@@ -20,6 +20,7 @@
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="false" />
     <param name="verbose" value="true" />
+    <param name="max_integration_time_s" value="0.02"/>
     <param name="clear_checks_every_n_frames" value="1"/>
     <remap from="transform" to="/kinect/vrpn_client/estimated_transform" />
     <rosparam file="$(find voxblox_ros)/cfg/cow_and_lady.yaml"/>

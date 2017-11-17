@@ -89,8 +89,7 @@ class MeshIntegrator {
       mesh_layer_->allocateMeshPtrByIndex(block_index);
     }
 
-    ThreadSafeIndex index_getter(all_tsdf_blocks.size(),
-                                 config_.integrator_threads);
+    ThreadSafeIndex index_getter(all_tsdf_blocks.size());
 
     AlignedVector<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {

@@ -4,6 +4,11 @@
 #include "./MapHeader.pb.h"
 #include "./Volume.pb.h"
 
+#include <iostream>
+#include <iomanip>
+
+#define VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS (1e-8f)
+
 namespace voxblox {
 
 inline TangoLayerInterface::TangoLayerInterface(
@@ -22,18 +27,16 @@ inline TangoLayerInterface::TangoLayerInterface(
   CHECK_GT(proto.voxels_per_volume_side(), 0u);
 }
 
-/* TODO (mereweth@jpl.nasa.gov) - is there a way to reuse some of
- * Layer::addBlockFromProto easily?
- */
 inline bool TangoLayerInterface::addBlockFromProto(
     const tsdf2::VolumeProto& block_proto,
-    TangoLayerInterface::BlockMergingStrategy strategy) {
+    const TangoLayerInterface::BlockMergingStrategy strategy,
+    const bool audit) {
   CHECK_EQ(getType().compare(voxel_types::kTsdf), 0)
       << "The voxel type of this layer is not TsdfVoxel!";
 
   if (isCompatible(block_proto)) {
     TangoBlockInterface::Ptr block_ptr(new TangoBlockInterface(
-        block_proto, max_ntsdf_voxel_weight_, meters_to_ntsdf_));
+        block_proto, max_ntsdf_voxel_weight_, meters_to_ntsdf_, audit));
 
     const BlockIndex block_index =
         getGridIndexFromOriginPoint(block_ptr->origin(), block_size_inv_);
@@ -75,16 +78,45 @@ inline bool TangoLayerInterface::addBlockFromProto(
 inline bool TangoLayerInterface::isCompatible(
     const tsdf2::MapHeaderProto& layer_proto) const {
   bool compatible = true;
-  compatible &= (layer_proto.voxel_size() == voxel_size_);
-  compatible &= (layer_proto.voxels_per_volume_side() == voxels_per_side_);
+  compatible &= (fabs(layer_proto.voxel_size() - voxel_size_)
+                 <= VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
+  // NOTE(mereweth@jpl.nasa.gov) - MapHeader voxels_per_volume_side is a double
+  compatible &= (fabs(layer_proto.voxels_per_volume_side()
+                 - static_cast<double>(voxels_per_side_))
+                 <= VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
+
+  if (!compatible) {
+    LOG(INFO) << std::setprecision(10)
+              << "TangoLayerInterface voxel_size: " << voxel_size_
+              << ", voxels_per_side: " << voxels_per_side_;
+    LOG(INFO) << std::setprecision(10)
+              << "MapHeaderProto voxel_size: " << layer_proto.voxel_size()
+              << ", voxels_per_volume_side: "
+              << layer_proto.voxels_per_volume_side();
+  }
+
   return compatible;
 }
 
 inline bool TangoLayerInterface::isCompatible(
     const tsdf2::VolumeProto& block_proto) const {
   bool compatible = true;
-  compatible &= (block_proto.voxel_size() == voxel_size_);
-  compatible &= (block_proto.voxels_per_side() == voxels_per_side_);
+  compatible &= (fabs(block_proto.voxel_size() - voxel_size_)
+                 <= VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
+  // NOTE(mereweth@jpl.nasa.gov) - Volume voxels_per_side is an int32
+  compatible &=
+      (block_proto.voxels_per_side() == static_cast<int>(voxels_per_side_));
+
+  if (!compatible) {
+    LOG(INFO) << std::setprecision(10)
+              << "TangoLayerInterface voxel_size: " << voxel_size_
+              << ", voxels_per_side: " << voxels_per_side_;
+    LOG(INFO) << std::setprecision(10)
+              << "VolumeProto voxel_size: " << block_proto.voxel_size()
+              << ", voxels_per_side: "
+              << block_proto.voxels_per_side();
+  }
+
   return compatible;
 }
 

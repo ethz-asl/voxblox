@@ -1,59 +1,69 @@
 #include <voxblox_ros/conversions.h>
 
 #include "voxblox_ros/esdf_server.h"
+#include "voxblox_ros/ros_params.h"
 
 namespace voxblox {
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private),
-      clear_sphere_for_planning_(false),
-      publish_esdf_map_(false) {
+                       const ros::NodeHandle& nh_private,
+                       const EsdfMap::Config& esdf_config,
+                       const EsdfIntegrator::Config& esdf_integrator_config,
+                       const TsdfMap::Config& tsdf_config,
+                       const TsdfIntegratorBase::Config& tsdf_integrator_config)
+    : TsdfServer(nh, nh_private, tsdf_config, tsdf_integrator_config),
+      clear_sphere_for_planning_(false) {
+  // Set up map and integrator.
+  esdf_map_.reset(new EsdfMap(esdf_config));
+  esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
+                                            tsdf_map_->getTsdfLayerPtr(),
+                                            esdf_map_->getEsdfLayerPtr()));
+
+  // Set up publisher.
   esdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
                                                               1, true);
   esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "esdf_slice", 1, true);
-
   esdf_map_pub_ =
       nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
+
+  // Set up subscriber.
   esdf_map_sub_ = nh_private_.subscribe("esdf_map_in", 1,
                                         &EsdfServer::esdfMapCallback, this);
 
-  EsdfMap::Config esdf_config;
+  // Whether to clear each new pose as it comes in, and then set a sphere
+  // around it to occupied.
+  nh_private_.param("clear_sphere_for_planning", clear_sphere_for_planning_,
+                    clear_sphere_for_planning_);
+}
 
-  // TODO(helenol): in the future allow different ESDF and TSDF voxel sizes...
-  nh_private_.param("tsdf_voxel_size", esdf_config.esdf_voxel_size,
-                    esdf_config.esdf_voxel_size);
-  // No specialization for ros param for size_t, so have to do this annoying
-  // workaround.
-  int voxels_per_side = esdf_config.esdf_voxels_per_side;
-  nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
-  if (!isPowerOfTwo(voxels_per_side)) {
-    ROS_ERROR("voxels_per_side must be a power of 2, setting to default value");
-    voxels_per_side = esdf_config.esdf_voxels_per_side;
-  }
-  esdf_config.esdf_voxels_per_side = voxels_per_side;
+EsdfServer::EsdfServer(const ros::NodeHandle& nh,
+                       const ros::NodeHandle& nh_private)
+    : TsdfServer(nh, nh_private), clear_sphere_for_planning_(false) {
+  // Get config from ros params.
+  EsdfIntegrator::Config esdf_integrator_config =
+      getEsdfIntegratorConfigFromRosParam(nh_private_);
+  EsdfMap::Config esdf_config = getEsdfMapConfigFromRosParam(nh_private_);
 
+  // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
-
-  EsdfIntegrator::Config esdf_integrator_config;
-  // Make sure that this is the same as the truncation distance OR SMALLER!
-  esdf_integrator_config.min_distance_m = esdf_config.esdf_voxel_size;
-  // esdf_integrator_config.min_distance_m =
-  //    tsdf_integrator_->getConfig().default_truncation_distance;
-  nh_private_.param("esdf_max_distance_m",
-                    esdf_integrator_config.max_distance_m,
-                    esdf_integrator_config.max_distance_m);
-  nh_private_.param("esdf_default_distance_m",
-                    esdf_integrator_config.default_distance_m,
-                    esdf_integrator_config.default_distance_m);
-  nh_private_.param("esdf_min_diff_m", esdf_integrator_config.min_diff_m,
-                    esdf_integrator_config.min_diff_m);
-
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
                                             tsdf_map_->getTsdfLayerPtr(),
                                             esdf_map_->getEsdfLayerPtr()));
+
+  // Set up publisher.
+  esdf_pointcloud_pub_ =
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
+                                                              1, true);
+  esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "esdf_slice", 1, true);
+  esdf_map_pub_ =
+      nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
+
+  // Set up subscriber.
+  esdf_map_sub_ = nh_private_.subscribe("esdf_map_in", 1,
+                                        &EsdfServer::esdfMapCallback, this);
 
   // Whether to clear each new pose as it comes in, and then set a sphere
   // around it to occupied.

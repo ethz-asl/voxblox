@@ -2,6 +2,7 @@
 #define VOXBLOX_SIMULATION_SIMULATION_WORLD_H_
 
 #include <vector>
+#include <list>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
@@ -64,8 +65,8 @@ class SimulationWorld {
   template <typename VoxelType>
   void setVoxel(FloatingPoint dist, const Color& color, VoxelType* voxel) const;
 
-  // Vector storing pointers to all the objects in this world.
-  AlignedVector<std::unique_ptr<Object> > objects_;
+  // List storing pointers to all the objects in this world.
+  std::list<std::unique_ptr<Object> > objects_;
 
   // World boundaries... Can be changed arbitrarily, just sets ground truth
   // generation and visualization bounds, accurate only up to block size.

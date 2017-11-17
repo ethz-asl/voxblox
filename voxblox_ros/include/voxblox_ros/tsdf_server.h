@@ -32,7 +32,12 @@ class TsdfServer {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  TsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+             const TsdfMap::Config& config,
+             const TsdfIntegratorBase::Config& integrator_config);
   virtual ~TsdfServer() {}
+
+  void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
 
   void insertPointcloud(const sensor_msgs::PointCloud2::Ptr& pointcloud);
 
@@ -110,6 +115,9 @@ class TsdfServer {
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
   ros::Subscriber freespace_pointcloud_sub_;
+
+  // Subscriber settings.
+  int pointcloud_queue_size_;
 
   // Publish markers for visualization.
   ros::Publisher mesh_pub_;
