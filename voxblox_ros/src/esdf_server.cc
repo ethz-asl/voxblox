@@ -12,7 +12,8 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const TsdfMap::Config& tsdf_config,
                        const TsdfIntegratorBase::Config& tsdf_integrator_config)
     : TsdfServer(nh, nh_private, tsdf_config, tsdf_integrator_config),
-      clear_sphere_for_planning_(false) {
+      clear_sphere_for_planning_(false),
+      publish_esdf_map_(false) {
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
@@ -36,11 +37,14 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   // around it to occupied.
   nh_private_.param("clear_sphere_for_planning", clear_sphere_for_planning_,
                     clear_sphere_for_planning_);
+  nh_private_.param("publish_esdf_map", publish_esdf_map_, publish_esdf_map_);
 }
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private), clear_sphere_for_planning_(false) {
+    : TsdfServer(nh, nh_private),
+      clear_sphere_for_planning_(false),
+      publish_esdf_map_(false) {
   // Get config from ros params.
   EsdfIntegrator::Config esdf_integrator_config =
       getEsdfIntegratorConfigFromRosParam(nh_private_);
