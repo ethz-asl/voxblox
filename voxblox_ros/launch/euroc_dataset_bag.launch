@@ -57,6 +57,7 @@
     <param name="generate_esdf" value="$(arg generate_esdf)" />
     <param name="slice_level" value="1.0" />
     <param name="method" value="merged" />
+    <param name="anti_grazing" value="false">
     <param name="use_const_weight" value="false" />
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>

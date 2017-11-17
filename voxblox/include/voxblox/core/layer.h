@@ -2,6 +2,7 @@
 #define VOXBLOX_CORE_LAYER_H_
 
 #include <glog/logging.h>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -27,6 +28,9 @@ class Layer {
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
+    CHECK_GT(voxel_size_, 0.0f);
+    voxel_size_inv_ = 1.0 / voxel_size_;
+
     block_size_ = voxel_size_ * voxels_per_side_;
     CHECK_GT(block_size_, 0.0f);
     block_size_inv_ = 1.0 / block_size_;
@@ -137,7 +141,8 @@ class Layer {
   }
 
   inline void insertBlock(
-      const std::pair<const BlockIndex, Block<TsdfVoxel>::Ptr>& block_pair) {
+      const std::pair<const BlockIndex, typename Block<VoxelType>::Ptr>&
+          block_pair) {
     auto insert_status = block_map_.insert(block_pair);
 
     DCHECK(insert_status.second) << "Block already exists when inserting at "
@@ -211,7 +216,9 @@ class Layer {
   FloatingPoint block_size() const { return block_size_; }
   FloatingPoint block_size_inv() const { return block_size_inv_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
+  FloatingPoint voxel_size_inv() const { return voxel_size_inv_; }
   size_t voxels_per_side() const { return voxels_per_side_; }
+  FloatingPoint voxels_per_side_inv() const { return voxels_per_side_inv_; }
 
   // Serialization tools.
   void getProto(LayerProto* proto) const;
@@ -232,6 +239,7 @@ class Layer {
   FloatingPoint block_size_;
 
   // Derived types.
+  FloatingPoint voxel_size_inv_;
   FloatingPoint block_size_inv_;
   FloatingPoint voxels_per_side_inv_;
 

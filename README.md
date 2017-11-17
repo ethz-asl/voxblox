@@ -28,16 +28,16 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
 A video of voxblox being used for online planning on-board a multicopter can be seen [here](https://youtu.be/lrGSwAPzMOQ).
 
-If using voxblox for scientific publications, please cite the following paper:
+If using voxblox for scientific publications, please cite the following paper, available [here](http://helenol.github.io/publications/iros_2017_voxblox.pdf):
 
-Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Building 3D Signed Distance Fields for Planning**”, *arXiv preprint arXiv:1611.03631*, 2016.
+Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Incremental 3D Euclidean Signed Distance Fields for On-Board MAV Planning**”, in *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2016.
 
 ```latex
-@article{oleynikova2016voxblox,
-  title={Voxblox: Building 3D Signed Distance Fields for Planning},
-  author={Oleynikova, Helen and Taylor, Zachary and Fehr, Marius and Nieto, Juan and Siegwart, Roland},
-  journal={arXiv preprint arXiv:1611.03631},
-  year={2016}
+@inproceedings{oleynikova2017voxblox,
+  author={Oleynikova, Helen and Taylor, Zachary and Fehr, Marius and Siegwart, Roland and  Nieto, Juan},
+  booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  title={Voxblox: Incremental 3D Euclidean Signed Distance Fields for On-Board MAV Planning},
+  year={2017}
 }
 ```
 
