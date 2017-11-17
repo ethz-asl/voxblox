@@ -1,5 +1,6 @@
 #include "voxblox/integrator/tsdf_integrator.h"
 #include <iostream>
+#include <list>
 
 namespace voxblox {
 
@@ -222,7 +223,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 
   ThreadSafeIndex index_getter(points_C.size());
 
-  AlignedVector<std::thread> integration_threads;
+  std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&SimpleTsdfIntegrator::integrateFunction,
                                      this, T_G_C, points_C, colors,
@@ -437,10 +438,9 @@ void MergedTsdfIntegrator::integrateRays(
     integrateVoxels(T_G_C, points_C, colors, enable_anti_grazing, clearing_ray,
                     voxel_map, clear_map, thread_idx);
   } else {
-    AlignedVector<std::thread> integration_threads;
+      std::list<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
-      integration_threads.emplace_back(
-          &MergedTsdfIntegrator::integrateVoxels, this, T_G_C, points_C, colors,
+      integration_threads.emplace_back(&MergedTsdfIntegrator::integrateVoxels, this, T_G_C, points_C, colors,
           enable_anti_grazing, clearing_ray, voxel_map, clear_map, i);
     }
 
@@ -538,7 +538,7 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 
   ThreadSafeIndex index_getter(points_C.size());
 
-  AlignedVector<std::thread> integration_threads;
+  std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,
                                      this, T_G_C, points_C, colors,
