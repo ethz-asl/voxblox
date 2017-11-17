@@ -94,8 +94,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                         &TsdfServer::tsdfMapCallback, this);
   nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
 
-
-
   if (use_freespace_pointcloud_) {
     // points that are not inside an object, but may also not be on a surface.
     // These will only be used to mark freespace beyond the truncation distance.
