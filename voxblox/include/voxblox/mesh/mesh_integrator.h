@@ -24,6 +24,7 @@
 #define VOXBLOX_MESH_MESH_INTEGRATOR_H_
 
 #include <algorithm>
+#include <list>
 #include <thread>
 #include <vector>
 
@@ -91,7 +92,7 @@ class MeshIntegrator {
 
     ThreadSafeIndex index_getter(all_tsdf_blocks.size());
 
-    AlignedVector<std::thread> integration_threads;
+    std::list<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(
           &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
