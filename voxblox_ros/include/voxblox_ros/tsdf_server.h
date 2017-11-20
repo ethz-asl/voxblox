@@ -60,6 +60,7 @@ class TsdfServer {
   virtual void publishSlices();
   virtual void updateMesh();    // Incremental update.
   virtual bool generateMesh();  // Batch update.
+  virtual void publishPointclouds();  // Publishes all available pointclouds.
 
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
@@ -67,6 +68,9 @@ class TsdfServer {
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
   bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
                             std_srvs::Empty::Response& response);    // NOLINT
+  bool publishPointcloudsCallback(
+      std_srvs::Empty::Request& request,     // NOLINT
+      std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
 
@@ -126,6 +130,7 @@ class TsdfServer {
   ros::ServiceServer generate_mesh_srv_;
   ros::ServiceServer save_map_srv_;
   ros::ServiceServer load_map_srv_;
+  ros::ServiceServer publish_pointclouds_srv_;
 
   // Timers.
   ros::Timer update_mesh_timer_;
