@@ -30,6 +30,7 @@ class EsdfServer : public TsdfServer {
                             std_srvs::Empty::Response& response);  // NOLINT
 
   virtual void updateMesh();
+  virtual void publishPointclouds();
   virtual void newPoseCallback(const Transformation& T_G_C);
 
   // Call updateMesh if you want everything updated; call this specifically

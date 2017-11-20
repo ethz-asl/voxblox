@@ -137,6 +137,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "save_map", &TsdfServer::saveMapCallback, this);
   load_map_srv_ = nh_private_.advertiseService(
       "load_map", &TsdfServer::loadMapCallback, this);
+  publish_pointclouds_srv_ = nh_private_.advertiseService(
+      "publish_pointclouds", &TsdfServer::publishPointcloudsCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
   double update_mesh_every_n_sec = 0.0;
@@ -300,6 +302,14 @@ void TsdfServer::publishSlices() {
   tsdf_slice_pub_.publish(pointcloud);
 }
 
+void TsdfServer::publishPointclouds() {
+  // Combined function to publish all possible pointcloud messages -- surface
+  // pointclouds, updated points, and occupied points.
+  publishAllUpdatedTsdfVoxels();
+  publishTsdfSurfacePoints();
+  publishTsdfOccupiedNodes();
+}
+
 void TsdfServer::updateMesh() {
   if (verbose_) {
     ROS_INFO("Updating mesh.");
@@ -385,6 +395,13 @@ bool TsdfServer::loadMapCallback(
   return io::LoadBlocksFromFile(
       request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
       tsdf_map_->getTsdfLayerPtr());
+}
+
+bool TsdfServer::publishPointcloudsCallback(
+    std_srvs::Empty::Request& request,
+    std_srvs::Empty::Response& response) {  // NOLINT
+  publishPointclouds();
+  return true;
 }
 
 void TsdfServer::updateMeshEvent(const ros::TimerEvent& event) { updateMesh(); }
