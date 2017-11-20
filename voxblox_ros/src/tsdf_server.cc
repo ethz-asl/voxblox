@@ -294,7 +294,8 @@ void TsdfServer::publishSlices() {
 }
 
 void TsdfServer::publishPointclouds() {
-  // Combined function to publish everything we got.
+  // Combined function to publish all possible pointcloud messages -- surface
+  // pointclouds, updated points, and occupied points.
   publishAllUpdatedTsdfVoxels();
   publishTsdfSurfacePoints();
   publishTsdfOccupiedNodes();
