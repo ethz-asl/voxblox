@@ -74,14 +74,25 @@ std::string Timing::GetTag(size_t handle) {
   return tag;
 }
 
-// Class functions used for timing.
+// Timer base class
+TimerBase::TimerBase(size_t handle, bool constructStopped)
+    : timing_(false), handle_(handle) {}
+
+TimerBase::TimerBase(std::string const& tag, bool constructStopped)
+    : timing_(false), handle_(Timing::GetHandle(tag)) {}
+
+bool TimerBase::IsTiming() const { 
+  return timing_;
+}
+
+// Class functions used for timing (Wall time).
 Timer::Timer(size_t handle, bool constructStopped)
-    : timing_(false), handle_(handle) {
+    : TimerBase(handle, constructStopped) {
   if (!constructStopped) Start();
 }
 
 Timer::Timer(std::string const& tag, bool constructStopped)
-    : timing_(false), handle_(Timing::GetHandle(tag)) {
+    : TimerBase(tag, constructStopped) {
   if (!constructStopped) Start();
 }
 
@@ -107,7 +118,32 @@ void Timer::Stop() {
   timing_ = false;
 }
 
-bool Timer::IsTiming() const { return timing_; }
+// Class functions used for timing (Thread time).
+ThreadTimer::ThreadTimer(size_t handle, bool constructStopped)
+    : TimerBase(handle, constructStopped) {
+  if (!constructStopped) Start();
+}
+
+ThreadTimer::ThreadTimer(std::string const& tag, bool constructStopped)
+    : TimerBase(tag, constructStopped) {
+  if (!constructStopped) Start();
+}
+
+ThreadTimer::~ThreadTimer() {
+  if (IsTiming()) Stop();
+}
+
+void ThreadTimer::Start() {
+  timing_ = true;
+  time_ = clock();
+}
+
+void ThreadTimer::Stop() {
+  clock_t now = clock();
+  double dt = static_cast<double>(now - time_) / CLOCKS_PER_SEC;
+  Timing::Instance().AddTime(handle_, dt);
+  timing_ = false;
+}
 
 void Timing::AddTime(size_t handle, double seconds) {
   std::lock_guard<std::mutex> lock(Instance().mutex_);

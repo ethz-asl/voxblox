@@ -127,31 +127,13 @@ class DummyTimer {
   bool IsTiming() { return false; }
 };
 
-class Timer {
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  Timer(size_t handle, bool constructStopped = false);
-  Timer(std::string const& tag, bool constructStopped = false);
-  ~Timer();
-
-  void Start();
-  void Stop();
-  bool IsTiming() const;
-
- private:
-  std::chrono::time_point<std::chrono::system_clock> time_;
-
-  bool timing_;
-  size_t handle_;
-};
-
 class Timing {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   typedef std::map<std::string, size_t> map_t;
   friend class Timer;
+  friend class ThreadTimer;
   // Definition of static functions to query the timers.
   static size_t GetHandle(std::string const& tag);
   static std::string GetTag(size_t handle);
@@ -189,6 +171,57 @@ class Timing {
   map_t tagMap_;
   size_t maxTagLength_;
   std::mutex mutex_;
+};
+
+class TimerBase {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  TimerBase(size_t handle, bool constructStopped = false);
+  TimerBase(std::string const& tag, bool constructStopped = false);
+  virtual ~TimerBase() {}
+
+  virtual void Start() = 0; // Implemented by timing base class
+  virtual void Stop() = 0; // Implemented by timing base class
+  bool IsTiming() const;
+
+ protected:
+
+  bool timing_;
+  size_t handle_;
+
+};
+
+class Timer : public TimerBase {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  Timer(size_t handle, bool constructStopped = false);
+  Timer(std::string const& tag, bool constructStopped = false);
+  virtual ~Timer();
+
+  virtual void Start();
+  virtual void Stop();
+
+ private:
+  std::chrono::time_point<std::chrono::system_clock> time_;
+
+};
+
+class ThreadTimer : public TimerBase {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  ThreadTimer(size_t handle, bool constructStopped = false);
+  ThreadTimer(std::string const& tag, bool constructStopped = false);
+  virtual ~ThreadTimer();
+
+  virtual void Start();
+  virtual void Stop();
+
+ private:
+  clock_t time_;
+
 };
 
 #if ENABLE_MSF_TIMING
