@@ -133,6 +133,12 @@ void EsdfServer::updateMesh() {
   TsdfServer::updateMesh();
 }
 
+void EsdfServer::publishPointclouds() {
+  publishAllUpdatedEsdfVoxels();
+
+  TsdfServer::publishPointclouds();
+}
+
 void EsdfServer::updateEsdf() {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = true;
