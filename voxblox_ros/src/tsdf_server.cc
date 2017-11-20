@@ -328,11 +328,11 @@ void TsdfServer::updateMesh() {
   mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
 
-  if (publish_tsdf_map_ && tsdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = false;
+  if (publish_tsdf_map_ && tsdf_map_pub_.getNumSubscribers() > 0u) {
+    constexpr bool only_publish_updated_blocks = false;
     voxblox_msgs::Layer layer_msg;
-    serializeLayerAsMsg<TsdfVoxel>(tsdf_map_->getTsdfLayer(), only_updated,
-                                   &layer_msg);
+    serializeLayerAsMsg<TsdfVoxel>(tsdf_map_->getTsdfLayer(),
+                                   only_publish_updated_blocks, &layer_msg);
     tsdf_map_pub_.publish(layer_msg);
   }
 }
@@ -362,7 +362,7 @@ bool TsdfServer::generateMesh() {
 
   if (!mesh_filename_.empty()) {
     timing::Timer output_mesh_timer("mesh/output");
-    bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
+    const bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
     output_mesh_timer.Stop();
     if (success) {
       ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
