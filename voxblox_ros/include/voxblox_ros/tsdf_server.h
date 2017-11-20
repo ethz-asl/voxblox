@@ -83,6 +83,9 @@ class TsdfServer {
   // CLEARS THE ENTIRE MAP!
   virtual void clear();
 
+  // Overwrites the layer with what's coming from the topic!
+  void tsdfMapCallback(const voxblox_msgs::Layer& layer_msg);
+
  protected:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -111,6 +114,7 @@ class TsdfServer {
   // What output information to publish
   bool publish_tsdf_info_;
   bool publish_slices_;
+  bool publish_tsdf_map_;
 
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
@@ -125,6 +129,12 @@ class TsdfServer {
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
+
+  // Publish the complete map for other nodes to consume.
+  ros::Publisher tsdf_map_pub_;
+
+  // Subscriber to subscribe to another node generating the map.
+  ros::Subscriber tsdf_map_sub_;
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;

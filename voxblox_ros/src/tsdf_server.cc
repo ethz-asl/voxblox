@@ -63,6 +63,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       use_freespace_pointcloud_(false),
       publish_tsdf_info_(false),
       publish_slices_(false),
+      publish_tsdf_map_(false),
       transformer_(nh, nh_private) {
   getServerConfigFromRosParam(nh_private);
 
@@ -84,6 +85,14 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                     pointcloud_queue_size_);
   pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size_,
                                   &TsdfServer::insertPointcloud, this);
+
+  // Publishing/subscribing to a layer from another node (when using this as
+  // a library, for example within a planner).
+  tsdf_map_pub_ =
+      nh_private_.advertise<voxblox_msgs::Layer>("tsdf_map_out", 1, false);
+  tsdf_map_sub_ = nh_private_.subscribe("tsdf_map_in", 1,
+                                        &TsdfServer::tsdfMapCallback, this);
+  nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
 
   if (use_freespace_pointcloud_) {
     // points that are not inside an object, but may also not be on a surface.
@@ -318,6 +327,14 @@ void TsdfServer::updateMesh() {
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
+
+  if (publish_tsdf_map_ && tsdf_map_pub_.getNumSubscribers() > 0u) {
+    constexpr bool only_publish_updated_blocks = false;
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<TsdfVoxel>(tsdf_map_->getTsdfLayer(),
+                                   only_publish_updated_blocks, &layer_msg);
+    tsdf_map_pub_.publish(layer_msg);
+  }
 }
 
 bool TsdfServer::generateMesh() {
@@ -345,7 +362,7 @@ bool TsdfServer::generateMesh() {
 
   if (!mesh_filename_.empty()) {
     timing::Timer output_mesh_timer("mesh/output");
-    bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
+    const bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
     output_mesh_timer.Stop();
     if (success) {
       ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
@@ -392,6 +409,23 @@ void TsdfServer::updateMeshEvent(const ros::TimerEvent& event) { updateMesh(); }
 void TsdfServer::clear() {
   tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
   mesh_layer_->clear();
+}
+
+void TsdfServer::tsdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  bool success =
+      deserializeMsgToLayer<TsdfVoxel>(layer_msg, tsdf_map_->getTsdfLayerPtr());
+
+  if (!success) {
+    ROS_ERROR_THROTTLE(10, "Got an invalid TSDF map message!");
+  } else {
+    ROS_INFO_ONCE("Got an TSDF map from ROS topic!");
+    if (publish_tsdf_info_) {
+      publishAllUpdatedTsdfVoxels();
+    }
+    if (publish_slices_) {
+      publishSlices();
+    }
+  }
 }
 
 }  // namespace voxblox
