@@ -11,7 +11,7 @@ void SimulationWorld::addObject(std::unique_ptr<Object> object) {
 
 void SimulationWorld::addGroundLevel(FloatingPoint height) {
   objects_.emplace_back(
-      new Plane(Point(0.0, 0.0, height), Point(0.0, 0.0, 1.0)));
+      new PlaneObject(Point(0.0, 0.0, height), Point(0.0, 0.0, 1.0)));
 }
 
 void SimulationWorld::addPlaneBoundaries(FloatingPoint x_min,
@@ -20,15 +20,15 @@ void SimulationWorld::addPlaneBoundaries(FloatingPoint x_min,
                                          FloatingPoint y_max) {
   // X planes:
   objects_.emplace_back(
-      new Plane(Point(x_min, 0.0, 0.0), Point(1.0, 0.0, 0.0)));
+      new PlaneObject(Point(x_min, 0.0, 0.0), Point(1.0, 0.0, 0.0)));
   objects_.emplace_back(
-      new Plane(Point(x_max, 0.0, 0.0), Point(-1.0, 0.0, 0.0)));
+      new PlaneObject(Point(x_max, 0.0, 0.0), Point(-1.0, 0.0, 0.0)));
 
   // Y planes:
   objects_.emplace_back(
-      new Plane(Point(0.0, y_min, 0.0), Point(0.0, 1.0, 0.0)));
+      new PlaneObject(Point(0.0, y_min, 0.0), Point(0.0, 1.0, 0.0)));
   objects_.emplace_back(
-      new Plane(Point(0.0, y_max, 0.0), Point(0.0, -1.0, 0.0)));
+      new PlaneObject(Point(0.0, y_max, 0.0), Point(0.0, -1.0, 0.0)));
 }
 
 void SimulationWorld::clear() { objects_.clear(); }
