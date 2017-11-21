@@ -20,8 +20,8 @@ class TsdfMap {
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    FloatingPoint tsdf_voxel_size = 0.2;
-    size_t tsdf_voxels_per_side = 16u;
+    FloatingPoint tsdf_voxel_size = 0.01;
+    size_t tsdf_voxels_per_side = 8u;
   };
 
   explicit TsdfMap(const Config& config)
