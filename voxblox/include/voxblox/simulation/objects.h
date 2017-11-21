@@ -199,13 +199,13 @@ class Cube : public Object {
 };
 
 // Requires normal being passed in to ALREADY BE NORMALIZED!!!!
-class Plane : public Object {
+class PlaneObject : public Object {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Plane(const Point& center, const Point& normal)
+  PlaneObject(const Point& center, const Point& normal)
       : Object(center, Type::kPlane), normal_(normal) {}
-  Plane(const Point& center, const Point& normal, const Color& color)
+  PlaneObject(const Point& center, const Point& normal, const Color& color)
       : Object(center, Type::kPlane, color), normal_(normal) {
     CHECK_NEAR(normal.norm(), 1.0, 1e-3);
   }

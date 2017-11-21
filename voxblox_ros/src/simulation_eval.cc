@@ -16,10 +16,10 @@ class SimulationServerImpl : public voxblox::SimulationServer {
         new Sphere(Point(0.0, 0.0, 2.0), 2.0, Color::Red())));
 
     world_.addObject(std::unique_ptr<Object>(
-        new Plane(Point(-2.0, -4.0, 2.0), Point(0, 1, 0), Color::White())));
+        new PlaneObject(Point(-2.0, -4.0, 2.0), Point(0, 1, 0), Color::White())));
 
     world_.addObject(std::unique_ptr<Object>(
-        new Plane(Point(4.0, 0.0, 0.0), Point(-1, 0, 0), Color::Pink())));
+        new PlaneObject(Point(4.0, 0.0, 0.0), Point(-1, 0, 0), Color::Pink())));
 
     world_.addObject(std::unique_ptr<Object>(
         new Cube(Point(-4.0, 4.0, 2.0), Point(4, 4, 4), Color::Green())));
