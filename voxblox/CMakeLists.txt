@@ -50,8 +50,9 @@ set("${PROJECT_NAME}_SRCS"
   src/core/tsdf_map.cc
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
-  src/integrator/tsdf_integrator.cc
   src/integrator/integrator_utils.cc
+  src/integrator/merge_integration.cc
+  src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
