@@ -121,93 +121,30 @@ void LayerTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
 }
 
 template <typename VoxelType>
-void SetUpTestLayer(const size_t block_volume_diameter,
+void fillVoxelWithTestData(size_t x, size_t y, size_t z, VoxelType* voxel);
+
+template <typename VoxelType>
+void SetUpTestLayer(const IndexElement block_volume_diameter,
+                    const IndexElement block_volume_offset,
                     Layer<VoxelType>* layer) {
   CHECK_NOTNULL(layer);
-  LOG(FATAL) << "Not implemented for this voxel type!";
-}
 
-template <>
-void SetUpTestLayer(const size_t block_volume_diameter,
-                    Layer<TsdfVoxel>* layer) {
-  CHECK_NOTNULL(layer);
+  const IndexElement half_idx_range = block_volume_diameter / 2;
 
-  const int32_t half_index_range = block_volume_diameter / 2;
+  // For better readability.
+  const IndexElement& min_idx = -half_idx_range + block_volume_offset;
+  const IndexElement& max_idx = half_idx_range + block_volume_offset;
 
-  for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
-    for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
-      for (int32_t z = -half_index_range; z <= half_index_range; ++z) {
+  for (IndexElement x = min_idx; x <= max_idx; ++x) {
+    for (IndexElement y = min_idx; y <= max_idx; ++y) {
+      for (IndexElement z = min_idx; z <= max_idx; ++z) {
         BlockIndex block_idx = {x, y, z};
-        Block<TsdfVoxel>::Ptr block = layer->allocateBlockPtrByIndex(block_idx);
-        TsdfVoxel& voxel = block->getVoxelByLinearIndex(
-            (x * z + y) % layer->voxels_per_side());
-        voxel.distance = x * y * 0.66 + z;
-        voxel.weight = y * z * 0.33 + x;
-        voxel.color.r = static_cast<uint8_t>(x % 255);
-        voxel.color.g = static_cast<uint8_t>(y % 255);
-        voxel.color.b = static_cast<uint8_t>(z % 255);
-        voxel.color.a = static_cast<uint8_t>(x + y % 255);
-
-        block->has_data() = true;
-      }
-    }
-  }
-  const double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
-  std::cout << std::endl
-            << "Set up a test TSDF layer of size " << size_in_MB << " MB";
-}
-
-template <>
-void SetUpTestLayer(const size_t block_volume_diameter,
-                    Layer<EsdfVoxel>* layer) {
-  CHECK_NOTNULL(layer);
-
-  const int32_t half_index_range = block_volume_diameter / 2;
-
-  for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
-    for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
-      for (int32_t z = -half_index_range; z <= half_index_range; ++z) {
-        BlockIndex block_idx = {x, y, z};
-        Block<EsdfVoxel>::Ptr block = layer->allocateBlockPtrByIndex(block_idx);
-        EsdfVoxel& voxel = block->getVoxelByLinearIndex(
-            (x * z + y) % layer->voxels_per_side());
-
-        voxel.distance = x * y * 0.66 + z;
-        voxel.parent.x() = x % 255;
-        voxel.parent.y() = y % 255;
-        voxel.parent.z() = z % 255;
-
-        voxel.observed = true;
-        voxel.in_queue = true;
-        voxel.fixed = true;
-
-        block->has_data() = true;
-      }
-    }
-  }
-  const double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
-  std::cout << std::endl
-            << "Set up a test ESDF layer of size " << size_in_MB << " MB";
-}
-
-template <>
-void SetUpTestLayer(const size_t block_volume_diameter,
-                    Layer<OccupancyVoxel>* layer) {
-  CHECK_NOTNULL(layer);
-
-  const int32_t half_index_range = block_volume_diameter / 2;
-
-  for (int32_t x = -half_index_range; x <= half_index_range; ++x) {
-    for (int32_t y = -half_index_range; y <= half_index_range; ++y) {
-      for (int32_t z = -half_index_range; z <= half_index_range; ++z) {
-        BlockIndex block_idx = {x, y, z};
-        Block<OccupancyVoxel>::Ptr block =
+        typename Block<VoxelType>::Ptr block =
             layer->allocateBlockPtrByIndex(block_idx);
-        OccupancyVoxel& voxel = block->getVoxelByLinearIndex(
+        VoxelType& voxel = block->getVoxelByLinearIndex(
             (x * z + y) % layer->voxels_per_side());
 
-        voxel.probability_log = x * y * 0.66 + z;
-        voxel.observed = true;
+        fillVoxelWithTestData(x, y, z, &voxel);
 
         block->has_data() = true;
       }
@@ -215,8 +152,25 @@ void SetUpTestLayer(const size_t block_volume_diameter,
   }
   const double size_in_MB = static_cast<double>(layer->getMemorySize()) * 1e-6;
   std::cout << std::endl
-            << "Set up a test occupancy layer of size " << size_in_MB << " MB";
+            << "Set up a test layer of size " << size_in_MB << " MB";
 }
+
+template <typename VoxelType>
+void SetUpTestLayer(const IndexElement block_volume_diameter,
+                    Layer<VoxelType>* layer) {
+  constexpr IndexElement kBlockVolumeOffset = 0u;
+  SetUpTestLayer(block_volume_diameter, kBlockVolumeOffset, layer);
+}
+
+template <>
+void fillVoxelWithTestData(size_t x, size_t y, size_t z, TsdfVoxel* voxel);
+
+template <>
+void fillVoxelWithTestData(size_t x, size_t y, size_t z, EsdfVoxel* voxel);
+
+template <>
+void fillVoxelWithTestData(size_t x, size_t y, size_t z, OccupancyVoxel* voxel);
+
 }  // namespace test
 }  // namespace voxblox
 

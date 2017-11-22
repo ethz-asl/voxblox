@@ -56,6 +56,7 @@ set("${PROJECT_NAME}_SRCS"
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
+  src/test/layer_test_utils.cc
   src/utils/camera_model.cc
   src/utils/layer_utils.cc
   src/utils/protobuf_utils.cc
