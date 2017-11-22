@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_TEST_LAYER_UTILS_H_
-#define VOXBLOX_TEST_LAYER_UTILS_H_
+#ifndef VOXBLOX_UTILS_LAYER_UTILS_H_
+#define VOXBLOX_UTILS_LAYER_UTILS_H_
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -114,4 +114,4 @@ bool isSameVoxel(const OccupancyVoxel& voxel_A, const OccupancyVoxel& voxel_B);
 }  // namespace utils
 }  // namespace voxblox
 
-#endif  // VOXBLOX_TEST_LAYER_UTILS_H_
+#endif  // VOXBLOX_UTILS_LAYER_UTILS_H_
