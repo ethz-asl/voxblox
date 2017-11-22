@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_CORE_IO_SDF_PLY_H_
-#define VOXBLOX_CORE_IO_SDF_PLY_H_
+#ifndef VOXBLOX_IO_SDF_PLY_H_
+#define VOXBLOX_IO_SDF_PLY_H_
 
 #include <algorithm>
 #include <string>
@@ -130,8 +130,7 @@ bool outputLayerAsPly(const Layer<VoxelType>& layer,
     case PlyOutputTypes::kSdfIsosurface: {
       typename MeshIntegrator<VoxelType>::Config mesh_config;
       MeshLayer::Ptr mesh(new MeshLayer(layer.block_size()));
-      MeshIntegrator<VoxelType> mesh_integrator(mesh_config, &layer,
-                                                mesh.get());
+      MeshIntegrator<VoxelType> mesh_integrator(mesh_config, layer, mesh.get());
 
       constexpr bool only_mesh_updated_blocks = false;
       constexpr bool clear_updated_flag = false;
@@ -151,4 +150,4 @@ bool outputLayerAsPly(const Layer<VoxelType>& layer,
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_IO_SDF_PLY_H_
+#endif  // VOXBLOX_IO_SDF_PLY_H_
