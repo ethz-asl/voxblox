@@ -58,6 +58,7 @@ set("${PROJECT_NAME}_SRCS"
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
   src/utils/camera_model.cc
+  src/utils/evaluation_utils.cc
   src/utils/layer_utils.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
@@ -165,6 +166,12 @@ catkin_add_gtest(test_layer
   test/test_layer.cc
 )
 target_link_libraries(test_layer ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+
+catkin_add_gtest(test_merge_integration
+  test/test_merge_integration.cc
+)
+target_link_libraries(test_merge_integration ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 ##########
 # EXPORT #
