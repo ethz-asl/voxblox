@@ -39,11 +39,16 @@ class LayerMergeToolTest : public ::testing::Test,
     upper_bound = -lower_bound;
     simulation.setBounds(lower_bound, upper_bound);
 
-    constexpr FloatingPoint kTranslation = 0.15;
-    // 20 degrees
-    constexpr FloatingPoint kRotationAngle = 0.5;
-
-    T_A_B_.setRandom(kTranslation, kRotationAngle);
+    // Transformation generated at random by minkindr
+    // Translation 0.15m, Rotation: 28.6479 degrees
+    // clang-format off
+    Eigen::Matrix<FloatingPoint, 4, 4> T_A_B;
+    T_A_B <<  0.959292,  0.233991, 0.158138, -0.0627464,
+             -0.277701,  0.883428, 0.377407,  0.126472,
+             -0.051394, -0.405959, 0.912445, -0.0506717,
+              0.      ,  0.      , 0.      ,  1.;
+    // clang-format on
+    T_A_B_ = Transformation(T_A_B);
 
     // Define sphere 1.
     Point c1_A;
@@ -92,7 +97,9 @@ class LayerMergeToolTest : public ::testing::Test,
 };
 
 typedef LayerMergeToolTest<TsdfVoxel> TsdfLayerMergeToolTest;
-typedef LayerMergeToolTest<EsdfVoxel> EsdfLayerMergeToolTest;
+
+// TODO(mfehr): Not yet supported by the layer merging function.
+// typedef LayerMergeToolTest<EsdfVoxel> EsdfLayerMergeToolTest;
 
 TEST_F(TsdfLayerMergeToolTest, MergeTwoTsdfLayers) {
   initializeSimulatedWorlds();
@@ -116,15 +123,18 @@ TEST_F(TsdfLayerMergeToolTest, MergeTwoTsdfLayers) {
   utils::evaluateLayersRmse(*world_B_compare_, *world_B_,
                             utils::VoxelEvaluationMode::kEvaluateAllVoxels,
                             &result);
-  constexpr FloatingPoint kFloatingPointTolerance = 5e-5;
-  EXPECT_NEAR(result.rmse, 6e-5, kFloatingPointTolerance);
-  EXPECT_NEAR(result.min_error, 0.0, kFloatingPointTolerance);
-  EXPECT_NEAR(result.max_error, 0.002089, kFloatingPointTolerance);
-  constexpr size_t kUintTolerance = 10;
+  constexpr FloatingPoint kFloatingPointToleranceLow = 5e-5;
+  EXPECT_NEAR(result.rmse, 6e-5, kFloatingPointToleranceLow);
+
+  constexpr FloatingPoint kFloatingPointToleranceHigh = 1e-4;
+  EXPECT_NEAR(result.min_error, 0.0, kFloatingPointToleranceHigh);
+  EXPECT_NEAR(result.max_error, 0.002, kFloatingPointToleranceHigh);
+
+  constexpr size_t kUintTolerance = 10u;
   EXPECT_NEAR(result.num_evaluated_voxels, 7529536, kUintTolerance);
   EXPECT_NEAR(result.num_ignored_voxels, 0, kUintTolerance);
   EXPECT_NEAR(result.num_overlapping_voxels, 7529536, kUintTolerance);
-  EXPECT_NEAR(result.num_non_overlapping_voxels, 3074567, kUintTolerance);
+  EXPECT_NEAR(result.num_non_overlapping_voxels, 2861735, kUintTolerance);
 
   const std::string kMergedLayerPlyFile =
       kFolderPrefix + "world_A_and_B.tsdf.ply";
