@@ -14,7 +14,7 @@
 
 namespace voxblox {
 
-static constexpr FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
+static const FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
 
 template <typename VoxelType>
 void mergeVoxelAIntoVoxelB(const VoxelType& voxel_A, VoxelType* voxel_B);
