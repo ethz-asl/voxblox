@@ -277,12 +277,8 @@ void SimulationServer::evaluate() {
   // First evaluate the TSDF vs ground truth...
   // Use only observed points.
 
-  const double tsdf_rmse = utils::evaluateLayersRmse(
-      *tsdf_gt_, *tsdf_test_,
-      utils::VoxelEvaluationMode::kIgnoreErrorBehindTestSurface);
-  const double esdf_rmse = utils::evaluateLayersRmse(
-      *esdf_gt_, *esdf_test_,
-      utils::VoxelEvaluationMode::kIgnoreErrorBehindTestSurface);
+  const double tsdf_rmse = utils::evaluateLayersRmse(*tsdf_gt_, *tsdf_test_);
+  const double esdf_rmse = utils::evaluateLayersRmse(*esdf_gt_, *esdf_test_);
 
   ROS_INFO_STREAM("TSDF RMSE: " << tsdf_rmse << " ESDF RMSE: " << esdf_rmse);
 
