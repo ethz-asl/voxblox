@@ -58,7 +58,7 @@ inline bool TsdfIntegratorBase::isPointValid(const Point& point_C,
 // mutex allowing it to grow during integration.
 // These temporary blocks can be merged into the layer later by calling
 // updateLayerWithStoredBlocks()
-inline TsdfVoxel* TsdfIntegratorBase::allocateStorageAndGetVoxelPtr(
+TsdfVoxel* TsdfIntegratorBase::allocateStorageAndGetVoxelPtr(
     const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
     BlockIndex* last_block_idx) {
   DCHECK(last_block != nullptr);
@@ -104,7 +104,7 @@ inline TsdfVoxel* TsdfIntegratorBase::allocateStorageAndGetVoxelPtr(
 }
 
 // NOT thread safe
-inline void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
+void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
   BlockIndex last_block_idx;
   Block<TsdfVoxel>::Ptr block = nullptr;
 
@@ -117,7 +117,7 @@ inline void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
 }
 
 // Updates tsdf_voxel. Thread safe.
-inline void TsdfIntegratorBase::updateTsdfVoxel(
+void TsdfIntegratorBase::updateTsdfVoxel(
     const Point& origin, const Point& point_G,
     const VoxelIndex& global_voxel_idx, const Color& color, const float weight,
     TsdfVoxel* tsdf_voxel) {
@@ -198,7 +198,7 @@ inline float TsdfIntegratorBase::computeDistance(
 }
 
 // Thread safe.
-inline float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
+float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
   if (config_.use_const_weight) {
     return 1.0f;
   }
@@ -303,7 +303,7 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   integrate_timer.Stop();
 }
 
-inline void MergedTsdfIntegrator::bundleRays(
+void MergedTsdfIntegrator::bundleRays(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, const bool freespace_points,
     ThreadSafeIndex* index_getter,
