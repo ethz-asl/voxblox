@@ -155,6 +155,8 @@ FloatingPoint evaluateLayersRmse(
   return evaluation_details.rmse;
 }
 
+// Overload for convenient RMSE calculation. Per default this function does not
+// evaluate errors behind the test surface.
 template <typename VoxelType>
 FloatingPoint evaluateLayersRmse(const Layer<VoxelType>& layer_gt,
                                  const Layer<VoxelType>& layer_test) {
