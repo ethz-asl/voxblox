@@ -165,6 +165,11 @@ catkin_add_gtest(test_layer
 )
 target_link_libraries(test_layer ${PROJECT_NAME} ${catkin_LIBRARIES})
 
+catkin_add_gtest(test_layer_utils
+  test/test_layer_utils.cc
+)
+target_link_libraries(test_layer_utils ${PROJECT_NAME} ${catkin_LIBRARIES})
+
 ##########
 # EXPORT #
 ##########
