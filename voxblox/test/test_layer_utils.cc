@@ -42,21 +42,30 @@ TEST_F(TsdfLayerUtilsTest, centerBlocksOfLayerTsdfTest) {
   Point new_layer_origin;
   utils::centerBlocksOfLayer(layer_.get(), &new_layer_origin);
 
-  EXPECT_TRUE(EIGEN_MATRIX_NEAR(new_layer_origin, Point::Zero(), kPrecision));
+  EXPECT_TRUE(EIGEN_MATRIX_NEAR(
+      new_layer_origin,
+      voxel_size_ * voxels_per_side_ * kBlockVolumeOffset * Point::Ones(),
+      kPrecision));
 }
 
 TEST_F(EsdfLayerUtilsTest, centerBlocksOfLayerEsdfTest) {
   Point new_layer_origin;
   utils::centerBlocksOfLayer(layer_.get(), &new_layer_origin);
 
-  EXPECT_TRUE(EIGEN_MATRIX_NEAR(new_layer_origin, Point::Zero(), kPrecision));
+  EXPECT_TRUE(EIGEN_MATRIX_NEAR(
+      new_layer_origin,
+      voxel_size_ * voxels_per_side_ * kBlockVolumeOffset * Point::Ones(),
+      kPrecision));
 }
 
 TEST_F(OccupancyLayerUtilsTest, centerBlocksOfLayerOccupancyTest) {
   Point new_layer_origin;
   utils::centerBlocksOfLayer(layer_.get(), &new_layer_origin);
 
-  EXPECT_TRUE(EIGEN_MATRIX_NEAR(new_layer_origin, Point::Zero(), kPrecision));
+  EXPECT_TRUE(EIGEN_MATRIX_NEAR(
+      new_layer_origin,
+      voxel_size_ * voxels_per_side_ * kBlockVolumeOffset * Point::Ones(),
+      kPrecision));
 }
 
 int main(int argc, char** argv) {
