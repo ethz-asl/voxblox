@@ -129,7 +129,7 @@ void centerBlocksOfLayer(Layer<VoxelType>* layer, Point* new_layer_origin) {
   BlockIndexList block_indices;
   layer->getAllAllocatedBlocks(&block_indices);
   for (const BlockIndex block_index : block_indices) {
-    centroid += centroid;
+    centroid += block_index.cast<FloatingPoint>();
   }
   centroid /= static_cast<FloatingPoint>(block_indices.size());
 
