@@ -137,19 +137,19 @@ void centerBlocksOfLayer(Layer<VoxelType>* layer, Point* new_layer_origin) {
   const BlockIndex index_centroid =
       (centroid + 0.5 * Point::Ones()).cast<IndexElement>();
 
-  LOG(ERROR) << "The index centroid of all allocated blocks is: "
-             << index_centroid;
+  VLOG(1) << "The index centroid of all allocated blocks is: "
+          << index_centroid;
 
   // Loop over all blocks and change their spatial indices.
   // The only way to do this is to remove them all, store them in a temporary
   // hash map and re-insert them again. This sounds worse than it is, the blocks
-  // are all shared ptrs and therefore only a negligable amount of real memory
+  // are all shared ptrs and therefore only a negligible amount of real memory
   // operations is necessary.
   const size_t num_allocated_blocks_before =
       layer->getNumberOfAllocatedBlocks();
   typename Layer<VoxelType>::BlockHashMap temporary_map;
   layer->getAllAllocatedBlocks(&block_indices);
-  for (const BlockIndex block_index : block_indices) {
+  for (const BlockIndex& block_index : block_indices) {
     // Extract block and shift block index.
     temporary_map.emplace(block_index - index_centroid,
                           layer->getBlockPtrByIndex(block_index));
