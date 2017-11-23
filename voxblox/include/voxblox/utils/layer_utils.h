@@ -1,6 +1,11 @@
 #ifndef VOXBLOX_UTILS_LAYER_UTILS_H_
 #define VOXBLOX_UTILS_LAYER_UTILS_H_
 
+#include <utility>
+
+#include <Eigen/Core>
+
+#include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 
@@ -110,6 +115,60 @@ bool isSameVoxel(const EsdfVoxel& voxel_A, const EsdfVoxel& voxel_B);
 
 template <>
 bool isSameVoxel(const OccupancyVoxel& voxel_A, const OccupancyVoxel& voxel_B);
+
+// This function will shift all the blocks such that the new grid origin will be
+// close to the centroid of all allocated blocks. The new_layer_origin is the
+// origin of the new grid expressed in the old grids coordinate frame.
+template <typename VoxelType>
+void centerBlocksOfLayer(Layer<VoxelType>* layer, Point* new_layer_origin) {
+  CHECK_NOTNULL(layer);
+  CHECK_NOTNULL(new_layer_origin);
+
+  // Compute the exact cenroid of all allocated block indices.
+  Point centroid = Point::Zero();
+  BlockIndexList block_indices;
+  layer->getAllAllocatedBlocks(&block_indices);
+  for (const BlockIndex block_index : block_indices) {
+    centroid += block_index.cast<FloatingPoint>();
+  }
+  centroid /= static_cast<FloatingPoint>(block_indices.size());
+
+  // Round to nearest block index to centroid.
+  const BlockIndex index_centroid =
+      (centroid + 0.5 * Point::Ones()).cast<IndexElement>();
+
+  VLOG(1) << "The index centroid of all allocated blocks is: "
+          << index_centroid;
+
+  // Loop over all blocks and change their spatial indices.
+  // The only way to do this is to remove them all, store them in a temporary
+  // hash map and re-insert them again. This sounds worse than it is, the blocks
+  // are all shared ptrs and therefore only a negligible amount of real memory
+  // operations is necessary.
+  const size_t num_allocated_blocks_before =
+      layer->getNumberOfAllocatedBlocks();
+  typename Layer<VoxelType>::BlockHashMap temporary_map;
+  layer->getAllAllocatedBlocks(&block_indices);
+  for (const BlockIndex& block_index : block_indices) {
+    // Extract block and shift block index.
+    temporary_map.emplace(block_index - index_centroid,
+                          layer->getBlockPtrByIndex(block_index));
+  }
+
+  layer->removeAllBlocks();
+  CHECK_EQ(layer->getNumberOfAllocatedBlocks(), 0u);
+
+  // Insert into layer again.
+  for (const std::pair<const BlockIndex, typename Block<VoxelType>::Ptr>&
+           idx_block_pair : temporary_map) {
+    layer->insertBlock(idx_block_pair);
+  }
+  CHECK_EQ(layer->getNumberOfAllocatedBlocks(), num_allocated_blocks_before);
+
+  // Return the new origin expressed in the old origins coordinate frame.
+  const FloatingPoint block_size = layer->block_size();
+  *new_layer_origin = index_centroid.cast<FloatingPoint>() * block_size;
+}
 
 }  // namespace utils
 }  // namespace voxblox
