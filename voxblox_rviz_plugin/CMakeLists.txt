@@ -45,7 +45,6 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   ${QT_LIBRARIES}
-  ${catkin_LIBRARIES}
 )
 
 ##########
