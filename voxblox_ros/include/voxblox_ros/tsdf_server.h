@@ -60,6 +60,7 @@ class TsdfServer {
   virtual void publishSlices();
   virtual void updateMesh();    // Incremental update.
   virtual bool generateMesh();  // Batch update.
+  virtual void publishPointclouds();  // Publishes all available pointclouds.
 
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
@@ -67,6 +68,9 @@ class TsdfServer {
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
   bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
                             std_srvs::Empty::Response& response);    // NOLINT
+  bool publishPointcloudsCallback(
+      std_srvs::Empty::Request& request,     // NOLINT
+      std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
 
@@ -78,6 +82,9 @@ class TsdfServer {
 
   // CLEARS THE ENTIRE MAP!
   virtual void clear();
+
+  // Overwrites the layer with what's coming from the topic!
+  void tsdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
  protected:
   ros::NodeHandle nh_;
@@ -107,6 +114,7 @@ class TsdfServer {
   // What output information to publish
   bool publish_tsdf_info_;
   bool publish_slices_;
+  bool publish_tsdf_map_;
 
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
@@ -122,10 +130,17 @@ class TsdfServer {
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
 
+  // Publish the complete map for other nodes to consume.
+  ros::Publisher tsdf_map_pub_;
+
+  // Subscriber to subscribe to another node generating the map.
+  ros::Subscriber tsdf_map_sub_;
+
   // Services.
   ros::ServiceServer generate_mesh_srv_;
   ros::ServiceServer save_map_srv_;
   ros::ServiceServer load_map_srv_;
+  ros::ServiceServer publish_pointclouds_srv_;
 
   // Timers.
   ros::Timer update_mesh_timer_;

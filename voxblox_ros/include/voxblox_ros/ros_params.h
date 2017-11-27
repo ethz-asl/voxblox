@@ -35,9 +35,7 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
 
   integrator_config.voxel_carving_enabled = true;
 
-  TsdfMap::Config tsdf_config;
-  nh_private.param("tsdf_voxel_size", tsdf_config.tsdf_voxel_size,
-                   tsdf_config.tsdf_voxel_size);
+  const TsdfMap::Config tsdf_config = getTsdfMapConfigFromRosParam(nh_private);
   integrator_config.default_truncation_distance =
       tsdf_config.tsdf_voxel_size * 4;
 
@@ -82,20 +80,9 @@ inline EsdfMap::Config getEsdfMapConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   EsdfMap::Config esdf_config;
 
-  // TODO(helenol): in the future allow different ESDF and TSDF voxel sizes...
-  nh_private.param("tsdf_voxel_size", esdf_config.esdf_voxel_size,
-                   esdf_config.esdf_voxel_size);
-
-  // No specialization for ros param for size_t, so have to do this annoying
-  // workaround.
-  int voxels_per_side = esdf_config.esdf_voxels_per_side;
-  nh_private.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
-  if (!isPowerOfTwo(voxels_per_side)) {
-    ROS_ERROR("voxels_per_side must be a power of 2, setting to default value");
-    voxels_per_side = esdf_config.esdf_voxels_per_side;
-  }
-  esdf_config.esdf_voxels_per_side = voxels_per_side;
-
+  const TsdfMap::Config tsdf_config = getTsdfMapConfigFromRosParam(nh_private);
+  esdf_config.esdf_voxel_size = tsdf_config.tsdf_voxel_size;
+  esdf_config.esdf_voxels_per_side = tsdf_config.tsdf_voxels_per_side;
   return esdf_config;
 }
 
