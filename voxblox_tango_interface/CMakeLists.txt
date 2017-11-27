@@ -87,8 +87,7 @@ if(HAVE_PYBIND11)
     src/pybind11/tango_layer_io_bind.cc)
   set_target_properties(voxblox_tango_interfacepy PROPERTIES LINKER_LANGUAGE CXX)
   target_link_libraries(voxblox_tango_interfacepy PUBLIC ${PROJECT_NAME}_proto
-                                                         ${PROTOBUF_LIBRARIES}
-                                                         ${catkin_LIBRARIES})
+                                                         ${PROTOBUF_LIBRARIES})
 
   set_target_properties(voxblox_tango_interfacepy
     PROPERTIES LIBRARY_OUTPUT_DIRECTORY
@@ -103,17 +102,17 @@ endif()
 add_executable(mesh_tango_tsdf
   test/mesh_tango_tsdf.cc
 )
-target_link_libraries(mesh_tango_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(mesh_tango_tsdf ${PROJECT_NAME})
 
 add_executable(tango_tsdf_resize_to_tsdf
   test/tango_tsdf_resize_to_tsdf.cc
 )
-target_link_libraries(tango_tsdf_resize_to_tsdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(tango_tsdf_resize_to_tsdf ${PROJECT_NAME})
 
 add_executable(tango_tsdf_to_esdf
   test/tango_tsdf_to_esdf.cc
 )
-target_link_libraries(tango_tsdf_to_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(tango_tsdf_to_esdf ${PROJECT_NAME})
 
 ##########
 # EXPORT #
