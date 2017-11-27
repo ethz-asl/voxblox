@@ -108,8 +108,7 @@ if(HAVE_PYBIND11)
     src/pybind11/bind.cc)
   set_target_properties(voxbloxpy PROPERTIES LINKER_LANGUAGE CXX)
   target_link_libraries(voxbloxpy PUBLIC ${PROJECT_NAME}_proto
-                                         ${PROTOBUF_LIBRARIES}
-                                         ${catkin_LIBRARIES})
+                                         ${PROTOBUF_LIBRARIES})
 
   set_target_properties(voxbloxpy
     PROPERTIES LIBRARY_OUTPUT_DIRECTORY
@@ -123,12 +122,12 @@ endif()
 add_executable(tsdf_to_esdf
   test/tsdf_to_esdf.cc
 )
-target_link_libraries(tsdf_to_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(tsdf_to_esdf ${PROJECT_NAME})
 
 add_executable(test_load_esdf
   test/test_load_esdf.cc
 )
-target_link_libraries(test_load_esdf ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_load_esdf ${PROJECT_NAME})
 
 #########
 # TESTS #
@@ -150,22 +149,22 @@ target_link_libraries(test_approx_hash_array ${PROJECT_NAME})
 catkin_add_gtest(test_tsdf_map
   test/test_tsdf_map.cc
 )
-target_link_libraries(test_tsdf_map ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_tsdf_map ${PROJECT_NAME})
 
 catkin_add_gtest(test_protobuf
   test/test_protobuf.cc
 )
-target_link_libraries(test_protobuf ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_protobuf ${PROJECT_NAME})
 
 catkin_add_gtest(test_tsdf_interpolator
   test/test_tsdf_interpolator.cc
 )
-target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME})
 
 catkin_add_gtest(test_layer
   test/test_layer.cc
 )
-target_link_libraries(test_layer ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_layer ${PROJECT_NAME})
 
 catkin_add_gtest(test_merge_integration
   test/test_merge_integration.cc
@@ -175,7 +174,7 @@ target_link_libraries(test_merge_integration ${PROJECT_NAME} ${catkin_LIBRARIES}
 catkin_add_gtest(test_layer_utils
   test/test_layer_utils.cc
 )
-target_link_libraries(test_layer_utils ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_layer_utils ${PROJECT_NAME})
 
 ##########
 # EXPORT #
