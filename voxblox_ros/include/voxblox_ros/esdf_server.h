@@ -30,12 +30,14 @@ class EsdfServer : public TsdfServer {
                             std_srvs::Empty::Response& response);  // NOLINT
 
   virtual void updateMesh();
+  virtual void publishPointclouds();
   virtual void newPoseCallback(const Transformation& T_G_C);
 
   // Call updateMesh if you want everything updated; call this specifically
   // if you don't want the mesh or visualization.
   void updateEsdf();
 
+  // Overwrites the layer with what's coming from the topic!
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
   std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
@@ -62,6 +64,7 @@ class EsdfServer : public TsdfServer {
   ros::ServiceServer generate_esdf_srv_;
 
   bool clear_sphere_for_planning_;
+  bool publish_esdf_map_;
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;

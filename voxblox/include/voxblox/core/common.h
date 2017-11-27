@@ -56,6 +56,7 @@ typedef IndexVector VoxelIndexList;
 
 struct Color;
 typedef uint32_t Label;
+typedef uint32_t LabelConfidence;
 
 // Pointcloud types for external interface.
 typedef AlignedVector<Point> Pointcloud;

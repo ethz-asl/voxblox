@@ -13,6 +13,7 @@
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="false" />
     <param name="verbose" value="true" />
+    <param name="max_attempts_to_generate_viewpoint" value="50" />
   </node>
 
 </launch>

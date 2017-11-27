@@ -22,4 +22,5 @@
   <depend>minkindr</depend>
   <!-- This is an OPTIONAL dep! Will use system library if not present. -->
   <depend>protobuf_catkin</depend>
+
 </package>
