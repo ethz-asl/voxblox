@@ -165,8 +165,7 @@ void CameraModel::calculateBoundingPlanes() {
     }
   }
 
-  VLOG(5) << "AABB min:\n"
-          << aabb_min_.transpose() << "\nAABB max:\n"
+  VLOG(5) << "AABB min:\n" << aabb_min_.transpose() << "\nAABB max:\n"
           << aabb_max_.transpose();
 }
 
@@ -183,6 +182,59 @@ bool CameraModel::isPointInView(const Point& point) const {
     }
   }
   return true;
+}
+
+void CameraModel::getBoundingLines(AlignedVector<Point>* lines) const {
+  lines->clear();
+  lines->reserve(24);
+
+  // Transform the points again... This is just for visualization so we can
+  // waste a bit more time here.
+  AlignedVector<Point> transformed_corners;
+  transformed_corners.resize(untransformed_corners_.size());
+
+  // Transform all the points.
+  for (size_t i = 0; i < untransformed_corners_.size(); ++i) {
+    transformed_corners[i] =
+        T_G_C_ * untransformed_corners_[i];
+  }
+
+  // All pairs of lines.
+  lines->push_back(transformed_corners[0]);
+  lines->push_back(transformed_corners[1]);
+
+  lines->push_back(transformed_corners[1]);
+  lines->push_back(transformed_corners[2]);
+
+  lines->push_back(transformed_corners[2]);
+  lines->push_back(transformed_corners[3]);
+
+  lines->push_back(transformed_corners[3]);
+  lines->push_back(transformed_corners[0]);
+
+  lines->push_back(transformed_corners[4]);
+  lines->push_back(transformed_corners[5]);
+
+  lines->push_back(transformed_corners[5]);
+  lines->push_back(transformed_corners[6]);
+
+  lines->push_back(transformed_corners[6]);
+  lines->push_back(transformed_corners[7]);
+
+  lines->push_back(transformed_corners[7]);
+  lines->push_back(transformed_corners[4]);
+
+  lines->push_back(transformed_corners[0]);
+  lines->push_back(transformed_corners[4]);
+
+  lines->push_back(transformed_corners[1]);
+  lines->push_back(transformed_corners[5]);
+
+  lines->push_back(transformed_corners[3]);
+  lines->push_back(transformed_corners[7]);
+
+  lines->push_back(transformed_corners[2]);
+  lines->push_back(transformed_corners[6]);
 }
 
 }  // namespace voxblox

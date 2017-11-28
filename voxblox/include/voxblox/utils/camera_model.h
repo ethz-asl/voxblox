@@ -61,6 +61,13 @@ class CameraModel {
   void getAabb(Point* aabb_min, Point* aabb_max) const;
   bool isPointInView(const Point& point) const;
 
+  // Accessor functions for visualization (or other reasons).
+  const AlignedVector<Plane>& getBoundingPlanes() const {
+    return bounding_planes_;
+  }
+  // Gives all the bounding lines of the planes in connecting order.
+  void getBoundingLines(AlignedVector<Point>* lines) const;
+
  private:
   void calculateBoundingPlanes();
 
