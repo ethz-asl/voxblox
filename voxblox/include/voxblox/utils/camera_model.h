@@ -62,10 +62,12 @@ class CameraModel {
   bool isPointInView(const Point& point) const;
 
   // Accessor functions for visualization (or other reasons).
+  // Bounding planes are returned in the global coordinate frame.
   const AlignedVector<Plane>& getBoundingPlanes() const {
     return bounding_planes_;
   }
-  // Gives all the bounding lines of the planes in connecting order.
+  // Gives all the bounding lines of the planes in connecting order, expressed
+  // in the global coordinate frame.
   void getBoundingLines(AlignedVector<Point>* lines) const;
 
  private:
@@ -78,10 +80,10 @@ class CameraModel {
 
   // The original vertices of the frustum, in the axis-aligned coordinate frame
   // (before rotation).
-  AlignedVector<Point> untransformed_corners_;
+  AlignedVector<Point> corners_C_;
 
   // The 6 bounding planes for the current camera pose, and their corresponding
-  // AABB (Axis Aligned Bounding Box).
+  // AABB (Axis Aligned Bounding Box). Expressed in global coordinate frame.
   AlignedVector<Plane> bounding_planes_;
   Point aabb_min_;
   Point aabb_max_;
