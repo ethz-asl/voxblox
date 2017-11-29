@@ -44,38 +44,38 @@ void CameraModel::setIntrinsicsFromFoV(double horizontal_fov,
   // Given this information, create 6 bounding planes, assuming the camera is
   // pointing with in the positive X direction.
   // We create the planes by calculating all the corner points and store them
-  // as untransformed_corners_.
+  // as corners_C_.
   // The planes are computed once a pose is set.
-  untransformed_corners_.clear();
-  untransformed_corners_.reserve(8);
+  corners_C_.clear();
+  corners_C_.reserve(8);
 
   // First compute the near plane.
   double tan_half_horizontal_fov = std::tan(horizontal_fov / 2.0);
   double tan_half_vertical_fov = std::tan(vertical_fov / 2.0);
-  untransformed_corners_.emplace_back(
+  corners_C_.emplace_back(
       Point(min_distance, min_distance * tan_half_horizontal_fov,
             min_distance * tan_half_vertical_fov));
-  untransformed_corners_.emplace_back(
+  corners_C_.emplace_back(
       Point(min_distance, min_distance * tan_half_horizontal_fov,
             -min_distance * tan_half_vertical_fov));
-  untransformed_corners_.emplace_back(
+  corners_C_.emplace_back(
       Point(min_distance, -min_distance * tan_half_horizontal_fov,
             -min_distance * tan_half_vertical_fov));
-  untransformed_corners_.emplace_back(
+  corners_C_.emplace_back(
       Point(min_distance, -min_distance * tan_half_horizontal_fov,
             min_distance * tan_half_vertical_fov));
 
   // Then the far plane is more or less the same.
-  untransformed_corners_.emplace_back(
+  corners_C_.emplace_back(
       Point(max_distance, max_distance * tan_half_horizontal_fov,
             max_distance * tan_half_vertical_fov));
-  untransformed_corners_.emplace_back(
+  corners_C_.emplace_back(
       Point(max_distance, max_distance * tan_half_horizontal_fov,
             -max_distance * tan_half_vertical_fov));
-  untransformed_corners_.emplace_back(
+  corners_C_.emplace_back(
       Point(max_distance, -max_distance * tan_half_horizontal_fov,
             -max_distance * tan_half_vertical_fov));
-  untransformed_corners_.emplace_back(
+  corners_C_.emplace_back(
       Point(max_distance, -max_distance * tan_half_horizontal_fov,
             max_distance * tan_half_vertical_fov));
 
@@ -105,51 +105,51 @@ void CameraModel::calculateBoundingPlanes() {
     return;
   }
 
-  CHECK_EQ(untransformed_corners_.size(), 8);
+  CHECK_EQ(corners_C_.size(), 8);
   if (bounding_planes_.empty()) {
     bounding_planes_.resize(6);
   }
 
-  AlignedVector<Point> transformed_corners;
-  transformed_corners.resize(untransformed_corners_.size());
+  AlignedVector<Point> corners_G;
+  corners_G.resize(corners_C_.size());
 
   // Transform all the points.
-  for (size_t i = 0; i < untransformed_corners_.size(); ++i) {
-    transformed_corners[i] = T_G_C_ * untransformed_corners_[i];
+  for (size_t i = 0; i < corners_C_.size(); ++i) {
+    corners_G[i] = T_G_C_ * corners_C_[i];
   }
 
   // Near plane.
   bounding_planes_[0].setFromPoints(
-      transformed_corners[0], transformed_corners[2], transformed_corners[1]);
+      corners_G[0], corners_G[2], corners_G[1]);
   VLOG(5) << "Near plane: Normal: " << bounding_planes_[0].normal().transpose()
           << " distance: " << bounding_planes_[0].distance();
   // Far plane.
   bounding_planes_[1].setFromPoints(
-      transformed_corners[4], transformed_corners[5], transformed_corners[6]);
+      corners_G[4], corners_G[5], corners_G[6]);
   VLOG(5) << "Far plane: Normal: " << bounding_planes_[1].normal().transpose()
           << " distance: " << bounding_planes_[1].distance();
 
   // Left.
   bounding_planes_[2].setFromPoints(
-      transformed_corners[3], transformed_corners[6], transformed_corners[2]);
+      corners_G[3], corners_G[6], corners_G[2]);
   VLOG(5) << "Left plane: Normal: " << bounding_planes_[2].normal().transpose()
           << " distance: " << bounding_planes_[2].distance();
 
   // Right.
   bounding_planes_[3].setFromPoints(
-      transformed_corners[0], transformed_corners[5], transformed_corners[4]);
+      corners_G[0], corners_G[5], corners_G[4]);
   VLOG(5) << "Right plane: Normal: " << bounding_planes_[3].normal().transpose()
           << " distance: " << bounding_planes_[3].distance();
 
   // Top.
   bounding_planes_[4].setFromPoints(
-      transformed_corners[3], transformed_corners[4], transformed_corners[7]);
+      corners_G[3], corners_G[4], corners_G[7]);
   VLOG(5) << "Top plane: Normal: " << bounding_planes_[4].normal().transpose()
           << " distance: " << bounding_planes_[4].distance();
 
   // Bottom.
   bounding_planes_[5].setFromPoints(
-      transformed_corners[2], transformed_corners[6], transformed_corners[5]);
+      corners_G[2], corners_G[6], corners_G[5]);
   VLOG(5) << "Bottom plane: Normal: "
           << bounding_planes_[5].normal().transpose()
           << " distance: " << bounding_planes_[5].distance();
@@ -159,14 +159,13 @@ void CameraModel::calculateBoundingPlanes() {
   aabb_max_.setConstant(std::numeric_limits<double>::lowest());
 
   for (int i = 0; i < 3; i++) {
-    for (size_t j = 0; j < transformed_corners.size(); j++) {
-      aabb_min_(i) = std::min(aabb_min_(i), transformed_corners[j](i));
-      aabb_max_(i) = std::max(aabb_max_(i), transformed_corners[j](i));
+    for (size_t j = 0; j < corners_G.size(); j++) {
+      aabb_min_(i) = std::min(aabb_min_(i), corners_G[j](i));
+      aabb_max_(i) = std::max(aabb_max_(i), corners_G[j](i));
     }
   }
 
-  VLOG(5) << "AABB min:\n"
-          << aabb_min_.transpose() << "\nAABB max:\n"
+  VLOG(5) << "AABB min:\n" << aabb_min_.transpose() << "\nAABB max:\n"
           << aabb_max_.transpose();
 }
 
@@ -183,6 +182,61 @@ bool CameraModel::isPointInView(const Point& point) const {
     }
   }
   return true;
+}
+
+void CameraModel::getBoundingLines(AlignedVector<Point>* lines) const {
+  CHECK_NOTNULL(lines);
+  lines->clear();
+  lines->reserve(24);
+
+  // Transform the points again... This is just for visualization so we can
+  // waste a bit more time here.
+  AlignedVector<Point> corners_G;
+  // Untransformed corners are in the camera coordinate frame (corners_C_).
+  corners_G.resize(corners_C_.size());
+
+  // Transform all the points.
+  for (size_t i = 0; i < corners_C_.size(); ++i) {
+    corners_G[i] =
+        T_G_C_ * corners_C_[i];
+  }
+
+  // All pairs of lines.
+  lines->push_back(corners_G[0]);
+  lines->push_back(corners_G[1]);
+
+  lines->push_back(corners_G[1]);
+  lines->push_back(corners_G[2]);
+
+  lines->push_back(corners_G[2]);
+  lines->push_back(corners_G[3]);
+
+  lines->push_back(corners_G[3]);
+  lines->push_back(corners_G[0]);
+
+  lines->push_back(corners_G[4]);
+  lines->push_back(corners_G[5]);
+
+  lines->push_back(corners_G[5]);
+  lines->push_back(corners_G[6]);
+
+  lines->push_back(corners_G[6]);
+  lines->push_back(corners_G[7]);
+
+  lines->push_back(corners_G[7]);
+  lines->push_back(corners_G[4]);
+
+  lines->push_back(corners_G[0]);
+  lines->push_back(corners_G[4]);
+
+  lines->push_back(corners_G[1]);
+  lines->push_back(corners_G[5]);
+
+  lines->push_back(corners_G[3]);
+  lines->push_back(corners_G[7]);
+
+  lines->push_back(corners_G[2]);
+  lines->push_back(corners_G[6]);
 }
 
 }  // namespace voxblox
