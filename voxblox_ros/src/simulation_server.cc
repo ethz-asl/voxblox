@@ -165,7 +165,7 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
   Point position = Point::Zero();
   bool success = false;
   // Generate a position, and check if it's ok.
-  for (int i = 0; i < max_attempts_to_generate_viewpoint_; ++i) {
+  for (size_t i = 0; i < max_attempts_to_generate_viewpoint_; ++i) {
     position.setRandom();
     // Make this span the whole space.
     position =

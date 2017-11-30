@@ -424,7 +424,6 @@ void MergedTsdfIntegrator::integrateRays(
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
     const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
     const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map) {
-  const Point& origin = T_G_C.getPosition();
 
   // if only 1 thread just do function call, otherwise spawn threads
   if (config_.integrator_threads == 1) {

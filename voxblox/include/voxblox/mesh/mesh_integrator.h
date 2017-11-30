@@ -127,7 +127,7 @@ class MeshIntegrator {
     DCHECK(block != nullptr);
     DCHECK(mesh != nullptr);
 
-    size_t vps = block->voxels_per_side();
+    IndexElement vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
     VoxelIndex voxel_index;
