@@ -486,7 +486,7 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
                          config_.max_ray_length_m, voxel_size_inv_,
                          config_.default_truncation_distance, cast_from_origin);
 
-    size_t consecutive_ray_collisions = 0;
+    long int consecutive_ray_collisions = 0;
 
     Block<TsdfVoxel>::Ptr block = nullptr;
     BlockIndex block_idx;
@@ -522,7 +522,7 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 
   integration_start_time_ = std::chrono::steady_clock::now();
 
-  static size_t reset_counter = 0;
+  static long int reset_counter = 0;
   if ((++reset_counter) >= config_.clear_checks_every_n_frames) {
     reset_counter = 0;
     start_voxel_approx_set_.resetApproxSet();

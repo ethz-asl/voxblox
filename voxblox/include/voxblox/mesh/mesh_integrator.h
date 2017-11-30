@@ -258,7 +258,7 @@ class MeshIntegrator {
           if (corner_index(j) < 0) {
             block_offset(j) = -1;
             corner_index(j) = corner_index(j) + voxels_per_side_;
-          } else if (corner_index(j) >= voxels_per_side_) {
+          } else if (corner_index(j) >= (IndexElement)voxels_per_side_) {
             block_offset(j) = 1;
             corner_index(j) = corner_index(j) - voxels_per_side_;
           }
