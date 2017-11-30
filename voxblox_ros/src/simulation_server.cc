@@ -86,8 +86,8 @@ SimulationServer::SimulationServer(
       num_viewpoints_(50) {
   CHECK_EQ(voxel_size_, tsdf_config.tsdf_voxel_size);
   CHECK_EQ(voxel_size_, esdf_config.esdf_voxel_size);
-  CHECK_EQ(voxels_per_side_, tsdf_config.tsdf_voxels_per_side);
-  CHECK_EQ(voxels_per_side_, esdf_config.esdf_voxels_per_side);
+  CHECK_EQ((size_t)voxels_per_side_, tsdf_config.tsdf_voxels_per_side);
+  CHECK_EQ((size_t)voxels_per_side_, esdf_config.esdf_voxels_per_side);
 
   getServerConfigFromRosParam(nh_private);
 

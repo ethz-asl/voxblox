@@ -125,13 +125,13 @@ class Block {
   }
 
   inline bool isValidVoxelIndex(const VoxelIndex& index) const {
-    if (index.x() < 0 || index.x() >= voxels_per_side_) {
+    if (index.x() < 0 || index.x() >= (IndexElement)voxels_per_side_) {
       return false;
     }
-    if (index.y() < 0 || index.y() >= voxels_per_side_) {
+    if (index.y() < 0 || index.y() >= (IndexElement)voxels_per_side_) {
       return false;
     }
-    if (index.z() < 0 || index.z() >= voxels_per_side_) {
+    if (index.z() < 0 || index.z() >= (IndexElement)voxels_per_side_) {
       return false;
     }
     return true;

@@ -283,7 +283,7 @@ void EsdfOccIntegrator::getNeighbor(const BlockIndex& block_index,
     if ((*neighbor_voxel_index)(i) < 0) {
       (*neighbor_block_index)(i)--;
       (*neighbor_voxel_index)(i) += esdf_voxels_per_side_;
-    } else if ((*neighbor_voxel_index)(i) >= esdf_voxels_per_side_) {
+    } else if ((*neighbor_voxel_index)(i) >= (IndexElement)esdf_voxels_per_side_) {
       (*neighbor_block_index)(i)++;
       (*neighbor_voxel_index)(i) -= esdf_voxels_per_side_;
     }
