@@ -273,8 +273,8 @@ void EsdfOccIntegrator::getNeighbor(const BlockIndex& block_index,
                                     const Eigen::Vector3i& direction,
                                     BlockIndex* neighbor_block_index,
                                     VoxelIndex* neighbor_voxel_index) const {
-  DCHECK_NOTNULL(neighbor_block_index);
-  DCHECK_NOTNULL(neighbor_voxel_index);
+  DCHECK(neighbor_block_index != NULL);
+  DCHECK(neighbor_voxel_index != NULL);
 
   *neighbor_block_index = block_index;
   *neighbor_voxel_index = voxel_index + direction;
