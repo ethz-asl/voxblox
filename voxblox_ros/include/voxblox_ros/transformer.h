@@ -28,9 +28,7 @@ class Transformer {
                          const std::string& to_frame,
                          const ros::Time& timestamp, Transformation* transform);
 
-  bool lookupTransformQueue(const std::string& from_frame,
-                            const std::string& to_frame,
-                            const ros::Time& timestamp,
+  bool lookupTransformQueue(const ros::Time& timestamp,
                             Transformation* transform);
 
   ros::NodeHandle nh_;
