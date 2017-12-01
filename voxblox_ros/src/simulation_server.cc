@@ -87,8 +87,10 @@ SimulationServer::SimulationServer(
       num_viewpoints_(50) {
   CHECK_EQ(voxel_size_, tsdf_config.tsdf_voxel_size);
   CHECK_EQ(voxel_size_, esdf_config.esdf_voxel_size);
-  CHECK_EQ(voxels_per_side_, tsdf_config.tsdf_voxels_per_side);
-  CHECK_EQ(voxels_per_side_, esdf_config.esdf_voxels_per_side);
+  CHECK_EQ(static_cast<size_t>(voxels_per_side_),
+           tsdf_config.tsdf_voxels_per_side);
+  CHECK_EQ(static_cast<size_t>(voxels_per_side_),
+           esdf_config.esdf_voxels_per_side);
 
   getServerConfigFromRosParam(nh_private);
 
@@ -166,7 +168,7 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
   Point position = Point::Zero();
   bool success = false;
   // Generate a position, and check if it's ok.
-  for (int i = 0; i < max_attempts_to_generate_viewpoint_; ++i) {
+  for (size_t i = 0; i < max_attempts_to_generate_viewpoint_; ++i) {
     position.setRandom();
     // Make this span the whole space.
     position =
