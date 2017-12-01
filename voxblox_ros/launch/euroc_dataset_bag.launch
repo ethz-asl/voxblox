@@ -39,7 +39,7 @@
     <rosparam file="$(find stereo_dense_reconstruction_nodes)/cfg/ParamsHalfRes.yaml"/>
 
     <!-- Load stereo camera calibration from yaml file (only used if visensor_msgs not found)-->
-    <rosparam file="$(find mav_startup)/parameters/mavs/ijrr_euroc_datasets/camchain_equidistant_new.yaml"/>
+    <rosparam file="$(find mav_startup)/parameters/mavs/ijrr_euroc_datasets/camchain.yaml"/>
   </node>
 
   <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
@@ -53,11 +53,11 @@
     <!--
     <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" /> -->
     <remap from="transform" to="/groundtruth_transform" />
-    <param name="update_mesh_every_n_sec" value="0.0" />
+    <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="generate_esdf" value="$(arg generate_esdf)" />
     <param name="slice_level" value="1.0" />
     <param name="method" value="merged" />
-    <param name="anti_grazing" value="false">
+    <param name="anti_grazing" value="false" />
     <param name="use_const_weight" value="false" />
 
     <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>

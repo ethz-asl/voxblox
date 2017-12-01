@@ -60,14 +60,6 @@ class SimulationServer {
                            const Pointcloud& ptcloud,
                            Pointcloud* ptcloud_out) const;
 
-  template <typename VoxelType>
-  FloatingPoint evaluateLayerAgainstGt(const Layer<VoxelType>& layer_test,
-                                       const Layer<VoxelType>& layer_gt) const;
-
-  template <typename VoxelType>
-  bool evaluateVoxel(const VoxelType& voxel_test, const VoxelType& voxel_gt,
-                     FloatingPoint* error) const;
-
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
