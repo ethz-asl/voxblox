@@ -35,9 +35,9 @@ class ThreadSafeIndex {
  private:
   size_t getMixedIndex(size_t base_idx);
 
+  std::atomic<size_t> atomic_idx_;
   const size_t number_of_points_;
   const size_t number_of_groups_;
-  std::atomic<size_t> atomic_idx_;
 
   static constexpr size_t num_bits = 10;  // 1024 bins
   static constexpr size_t step_size_ = 1 << num_bits;
