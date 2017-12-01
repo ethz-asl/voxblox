@@ -125,13 +125,16 @@ class Block {
   }
 
   inline bool isValidVoxelIndex(const VoxelIndex& index) const {
-    if (index.x() < 0 || index.x() >= voxels_per_side_) {
+    if (index.x() < 0 ||
+        index.x() >= static_cast<IndexElement>(voxels_per_side_)) {
       return false;
     }
-    if (index.y() < 0 || index.y() >= voxels_per_side_) {
+    if (index.y() < 0 ||
+        index.y() >= static_cast<IndexElement>(voxels_per_side_)) {
       return false;
     }
-    if (index.z() < 0 || index.z() >= voxels_per_side_) {
+    if (index.z() < 0 ||
+        index.z() >= static_cast<IndexElement>(voxels_per_side_)) {
       return false;
     }
     return true;
@@ -151,6 +154,7 @@ class Block {
   // Basic function accessors.
   size_t voxels_per_side() const { return voxels_per_side_; }
   FloatingPoint voxel_size() const { return voxel_size_; }
+  FloatingPoint voxel_size_inv() const { return voxel_size_inv_; }
   size_t num_voxels() const { return num_voxels_; }
   Point origin() const { return origin_; }
   FloatingPoint block_size() const { return block_size_; }

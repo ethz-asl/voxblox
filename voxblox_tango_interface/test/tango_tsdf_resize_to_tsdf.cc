@@ -1,7 +1,7 @@
 #include <iostream>  // NOLINT
 #include <string>    // NOLINT
 
-#include <voxblox/integrator/merge_integrator.h>
+#include <voxblox/integrator/merge_integration.h>
 
 #include "voxblox/io/layer_io.h"
 #include "voxblox_tango_interface/core/tango_layer_interface.h"
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Layer memory size: " << layer_from_file->getMemorySize();
   LOG(INFO) << "Old layer voxel size: " << layer_from_file->voxel_size();
   LOG(INFO) << "Old layer voxels per side: "
-               << layer_from_file->voxels_per_side();
+            << layer_from_file->voxels_per_side();
 
   if (argc == 5) {
     const FloatingPoint voxel_size = std::stof(argv[3]);
@@ -37,11 +37,10 @@ int main(int argc, char** argv) {
         std::make_shared<Layer<TsdfVoxel> >(voxel_size, voxels_per_side);
     LOG(INFO) << "New layer voxel size: " << resized_layer->voxel_size();
     LOG(INFO) << "New layer voxels per side: "
-                 << resized_layer->voxels_per_side();
-    MergeIntegrator::MergeLayerAintoLayerB<TsdfVoxel>(*layer_from_file,
-                                                      resized_layer.get());
+              << resized_layer->voxels_per_side();
+    mergeLayerAintoLayerB<TsdfVoxel>(*layer_from_file, resized_layer.get());
     LOG(INFO) << "New layer memory size after merge: "
-                 << resized_layer->getMemorySize();
+              << resized_layer->getMemorySize();
 
     tsdf_success = io::SaveLayer(*resized_layer, argv[2]);
   } else {

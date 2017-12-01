@@ -46,6 +46,7 @@ class Interpolator {
   // Relates the interpolation distance of any arbitrary point inside a voxel
   // to the values of the voxel corners.
   void getQVector(const Point& voxel_pos, const Point& pos,
+                  const FloatingPoint voxel_size_inv,
                   InterpVector* q_vector) const;
 
   bool getVoxelsAndQVector(const BlockIndex& block_index,
@@ -64,12 +65,9 @@ class Interpolator {
 
   bool getNearestVoxel(const Point& pos, VoxelType* voxel) const;
 
-  // Allow this class to be templated on all kinds of voxels.
-  static FloatingPoint getVoxelDistance(const VoxelType& voxel);
+  static float getVoxelSdf(const VoxelType& voxel);
   static float getVoxelWeight(const VoxelType& voxel);
-  // Returns true if the voxel should be used in interpolation/gradient
-  // calculation. False otherwise.
-  static bool isVoxelValid(const VoxelType& voxel);
+
   static uint8_t getRed(const VoxelType& voxel);
   static uint8_t getBlue(const VoxelType& voxel);
   static uint8_t getGreen(const VoxelType& voxel);
