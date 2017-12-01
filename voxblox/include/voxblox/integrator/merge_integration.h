@@ -1,5 +1,5 @@
-#ifndef VOXBOX_INTEGRATOR_MERGE_INTEGRATION_H
-#define VOXBOX_INTEGRATOR_MERGE_INTEGRATION_H
+#ifndef VOXBLOX_INTEGRATOR_MERGE_INTEGRATION_H_
+#define VOXBLOX_INTEGRATOR_MERGE_INTEGRATION_H_
 
 #include <algorithm>
 #include <vector>
@@ -215,7 +215,7 @@ void transformLayer(const Layer<VoxelType>& layer_in,
 
   // we now go through all the blocks in the output layer and interpolate the
   // input layer at the center of each output voxel position
-  for (BlockIndex block_idx : block_idx_set) {
+  for (const BlockIndex& block_idx : block_idx_set) {
     typename Block<VoxelType>::Ptr block =
         layer_out->allocateBlockPtrByIndex(block_idx);
 
@@ -245,4 +245,4 @@ void transformLayer(const Layer<VoxelType>& layer_in,
 
 }  // namespace voxblox
 
-#endif  // VOXBOX_INTEGRATOR_MERGE_INTEGRATION_H
+#endif  // VOXBLOX_INTEGRATOR_MERGE_INTEGRATION_H_
