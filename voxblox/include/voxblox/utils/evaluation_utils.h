@@ -62,7 +62,7 @@ FloatingPoint evaluateLayersRmse(
 
   double total_squared_error = 0.0;
 
-  for (const BlockIndex block_index : block_list) {
+  for (const BlockIndex& block_index : block_list) {
     const Block<VoxelType>& test_block =
         layer_test.getBlockByIndex(block_index);
 
@@ -112,10 +112,10 @@ FloatingPoint evaluateLayersRmse(
 
   // Iterate over all blocks in the grond truth layer and look them up in the
   // test truth layer. This is only done to get the exact number of
-  // non-verlapping voxels.
+  // non-overlapping voxels.
   BlockIndexList gt_block_list;
   layer_gt.getAllAllocatedBlocks(&gt_block_list);
-  for (const BlockIndex gt_block_index : gt_block_list) {
+  for (const BlockIndex& gt_block_index : gt_block_list) {
     const Block<VoxelType>& gt_block = layer_gt.getBlockByIndex(gt_block_index);
     if (!layer_test.hasBlock(gt_block_index)) {
       for (size_t linear_index = 0u; linear_index < num_voxels_per_block;
