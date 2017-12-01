@@ -139,7 +139,7 @@ class Cube : public Object {
 
   virtual bool getRayIntersection(const Point& ray_origin,
                                   const Point& ray_direction,
-                                  FloatingPoint /*max_dist*/,
+                                  FloatingPoint max_dist,
                                   Point* intersect_point,
                                   FloatingPoint* intersect_dist) const {
     // Adapted from https://www.scratchapixel.com/lessons/3d-basic-rendering/
@@ -185,6 +185,11 @@ class Cube : public Object {
         return false;
       }
     }
+
+    if (t > max_dist) {
+      return false;
+    }
+
     *intersect_dist = t;
     *intersect_point = ray_origin + ray_direction * t;
 
