@@ -1,5 +1,5 @@
-#ifndef VOXBOX_INTEGRATOR_MERGE_INTEGRATION_H
-#define VOXBOX_INTEGRATOR_MERGE_INTEGRATION_H
+#ifndef VOXBLOX_INTEGRATOR_MERGE_INTEGRATION_H_
+#define VOXBLOX_INTEGRATOR_MERGE_INTEGRATION_H_
 
 #include <algorithm>
 #include <vector>
@@ -130,7 +130,8 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
     const Block<VoxelType>& input_block = layer_in.getBlockByIndex(block_idx);
 
     for (IndexElement input_linear_voxel_idx = 0;
-         input_linear_voxel_idx < input_block.num_voxels();
+         input_linear_voxel_idx <
+         static_cast<IndexElement>(input_block.num_voxels());
          ++input_linear_voxel_idx) {
       const VoxelType& input_voxel =
           input_block.getVoxelByLinearIndex(input_linear_voxel_idx);
@@ -215,11 +216,12 @@ void transformLayer(const Layer<VoxelType>& layer_in,
 
   // we now go through all the blocks in the output layer and interpolate the
   // input layer at the center of each output voxel position
-  for (BlockIndex block_idx : block_idx_set) {
+  for (const BlockIndex& block_idx : block_idx_set) {
     typename Block<VoxelType>::Ptr block =
         layer_out->allocateBlockPtrByIndex(block_idx);
 
-    for (IndexElement voxel_idx = 0; voxel_idx < block->num_voxels();
+    for (IndexElement voxel_idx = 0;
+          voxel_idx < static_cast<IndexElement>(block->num_voxels());
          ++voxel_idx) {
       VoxelType& voxel = block->getVoxelByLinearIndex(voxel_idx);
 
@@ -245,4 +247,4 @@ void transformLayer(const Layer<VoxelType>& layer_in,
 
 }  // namespace voxblox
 
-#endif  // VOXBOX_INTEGRATOR_MERGE_INTEGRATION_H
+#endif  // VOXBLOX_INTEGRATOR_MERGE_INTEGRATION_H_

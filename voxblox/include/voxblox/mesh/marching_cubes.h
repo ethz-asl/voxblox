@@ -41,7 +41,7 @@ class MarchingCubes {
       const Eigen::Matrix<FloatingPoint, 3, 8>& vertex_coordinates,
       const Eigen::Matrix<FloatingPoint, 8, 1>& vertex_sdf,
       TriangleVector* triangles) {
-    DCHECK_NOTNULL(triangles);
+    DCHECK(triangles != NULL);
 
     const int index = calculateVertexConfiguration(vertex_sdf);
 
@@ -67,8 +67,8 @@ class MarchingCubes {
   static void meshCube(const Eigen::Matrix<FloatingPoint, 3, 8>& vertex_coords,
                        const Eigen::Matrix<FloatingPoint, 8, 1>& vertex_sdf,
                        VertexIndex* next_index, Mesh* mesh) {
-    DCHECK_NOTNULL(next_index);
-    DCHECK_NOTNULL(mesh);
+    DCHECK(next_index != NULL);
+    DCHECK(mesh != NULL);
     const int index = calculateVertexConfiguration(vertex_sdf);
 
     // No edges in this cube.
@@ -123,7 +123,7 @@ class MarchingCubes {
       const Eigen::Matrix<FloatingPoint, 3, 8>& vertex_coords,
       const Eigen::Matrix<FloatingPoint, 8, 1>& vertex_sdf,
       Eigen::Matrix<FloatingPoint, 3, 12>* edge_coords) {
-    DCHECK_NOTNULL(edge_coords);
+    DCHECK(edge_coords != NULL);
     for (std::size_t i = 0; i < 12; ++i) {
       const int* pairs = kEdgeIndexPairs[i];
       const int edge0 = pairs[0];
