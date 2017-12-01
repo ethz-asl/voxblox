@@ -27,9 +27,8 @@ class Object {
   virtual ~Object() {}
 
   // Map-building accessors.
-  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
-    return 0.0;
-  }
+  virtual FloatingPoint getDistanceToPoint(const Point& point) const = 0;
+
   Color getColor() const { return color_; }
 
   // Raycasting accessors.
@@ -37,9 +36,7 @@ class Object {
                                   const Point& ray_direction,
                                   FloatingPoint max_dist,
                                   Point* intersect_point,
-                                  FloatingPoint* intersect_dist) const {
-    return false;
-  }
+                                  FloatingPoint* intersect_dist) const = 0;
 
  protected:
   Point center_;
@@ -142,7 +139,7 @@ class Cube : public Object {
 
   virtual bool getRayIntersection(const Point& ray_origin,
                                   const Point& ray_direction,
-                                  FloatingPoint max_dist,
+                                  FloatingPoint /*max_dist*/,
                                   Point* intersect_point,
                                   FloatingPoint* intersect_dist) const {
     // Adapted from https://www.scratchapixel.com/lessons/3d-basic-rendering/

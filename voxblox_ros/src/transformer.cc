@@ -71,7 +71,7 @@ bool Transformer::lookupTransform(const std::string& from_frame,
   if (use_tf_transforms_) {
     return lookupTransformTf(from_frame, to_frame, timestamp, transform);
   } else {
-    return lookupTransformQueue(from_frame, to_frame, timestamp, transform);
+    return lookupTransformQueue(timestamp, transform);
   }
 }
 
@@ -112,9 +112,7 @@ bool Transformer::lookupTransformTf(const std::string& from_frame,
   return true;
 }
 
-bool Transformer::lookupTransformQueue(const std::string& from_frame,
-                                       const std::string& to_frame,
-                                       const ros::Time& timestamp,
+bool Transformer::lookupTransformQueue(const ros::Time& timestamp,
                                        Transformation* transform) {
   CHECK_NOTNULL(transform);
   // Try to match the transforms in the queue.
