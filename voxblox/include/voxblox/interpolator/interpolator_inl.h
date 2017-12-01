@@ -156,7 +156,7 @@ bool Interpolator<VoxelType>::setIndexes(const Point& pos,
   // shift index to bottom left corner voxel (makes math easier)
   Point center_offset =
       pos - block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
-  for (size_t i = 0; i < center_offset.rows(); ++i) {
+  for (size_t i = 0; i < static_cast<size_t>(center_offset.rows()); ++i) {
     // ensure that the point we are interpolating to is always larger than the
     // center of the voxel_index in all dimensions
     if (center_offset(i) < 0) {
@@ -204,7 +204,7 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
   CHECK_NOTNULL(q_vector);
 
   // for each voxel index
-  for (size_t i = 0; i < voxel_indexes.cols(); ++i) {
+  for (size_t i = 0; i < static_cast<size_t>(voxel_indexes.cols()); ++i) {
     typename Layer<VoxelType>::BlockType::ConstPtr block_ptr =
         layer_->getBlockPtrByIndex(block_index);
     if (block_ptr == nullptr) {
@@ -215,8 +215,9 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
     // if voxel index is too large get neighboring block and update index
     if ((voxel_index.array() >= block_ptr->voxels_per_side()).any()) {
       BlockIndex new_block_index = block_index;
-      for (size_t j = 0; j < block_index.rows(); ++j) {
-        if (voxel_index(j) >= block_ptr->voxels_per_side()) {
+      for (size_t j = 0; j < static_cast<size_t>(block_index.rows()); ++j) {
+        if (voxel_index(j) >=
+            static_cast<IndexElement>(block_ptr->voxels_per_side())) {
           new_block_index(j)++;
           voxel_index(j) -= block_ptr->voxels_per_side();
         }
