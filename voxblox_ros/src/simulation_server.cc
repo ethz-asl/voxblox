@@ -10,6 +10,7 @@
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/mesh/mesh_integrator.h>
 #include <voxblox/simulation/simulation_world.h>
+#include <voxblox/utils/evaluation_utils.h>
 
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/mesh_vis.h"
@@ -274,81 +275,12 @@ void SimulationServer::generateSDF() {
   }
 }
 
-template <typename VoxelType>
-FloatingPoint SimulationServer::evaluateLayerAgainstGt(
-    const Layer<VoxelType>& layer_test,
-    const Layer<VoxelType>& layer_gt) const {
-  // Iterate over all voxels in GT set and look them up in the test set.
-  // Then compute RMSE.
-  BlockIndexList block_list;
-  layer_gt.getAllAllocatedBlocks(&block_list);
-  size_t vps = layer_gt.voxels_per_side();
-  size_t num_voxels_per_block = vps * vps * vps;
-
-  double total_squared_error = 0.0;
-  size_t num_evaluated_voxels = 0;
-
-  for (const BlockIndex block_index : block_list) {
-    if (!layer_test.hasBlock(block_index)) {
-      continue;
-    }
-    const Block<VoxelType>& gt_block = layer_gt.getBlockByIndex(block_index);
-    const Block<VoxelType>& test_block =
-        layer_test.getBlockByIndex(block_index);
-
-    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
-         ++linear_index) {
-      FloatingPoint error = 0.0;
-      if (evaluateVoxel<VoxelType>(
-              test_block.getVoxelByLinearIndex(linear_index),
-              gt_block.getVoxelByLinearIndex(linear_index), &error)) {
-        total_squared_error += error * error;
-        num_evaluated_voxels++;
-      }
-    }
-  }
-  // Return the RMSE.
-  if (num_evaluated_voxels == 0) {
-    return 0.0;
-  }
-  ROS_INFO_STREAM("Number of voxels evaluated: " << num_evaluated_voxels);
-  return sqrt(total_squared_error / num_evaluated_voxels);
-}
-
-template <>
-bool SimulationServer::evaluateVoxel(const TsdfVoxel& voxel_test,
-                                     const TsdfVoxel& voxel_gt,
-                                     FloatingPoint* error) const {
-  if (voxel_test.weight < 1e-6 || voxel_gt.distance < 0.0) {
-    return false;
-  }
-
-  *error = voxel_gt.distance - voxel_test.distance;
-
-  return true;
-}
-
-template <>
-bool SimulationServer::evaluateVoxel(const EsdfVoxel& voxel_test,
-                                     const EsdfVoxel& voxel_gt,
-                                     FloatingPoint* error) const {
-  if (!voxel_test.observed || voxel_gt.distance < 0.0) {
-    return false;
-  }
-
-  *error = voxel_gt.distance - voxel_test.distance;
-
-  /* if (voxel_gt.distance < -truncation_distance_) {
-    *error = -truncation_distance_ - voxel_test.distance;
-  } */
-  return true;
-}
-
 void SimulationServer::evaluate() {
   // First evaluate the TSDF vs ground truth...
   // Use only observed points.
-  double tsdf_rmse = evaluateLayerAgainstGt(*tsdf_test_, *tsdf_gt_);
-  double esdf_rmse = evaluateLayerAgainstGt(*esdf_test_, *esdf_gt_);
+
+  const double tsdf_rmse = utils::evaluateLayersRmse(*tsdf_gt_, *tsdf_test_);
+  const double esdf_rmse = utils::evaluateLayersRmse(*esdf_gt_, *esdf_test_);
 
   ROS_INFO_STREAM("TSDF RMSE: " << tsdf_rmse << " ESDF RMSE: " << esdf_rmse);
 

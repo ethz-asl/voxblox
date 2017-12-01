@@ -50,13 +50,15 @@ set("${PROJECT_NAME}_SRCS"
   src/core/tsdf_map.cc
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
-  src/integrator/tsdf_integrator.cc
   src/integrator/integrator_utils.cc
+  src/integrator/merge_integration.cc
+  src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
   src/utils/camera_model.cc
+  src/utils/evaluation_utils.cc
   src/utils/layer_utils.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
@@ -163,6 +165,11 @@ catkin_add_gtest(test_layer
   test/test_layer.cc
 )
 target_link_libraries(test_layer ${PROJECT_NAME})
+
+catkin_add_gtest(test_merge_integration
+  test/test_merge_integration.cc
+)
+target_link_libraries(test_merge_integration ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 catkin_add_gtest(test_layer_utils
   test/test_layer_utils.cc

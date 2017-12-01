@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include "voxblox/utils/evaluation_utils.h"
+
 namespace voxblox {
 
 template <typename VoxelType>
@@ -170,8 +172,14 @@ bool Interpolator<VoxelType>::setIndexes(const Point& pos,
   }
 
   // get indexes of neighbors
-  (*voxel_indexes) << 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0,
-      0, 1, 1, 1, 1;
+
+  // FROM PAPER (http://spie.org/samples/PM159.pdf)
+  // clang-format off
+  (*voxel_indexes) <<
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 1, 1, 0, 0, 1, 1,
+    0, 1, 0, 1, 0, 1, 0, 1;
+  // clang-format on
 
   voxel_indexes->colwise() += voxel_index.array();
   return true;
@@ -180,21 +188,26 @@ bool Interpolator<VoxelType>::setIndexes(const Point& pos,
 template <typename VoxelType>
 void Interpolator<VoxelType>::getQVector(const Point& voxel_pos,
                                          const Point& pos,
+                                         const FloatingPoint voxel_size_inv,
                                          InterpVector* q_vector) const {
   CHECK_NOTNULL(q_vector);
 
-  Point voxel_offset = pos - voxel_pos;
+  const Point voxel_offset = (pos - voxel_pos) * voxel_size_inv;
 
   CHECK((voxel_offset.array() >= 0).all());  // NOLINT
 
-  *q_vector << 1,                                           // NOLINT
-      voxel_offset[0],                                      // NOLINT
-      voxel_offset[1],                                      // NOLINT
-      voxel_offset[2],                                      // NOLINT
-      voxel_offset[0] * voxel_offset[1],                    // NOLINT
-      voxel_offset[1] * voxel_offset[2],                    // NOLINT
-      voxel_offset[2] * voxel_offset[0],                    // NOLINT
-      voxel_offset[0] * voxel_offset[1] * voxel_offset[2];  // NOLINT
+  // FROM PAPER (http://spie.org/samples/PM159.pdf)
+  // clang-format off
+  *q_vector <<
+      1,
+      voxel_offset[0],
+      voxel_offset[1],
+      voxel_offset[2],
+      voxel_offset[0] * voxel_offset[1],
+      voxel_offset[1] * voxel_offset[2],
+      voxel_offset[2] * voxel_offset[0],
+      voxel_offset[0] * voxel_offset[1] * voxel_offset[2];
+  // clang-format on
 }
 
 template <typename VoxelType>
@@ -230,13 +243,13 @@ bool Interpolator<VoxelType>::getVoxelsAndQVector(
     // use bottom left corner voxel to compute weights vector
     if (i == 0) {
       getQVector(block_ptr->computeCoordinatesFromVoxelIndex(voxel_index), pos,
-                 q_vector);
+                 block_ptr->voxel_size_inv(), q_vector);
     }
 
     const VoxelType& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
 
     voxels[i] = &voxel;
-    if (!isVoxelValid(voxel)) {
+    if (!utils::isObservedVoxel(voxel)) {
       return false;
     }
   }
@@ -263,12 +276,12 @@ bool Interpolator<VoxelType>::getInterpDistance(const Point& pos,
   CHECK_NOTNULL(distance);
 
   // get distances of 8 surrounding voxels and weights vector
-  const VoxelType* voxels[9];
+  const VoxelType* voxels[8];
   InterpVector q_vector;
   if (!getVoxelsAndQVector(pos, voxels, &q_vector)) {
     return false;
   } else {
-    *distance = interpMember(q_vector, voxels, &getVoxelDistance);
+    *distance = interpMember(q_vector, voxels, &getVoxelSdf);
     return true;
   }
 }
@@ -286,9 +299,9 @@ bool Interpolator<VoxelType>::getNearestDistance(
 
   const VoxelType& voxel = block_ptr->getVoxelByCoordinates(pos);
 
-  *distance = getVoxelDistance(voxel);
+  *distance = getVoxelSdf(voxel);
 
-  return isVoxelValid(voxel);
+  return utils::isObservedVoxel(voxel);
 }
 
 template <typename VoxelType>
@@ -297,7 +310,7 @@ bool Interpolator<VoxelType>::getInterpVoxel(const Point& pos,
   CHECK_NOTNULL(voxel);
 
   // get voxels of 8 surrounding voxels and weights vector
-  const VoxelType* voxels[9];
+  const VoxelType* voxels[8];
   InterpVector q_vector;
   if (!getVoxelsAndQVector(pos, voxels, &q_vector)) {
     return false;
@@ -320,7 +333,7 @@ bool Interpolator<VoxelType>::getNearestVoxel(const Point& pos,
 
   *voxel = block_ptr->getVoxelByCoordinates(pos);
 
-  return isVoxelValid(*voxel);
+  return utils::isObservedVoxel(*voxel);
 }
 
 template <typename VoxelType>
@@ -335,21 +348,18 @@ bool Interpolator<VoxelType>::getNearestDistanceAndWeight(
     return false;
   }
   const VoxelType& voxel = block_ptr->getVoxelByCoordinates(pos);
-  *distance = getVoxelDistance(voxel);
+  *distance = getVoxelSdf(voxel);
   *weight = getVoxelWeight(voxel);
   return true;
 }
 
-// Specializations for TSDF and ESDF voxels.
 template <>
-inline FloatingPoint Interpolator<TsdfVoxel>::getVoxelDistance(
-    const TsdfVoxel& voxel) {
+inline float Interpolator<TsdfVoxel>::getVoxelSdf(const TsdfVoxel& voxel) {
   return voxel.distance;
 }
 
 template <>
-inline FloatingPoint Interpolator<EsdfVoxel>::getVoxelDistance(
-    const EsdfVoxel& voxel) {
+inline float Interpolator<EsdfVoxel>::getVoxelSdf(const EsdfVoxel& voxel) {
   return voxel.distance;
 }
 
@@ -361,16 +371,6 @@ inline float Interpolator<TsdfVoxel>::getVoxelWeight(const TsdfVoxel& voxel) {
 template <>
 inline float Interpolator<EsdfVoxel>::getVoxelWeight(const EsdfVoxel& voxel) {
   return voxel.observed ? 1.0f : 0.0f;
-}
-
-template <>
-inline bool Interpolator<TsdfVoxel>::isVoxelValid(const TsdfVoxel& voxel) {
-  return voxel.weight > 0.0;
-}
-
-template <>
-inline bool Interpolator<EsdfVoxel>::isVoxelValid(const EsdfVoxel& voxel) {
-  return voxel.observed;
 }
 
 template <>
@@ -402,34 +402,22 @@ inline FloatingPoint Interpolator<VoxelType>::interpMember(
   for (int i = 0; i < data.size(); ++i) {
     data[i] = static_cast<FloatingPoint>((*getter)(*voxels[i]));
   }
-  /*
-    The paper (http://spie.org/samples/PM159.pdf) has a different
-    order than us for the data. The table below is therefore a
-    permuted version of the table in the paper.
 
-    Current data order
-    -----------------
-    0 1 0 1 0 1 0 1
-    0 0 1 1 0 0 1 1
-    0 0 0 0 1 1 1 1
-
-    Desired data order
-    ------------------
-    0 0 0 0 1 1 1 1
-    0 0 1 1 0 0 1 1
-    0 1 0 1 0 1 0 1
-  */
+  // FROM PAPER (http://spie.org/samples/PM159.pdf)
+  // clang-format off
   static const InterpTable interp_table =
-      (InterpTable() <<  1, 0, 0, 0, 0, 0, 0, 0,    // NOLINT
-                        -1, 1, 0, 0, 0, 0, 0, 0,    // NOLINT
-                        -1, 0, 1, 0, 0, 0, 0, 0,    // NOLINT
-                        -1, 0, 0, 0, 1, 0, 0, 0,    // NOLINT
-                         1, -1, -1, 1, 0, 0, 0, 0,  // NOLINT
-                         1, 0, -1, 0, -1, 0, 1, 0,  // NOLINT
-                         1, -1, 0, 0, -1, 1, 0, 0,  // NOLINT
-                        -1, 1, 1, -1, 1, -1, -1, 1  // NOLINT
-       ).finished();
-  // interpolate
+      (InterpTable() <<
+        1,  0,  0,  0,  0,  0,  0,  0,
+       -1,  0,  0,  0,  1,  0,  0,  0,
+       -1,  0,  1,  0,  0,  0,  0,  0,
+       -1,  1,  0,  0,  0,  0,  0,  0,
+        1,  0, -1,  0, -1,  0,  1,  0,
+        1, -1, -1,  1,  0,  0,  0,  0,
+        1, -1,  0,  0, -1,  1,  0,  0,
+       -1,  1,  1, -1,  1, -1, -1,  1
+       )
+          .finished();
+  // clang-format on
   return q_vector * (interp_table * data.transpose());
 }
 
@@ -437,7 +425,7 @@ template <>
 inline TsdfVoxel Interpolator<TsdfVoxel>::interpVoxel(
     const InterpVector& q_vector, const TsdfVoxel** voxels) {
   TsdfVoxel voxel;
-  voxel.distance = interpMember(q_vector, voxels, &getVoxelDistance);
+  voxel.distance = interpMember(q_vector, voxels, &getVoxelSdf);
   voxel.weight = interpMember(q_vector, voxels, &getVoxelWeight);
 
   voxel.color.r = interpMember(q_vector, voxels, &getRed);
