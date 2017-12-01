@@ -27,9 +27,8 @@ class Object {
   virtual ~Object() {}
 
   // Map-building accessors.
-  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
-    return 0.0;
-  }
+  virtual FloatingPoint getDistanceToPoint(const Point& point) const = 0;
+
   Color getColor() const { return color_; }
 
   // Raycasting accessors.
@@ -37,9 +36,7 @@ class Object {
                                   const Point& ray_direction,
                                   FloatingPoint max_dist,
                                   Point* intersect_point,
-                                  FloatingPoint* intersect_dist) const {
-    return false;
-  }
+                                  FloatingPoint* intersect_dist) const = 0;
 
  protected:
   Point center_;
@@ -188,6 +185,11 @@ class Cube : public Object {
         return false;
       }
     }
+
+    if (t > max_dist) {
+      return false;
+    }
+
     *intersect_dist = t;
     *intersect_point = ray_origin + ray_direction * t;
 
