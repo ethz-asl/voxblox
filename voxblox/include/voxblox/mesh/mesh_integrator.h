@@ -127,7 +127,7 @@ class MeshIntegrator {
     DCHECK(block != nullptr);
     DCHECK(mesh != nullptr);
 
-    size_t vps = block->voxels_per_side();
+    IndexElement vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
     VoxelIndex voxel_index;
@@ -258,7 +258,7 @@ class MeshIntegrator {
           if (corner_index(j) < 0) {
             block_offset(j) = -1;
             corner_index(j) = corner_index(j) + voxels_per_side_;
-          } else if (corner_index(j) >= voxels_per_side_) {
+          } else if (corner_index(j) >= static_cast<IndexElement>(voxels_per_side_)) {
             block_offset(j) = 1;
             corner_index(j) = corner_index(j) - voxels_per_side_;
           }

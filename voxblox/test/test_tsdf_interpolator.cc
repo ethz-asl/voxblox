@@ -25,9 +25,9 @@ class TsdfMergeIntegratorTest : public ::testing::Test {
   void setBlockSameValues(const float distance,
                           Block<TsdfVoxel>::Ptr block_ptr) {
     // Looping and setting all voxels
-    for (int x_idx = 0; x_idx < tsdf_voxels_per_side_; x_idx++) {
-      for (int y_idx = 0; y_idx < tsdf_voxels_per_side_; y_idx++) {
-        for (int z_idx = 0; z_idx < tsdf_voxels_per_side_; z_idx++) {
+    for (size_t x_idx = 0; x_idx < tsdf_voxels_per_side_; x_idx++) {
+      for (size_t y_idx = 0; y_idx < tsdf_voxels_per_side_; y_idx++) {
+        for (size_t z_idx = 0; z_idx < tsdf_voxels_per_side_; z_idx++) {
           // Creating the point
           VoxelIndex index(x_idx, y_idx, z_idx);
           TsdfVoxel& voxel_ref = block_ptr->getVoxelByVoxelIndex(index);

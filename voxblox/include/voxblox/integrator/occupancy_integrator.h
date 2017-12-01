@@ -33,10 +33,10 @@ class OccupancyIntegrator {
 
   OccupancyIntegrator(const Config& config, Layer<OccupancyVoxel>* layer)
       : config_(config), layer_(layer) {
-    DCHECK_NOTNULL(layer_);
+    DCHECK(layer_ != NULL);
     DCHECK_GT(layer_->voxel_size(), 0.0);
     DCHECK_GT(layer_->block_size(), 0.0);
-    DCHECK_GT(layer_->voxels_per_side(), 0);
+    DCHECK_GT(layer_->voxels_per_side(), 0u);
 
     voxel_size_ = layer_->voxel_size();
     block_size_ = layer_->block_size();
@@ -55,7 +55,7 @@ class OccupancyIntegrator {
   }
 
   inline void updateOccupancyVoxel(bool occupied, OccupancyVoxel* occ_voxel) {
-    DCHECK_NOTNULL(occ_voxel);
+    DCHECK(occ_voxel != NULL);
     // Set voxel to observed.
     occ_voxel->observed = true;
     // Skip update if necessary.

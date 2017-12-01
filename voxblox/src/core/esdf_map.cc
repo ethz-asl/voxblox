@@ -17,7 +17,7 @@ bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
 bool EsdfMap::getDistanceAndGradientAtPosition(
     const Eigen::Vector3d& position, double* distance,
     Eigen::Vector3d* gradient) const {
-  FloatingPoint distance_fp;
+  FloatingPoint distance_fp = 0.0;
   Point gradient_fp = Point::Zero();
   bool interpolate = true;
   bool use_adaptive = false;

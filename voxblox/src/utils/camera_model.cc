@@ -105,7 +105,7 @@ void CameraModel::calculateBoundingPlanes() {
     return;
   }
 
-  CHECK_EQ(corners_C_.size(), 8);
+  CHECK_EQ(corners_C_.size(), 8u);
   if (bounding_planes_.empty()) {
     bounding_planes_.resize(6);
   }
