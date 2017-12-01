@@ -30,7 +30,7 @@ struct VoxelEvaluationDetails {
 };
 
 template <typename VoxelType>
-const VoxelEvaluationResult computeVoxelError(
+VoxelEvaluationResult computeVoxelError(
     const VoxelType& voxel_gt, const VoxelType& voxel_test,
     const VoxelEvaluationMode evaluation_mode, FloatingPoint* error);
 
@@ -166,7 +166,7 @@ FloatingPoint evaluateLayersRmse(const Layer<VoxelType>& layer_gt,
 }
 
 template <typename VoxelType>
-const VoxelEvaluationResult computeVoxelError(
+VoxelEvaluationResult computeVoxelError(
     const VoxelType& voxel_gt, const VoxelType& voxel_test,
     const VoxelEvaluationMode evaluation_mode, FloatingPoint* error) {
   CHECK_NOTNULL(error);

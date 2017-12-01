@@ -7,7 +7,7 @@ namespace voxblox {
 namespace utils {
 
 template <>
-const VoxelEvaluationResult computeVoxelError(
+VoxelEvaluationResult computeVoxelError(
     const TsdfVoxel& voxel_gt, const TsdfVoxel& voxel_test,
     const VoxelEvaluationMode evaluation_mode, FloatingPoint* error) {
   CHECK_NOTNULL(error);
@@ -37,7 +37,7 @@ const VoxelEvaluationResult computeVoxelError(
 }
 
 template <>
-const VoxelEvaluationResult computeVoxelError(
+VoxelEvaluationResult computeVoxelError(
     const EsdfVoxel& voxel_gt, const EsdfVoxel& voxel_test,
     const VoxelEvaluationMode evaluation_mode, FloatingPoint* error) {
   CHECK_NOTNULL(error);

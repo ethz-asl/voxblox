@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <memory>
 
 #include "voxblox/core/block.h"
 
@@ -72,7 +73,7 @@ void SimulationWorld::setVoxel(FloatingPoint dist, const Color& color,
 
 // Color ignored.
 template <>
-void SimulationWorld::setVoxel(FloatingPoint dist, const Color& color,
+void SimulationWorld::setVoxel(FloatingPoint dist, const Color& /*color*/,
                                EsdfVoxel* voxel) const {
   voxel->distance = static_cast<float>(dist);
   voxel->observed = true;

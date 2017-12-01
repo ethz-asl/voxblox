@@ -83,18 +83,17 @@ class TsdfIntegratorBase {
   // mutex allowing it to grow during integration.
   // These temporary blocks can be merged into the layer later by calling
   // updateLayerWithStoredBlocks()
-  TsdfVoxel* allocateStorageAndGetVoxelPtr(
-      const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
-      BlockIndex* last_block_idx);
+  TsdfVoxel* allocateStorageAndGetVoxelPtr(const VoxelIndex& global_voxel_idx,
+                                           Block<TsdfVoxel>::Ptr* last_block,
+                                           BlockIndex* last_block_idx);
 
   // NOT thread safe
   void updateLayerWithStoredBlocks();
 
   // Updates tsdf_voxel. Thread safe.
   void updateTsdfVoxel(const Point& origin, const Point& point_G,
-                              const VoxelIndex& global_voxel_index,
-                              const Color& color, const float weight,
-                              TsdfVoxel* tsdf_voxel);
+                       const VoxelIndex& global_voxel_index, const Color& color,
+                       const float weight, TsdfVoxel* tsdf_voxel);
 
   // Thread safe.
   inline float computeDistance(const Point& origin, const Point& point_G,
@@ -163,12 +162,10 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
                            const bool freespace_points = false);
 
  protected:
-  void bundleRays(
-      const Transformation& T_G_C, const Pointcloud& points_C,
-      const Colors& colors, const bool freespace_points,
-      ThreadSafeIndex* index_getter,
-      AnyIndexHashMapType<AlignedVector<size_t>>::type* voxel_map,
-      AnyIndexHashMapType<AlignedVector<size_t>>::type* clear_map);
+  void bundleRays(const Transformation& T_G_C, const Pointcloud& points_C,
+                  const bool freespace_points, ThreadSafeIndex* index_getter,
+                  AnyIndexHashMapType<AlignedVector<size_t>>::type* voxel_map,
+                  AnyIndexHashMapType<AlignedVector<size_t>>::type* clear_map);
 
   void integrateVoxel(
       const Transformation& T_G_C, const Pointcloud& points_C,
