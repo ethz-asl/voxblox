@@ -376,21 +376,21 @@ bool TsdfServer::generateMesh() {
 }
 
 bool TsdfServer::generateMeshCallback(
-    std_srvs::Empty::Request& request,
-    std_srvs::Empty::Response& response) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
   return generateMesh();
 }
 
 bool TsdfServer::saveMapCallback(
     voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& response) {  // NOLINT
+    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
   // Will only save TSDF layer for now.
   return io::SaveLayer(tsdf_map_->getTsdfLayer(), request.file_path);
 }
 
 bool TsdfServer::loadMapCallback(
     voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& response) {  // NOLINT
+    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
   // Will only load TSDF layer for now.
   return io::LoadBlocksFromFile(
       request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
@@ -398,13 +398,15 @@ bool TsdfServer::loadMapCallback(
 }
 
 bool TsdfServer::publishPointcloudsCallback(
-    std_srvs::Empty::Request& request,
-    std_srvs::Empty::Response& response) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
   publishPointclouds();
   return true;
 }
 
-void TsdfServer::updateMeshEvent(const ros::TimerEvent& event) { updateMesh(); }
+void TsdfServer::updateMeshEvent(const ros::TimerEvent& /*event*/) {
+  updateMesh();
+}
 
 void TsdfServer::clear() {
   tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
