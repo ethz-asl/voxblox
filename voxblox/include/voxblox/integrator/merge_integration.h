@@ -130,7 +130,8 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
     const Block<VoxelType>& input_block = layer_in.getBlockByIndex(block_idx);
 
     for (IndexElement input_linear_voxel_idx = 0;
-         input_linear_voxel_idx < input_block.num_voxels();
+         input_linear_voxel_idx <
+         static_cast<IndexElement>(input_block.num_voxels());
          ++input_linear_voxel_idx) {
       const VoxelType& input_voxel =
           input_block.getVoxelByLinearIndex(input_linear_voxel_idx);
@@ -219,7 +220,8 @@ void transformLayer(const Layer<VoxelType>& layer_in,
     typename Block<VoxelType>::Ptr block =
         layer_out->allocateBlockPtrByIndex(block_idx);
 
-    for (IndexElement voxel_idx = 0; voxel_idx < block->num_voxels();
+    for (IndexElement voxel_idx = 0;
+          voxel_idx < static_cast<IndexElement>(block->num_voxels());
          ++voxel_idx) {
       VoxelType& voxel = block->getVoxelByLinearIndex(voxel_idx);
 

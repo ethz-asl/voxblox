@@ -56,7 +56,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const TsdfIntegratorBase::Config& integrator_config)
     : nh_(nh),
       nh_private_(nh_private),
-      pointcloud_queue_size_(1),
       verbose_(true),
       world_frame_("world"),
       slice_level_(0.5),
@@ -64,6 +63,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       publish_tsdf_info_(false),
       publish_slices_(false),
       publish_tsdf_map_(false),
+      pointcloud_queue_size_(1),
       transformer_(nh, nh_private) {
   getServerConfigFromRosParam(nh_private);
 
