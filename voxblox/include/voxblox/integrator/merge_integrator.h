@@ -40,7 +40,8 @@ class MergeIntegrator {
       block_B->has_data() = true;
       block_B->updated() = true;
 
-      for (IndexElement voxel_idx = 0; voxel_idx < (IndexElement)block_B->num_voxels();
+      for (IndexElement voxel_idx = 0;
+           voxel_idx < static_cast<IndexElement>(block_B->num_voxels());
            ++voxel_idx) {
         mergeVoxelAIntoVoxelB<VoxelType>(
             block_A.getVoxelByLinearIndex(voxel_idx),
@@ -221,7 +222,8 @@ class MergeIntegrator {
       typename Block<VoxelType>::Ptr block =
           layer_out->allocateBlockPtrByIndex(block_idx);
 
-      for (IndexElement voxel_idx = 0; voxel_idx < (IndexElement)block->num_voxels();
+      for (IndexElement voxel_idx = 0;
+           voxel_idx < static_cast<IndexElement>(block->num_voxels());
            ++voxel_idx) {
         VoxelType& voxel = block->getVoxelByLinearIndex(voxel_idx);
 
