@@ -302,12 +302,25 @@ void TsdfServer::publishSlices() {
   tsdf_slice_pub_.publish(pointcloud);
 }
 
+void TsdfServer::publishMap() {
+  if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
+    const bool only_updated = false;
+    timing::Timer publish_map_timer("map/update");
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(), only_updated,
+                                   &layer_msg);
+    this->tsdf_map_pub_.publish(layer_msg);
+    publish_map_timer.Stop();
+  }
+}
+
 void TsdfServer::publishPointclouds() {
   // Combined function to publish all possible pointcloud messages -- surface
   // pointclouds, updated points, and occupied points.
   publishAllUpdatedTsdfVoxels();
   publishTsdfSurfacePoints();
   publishTsdfOccupiedNodes();
+  publishMap();
 }
 
 void TsdfServer::updateMesh() {
