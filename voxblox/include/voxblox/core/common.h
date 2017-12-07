@@ -178,14 +178,14 @@ inline Point getOriginPointFromGridIndex(const AnyIndex& idx,
 }
 
 inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
-    const AnyIndex& global_voxel_idx, FloatingPoint voxels_per_side_inv_) {
+    const AnyIndex& global_voxel_idx, FloatingPoint voxels_per_side_inv) {
   return BlockIndex(
       std::floor(static_cast<FloatingPoint>(global_voxel_idx.x()) *
-                 voxels_per_side_inv_),
+                 voxels_per_side_inv),
       std::floor(static_cast<FloatingPoint>(global_voxel_idx.y()) *
-                 voxels_per_side_inv_),
+                 voxels_per_side_inv),
       std::floor(static_cast<FloatingPoint>(global_voxel_idx.z()) *
-                 voxels_per_side_inv_));
+                 voxels_per_side_inv));
 }
 
 inline bool isPowerOfTwo(int x) { return (x & (x - 1)) == 0; }

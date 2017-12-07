@@ -70,6 +70,10 @@ class CameraModel {
   // in the global coordinate frame.
   void getBoundingLines(AlignedVector<Point>* lines) const;
 
+  // Get the 3 points definining the plane at the back (far end) of the camera
+  // frustum. Expressed in global coordinates.
+  void getFarPlanePoints(AlignedVector<Point>* points) const;
+
  private:
   void calculateBoundingPlanes();
 
