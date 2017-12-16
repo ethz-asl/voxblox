@@ -139,6 +139,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "load_map", &TsdfServer::loadMapCallback, this);
   publish_pointclouds_srv_ = nh_private_.advertiseService(
       "publish_pointclouds", &TsdfServer::publishPointcloudsCallback, this);
+  publish_tsdf_map_srv_ = nh_private_.advertiseService(
+          "publish_map", &TsdfServer::publishTsdfMapCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
   double update_mesh_every_n_sec = 0.0;
@@ -320,7 +322,6 @@ void TsdfServer::publishPointclouds() {
   publishAllUpdatedTsdfVoxels();
   publishTsdfSurfacePoints();
   publishTsdfOccupiedNodes();
-  publishMap();
 }
 
 void TsdfServer::updateMesh() {
@@ -414,6 +415,13 @@ bool TsdfServer::publishPointcloudsCallback(
     std_srvs::Empty::Request& /*request*/,
     std_srvs::Empty::Response& /*response*/) {  // NOLINT
   publishPointclouds();
+  return true;
+}
+
+bool TsdfServer::publishTsdfMapCallback(
+        std_srvs::Empty::Request& /*request*/,
+        std_srvs::Empty::Response& /*response*/) {  // NOLINT
+  publishMap();
   return true;
 }
 
