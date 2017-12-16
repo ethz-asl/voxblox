@@ -74,6 +74,9 @@ class TsdfServer {
   bool publishPointcloudsCallback(
       std_srvs::Empty::Request& request,     // NOLINT
       std_srvs::Empty::Response& response);  // NOLINT
+  bool publishTsdfMapCallback(
+          std_srvs::Empty::Request& request,     // NOLINT
+          std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
 
@@ -144,6 +147,7 @@ class TsdfServer {
   ros::ServiceServer save_map_srv_;
   ros::ServiceServer load_map_srv_;
   ros::ServiceServer publish_pointclouds_srv_;
+  ros::ServiceServer publish_tsdf_map_srv_;
 
   // Timers.
   ros::Timer update_mesh_timer_;
