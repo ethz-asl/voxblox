@@ -54,7 +54,8 @@ class VoxbloxEvaluator {
   ColorMode color_mode_;
   // If visualizing, what TF frame to visualize in.
   std::string frame_id_;
-
+  float voxel_size_;
+  int voxels_per_side_;
   // Transformation between the ground truth dataset and the voxblox map.
   // The GT is transformed INTO the voxblox coordinate frame.
   Transformation T_V_G_;
@@ -81,12 +82,15 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       visualize_(true),
       recolor_by_error_(false),
-      frame_id_("world") {
+      frame_id_("world"),
+      voxel_size_(0.1),
+      voxels_per_side_(16) {
   // Load parameters.
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("recolor_by_error", recolor_by_error_, recolor_by_error_);
   nh_private_.param("frame_id", frame_id_, frame_id_);
-
+  nh_private_.param("voxel_size",voxel_size_, 0.1f);
+  nh_private_.param("voxels_per_side", voxels_per_side_, 16);
   // Load transformations.
   XmlRpc::XmlRpcValue T_V_G_xml;
   if (nh_private_.getParam("T_V_G", T_V_G_xml)) {
@@ -109,8 +113,12 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   CHECK(nh_private_.getParam("gt_file_path", gt_file_path))
       << "No file path provided for ground truth pointcloud! Set the "
          "\"gt_file_path\" param.";
+  tsdf_layer_ = std::make_shared<Layer<TsdfVoxel>>(voxel_size_, voxels_per_side_);
+  CHECK_NOTNULL(tsdf_layer_.get());
 
-  CHECK(io::LoadLayer<TsdfVoxel>(voxblox_file_path, &tsdf_layer_))
+  CHECK(io::LoadBlocksFromFile(
+      voxblox_file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
+      tsdf_layer_.get()))
       << "Could not load voxblox map.";
   pcl::PLYReader ply_reader;
 
