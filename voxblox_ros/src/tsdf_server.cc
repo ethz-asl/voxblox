@@ -1,6 +1,6 @@
 #include "voxblox_ros/tsdf_server.h"
-
 #include "voxblox_ros/ros_params.h"
+#include <pcl/io/ply_io.h>
 
 namespace voxblox {
 
@@ -135,6 +135,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "generate_mesh", &TsdfServer::generateMeshCallback, this);
   save_map_srv_ = nh_private_.advertiseService(
       "save_map", &TsdfServer::saveMapCallback, this);
+  save_surface_pcl_srv_ = nh_private_.advertiseService(
+          "save_surface_pointcloud", &TsdfServer::saveSurfacePointCloudCallback, this);
   load_map_srv_ = nh_private_.advertiseService(
       "load_map", &TsdfServer::loadMapCallback, this);
   publish_pointclouds_srv_ = nh_private_.advertiseService(
@@ -400,6 +402,20 @@ bool TsdfServer::saveMapCallback(
     voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
   // Will only save TSDF layer for now.
   return io::SaveLayer(tsdf_map_->getTsdfLayer(), request.file_path);
+}
+
+bool TsdfServer::saveSurfacePointCloudCallback(
+        voxblox_msgs::FilePath::Request& request,
+        voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
+  // Create a pointcloud with distance = intensity.
+  pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+  const float surface_distance_thresh =
+          tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
+  createSurfacePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(),
+                                       surface_distance_thresh, &pointcloud);
+  pointcloud.header.frame_id = world_frame_;
+  pcl::PLYWriter writer;
+  return writer.write(request.file_path,pointcloud) > 0;
 }
 
 bool TsdfServer::loadMapCallback(
