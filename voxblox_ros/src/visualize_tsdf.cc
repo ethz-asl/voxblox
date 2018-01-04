@@ -3,6 +3,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <pcl/conversions.h>
+#include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_msgs/PolygonMesh.h>
@@ -34,8 +35,11 @@ DEFINE_string(tsdf_mesh_color_mode, "color",
               "Color mode for the TSDF mesh extraction, options: "
               "[color, height, normals, lambert, gray]");
 
-namespace voxblox {
+DEFINE_string(tsdf_voxel_ply_output_path, "",
+              "If specified, the pointcloud representing all voxels will be "
+              "saved to a ply file.");
 
+namespace voxblox {
 class SimpleTsdfVisualizer {
  public:
   SimpleTsdfVisualizer(const ros::NodeHandle& nh,
@@ -87,10 +91,10 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
 
   VLOG(1) << "\tVisualize voxels near surface...";
   {
-    pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
     const float surface_distance_thresh_m =
         tsdf_layer.voxel_size() * FLAGS_tsdf_surface_distance_threshold_factor;
-    voxblox::createSurfacePointcloudFromTsdfLayer(
+    voxblox::createSurfaceDistancePointcloudFromTsdfLayer(
         tsdf_layer, surface_distance_thresh_m, &pointcloud);
 
     pointcloud.header.frame_id = FLAGS_tsdf_world_frame;
@@ -104,6 +108,12 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
 
     pointcloud.header.frame_id = FLAGS_tsdf_world_frame;
     tsdf_pointcloud_pub_.publish(pointcloud);
+
+    if (!FLAGS_tsdf_voxel_ply_output_path.empty()) {
+      pcl::PLYWriter writer;
+      constexpr bool kUseBinary = true;
+      writer.write(FLAGS_tsdf_voxel_ply_output_path, pointcloud, kUseBinary);
+    }
   }
 
   VLOG(1) << "\tVisualize mesh...";

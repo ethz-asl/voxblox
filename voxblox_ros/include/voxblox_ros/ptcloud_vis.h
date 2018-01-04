@@ -178,11 +178,31 @@ inline bool visualizeNearSurfaceTsdfVoxels(const TsdfVoxel& voxel,
   return false;
 }
 
+inline bool visualizeTsdfVoxels(const TsdfVoxel& voxel, const Point& /*coord*/,
+                                Color* color) {
+  if (voxel.weight > 0) {
+    *color = voxel.color;
+    return true;
+  }
+  return false;
+}
+
 inline bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
                                                  const Point& /*coord*/,
                                                  double* intensity) {
   CHECK_NOTNULL(intensity);
   if (voxel.weight > 1e-3) {
+    *intensity = voxel.distance;
+    return true;
+  }
+  return false;
+}
+
+inline bool visualizeDistanceIntensityTsdfVoxelsNearSurface(
+    const TsdfVoxel& voxel, const Point& /*coord*/, double surface_distance,
+    double* intensity) {
+  CHECK_NOTNULL(intensity);
+  if (voxel.weight > 1e-3 && std::abs(voxel.distance) < surface_distance) {
     *intensity = voxel.distance;
     return true;
   }
@@ -247,20 +267,47 @@ inline bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
 }
 
 // All functions that can be used directly for TSDF voxels.
+
+// Create a pointcloud based on the TSDF voxels near the surface.
+// The RGB color is determined by the color of the TSDF voxel.
 inline void createSurfacePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer, std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
-                       surface_distance, ph::_3),
+      layer,
+      std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
+                surface_distance, ph::_3),
       pointcloud);
 }
 
+// Create a pointcloud based on all the TSDF voxels.
+// The RGB color is determined by the color of the TSDF voxel.
+inline void createPointcloudFromTsdfLayer(
+    const Layer<TsdfVoxel>& layer,
+    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
+  createColorPointcloudFromLayer<TsdfVoxel>(layer, &visualizeTsdfVoxels,
+                                            pointcloud);
+}
+
+// Create a pointcloud based on all the TSDF voxels.
+// The intensity is determined based on the distance to the surface.
 inline void createDistancePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer,
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer, &visualizeDistanceIntensityTsdfVoxels, pointcloud);
+}
+
+// Create a pointcloud based on the TSDF voxels near the surface.
+// The intensity is determined based on the distance to the surface.
+inline void createSurfaceDistancePointcloudFromTsdfLayer(
+    const Layer<TsdfVoxel>& layer, double surface_distance,
+    pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  createColorPointcloudFromLayer<TsdfVoxel>(
+      layer,
+      std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
+                ph::_2, surface_distance, ph::_3),
+      pointcloud);
 }
 
 inline void createDistancePointcloudFromEsdfLayer(
