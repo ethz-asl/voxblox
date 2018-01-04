@@ -47,6 +47,11 @@ cs_add_executable(simulation_eval
 )
 target_link_libraries(simulation_eval ${PROJECT_NAME})
 
+cs_add_executable(visualize_tsdf
+  src/visualize_tsdf.cc
+)
+target_link_libraries(visualize_tsdf ${PROJECT_NAME})
+
 ##########
 # EXPORT #
 ##########
