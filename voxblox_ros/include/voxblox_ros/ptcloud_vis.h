@@ -171,7 +171,10 @@ inline bool visualizeNearSurfaceTsdfVoxels(const TsdfVoxel& voxel,
                                            const Point& /*coord*/,
                                            double surface_distance,
                                            Color* color) {
-  if (voxel.weight > 0 && std::abs(voxel.distance) < surface_distance) {
+  CHECK_NOTNULL(color);
+  constexpr float kMinWeight = 0;
+  if (voxel.weight > kMinWeight &&
+      std::abs(voxel.distance) < surface_distance) {
     *color = voxel.color;
     return true;
   }
@@ -180,7 +183,9 @@ inline bool visualizeNearSurfaceTsdfVoxels(const TsdfVoxel& voxel,
 
 inline bool visualizeTsdfVoxels(const TsdfVoxel& voxel, const Point& /*coord*/,
                                 Color* color) {
-  if (voxel.weight > 0) {
+  CHECK_NOTNULL(color);
+  constexpr float kMinWeight = 0;
+  if (voxel.weight > kMinWeight) {
     *color = voxel.color;
     return true;
   }
@@ -191,7 +196,8 @@ inline bool visualizeDistanceIntensityTsdfVoxels(const TsdfVoxel& voxel,
                                                  const Point& /*coord*/,
                                                  double* intensity) {
   CHECK_NOTNULL(intensity);
-  if (voxel.weight > 1e-3) {
+  constexpr float kMinWeight = 1e-3;
+  if (voxel.weight > kMinWeight) {
     *intensity = voxel.distance;
     return true;
   }
@@ -202,7 +208,9 @@ inline bool visualizeDistanceIntensityTsdfVoxelsNearSurface(
     const TsdfVoxel& voxel, const Point& /*coord*/, double surface_distance,
     double* intensity) {
   CHECK_NOTNULL(intensity);
-  if (voxel.weight > 1e-3 && std::abs(voxel.distance) < surface_distance) {
+  constexpr float kMinWeight = 1e-3;
+  if (voxel.weight > kMinWeight &&
+      std::abs(voxel.distance) < surface_distance) {
     *intensity = voxel.distance;
     return true;
   }
@@ -273,6 +281,7 @@ inline bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
 inline void createSurfacePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer,
       std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
@@ -285,6 +294,7 @@ inline void createSurfacePointcloudFromTsdfLayer(
 inline void createPointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer,
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(layer, &visualizeTsdfVoxels,
                                             pointcloud);
 }
@@ -294,6 +304,7 @@ inline void createPointcloudFromTsdfLayer(
 inline void createDistancePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer,
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer, &visualizeDistanceIntensityTsdfVoxels, pointcloud);
 }
@@ -303,6 +314,7 @@ inline void createDistancePointcloudFromTsdfLayer(
 inline void createSurfaceDistancePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
@@ -313,6 +325,7 @@ inline void createSurfaceDistancePointcloudFromTsdfLayer(
 inline void createDistancePointcloudFromEsdfLayer(
     const Layer<EsdfVoxel>& layer,
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer, &visualizeDistanceIntensityEsdfVoxels, pointcloud);
 }
@@ -320,6 +333,7 @@ inline void createDistancePointcloudFromEsdfLayer(
 inline void createDistancePointcloudFromTsdfLayerSlice(
     const Layer<TsdfVoxel>& layer, unsigned int free_plane_index,
     FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityTsdfVoxelsSlice, ph::_1, ph::_2,
@@ -330,6 +344,7 @@ inline void createDistancePointcloudFromTsdfLayerSlice(
 inline void createDistancePointcloudFromEsdfLayerSlice(
     const Layer<EsdfVoxel>& layer, unsigned int free_plane_index,
     FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityEsdfVoxelsSlice, ph::_1, ph::_2,
@@ -340,6 +355,7 @@ inline void createDistancePointcloudFromEsdfLayerSlice(
 inline void createOccupancyBlocksFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, const std::string& frame_id,
     visualization_msgs::MarkerArray* marker_array) {
+  CHECK_NOTNULL(marker_array);
   createOccupancyBlocksFromLayer<TsdfVoxel>(layer, &visualizeOccupiedTsdfVoxels,
                                             frame_id, marker_array);
 }
@@ -347,6 +363,7 @@ inline void createOccupancyBlocksFromTsdfLayer(
 inline void createOccupancyBlocksFromOccupancyLayer(
     const Layer<OccupancyVoxel>& layer, const std::string& frame_id,
     visualization_msgs::MarkerArray* marker_array) {
+  CHECK_NOTNULL(marker_array);
   createOccupancyBlocksFromLayer<OccupancyVoxel>(
       layer, &visualizeOccupiedOccupancyVoxels, frame_id, marker_array);
 }
