@@ -20,31 +20,15 @@
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
 
-DEFINE_string(tsdf_proto_path, "", "Path to the serialized TSDF grid.");
-
-DEFINE_double(tsdf_surface_distance_threshold_factor, 0.75,
-              "This factor multiplied with the voxel size determines the "
-              "maximum distance to the surface for voxels to be considered "
-              "near-surface voxels.");
-
-DEFINE_string(tsdf_world_frame, "world",
-              "Name of the world frame. This frame will be used to publish all "
-              "the pointclouds and meshes.");
-
-DEFINE_string(tsdf_mesh_color_mode, "color",
-              "Color mode for the TSDF mesh extraction, options: "
-              "[color, height, normals, lambert, gray]");
-
-DEFINE_string(tsdf_voxel_ply_output_path, "",
-              "If specified, the pointcloud representing all voxels will be "
-              "saved to a ply file.");
-
 namespace voxblox {
 class SimpleTsdfVisualizer {
  public:
-  SimpleTsdfVisualizer(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private)
-      : nh_(nh), nh_private_(nh_private) {
+  SimpleTsdfVisualizer(const ros::NodeHandle& nh_private)
+      : nh_private_(nh_private),
+        tsdf_surface_distance_threshold_factor_(2.0),
+        tsdf_world_frame_("world"),
+        tsdf_mesh_color_mode_(ColorMode::kColor),
+        tsdf_voxel_ply_output_path_("") {
     VLOG(1) << "\tSetting up ROS publishers...";
 
     surface_pointcloud_pub_ =
@@ -64,13 +48,37 @@ class SimpleTsdfVisualizer {
     mesh_pcl_mesh_pub_ =
         nh_private_.advertise<pcl_msgs::PolygonMesh>("mesh_pcl", 1, true);
 
+    VLOG(1) << "\tRetreiving ROS parameters...";
+
+    nh_private_.param("tsdf_surface_distance_threshold_factor",
+                      tsdf_surface_distance_threshold_factor_,
+                      tsdf_surface_distance_threshold_factor_);
+    nh_private_.param("tsdf_world_frame", tsdf_world_frame_, tsdf_world_frame_);
+    nh_private_.param("tsdf_voxel_ply_output_path", tsdf_voxel_ply_output_path_,
+                      tsdf_voxel_ply_output_path_);
+
+    std::string color_mode = "color";
+    nh_private_.param("tsdf_mesh_color_mode", color_mode, color_mode);
+    if (color_mode == "color") {
+      tsdf_mesh_color_mode_ = ColorMode::kColor;
+    } else if (color_mode == "height") {
+      tsdf_mesh_color_mode_ = ColorMode::kHeight;
+    } else if (color_mode == "normals") {
+      tsdf_mesh_color_mode_ = ColorMode::kNormals;
+    } else if (color_mode == "lambert") {
+      tsdf_mesh_color_mode_ = ColorMode::kLambert;
+    } else if (color_mode == "gray") {
+      tsdf_mesh_color_mode_ = ColorMode::kGray;
+    } else {
+      LOG(FATAL) << "Undefined mesh coloring mode: " << color_mode;
+    }
+
     ros::spinOnce();
   }
 
   void run(const Layer<TsdfVoxel>& tsdf_layer);
 
  private:
-  ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
   ros::Publisher surface_pointcloud_pub_;
@@ -78,13 +86,19 @@ class SimpleTsdfVisualizer {
   ros::Publisher mesh_pub_;
   ros::Publisher mesh_pointcloud_pub_;
   ros::Publisher mesh_pcl_mesh_pub_;
+
+  // Settings
+  double tsdf_surface_distance_threshold_factor_;
+  std::string tsdf_world_frame_;
+  ColorMode tsdf_mesh_color_mode_;
+  std::string tsdf_voxel_ply_output_path_;
 };
 
 void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
   LOG(INFO) << "\nTSDF Layer info:\n"
             << "\tVoxel size:\t\t " << tsdf_layer.voxel_size() << "\n"
             << "\t# Voxels per side:\t " << tsdf_layer.voxels_per_side() << "\n"
-            << "\tMemory size:\t\t " << tsdf_layer.getMemorySize() * 1e-6
+            << "\tMemory size:\t\t " << tsdf_layer.getMemorySize() / 1024 / 1024
             << "MB\n"
             << "\t# Allocated blocks:\t "
             << tsdf_layer.getNumberOfAllocatedBlocks() << "\n";
@@ -92,12 +106,12 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
   VLOG(1) << "\tVisualize voxels near surface...";
   {
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
-    const float surface_distance_thresh_m =
-        tsdf_layer.voxel_size() * FLAGS_tsdf_surface_distance_threshold_factor;
+    const FloatingPoint surface_distance_thresh_m =
+        tsdf_layer.voxel_size() * tsdf_surface_distance_threshold_factor_;
     voxblox::createSurfaceDistancePointcloudFromTsdfLayer(
         tsdf_layer, surface_distance_thresh_m, &pointcloud);
 
-    pointcloud.header.frame_id = FLAGS_tsdf_world_frame;
+    pointcloud.header.frame_id = tsdf_world_frame_;
     surface_pointcloud_pub_.publish(pointcloud);
   }
 
@@ -106,13 +120,13 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
     voxblox::createDistancePointcloudFromTsdfLayer(tsdf_layer, &pointcloud);
 
-    pointcloud.header.frame_id = FLAGS_tsdf_world_frame;
+    pointcloud.header.frame_id = tsdf_world_frame_;
     tsdf_pointcloud_pub_.publish(pointcloud);
 
-    if (!FLAGS_tsdf_voxel_ply_output_path.empty()) {
+    if (!tsdf_voxel_ply_output_path_.empty()) {
       pcl::PLYWriter writer;
       constexpr bool kUseBinary = true;
-      writer.write(FLAGS_tsdf_voxel_ply_output_path, pointcloud, kUseBinary);
+      writer.write(tsdf_voxel_ply_output_path_, pointcloud, kUseBinary);
     }
   }
 
@@ -129,38 +143,21 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
     constexpr bool kClearUpdatedFlag = false;
     mesh_integrator->generateMesh(kOnlyMeshUpdatedBlocks, kClearUpdatedFlag);
 
-    const std::string color_mode_string = FLAGS_tsdf_mesh_color_mode;
-    ColorMode color_mode;
-    if (color_mode_string == "color") {
-      color_mode = ColorMode::kColor;
-    } else if (color_mode_string == "height") {
-      color_mode = ColorMode::kHeight;
-    } else if (color_mode_string == "normals") {
-      color_mode = ColorMode::kNormals;
-    } else if (color_mode_string == "lambert") {
-      color_mode = ColorMode::kLambert;
-    } else if (color_mode_string == "gray") {
-      color_mode = ColorMode::kGray;
-    } else {
-      LOG(FATAL) << "Undefined mesh coloring mode: "
-                 << FLAGS_tsdf_mesh_color_mode;
-    }
-
     // Output as native voxblox mesh.
     voxblox_msgs::Mesh mesh_msg;
-    generateVoxbloxMeshMsg(mesh_layer, color_mode, &mesh_msg);
-    mesh_msg.header.frame_id = FLAGS_tsdf_world_frame;
+    generateVoxbloxMeshMsg(mesh_layer, tsdf_mesh_color_mode_, &mesh_msg);
+    mesh_msg.header.frame_id = tsdf_world_frame_;
     mesh_pub_.publish(mesh_msg);
 
     // Output as point cloud.
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
-    fillPointcloudWithMesh(mesh_layer, color_mode, &pointcloud);
-    pointcloud.header.frame_id = FLAGS_tsdf_world_frame;
+    fillPointcloudWithMesh(mesh_layer, tsdf_mesh_color_mode_, &pointcloud);
+    pointcloud.header.frame_id = tsdf_world_frame_;
     mesh_pointcloud_pub_.publish(pointcloud);
 
     // Output as pcl mesh.
     pcl::PolygonMesh polygon_mesh;
-    toPCLPolygonMesh(*mesh_layer, FLAGS_tsdf_world_frame, &polygon_mesh);
+    toPCLPolygonMesh(*mesh_layer, tsdf_world_frame_, &polygon_mesh);
     pcl_msgs::PolygonMesh pcl_mesh_msg;
     pcl_conversions::fromPCL(polygon_mesh, pcl_mesh_msg);
     mesh_msg.header.stamp = ros::Time::now();
@@ -175,27 +172,28 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::ParseCommandLineFlags(&argc, &argv, false);
   google::InstallFailureSignalHandler();
-  ros::NodeHandle nh;
+
   ros::NodeHandle nh_private("~");
 
-  if (FLAGS_tsdf_proto_path.empty()) {
-    LOG(FATAL) << "Please provide a TSDF proto file to visualize using "
-               << "--tsdf_proto_path";
+  std::string tsdf_proto_path = "";
+  nh_private.param("tsdf_proto_path", tsdf_proto_path, tsdf_proto_path);
+  if (tsdf_proto_path.empty()) {
+    LOG(FATAL) << "Please provide a TSDF proto file to visualize using the ros "
+               << "parameter: tsdf_proto_path";
   }
-
-  LOG(INFO) << "Visualize TSDF grid from " << FLAGS_tsdf_proto_path;
+  LOG(INFO) << "Visualize TSDF grid from " << tsdf_proto_path;
 
   VLOG(1) << "Loading...";
   voxblox::Layer<voxblox::TsdfVoxel>::Ptr tsdf_layer;
-  if (!voxblox::io::LoadLayer<voxblox::TsdfVoxel>(FLAGS_tsdf_proto_path,
+  if (!voxblox::io::LoadLayer<voxblox::TsdfVoxel>(tsdf_proto_path,
                                                   &tsdf_layer)) {
-    LOG(FATAL) << "Unable to load a TSDF grid from: " << FLAGS_tsdf_proto_path;
+    LOG(FATAL) << "Unable to load a TSDF grid from: " << tsdf_proto_path;
   }
   CHECK(tsdf_layer);
   VLOG(1) << "Done.";
 
   VLOG(1) << "Visualizing...";
-  voxblox::SimpleTsdfVisualizer visualizer(nh, nh_private);
+  voxblox::SimpleTsdfVisualizer visualizer(nh_private);
   visualizer.run(*tsdf_layer);
   VLOG(1) << "Done.";
 
