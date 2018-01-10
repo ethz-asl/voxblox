@@ -26,6 +26,10 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
     LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
     config_.integrator_threads = 1;
   }
+  // clearing rays have no utility is voxel_carving is disabled
+  if (config_.allow_clear && !config_.voxel_carving_enabled) {
+    config_.allow_clear = false;
+  }
 }
 
 // Thread safe.
