@@ -51,7 +51,9 @@ class TsdfServer {
   void integratePointcloud(const Transformation& T_G_C,
                            const Pointcloud& ptcloud_C, const Colors& colors,
                            const bool is_freespace_pointcloud = false);
-  virtual void newPoseCallback(const Transformation& new_pose) {}
+  virtual void newPoseCallback(const Transformation& /*new_pose*/) {
+    // Do nothing.
+  }
 
   void publishAllUpdatedTsdfVoxels();
   void publishTsdfSurfacePoints();
@@ -61,6 +63,7 @@ class TsdfServer {
   virtual void updateMesh();    // Incremental update.
   virtual bool generateMesh();  // Batch update.
   virtual void publishPointclouds();  // Publishes all available pointclouds.
+  virtual void publishMap(); // Publishes the complete map
 
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
@@ -71,6 +74,9 @@ class TsdfServer {
   bool publishPointcloudsCallback(
       std_srvs::Empty::Request& request,     // NOLINT
       std_srvs::Empty::Response& response);  // NOLINT
+  bool publishTsdfMapCallback(
+          std_srvs::Empty::Request& request,     // NOLINT
+          std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
 
@@ -141,6 +147,7 @@ class TsdfServer {
   ros::ServiceServer save_map_srv_;
   ros::ServiceServer load_map_srv_;
   ros::ServiceServer publish_pointclouds_srv_;
+  ros::ServiceServer publish_tsdf_map_srv_;
 
   // Timers.
   ros::Timer update_mesh_timer_;

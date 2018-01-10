@@ -20,12 +20,10 @@ void EsdfOccIntegrator::updateFromOccLayerBatch() {
   esdf_layer_->removeAllBlocks();
   BlockIndexList occ_blocks;
   occ_layer_->getAllAllocatedBlocks(&occ_blocks);
-  constexpr bool push_neighbors = false;
-  updateFromOccBlocks(occ_blocks, push_neighbors);
+  updateFromOccBlocks(occ_blocks);
 }
 
-void EsdfOccIntegrator::updateFromOccBlocks(const BlockIndexList& occ_blocks,
-                                            bool push_neighbors) {
+void EsdfOccIntegrator::updateFromOccBlocks(const BlockIndexList& occ_blocks) {
   DCHECK_EQ(occ_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
   timing::Timer esdf_timer("esdf_occ");
 

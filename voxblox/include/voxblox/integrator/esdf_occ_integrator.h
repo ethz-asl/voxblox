@@ -38,8 +38,7 @@ class EsdfOccIntegrator {
   // Fixed is overloaded as occupied in this case.
   // Only batch operations are currently supported for the occupancy map.
   void updateFromOccLayerBatch();
-  void updateFromOccBlocks(const BlockIndexList& occ_blocks,
-                           bool push_neighbors);
+  void updateFromOccBlocks(const BlockIndexList& occ_blocks);
 
   void processOpenSet();
 

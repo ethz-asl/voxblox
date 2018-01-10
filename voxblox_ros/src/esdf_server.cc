@@ -100,8 +100,8 @@ void EsdfServer::publishSlices() {
 }
 
 bool EsdfServer::generateEsdfCallback(
-    std_srvs::Empty::Request& request,      // NOLINT
-    std_srvs::Empty::Response& response) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/,      // NOLINT
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
   const bool clear_esdf = true;
   if (clear_esdf) {
     esdf_integrator_->updateFromTsdfLayerBatch();
