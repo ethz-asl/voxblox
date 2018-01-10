@@ -143,19 +143,20 @@ RayCaster::RayCaster(const Point& origin, const Point& point_G,
                      const bool cast_from_origin) {
   const Ray unit_ray = (point_G - origin).normalized();
 
-  Point ray_end;
+  Point ray_start, ray_end;
   if (is_clearing_ray) {
     FloatingPoint ray_length = (point_G - origin).norm();
     ray_length = std::min(std::max(ray_length - truncation_distance,
                                    static_cast<FloatingPoint>(0.0)),
                           max_ray_length_m);
     ray_end = origin + unit_ray * ray_length;
+    ray_start = voxel_carving_enabled ? origin : ray_end;
   } else {
     ray_end = point_G + unit_ray * truncation_distance;
+    ray_start = voxel_carving_enabled
+                    ? origin
+                    : (point_G - unit_ray * truncation_distance);
   }
-  const Point ray_start = voxel_carving_enabled
-                              ? origin
-                              : (point_G - unit_ray * truncation_distance);
 
   const Point start_scaled = ray_start * voxel_size_inv;
   const Point end_scaled = ray_end * voxel_size_inv;
