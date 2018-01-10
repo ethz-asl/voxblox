@@ -40,6 +40,8 @@ typedef std::unordered_set<AnyIndex, AnyIndexHash, std::equal_to<AnyIndex>,
 
 typedef typename AnyIndexHashMapType<IndexVector>::type HierarchicalIndexMap;
 
+typedef typename AnyIndexHashMapType<IndexSet>::type HierarchicalIndexSet;
+
 typedef typename HierarchicalIndexMap::value_type HierarchicalIndex;
 
 }  // namespace voxblox
