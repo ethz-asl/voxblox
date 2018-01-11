@@ -87,7 +87,10 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
 
   CHECK(!file_path.empty());
   std::fstream outfile;
-  outfile.open(file_path, std::fstream::out | std::fstream::binary);
+  // Will APPEND to the current file in case outputting multiple layers on the
+  // same file.
+  outfile.open(file_path,
+               std::fstream::out | std::fstream::binary | std::fstream::ate);
   if (!outfile.is_open()) {
     LOG(ERROR) << "Could not open file for writing: " << file_path;
     return false;
