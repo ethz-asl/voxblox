@@ -64,6 +64,8 @@ class TsdfServer {
   virtual bool generateMesh();  // Batch update.
   virtual void publishPointclouds();  // Publishes all available pointclouds.
   virtual void publishMap(); // Publishes the complete map
+  virtual bool saveMap(const std::string& file_path);
+  virtual bool loadMap(const std::string& file_path);
 
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
