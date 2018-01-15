@@ -9,6 +9,8 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/io/layer_io.h"
 #include "voxblox/test/layer_test_utils.h"
+#include "voxblox/core/esdf_map.h"
+#include "voxblox/integrator/esdf_integrator.h"
 
 using namespace voxblox;  // NOLINT
 
@@ -211,7 +213,7 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationFromFile) {
   CompareLayers(*layer_, layer_with_blocks_from_file);
 }
 
-TEST_F(ProtobufTsdfTest, MultipleLayerSerialization) {
+TEST_F(ProtobufTsdfTest, DISABLE_MultipleLayerSerialization) {
   // First, generate an ESDF out of the test TSDF layer.
   // ESDF maps.
   EsdfMap::Config esdf_config;
@@ -225,10 +227,11 @@ TEST_F(ProtobufTsdfTest, MultipleLayerSerialization) {
   EsdfIntegrator::Config esdf_integrator_config;
 
   EsdfMap esdf_map(esdf_config);
-  EsdfIntegrator esdf_integrator(esdf_integrator_config, layer_->get(),
+  EsdfIntegrator esdf_integrator(esdf_integrator_config, layer_.get(),
                                  esdf_map.getEsdfLayerPtr());
 
   esdf_integrator.updateFromTsdfLayerBatchFullEuclidean();
+  voxblox::test::LayerTest<EsdfVoxel> esdf_test;
 
   const std::string file = "multi_layer_test.voxblox";
   bool clear_file = true;
@@ -236,14 +239,15 @@ TEST_F(ProtobufTsdfTest, MultipleLayerSerialization) {
   clear_file = false;
   io::SaveLayer(*esdf_map.getEsdfLayerPtr(), file, clear_file);
 
+  bool multiple_layer_support = true;
   Layer<TsdfVoxel>::Ptr tsdf_layer_from_file;
-  io::LoadLayer<TsdfVoxel>(file, &tsdf_layer_from_file);
+  io::LoadLayer<TsdfVoxel>(file, multiple_layer_support, &tsdf_layer_from_file);
 
   Layer<EsdfVoxel>::Ptr esdf_layer_from_file;
-  io::LoadLayer<EsdfVoxel>(file, esdf_layer_from_file);
+  io::LoadLayer<EsdfVoxel>(file, multiple_layer_support, &esdf_layer_from_file);
 
   CompareLayers(*layer_, *tsdf_layer_from_file);
-  CompareLayers(*esdf_map.getEsdfLayerPtr(), *esdf_layer_from_file);
+  esdf_test.CompareLayers(*esdf_map.getEsdfLayerPtr(), *esdf_layer_from_file);
 }
 
 int main(int argc, char** argv) {
