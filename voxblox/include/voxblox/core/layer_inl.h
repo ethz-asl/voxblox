@@ -107,7 +107,7 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
   std::fstream outfile;
   // Will APPEND to the current file in case outputting multiple layers on the
   // same file, depending on the flag.
-  char file_flags = std::fstream::out | std::fstream::binary;
+  std::ios_base::openmode file_flags = std::fstream::out | std::fstream::binary;
   if (!clear_file) {
     file_flags |= std::fstream::app | std::fstream::ate;
   } else {
