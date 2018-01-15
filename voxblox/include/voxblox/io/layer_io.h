@@ -99,7 +99,7 @@ bool LoadBlocksFromFile(
         return false;
       }
     }
-  } while (multiple_layer_support && !layer_found);
+  } while (multiple_layer_support && !layer_found && !proto_file.eof());
   return layer_found;
 }
 
@@ -162,7 +162,7 @@ bool LoadLayer(const std::string& file_path, bool multiple_layer_support,
       return false;
     }
 
-    if (getVoxelType<VoxelType>().compare(layer_proto.type())) {
+    if (getVoxelType<VoxelType>().compare(layer_proto.type()) == 0) {
       layer_found = true;
     } else if (!multiple_layer_support) {
       LOG(ERROR)
@@ -201,13 +201,15 @@ bool LoadLayer(const std::string& file_path, bool multiple_layer_support,
         return false;
       }
 
-      if (!(*layer_ptr)->addBlockFromProto(
-              block_proto, Layer<VoxelType>::BlockMergingStrategy::kProhibit)) {
+      if (!(*layer_ptr)
+               ->addBlockFromProto(
+                   block_proto,
+                   Layer<VoxelType>::BlockMergingStrategy::kProhibit)) {
         LOG(ERROR) << "Could not add the block protobuf message to the layer!";
         return false;
       }
     }
-  } while (multiple_layer_support && !layer_found);
+  } while (multiple_layer_support && !layer_found && !proto_file.eof());
   return layer_found;
 }
 

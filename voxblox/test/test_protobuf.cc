@@ -160,7 +160,7 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationToFile) {
   io::SaveLayerSubset(*layer_, file, block_index_list, kIncludeAllBlocks);
 
   Layer<TsdfVoxel>::Ptr layer_from_file;
-  io::LoadLayer<TsdfVoxel>(file, &layer_from_file);
+  ASSERT_TRUE(io::LoadLayer<TsdfVoxel>(file, &layer_from_file));
 
   // Remove all other blocks for comparison.
   BlockIndexList all_block_indices;
@@ -200,9 +200,9 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationFromFile) {
   layer_with_blocks_from_file.allocateNewBlock(block_index_4);
 
   // Now load the blocks from the file layer and add it.
-  io::LoadBlocksFromFile<TsdfVoxel>(
+  ASSERT_TRUE(io::LoadBlocksFromFile<TsdfVoxel>(
       file, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit,
-      &layer_with_blocks_from_file);
+      &layer_with_blocks_from_file));
 
   // Add those blocks to the layer for comparison.
   layer_->allocateNewBlock(block_index_1);
@@ -213,7 +213,7 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationFromFile) {
   CompareLayers(*layer_, layer_with_blocks_from_file);
 }
 
-TEST_F(ProtobufTsdfTest, DISABLE_MultipleLayerSerialization) {
+TEST_F(ProtobufTsdfTest, MultipleLayerSerialization) {
   // First, generate an ESDF out of the test TSDF layer.
   // ESDF maps.
   EsdfMap::Config esdf_config;
@@ -241,10 +241,12 @@ TEST_F(ProtobufTsdfTest, DISABLE_MultipleLayerSerialization) {
 
   bool multiple_layer_support = true;
   Layer<TsdfVoxel>::Ptr tsdf_layer_from_file;
-  io::LoadLayer<TsdfVoxel>(file, multiple_layer_support, &tsdf_layer_from_file);
+  ASSERT_TRUE(io::LoadLayer<TsdfVoxel>(file, multiple_layer_support,
+                                       &tsdf_layer_from_file));
 
   Layer<EsdfVoxel>::Ptr esdf_layer_from_file;
-  io::LoadLayer<EsdfVoxel>(file, multiple_layer_support, &esdf_layer_from_file);
+  ASSERT_TRUE(io::LoadLayer<EsdfVoxel>(file, multiple_layer_support,
+                                       &esdf_layer_from_file));
 
   CompareLayers(*layer_, *tsdf_layer_from_file);
   esdf_test.CompareLayers(*esdf_map.getEsdfLayerPtr(), *esdf_layer_from_file);
@@ -253,6 +255,7 @@ TEST_F(ProtobufTsdfTest, DISABLE_MultipleLayerSerialization) {
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   google::InitGoogleLogging(argv[0]);
+  FLAGS_alsologtostderr = 1;
 
   int result = RUN_ALL_TESTS();
 
