@@ -211,6 +211,41 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationFromFile) {
   CompareLayers(*layer_, layer_with_blocks_from_file);
 }
 
+TEST_F(ProtobufTsdfTest, MultipleLayerSerialization) {
+  // First, generate an ESDF out of the test TSDF layer.
+  // ESDF maps.
+  EsdfMap::Config esdf_config;
+  // Same number of voxels per side for ESDF as with TSDF
+  esdf_config.esdf_voxels_per_side = layer_->voxels_per_side();
+  // Same voxel size for ESDF as with TSDF
+  esdf_config.esdf_voxel_size = layer_->voxel_size();
+
+  // Default settings are fine, actual content of the ESDF doesn't matter
+  // much.
+  EsdfIntegrator::Config esdf_integrator_config;
+
+  EsdfMap esdf_map(esdf_config);
+  EsdfIntegrator esdf_integrator(esdf_integrator_config, layer_->get(),
+                                 esdf_map.getEsdfLayerPtr());
+
+  esdf_integrator.updateFromTsdfLayerBatchFullEuclidean();
+
+  const std::string file = "multi_layer_test.voxblox";
+  bool clear_file = true;
+  io::SaveLayer(*layer_, file, clear_file);
+  clear_file = false;
+  io::SaveLayer(*esdf_map.getEsdfLayerPtr(), file, clear_file);
+
+  Layer<TsdfVoxel>::Ptr tsdf_layer_from_file;
+  io::LoadLayer<TsdfVoxel>(file, &tsdf_layer_from_file);
+
+  Layer<EsdfVoxel>::Ptr esdf_layer_from_file;
+  io::LoadLayer<EsdfVoxel>(file, esdf_layer_from_file);
+
+  CompareLayers(*layer_, *tsdf_layer_from_file);
+  CompareLayers(*esdf_map.getEsdfLayerPtr(), *esdf_layer_from_file);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   google::InitGoogleLogging(argv[0]);
