@@ -22,7 +22,7 @@ void layer_bind(py::module &m) {
       .def_property_readonly("voxel_size", &TsdfLayer::voxel_size)
       .def_property_readonly("voxels_per_side", &TsdfLayer::voxels_per_side)
 
-      .def("saveToFile", &TsdfLayer::saveToFile)
+      .def("saveToFile", (bool (TsdfLayer::*)(const std::string&)) &TsdfLayer::saveToFile)
 
       .def("allocateBlockPtrByCoordinates",
            &TsdfLayer::allocateBlockPtrByCoordinates)
