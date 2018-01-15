@@ -157,17 +157,20 @@ bool EsdfServer::saveMap(const std::string& file_path) {
   // Output TSDF map first, then ESDF.
   bool success = TsdfServer::saveMap(file_path);
 
-  return success && io::SaveLayer(esdf_map_->getEsdfLayer(), file_path);
+  constexpr bool clear_file = false;
+  return success &&
+         io::SaveLayer(esdf_map_->getEsdfLayer(), file_path, clear_file);
 }
 
 bool EsdfServer::loadMap(const std::string& file_path) {
   // Load in the same order: TSDF first, then ESDF.
   bool success = TsdfServer::loadMap(file_path);
 
+  constexpr bool multiple_layer_support = true;
   return success &&
          io::LoadBlocksFromFile(
              file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
-             esdf_map_->getEsdfLayerPtr());
+             multiple_layer_support, esdf_map_->getEsdfLayerPtr());
 }
 
 void EsdfServer::updateEsdf() {
