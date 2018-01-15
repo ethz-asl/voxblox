@@ -398,8 +398,10 @@ bool TsdfServer::saveMap(const std::string& file_path) {
 bool TsdfServer::loadMap(const std::string& file_path) {
   // Will only load TSDF layer for now. Inherited classes should add other
   // layers.
+  constexpr bool multiple_layer_support = true;
   return io::LoadBlocksFromFile(
       file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
+      multiple_layer_support,
       tsdf_map_->getTsdfLayerPtr());
 }
 
