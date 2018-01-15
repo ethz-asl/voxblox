@@ -109,7 +109,9 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
   // same file, depending on the flag.
   char file_flags = std::fstream::out | std::fstream::binary;
   if (!clear_file) {
-    file_flags |= std::fstream::ate;
+    file_flags |= std::fstream::app | std::fstream::ate;
+  } else {
+    file_flags |= std::fstream::trunc;
   }
   outfile.open(file_path, file_flags);
   if (!outfile.is_open()) {
