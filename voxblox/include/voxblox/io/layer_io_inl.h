@@ -227,12 +227,6 @@ bool SaveLayer(const Layer<VoxelType>& layer, const std::string& file_path,
 }
 
 template <typename VoxelType>
-bool SaveLayer(const Layer<VoxelType>& layer, const std::string& file_path) {
-  constexpr bool clear_file = true;
-  return SaveLayer(layer, file_path, clear_file);
-}
-
-template <typename VoxelType>
 bool SaveLayerSubset(const Layer<VoxelType>& layer,
                      const std::string& file_path,
                      BlockIndexList blocks_to_include,

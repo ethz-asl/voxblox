@@ -31,7 +31,6 @@ bool writeProtoMsgCountToStream(uint32_t message_count,
   CHECK_NOTNULL(stream_out);
   CHECK(stream_out->is_open());
   stream_out->clear();
-  // stream_out->seekg(0, std::ios::beg);
   google::protobuf::io::OstreamOutputStream raw_out(stream_out);
   google::protobuf::io::CodedOutputStream coded_out(&raw_out);
   coded_out.WriteVarint32(message_count);
