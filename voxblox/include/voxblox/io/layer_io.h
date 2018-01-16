@@ -39,7 +39,7 @@ bool LoadLayer(const std::string& file_path, bool multiple_layer_support,
 // case writing the second (or subsequent) layer into the same file.
 template <typename VoxelType>
 bool SaveLayer(const Layer<VoxelType>& layer, const std::string& file_path,
-               bool clear_file);
+               bool clear_file = true);
 
 // Saves only some parts of the layer to the file. Clears the file by default.
 template <typename VoxelType>

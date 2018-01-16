@@ -73,25 +73,10 @@ Layer<VoxelType>::Layer(const Layer& other) {
 }
 
 template <typename VoxelType>
-bool Layer<VoxelType>::saveToFile(const std::string& file_path) const {
-  constexpr bool clear_file = true;
-  return saveToFile(file_path, clear_file);
-}
-
-template <typename VoxelType>
 bool Layer<VoxelType>::saveToFile(const std::string& file_path,
                                   bool clear_file) const {
   constexpr bool kIncludeAllBlocks = true;
   return saveSubsetToFile(file_path, BlockIndexList(), kIncludeAllBlocks,
-                          clear_file);
-}
-
-template <typename VoxelType>
-bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
-                                        BlockIndexList blocks_to_include,
-                                        bool include_all_blocks) const {
-  constexpr bool clear_file = true;
-  return saveSubsetToFile(file_path, blocks_to_include, include_all_blocks,
                           clear_file);
 }
 
