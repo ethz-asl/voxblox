@@ -14,13 +14,7 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
     : config_(config), layer_(layer) {
   DCHECK(layer_);
 
-  voxel_size_ = layer_->voxel_size();
-  block_size_ = layer_->block_size();
-  voxels_per_side_ = layer_->voxels_per_side();
-
-  voxel_size_inv_ = 1.0 / voxel_size_;
-  block_size_inv_ = 1.0 / block_size_;
-  voxels_per_side_inv_ = 1.0 / voxels_per_side_;
+  setLayer(layer);
 
   if (config_.integrator_threads == 0) {
     LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
@@ -30,6 +24,20 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
   if (config_.allow_clear && !config_.voxel_carving_enabled) {
     config_.allow_clear = false;
   }
+}
+
+void TsdfIntegratorBase::setLayer(Layer<TsdfVoxel>* layer) {
+  DCHECK(layer);
+
+  layer_ = layer;
+
+  voxel_size_ = layer_->voxel_size();
+  block_size_ = layer_->block_size();
+  voxels_per_side_ = layer_->voxels_per_side();
+
+  voxel_size_inv_ = 1.0 / voxel_size_;
+  block_size_inv_ = 1.0 / block_size_;
+  voxels_per_side_inv_ = 1.0 / voxels_per_side_;
 }
 
 // Thread safe.
