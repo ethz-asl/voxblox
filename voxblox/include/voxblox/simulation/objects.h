@@ -27,9 +27,8 @@ class Object {
   virtual ~Object() {}
 
   // Map-building accessors.
-  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
-    return 0.0;
-  }
+  virtual FloatingPoint getDistanceToPoint(const Point& point) const = 0;
+
   Color getColor() const { return color_; }
 
   // Raycasting accessors.
@@ -37,9 +36,7 @@ class Object {
                                   const Point& ray_direction,
                                   FloatingPoint max_dist,
                                   Point* intersect_point,
-                                  FloatingPoint* intersect_dist) const {
-    return false;
-  }
+                                  FloatingPoint* intersect_dist) const = 0;
 
  protected:
   Point center_;
@@ -188,6 +185,11 @@ class Cube : public Object {
         return false;
       }
     }
+
+    if (t > max_dist) {
+      return false;
+    }
+
     *intersect_dist = t;
     *intersect_point = ray_origin + ray_direction * t;
 
@@ -199,13 +201,13 @@ class Cube : public Object {
 };
 
 // Requires normal being passed in to ALREADY BE NORMALIZED!!!!
-class Plane : public Object {
+class PlaneObject : public Object {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Plane(const Point& center, const Point& normal)
+  PlaneObject(const Point& center, const Point& normal)
       : Object(center, Type::kPlane), normal_(normal) {}
-  Plane(const Point& center, const Point& normal, const Color& color)
+  PlaneObject(const Point& center, const Point& normal, const Color& color)
       : Object(center, Type::kPlane, color), normal_(normal) {
     CHECK_NEAR(normal.norm(), 1.0, 1e-3);
   }

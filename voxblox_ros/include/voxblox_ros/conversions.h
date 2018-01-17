@@ -67,7 +67,7 @@ inline void pointcloudToPclXYZ(const Pointcloud& ptcloud,
 
 // Declarations
 template <typename VoxelType>
-void serializeLayerAsMsg(const Layer<VoxelType>& layer,
+void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
                          voxblox_msgs::Layer* msg);
 
 // Returns true if could parse the data into the existing layer (all parameters

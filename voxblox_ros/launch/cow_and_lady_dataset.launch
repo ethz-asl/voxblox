@@ -20,7 +20,6 @@
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="false" />
     <param name="verbose" value="true" />
-    <param name="max_integration_time_s" value="0.02"/>
     <param name="clear_checks_every_n_frames" value="1"/>
     <remap from="transform" to="/kinect/vrpn_client/estimated_transform" />
     <rosparam file="$(find voxblox_ros)/cfg/cow_and_lady.yaml"/>

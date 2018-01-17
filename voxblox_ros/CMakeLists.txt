@@ -4,7 +4,7 @@ project(voxblox_ros)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
-add_definitions(-std=c++11 -Wno-sign-compare -Wno-unused-value)
+add_definitions(-std=c++11 -Wall -Wextra)
 
 #############
 # LIBRARIES #
@@ -46,6 +46,11 @@ cs_add_executable(simulation_eval
   src/simulation_eval.cc
 )
 target_link_libraries(simulation_eval ${PROJECT_NAME})
+
+cs_add_executable(visualize_tsdf
+  src/visualize_tsdf.cc
+)
+target_link_libraries(visualize_tsdf ${PROJECT_NAME})
 
 ##########
 # EXPORT #

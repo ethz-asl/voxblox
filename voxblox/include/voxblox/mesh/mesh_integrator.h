@@ -24,6 +24,7 @@
 #define VOXBLOX_MESH_MESH_INTEGRATOR_H_
 
 #include <algorithm>
+#include <list>
 #include <thread>
 #include <vector>
 
@@ -36,6 +37,7 @@
 #include "voxblox/interpolator/interpolator.h"
 #include "voxblox/mesh/marching_cubes.h"
 #include "voxblox/mesh/mesh_layer.h"
+#include "voxblox/utils/meshing_utils.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -53,18 +55,44 @@ class MeshIntegrator {
     size_t integrator_threads = std::thread::hardware_concurrency();
   };
 
-  MeshIntegrator(const Config& config, Layer<VoxelType>* tsdf_layer,
-                 MeshLayer* mesh_layer)
-      : config_(config),
-        tsdf_layer_(CHECK_NOTNULL(tsdf_layer)),
-        mesh_layer_(CHECK_NOTNULL(mesh_layer)) {
-    voxel_size_ = tsdf_layer_->voxel_size();
-    block_size_ = tsdf_layer_->block_size();
-    voxels_per_side_ = tsdf_layer_->voxels_per_side();
+  void initFromSdfLayer(const Layer<VoxelType>& sdf_layer) {
+    voxel_size_ = sdf_layer.voxel_size();
+    block_size_ = sdf_layer.block_size();
+    voxels_per_side_ = sdf_layer.voxels_per_side();
 
     voxel_size_inv_ = 1.0 / voxel_size_;
     block_size_inv_ = 1.0 / block_size_;
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
+  }
+
+  // Use this constructor in case you would like to modify the layer during mesh
+  // extraction, i.e. modify the updated flag.
+  MeshIntegrator(const Config& config, Layer<VoxelType>* sdf_layer,
+                 MeshLayer* mesh_layer)
+      : config_(config),
+        sdf_layer_mutable_(CHECK_NOTNULL(sdf_layer)),
+        sdf_layer_const_(CHECK_NOTNULL(sdf_layer)),
+        mesh_layer_(CHECK_NOTNULL(mesh_layer)) {
+    initFromSdfLayer(*sdf_layer);
+
+    cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+        0, 0, 1, 1, 1, 1;
+
+    if (config_.integrator_threads == 0) {
+      LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
+      config_.integrator_threads = 1;
+    }
+  }
+
+  // This constructor will not allow you to modify the layer, i.e. clear the
+  // updated flag.
+  MeshIntegrator(const Config& config, const Layer<VoxelType>& sdf_layer,
+                 MeshLayer* mesh_layer)
+      : config_(config),
+        sdf_layer_mutable_(nullptr),
+        sdf_layer_const_(&sdf_layer),
+        mesh_layer_(CHECK_NOTNULL(mesh_layer)) {
+    initFromSdfLayer(sdf_layer);
 
     cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
         0, 0, 1, 1, 1, 1;
@@ -77,11 +105,15 @@ class MeshIntegrator {
 
   // Generates mesh for the tsdf layer.
   void generateMesh(bool only_mesh_updated_blocks, bool clear_updated_flag) {
+    CHECK(!clear_updated_flag || (sdf_layer_mutable_ != nullptr))
+        << "If you would like to modify the updated flag in the blocks, please "
+        << "use the constructor that provides a non-const link to the sdf "
+        << "layer!";
     BlockIndexList all_tsdf_blocks;
     if (only_mesh_updated_blocks) {
-      tsdf_layer_->getAllUpdatedBlocks(&all_tsdf_blocks);
+      sdf_layer_const_->getAllUpdatedBlocks(&all_tsdf_blocks);
     } else {
-      tsdf_layer_->getAllAllocatedBlocks(&all_tsdf_blocks);
+      sdf_layer_const_->getAllAllocatedBlocks(&all_tsdf_blocks);
     }
 
     // Allocate all the mesh memory
@@ -91,7 +123,7 @@ class MeshIntegrator {
 
     ThreadSafeIndex index_getter(all_tsdf_blocks.size());
 
-    AlignedVector<std::thread> integration_threads;
+    std::list<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(
           &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
@@ -107,15 +139,18 @@ class MeshIntegrator {
                                   bool clear_updated_flag,
                                   ThreadSafeIndex* index_getter) {
     DCHECK(index_getter != nullptr);
+    CHECK(!clear_updated_flag || (sdf_layer_mutable_ != nullptr))
+        << "If you would like to modify the updated flag in the blocks, please "
+        << "use the constructor that provides a non-const link to the sdf "
+        << "layer!";
 
     size_t list_idx;
     while (index_getter->getNextIndex(&list_idx)) {
       const BlockIndex& block_idx = all_tsdf_blocks[list_idx];
-      typename Block<VoxelType>::Ptr block =
-          tsdf_layer_->getBlockPtrByIndex(block_idx);
-
       updateMeshForBlock(block_idx);
       if (clear_updated_flag) {
+        typename Block<VoxelType>::Ptr block =
+            sdf_layer_mutable_->getBlockPtrByIndex(block_idx);
         block->updated() = false;
       }
     }
@@ -126,7 +161,7 @@ class MeshIntegrator {
     DCHECK(block != nullptr);
     DCHECK(mesh != nullptr);
 
-    size_t vps = block->voxels_per_side();
+    IndexElement vps = block->voxels_per_side();
     VertexIndex next_mesh_index = 0;
 
     VoxelIndex voxel_index;
@@ -178,7 +213,7 @@ class MeshIntegrator {
     // This block should already exist, otherwise it makes no sense to update
     // the mesh for it. ;)
     typename Block<VoxelType>::ConstPtr block =
-        tsdf_layer_->getBlockPtrByIndex(block_index);
+        sdf_layer_const_->getBlockPtrByIndex(block_index);
 
     if (!block) {
       LOG(ERROR) << "Trying to mesh a non-existent block at index: "
@@ -210,13 +245,12 @@ class MeshIntegrator {
       VoxelIndex corner_index = index + cube_index_offsets_.col(i);
       const VoxelType& voxel = block.getVoxelByVoxelIndex(corner_index);
 
-      // Do not extract a mesh here if one of the corner is unobserved.
-      if (voxel.weight <= config_.min_weight) {
+      if (!utils::getSdfIfValid(voxel, config_.min_weight, &(corner_sdf(i)))) {
         all_neighbors_observed = false;
         break;
       }
+
       corner_coords.col(i) = coords + cube_coord_offsets.col(i);
-      corner_sdf(i) = voxel.distance;
     }
 
     if (all_neighbors_observed) {
@@ -243,12 +277,13 @@ class MeshIntegrator {
       if (block.isValidVoxelIndex(corner_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(corner_index);
 
-        if (voxel.weight <= config_.min_weight) {
+        if (!utils::getSdfIfValid(voxel, config_.min_weight,
+                                  &(corner_sdf(i)))) {
           all_neighbors_observed = false;
           break;
         }
+
         corner_coords.col(i) = coords + cube_coord_offsets.col(i);
-        corner_sdf(i) = voxel.distance;
       } else {
         // We have to access a different block.
         BlockIndex block_offset = BlockIndex::Zero();
@@ -257,7 +292,7 @@ class MeshIntegrator {
           if (corner_index(j) < 0) {
             block_offset(j) = -1;
             corner_index(j) = corner_index(j) + voxels_per_side_;
-          } else if (corner_index(j) >= voxels_per_side_) {
+          } else if (corner_index(j) >= static_cast<IndexElement>(voxels_per_side_)) {
             block_offset(j) = 1;
             corner_index(j) = corner_index(j) - voxels_per_side_;
           }
@@ -265,20 +300,21 @@ class MeshIntegrator {
 
         BlockIndex neighbor_index = block.block_index() + block_offset;
 
-        if (tsdf_layer_->hasBlock(neighbor_index)) {
+        if (sdf_layer_const_->hasBlock(neighbor_index)) {
           const Block<VoxelType>& neighbor_block =
-              tsdf_layer_->getBlockByIndex(neighbor_index);
+              sdf_layer_const_->getBlockByIndex(neighbor_index);
 
           CHECK(neighbor_block.isValidVoxelIndex(corner_index));
           const VoxelType& voxel =
               neighbor_block.getVoxelByVoxelIndex(corner_index);
 
-          if (voxel.weight <= config_.min_weight) {
+          if (!utils::getSdfIfValid(voxel, config_.min_weight,
+                                    &(corner_sdf(i)))) {
             all_neighbors_observed = false;
             break;
           }
+
           corner_coords.col(i) = coords + cube_coord_offsets.col(i);
-          corner_sdf(i) = voxel.distance;
         } else {
           all_neighbors_observed = false;
           break;
@@ -304,16 +340,12 @@ class MeshIntegrator {
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
-        if (voxel.weight >= config_.min_weight) {
-          mesh->colors[i] = voxel.color;
-        }
+        utils::getColorIfValid(voxel, config_.min_weight, &(mesh->colors[i]));
       } else {
         const typename Block<VoxelType>::ConstPtr neighbor_block =
-            tsdf_layer_->getBlockPtrByCoordinates(vertex);
+            sdf_layer_const_->getBlockPtrByCoordinates(vertex);
         const VoxelType& voxel = neighbor_block->getVoxelByCoordinates(vertex);
-        if (voxel.weight >= config_.min_weight) {
-          mesh->colors[i] = voxel.color;
-        }
+        utils::getColorIfValid(voxel, config_.min_weight, &(mesh->colors[i]));
       }
     }
   }
@@ -321,7 +353,13 @@ class MeshIntegrator {
  protected:
   Config config_;
 
-  Layer<VoxelType>* tsdf_layer_;
+  // Having both a const and a mutable pointer to the layer allows this
+  // integrator to work both with a const layer (in case you don't want to clear
+  // the updated flag) and mutable layer (in case you do want to clear the
+  // updated flag).
+  Layer<VoxelType>* sdf_layer_mutable_;
+  const Layer<VoxelType>* sdf_layer_const_;
+
   MeshLayer* mesh_layer_;
 
   // Cached map config.
