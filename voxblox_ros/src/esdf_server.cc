@@ -135,6 +135,7 @@ void EsdfServer::updateMesh() {
 
 void EsdfServer::publishPointclouds() {
   publishAllUpdatedEsdfVoxels();
+  publishSlices();
 
   TsdfServer::publishPointclouds();
 }
