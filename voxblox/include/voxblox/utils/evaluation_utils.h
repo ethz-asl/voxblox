@@ -185,8 +185,8 @@ VoxelEvaluationResult computeVoxelError(
       (evaluation_mode == VoxelEvaluationMode::kIgnoreErrorBehindGtSurface) ||
       (evaluation_mode == VoxelEvaluationMode::kIgnoreErrorBehindAllSurfaces);
 
-  if ((ignore_behind_test_surface && voxel_test.distance < 0.0) ||
-      (ignore_behind_gt_surface && voxel_gt.distance < 0.0)) {
+  if ((ignore_behind_test_surface && (voxel_test.distance) < 0.0) ||
+      (ignore_behind_gt_surface && (voxel_gt.distance) < 0.0)) {
     return VoxelEvaluationResult::kIgnored;
   }
 
