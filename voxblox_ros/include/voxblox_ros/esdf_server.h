@@ -32,6 +32,9 @@ class EsdfServer : public TsdfServer {
   virtual void updateMesh();
   virtual void publishPointclouds();
   virtual void newPoseCallback(const Transformation& T_G_C);
+  virtual void publishMap();
+  virtual bool saveMap(const std::string& file_path);
+  virtual bool loadMap(const std::string& file_path);
 
   // Call updateMesh if you want everything updated; call this specifically
   // if you don't want the mesh or visualization.

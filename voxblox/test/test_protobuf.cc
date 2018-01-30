@@ -158,7 +158,7 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationToFile) {
   io::SaveLayerSubset(*layer_, file, block_index_list, kIncludeAllBlocks);
 
   Layer<TsdfVoxel>::Ptr layer_from_file;
-  io::LoadLayer<TsdfVoxel>(file, &layer_from_file);
+  ASSERT_TRUE(io::LoadLayer<TsdfVoxel>(file, &layer_from_file));
 
   // Remove all other blocks for comparison.
   BlockIndexList all_block_indices;
@@ -198,9 +198,9 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationFromFile) {
   layer_with_blocks_from_file.allocateNewBlock(block_index_4);
 
   // Now load the blocks from the file layer and add it.
-  io::LoadBlocksFromFile<TsdfVoxel>(
+  ASSERT_TRUE(io::LoadBlocksFromFile<TsdfVoxel>(
       file, Layer<TsdfVoxel>::BlockMergingStrategy::kProhibit,
-      &layer_with_blocks_from_file);
+      &layer_with_blocks_from_file));
 
   // Add those blocks to the layer for comparison.
   layer_->allocateNewBlock(block_index_1);
@@ -211,9 +211,37 @@ TEST_F(ProtobufTsdfTest, LayerSubsetSerializationFromFile) {
   CompareLayers(*layer_, layer_with_blocks_from_file);
 }
 
+TEST_F(ProtobufTsdfTest, MultipleLayerSerialization) {
+  Layer<EsdfVoxel>::Ptr esdf_layer;
+  // Match TSDF settings.
+  esdf_layer.reset(new Layer<EsdfVoxel>(voxel_size_, voxels_per_side_));
+  voxblox::test::SetUpTestLayer(kBlockVolumeDiameter, esdf_layer.get());
+
+  voxblox::test::LayerTest<EsdfVoxel> esdf_test;
+
+  const std::string file = "multi_layer_test.voxblox";
+  bool clear_file = true;
+  io::SaveLayer(*layer_, file, clear_file);
+  clear_file = false;
+  io::SaveLayer(*esdf_layer, file, clear_file);
+
+  constexpr bool multiple_layer_support = true;
+  Layer<TsdfVoxel>::Ptr tsdf_layer_from_file;
+  ASSERT_TRUE(io::LoadLayer<TsdfVoxel>(file, multiple_layer_support,
+                                       &tsdf_layer_from_file));
+
+  Layer<EsdfVoxel>::Ptr esdf_layer_from_file;
+  ASSERT_TRUE(io::LoadLayer<EsdfVoxel>(file, multiple_layer_support,
+                                       &esdf_layer_from_file));
+
+  CompareLayers(*layer_, *tsdf_layer_from_file);
+  esdf_test.CompareLayers(*esdf_layer, *esdf_layer_from_file);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   google::InitGoogleLogging(argv[0]);
+  FLAGS_alsologtostderr = true;
 
   int result = RUN_ALL_TESTS();
 
