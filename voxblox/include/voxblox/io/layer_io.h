@@ -26,13 +26,14 @@ bool LoadBlocksFromFile(
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
     bool multiple_layer_support, Layer<VoxelType>* layer_ptr);
 
+// Unlike LoadBlocks above, this actually allocates the layer as well.
 // By default loads without multiple layer support (i.e., only checks the first
 // layer in the file).
 template <typename VoxelType>
 bool LoadLayer(const std::string& file_path,
                typename Layer<VoxelType>::Ptr* layer_ptr);
 template <typename VoxelType>
-bool LoadLayer(const std::string& file_path, bool multiple_layer_support,
+bool LoadLayer(const std::string& file_path, const bool multiple_layer_support,
                typename Layer<VoxelType>::Ptr* layer_ptr);
 
 // By default, clears (truncates) the output file. Set clear_file to false in
@@ -45,7 +46,8 @@ bool SaveLayer(const Layer<VoxelType>& layer, const std::string& file_path,
 template <typename VoxelType>
 bool SaveLayerSubset(const Layer<VoxelType>& layer,
                      const std::string& file_path,
-                     BlockIndexList blocks_to_include, bool include_all_blocks);
+                     const BlockIndexList& blocks_to_include,
+                     bool include_all_blocks);
 
 }  // namespace io
 }  // namespace voxblox
