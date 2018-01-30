@@ -139,6 +139,40 @@ void EsdfServer::publishPointclouds() {
   TsdfServer::publishPointclouds();
 }
 
+void EsdfServer::publishMap() {
+  if (this->esdf_map_pub_.getNumSubscribers() > 0) {
+    const bool only_updated = false;
+    timing::Timer publish_map_timer("map/publish_esdf");
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<EsdfVoxel>(this->esdf_map_->getEsdfLayer(),
+                                   only_updated, &layer_msg);
+    this->esdf_map_pub_.publish(layer_msg);
+    publish_map_timer.Stop();
+  }
+
+  TsdfServer::publishMap();
+}
+
+bool EsdfServer::saveMap(const std::string& file_path) {
+  // Output TSDF map first, then ESDF.
+  const bool success = TsdfServer::saveMap(file_path);
+
+  constexpr bool kClearFile = false;
+  return success &&
+         io::SaveLayer(esdf_map_->getEsdfLayer(), file_path, kClearFile);
+}
+
+bool EsdfServer::loadMap(const std::string& file_path) {
+  // Load in the same order: TSDF first, then ESDF.
+  bool success = TsdfServer::loadMap(file_path);
+
+  constexpr bool kMulitpleLayerSupport = true;
+  return success &&
+         io::LoadBlocksFromFile(
+             file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
+             kMulitpleLayerSupport, esdf_map_->getEsdfLayerPtr());
+}
+
 void EsdfServer::updateEsdf() {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = true;

@@ -73,21 +73,32 @@ Layer<VoxelType>::Layer(const Layer& other) {
 }
 
 template <typename VoxelType>
-bool Layer<VoxelType>::saveToFile(const std::string& file_path) const {
+bool Layer<VoxelType>::saveToFile(const std::string& file_path,
+                                  bool clear_file) const {
   constexpr bool kIncludeAllBlocks = true;
-  return saveSubsetToFile(file_path, BlockIndexList(), kIncludeAllBlocks);
+  return saveSubsetToFile(file_path, BlockIndexList(), kIncludeAllBlocks,
+                          clear_file);
 }
 
 template <typename VoxelType>
 bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
                                         BlockIndexList blocks_to_include,
-                                        bool include_all_blocks) const {
+                                        bool include_all_blocks,
+                                        bool clear_file) const {
   CHECK_NE(getType().compare(voxel_types::kNotSerializable), 0)
       << "The voxel type of this layer is not serializable!";
 
   CHECK(!file_path.empty());
   std::fstream outfile;
-  outfile.open(file_path, std::fstream::out | std::fstream::binary);
+  // Will APPEND to the current file in case outputting multiple layers on the
+  // same file, depending on the flag.
+  std::ios_base::openmode file_flags = std::fstream::out | std::fstream::binary;
+  if (!clear_file) {
+    file_flags |= std::fstream::app | std::fstream::ate;
+  } else {
+    file_flags |= std::fstream::trunc;
+  }
+  outfile.open(file_path, file_flags);
   if (!outfile.is_open()) {
     LOG(ERROR) << "Could not open file for writing: " << file_path;
     return false;
