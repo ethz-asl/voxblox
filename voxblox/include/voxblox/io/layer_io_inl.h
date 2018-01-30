@@ -105,13 +105,13 @@ bool LoadBlocksFromFile(
     const std::string& file_path,
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
     Layer<VoxelType>* layer_ptr) {
-  bool multiple_layer_support = false;
+  constexpr bool multiple_layer_support = false;
   return LoadBlocksFromFile(file_path, strategy, multiple_layer_support,
                             layer_ptr);
 }
 
 template <typename VoxelType>
-bool LoadLayer(const std::string& file_path, bool multiple_layer_support,
+bool LoadLayer(const std::string& file_path, const bool multiple_layer_support,
                typename Layer<VoxelType>::Ptr* layer_ptr) {
   CHECK_NOTNULL(layer_ptr);
   CHECK(!file_path.empty());
@@ -229,7 +229,7 @@ bool SaveLayer(const Layer<VoxelType>& layer, const std::string& file_path,
 template <typename VoxelType>
 bool SaveLayerSubset(const Layer<VoxelType>& layer,
                      const std::string& file_path,
-                     BlockIndexList blocks_to_include,
+                     const BlockIndexList& blocks_to_include,
                      bool include_all_blocks) {
   CHECK(!file_path.empty());
   return layer.saveSubsetToFile(file_path, blocks_to_include,

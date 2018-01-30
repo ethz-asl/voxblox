@@ -225,7 +225,7 @@ TEST_F(ProtobufTsdfTest, MultipleLayerSerialization) {
   clear_file = false;
   io::SaveLayer(*esdf_layer, file, clear_file);
 
-  bool multiple_layer_support = true;
+  constexpr bool multiple_layer_support = true;
   Layer<TsdfVoxel>::Ptr tsdf_layer_from_file;
   ASSERT_TRUE(io::LoadLayer<TsdfVoxel>(file, multiple_layer_support,
                                        &tsdf_layer_from_file));
@@ -241,7 +241,7 @@ TEST_F(ProtobufTsdfTest, MultipleLayerSerialization) {
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   google::InitGoogleLogging(argv[0]);
-  FLAGS_alsologtostderr = 1;
+  FLAGS_alsologtostderr = true;
 
   int result = RUN_ALL_TESTS();
 
