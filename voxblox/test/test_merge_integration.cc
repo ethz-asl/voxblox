@@ -42,13 +42,13 @@ class LayerMergeToolTest : public ::testing::Test,
     // Transformation generated at random by minkindr
     // Translation 0.15m, Rotation: 28.6479 degrees
     // clang-format off
-    Eigen::Matrix<FloatingPoint, 4, 4> T_A_B;
-    T_A_B <<  0.959292,  0.233991, 0.158138, -0.0627464,
+    Eigen::Matrix<FloatingPoint, 4, 4> T_B_A;
+    T_B_A <<  0.959292,  0.233991, 0.158138, -0.0627464,
              -0.277701,  0.883428, 0.377407,  0.126472,
              -0.051394, -0.405959, 0.912445, -0.0506717,
               0.      ,  0.      , 0.      ,  1.;
     // clang-format on
-    T_A_B_ = Transformation(T_A_B);
+    T_B_A_ = Transformation(T_B_A);
 
     // Define sphere 1.
     Point c1_A;
@@ -77,16 +77,16 @@ class LayerMergeToolTest : public ::testing::Test,
 
     // Prepare world B
     simulation.addObject(std::unique_ptr<Object>(new Sphere(
-        T_A_B_.transform(c1_A), sphere_1_radius_m, Color(0u, 255u, 0u))));
+        T_B_A_.transform(c1_A), sphere_1_radius_m, Color(0u, 255u, 0u))));
     simulation.addObject(std::unique_ptr<Object>(new Sphere(
-        T_A_B_.transform(c2_A), sphere_2_radius_m, Color(0u, 255u, 0u))));
+        T_B_A_.transform(c2_A), sphere_2_radius_m, Color(0u, 255u, 0u))));
     simulation.addObject(std::unique_ptr<Object>(new Sphere(
-        T_A_B_.transform(c3_A), sphere_3_radius_m, Color(0u, 255u, 0u))));
+        T_B_A_.transform(c3_A), sphere_3_radius_m, Color(0u, 255u, 0u))));
     simulation.generateSdfFromWorld(max_distance_world, world_B_.get());
     simulation.generateSdfFromWorld(max_distance_world, world_B_compare_.get());
   }
 
-  Transformation T_A_B_;
+  Transformation T_B_A_;
   typename Layer<VoxelType>::Ptr world_A_;
   typename Layer<VoxelType>::Ptr world_B_;
   typename Layer<VoxelType>::Ptr world_B_compare_;
@@ -116,7 +116,7 @@ TEST_F(TsdfLayerMergeToolTest, MergeTwoTsdfLayers) {
 
   LOG(INFO) << "Merging world A into world B...";
   constexpr bool kUseNaiveMethod = false;
-  mergeLayerAintoLayerB(*world_A_, T_A_B_, world_B_.get(), kUseNaiveMethod);
+  mergeLayerAintoLayerB(*world_A_, T_B_A_, world_B_.get(), kUseNaiveMethod);
 
   LOG(INFO) << "Evaluating merged world...";
   utils::VoxelEvaluationDetails result;

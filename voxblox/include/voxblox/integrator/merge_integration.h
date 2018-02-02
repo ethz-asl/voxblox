@@ -90,16 +90,16 @@ void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
 // transformLayer for details
 template <typename VoxelType>
 void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
-                           const Transformation& T_A_B,
+                           const Transformation& T_B_A,
                            Layer<VoxelType>* layer_B,
                            bool use_naive_method = false) {
   Layer<VoxelType> layer_A_transformed(layer_B->voxel_size(),
                                        layer_B->voxels_per_side());
 
   if (use_naive_method) {
-    naiveTransformLayer(layer_A, T_A_B, &layer_A_transformed);
+    naiveTransformLayer(layer_A, T_B_A, &layer_A_transformed);
   } else {
-    transformLayer(layer_A, T_A_B, &layer_A_transformed);
+    transformLayer(layer_A, T_B_A, &layer_A_transformed);
   }
 
   mergeLayerAintoLayerB(layer_A_transformed, layer_B);
@@ -120,7 +120,7 @@ void resampleLayer(const Layer<VoxelType>& layer_in,
 // several orders of magnitude faster.
 template <typename VoxelType>
 void naiveTransformLayer(const Layer<VoxelType>& layer_in,
-                         const Transformation& T_in_out,
+                         const Transformation& T_out_in,
                          Layer<VoxelType>* layer_out) {
   BlockIndexList block_idx_list_in;
   layer_in.getAllAllocatedBlocks(&block_idx_list_in);
@@ -139,7 +139,7 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
 
       // find voxel centers location in the output
       const Point voxel_center =
-          T_in_out *
+          T_out_in *
           input_block.computeCoordinatesFromLinearIndex(input_linear_voxel_idx);
 
       const VoxelIndex global_output_voxel_idx =
@@ -171,7 +171,7 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
 // and block size of the input and output layer can differ.
 template <typename VoxelType>
 void transformLayer(const Layer<VoxelType>& layer_in,
-                    const Transformation& T_in_out,
+                    const Transformation& T_out_in,
                     Layer<VoxelType>* layer_out) {
   CHECK_NOTNULL(layer_out);
 
@@ -184,26 +184,26 @@ void transformLayer(const Layer<VoxelType>& layer_in,
   layer_in.getAllAllocatedBlocks(&block_idx_list_in);
 
   for (const BlockIndex& block_idx : block_idx_list_in) {
-    Point center =
+    const Point c_in =
         getCenterPointFromGridIndex(block_idx, layer_in.block_size());
 
     // forwards transform of center
-    center = T_in_out * center;
+    const Point c_out = T_out_in * c_in;
 
     // Furthest center point of neighboring blocks.
     FloatingPoint offset =
         kUnitCubeDiagonalLength * layer_in.block_size() * 0.5;
 
     // Add index of all blocks in range to set.
-    for (FloatingPoint x = center.x() - offset; x < center.x() + offset;
+    for (FloatingPoint x = c_out.x() - offset; x < c_out.x() + offset;
          x += layer_out->block_size()) {
-      for (FloatingPoint y = center.y() - offset; y < center.y() + offset;
+      for (FloatingPoint y = c_out.y() - offset; y < c_out.y() + offset;
            y += layer_out->block_size()) {
-        for (FloatingPoint z = center.z() - offset; z < center.z() + offset;
+        for (FloatingPoint z = c_out.z() - offset; z < c_out.z() + offset;
              z += layer_out->block_size()) {
-          Point current_center = Point(x, y, z);
+          const Point current_center_out = Point(x, y, z);
           BlockIndex current_idx = getGridIndexFromPoint(
-              current_center, 1.0f / layer_out->block_size());
+              current_center_out, 1.0f / layer_out->block_size());
           block_idx_set.insert(current_idx);
         }
       }
@@ -211,7 +211,7 @@ void transformLayer(const Layer<VoxelType>& layer_in,
   }
 
   // get inverse transform
-  Transformation T_out_in = T_in_out.inverse();
+  const Transformation T_in_out = T_out_in.inverse();
 
   Interpolator<VoxelType> interpolator(&layer_in);
 
@@ -228,7 +228,7 @@ void transformLayer(const Layer<VoxelType>& layer_in,
 
       // find voxel centers location in the input
       const Point voxel_center =
-          T_out_in * block->computeCoordinatesFromLinearIndex(voxel_idx);
+          T_in_out * block->computeCoordinatesFromLinearIndex(voxel_idx);
 
       // interpolate voxel
       if (interpolator.getVoxel(voxel_center, &voxel, true)) {
