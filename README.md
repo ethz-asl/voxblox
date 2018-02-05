@@ -23,6 +23,7 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
   * [Parameters](README.md#parameters)
 * [Modifying Voxblox](README.md#modifying-voxblox)
   * [Serialization](README.md#serialization)
+* [Transformations in Voxblox](README.md#transformations-in-voxblox)
 
 # Paper and Video
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
@@ -293,3 +294,8 @@ void Block<YOUR_FANCY_VOXEL>::SerializeVoxelData(const YOUR_FANCY_VOXEL* voxels,
   **Have a look at the example package:**
 
   TODO(mfehr, helenol): add example package with a new voxel type
+  
+# Transformations in Voxblox
+  
+Voxblox uses active transforms and Hamilton quaternions. For futher details on the notation used throughout the code see [the minkindr wiki](https://github.com/ethz-asl/minkindr/wiki/Common-Transformation-Conventions)
+  
