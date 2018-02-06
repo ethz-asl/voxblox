@@ -57,6 +57,8 @@ set("${PROJECT_NAME}_SRCS"
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
+  src/skeletons/skeleton.cc
+  src/skeletons/skeleton_generator.cc
   src/utils/camera_model.cc
   src/utils/evaluation_utils.cc
   src/utils/layer_utils.cc
