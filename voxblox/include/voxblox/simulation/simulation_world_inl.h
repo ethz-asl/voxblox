@@ -6,12 +6,15 @@
 #include <memory>
 
 #include "voxblox/core/block.h"
+#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
 template <typename VoxelType>
 void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
                                            Layer<VoxelType>* layer) const {
+  timing::Timer sim_timer("sim/generate_sdf");
+
   CHECK_NOTNULL(layer);
   // Iterate over every voxel in the layer and compute its distance to all
   // objects.
