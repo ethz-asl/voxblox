@@ -6,6 +6,7 @@
 namespace voxblox {
 
 struct SkeletonPoint {
+  SkeletonPoint() : distance(0.0), num_basis_points(0) { point.setZero(); }
   Point point;
   float distance;
   int num_basis_points;
@@ -21,7 +22,7 @@ class Skeleton {
     return points_;
   }
 
-  AlignedVector<SkeletonPoint> getSkeletonPoints() { return points_; }
+  AlignedVector<SkeletonPoint>& getSkeletonPoints() { return points_; }
 
   // Converts the points to a pointcloud with no other information.
   void getPointcloud(Pointcloud* pointcloud) const;

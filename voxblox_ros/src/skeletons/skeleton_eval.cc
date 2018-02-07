@@ -6,6 +6,7 @@
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/mesh/mesh_integrator.h>
 #include <voxblox/simulation/simulation_world.h>
+#include <voxblox/skeletons/skeleton_generator.h>
 
 #include "voxblox_ros/esdf_server.h"
 #include "voxblox_ros/conversions.h"
@@ -27,6 +28,8 @@ class SkeletonEvalNode {
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
+  ros::Publisher skeleton_pub_;
+
   std::string frame_id_;
 
   bool visualize_;
@@ -46,7 +49,10 @@ SkeletonEvalNode::SkeletonEvalNode(const ros::NodeHandle& nh,
       visualize_(true),
       esdf_max_distance_(5.0),
       tsdf_max_distance_(0.4),
-      voxblox_server_(nh_, nh_private_) {}
+      voxblox_server_(nh_, nh_private_) {
+  skeleton_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZ> >(
+      "skeleton", 1, true);
+}
 
 void SkeletonEvalNode::generateWorld() {
   voxblox_server_.clear();
@@ -54,10 +60,12 @@ void SkeletonEvalNode::generateWorld() {
 
   world_.addPlaneBoundaries(0.0, 15.0, 0.0, 10.0);
   world_.addGroundLevel(0.0);
+  world_.addObject(std::unique_ptr<voxblox::Object>(
+      new PlaneObject(Point(0.0, 0.0, 5.0), Point(0.0, 0.0, -1.0))));
 
   // Sets the display bounds.
-  world_.setBounds(Eigen::Vector3f(-1.0, -1.0, -1.0),
-                   Eigen::Vector3f(16.0, 11.0, 6.0));
+  world_.setBounds(Point(-1.0, -1.0, -1.0),
+                   Point(16.0, 11.0, 6.0));
 
   // Corridor/room walls. Horizontal first, vertical second, top to bottom.
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Cube(
@@ -99,14 +107,35 @@ void SkeletonEvalNode::generateWorld() {
       Point(13.5, 1.5, 1.25), 1.0, voxblox::Color::Pink())));
 
   voxblox_server_.setSliceLevel(1.5);
-  world_.generateSdfFromWorld<voxblox::EsdfVoxel>(
-      esdf_max_distance_, voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
+  // world_.generateSdfFromWorld<voxblox::EsdfVoxel>(
+  //    esdf_max_distance_, voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
   world_.generateSdfFromWorld<voxblox::TsdfVoxel>(
       tsdf_max_distance_, voxblox_server_.getTsdfMapPtr()->getTsdfLayerPtr());
+  voxblox_server_.updateEsdfBatch();
   if (visualize_) {
     voxblox_server_.generateMesh();
     voxblox_server_.publishSlices();
+    voxblox_server_.publishPointclouds();
   }
+}
+
+void SkeletonEvalNode::generateSkeleton() {
+  SkeletonGenerator skeleton_generator(
+      voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
+  skeleton_generator.setMinSeparationAngle(-0.7);
+  skeleton_generator.generateSkeleton();
+
+  Pointcloud pointcloud;
+  std::vector<float> distances;
+  skeleton_generator.getSkeleton().getPointcloudWithDistances(&pointcloud,
+                                                              &distances);
+
+  // Publish the skeleton.
+  pcl::PointCloud<pcl::PointXYZI> ptcloud_pcl;
+  pointcloudToPclXYZI(pointcloud, distances, &ptcloud_pcl);
+  ptcloud_pcl.header.frame_id = frame_id_;
+  skeleton_pub_.publish(ptcloud_pcl);
+  ROS_INFO("Finished generating skeleton.");
 }
 
 }  // namespace voxblox
@@ -124,6 +153,7 @@ int main(int argc, char** argv) {
   voxblox::SkeletonEvalNode node(nh, nh_private);
 
   node.generateWorld();
+  node.generateSkeleton();
 
   ros::spin();
   return 0;
