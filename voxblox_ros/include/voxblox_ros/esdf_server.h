@@ -39,6 +39,8 @@ class EsdfServer : public TsdfServer {
   // Call updateMesh if you want everything updated; call this specifically
   // if you don't want the mesh or visualization.
   void updateEsdf();
+  // Update the ESDF all at once; clear the existing map.
+  void updateEsdfBatch();
 
   // Overwrites the layer with what's coming from the topic!
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);

@@ -11,7 +11,9 @@ void Skeleton::getPointcloud(Pointcloud* pointcloud) const {
   pointcloud->reserve(points_.size());
 
   for (const SkeletonPoint& point : points_) {
-    pointcloud->push_back(point.point);
+    if (point.num_basis_points >= 3) {
+      pointcloud->push_back(point.point);
+    }
   }
 }
 
@@ -26,8 +28,10 @@ void Skeleton::getPointcloudWithDistances(Pointcloud* pointcloud,
   distances->reserve(points_.size());
 
   for (const SkeletonPoint& point : points_) {
-    pointcloud->push_back(point.point);
-    distances->push_back(point.distance);
+    if (point.num_basis_points >= 3) {
+      pointcloud->push_back(point.point);
+      distances->push_back(point.distance);
+    }
   }
 }
 

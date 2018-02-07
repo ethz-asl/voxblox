@@ -16,6 +16,7 @@
 namespace voxblox {
 
 class SkeletonGenerator {
+ public:
   SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer);
 
   void generateSkeleton();
@@ -24,8 +25,24 @@ class SkeletonGenerator {
   const Skeleton& getSkeleton() const { return skeleton_; }
   Skeleton& getSkeleton() { return skeleton_; }
 
+  float getMinSeparationAngle() const { return min_separation_angle_; }
+  void setMinSeparationAngle(float min_separation_angle) {
+    min_separation_angle_ = min_separation_angle;
+  }
+
+  void getNeighborsAndDistances(
+      const BlockIndex& block_index, const VoxelIndex& voxel_index,
+      AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
+      AlignedVector<Eigen::Vector3i>* directions) const;
+
+  void getNeighbor(const BlockIndex& block_index, const VoxelIndex& voxel_index,
+                   const Eigen::Vector3i& direction,
+                   BlockIndex* neighbor_block_index,
+                   VoxelIndex* neighbor_voxel_index) const;
+
  private:
   float min_separation_angle_;
+  int esdf_voxels_per_side_;
 
   Skeleton skeleton_;
 

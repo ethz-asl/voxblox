@@ -181,6 +181,12 @@ void EsdfServer::updateEsdf() {
   }
 }
 
+void EsdfServer::updateEsdfBatch() {
+  if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+    esdf_integrator_->updateFromTsdfLayerBatch();
+  }
+}
+
 void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
   if (clear_sphere_for_planning_) {
     esdf_integrator_->addNewRobotPosition(T_G_C.getPosition());
