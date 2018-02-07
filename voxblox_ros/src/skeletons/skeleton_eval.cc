@@ -33,6 +33,7 @@ class SkeletonEvalNode {
   std::string frame_id_;
 
   bool visualize_;
+  bool full_euclidean_distance_;
 
   double esdf_max_distance_;
   double tsdf_max_distance_;
@@ -47,9 +48,18 @@ SkeletonEvalNode::SkeletonEvalNode(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       frame_id_("world"),
       visualize_(true),
+      full_euclidean_distance_(true),
       esdf_max_distance_(5.0),
       tsdf_max_distance_(0.4),
       voxblox_server_(nh_, nh_private_) {
+  nh_private_.param("visualize", visualize_, visualize_);
+  nh_private_.param("full_euclidean_distance", full_euclidean_distance_,
+                    full_euclidean_distance_);
+  nh_private_.param("esdf_max_distance", esdf_max_distance_,
+                    esdf_max_distance_);
+  nh_private_.param("tsdf_max_distance", tsdf_max_distance_,
+                    tsdf_max_distance_);
+
   skeleton_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZ> >(
       "skeleton", 1, true);
 }
@@ -64,8 +74,7 @@ void SkeletonEvalNode::generateWorld() {
       new PlaneObject(Point(0.0, 0.0, 5.0), Point(0.0, 0.0, -1.0))));
 
   // Sets the display bounds.
-  world_.setBounds(Point(-1.0, -1.0, -1.0),
-                   Point(16.0, 11.0, 6.0));
+  world_.setBounds(Point(-1.0, -1.0, -1.0), Point(16.0, 11.0, 6.0));
 
   // Corridor/room walls. Horizontal first, vertical second, top to bottom.
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Cube(
@@ -111,7 +120,8 @@ void SkeletonEvalNode::generateWorld() {
   //    esdf_max_distance_, voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
   world_.generateSdfFromWorld<voxblox::TsdfVoxel>(
       tsdf_max_distance_, voxblox_server_.getTsdfMapPtr()->getTsdfLayerPtr());
-  voxblox_server_.updateEsdfBatch();
+  voxblox_server_.setEsdfMaxDistance(esdf_max_distance_);
+  voxblox_server_.updateEsdfBatch(full_euclidean_distance_);
   if (visualize_) {
     voxblox_server_.generateMesh();
     voxblox_server_.publishSlices();
@@ -122,7 +132,7 @@ void SkeletonEvalNode::generateWorld() {
 void SkeletonEvalNode::generateSkeleton() {
   SkeletonGenerator skeleton_generator(
       voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
-  skeleton_generator.setMinSeparationAngle(-0.7);
+  skeleton_generator.setMinSeparationAngle(0.7);
   skeleton_generator.generateSkeleton();
 
   Pointcloud pointcloud;
@@ -136,6 +146,7 @@ void SkeletonEvalNode::generateSkeleton() {
   ptcloud_pcl.header.frame_id = frame_id_;
   skeleton_pub_.publish(ptcloud_pcl);
   ROS_INFO("Finished generating skeleton.");
+  ROS_INFO_STREAM("Total Timings: " << std::endl << timing::Timing::Print());
 }
 
 }  // namespace voxblox

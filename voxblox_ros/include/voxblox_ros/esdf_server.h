@@ -40,7 +40,7 @@ class EsdfServer : public TsdfServer {
   // if you don't want the mesh or visualization.
   void updateEsdf();
   // Update the ESDF all at once; clear the existing map.
-  void updateEsdfBatch();
+  void updateEsdfBatch(bool full_euclidean = false);
 
   // Overwrites the layer with what's coming from the topic!
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
@@ -51,6 +51,8 @@ class EsdfServer : public TsdfServer {
   void setClearSphere(bool clear_sphere_for_planning) {
     clear_sphere_for_planning_ = clear_sphere_for_planning;
   }
+  float getEsdfMaxDistance() const;
+  void setEsdfMaxDistance(float max_distance);
 
   virtual void clear();
 

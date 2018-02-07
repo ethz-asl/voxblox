@@ -22,7 +22,8 @@ class SkeletonizerNode {
   void init();
 
   // Make a skeletor!!!
-  void skeletonize(Layer<EsdfVoxel>* esdf_layer, voxblox::Pointcloud* skeleton);
+  void skeletonize(Layer<EsdfVoxel>* esdf_layer, voxblox::Pointcloud* skeleton,
+                   std::vector<float>* distances);
 
  private:
   ros::NodeHandle nh_;
@@ -51,11 +52,13 @@ void SkeletonizerNode::init() {
 
   // Skeletonize????
   voxblox::Pointcloud pointcloud;
-  skeletonize(esdf_server_.getEsdfMapPtr()->getEsdfLayerPtr(), &pointcloud);
+  std::vector<float> distances;
+  skeletonize(esdf_server_.getEsdfMapPtr()->getEsdfLayerPtr(), &pointcloud,
+              &distances);
 
   // Publish the skeleton.
-  pcl::PointCloud<pcl::PointXYZ> ptcloud_pcl;
-  pointcloudToPclXYZ(pointcloud, &ptcloud_pcl);
+  pcl::PointCloud<pcl::PointXYZI> ptcloud_pcl;
+  pointcloudToPclXYZI(pointcloud, distances, &ptcloud_pcl);
   ptcloud_pcl.header.frame_id = "world";
   skeleton_pub_.publish(ptcloud_pcl);
 
@@ -63,10 +66,12 @@ void SkeletonizerNode::init() {
 }
 
 void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
-                                   voxblox::Pointcloud* pointcloud) {
+                                   voxblox::Pointcloud* pointcloud,
+                                   std::vector<float>* distances) {
   SkeletonGenerator skeleton_generator(esdf_layer);
   skeleton_generator.generateSkeleton();
-  skeleton_generator.getSkeleton().getPointcloud(pointcloud);
+  skeleton_generator.getSkeleton().getPointcloudWithDistances(pointcloud,
+                                                              distances);
 }
 
 }  // namespace voxblox

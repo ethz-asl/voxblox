@@ -10,6 +10,8 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
 }
 
 void SkeletonGenerator::generateSkeleton() {
+  timing::Timer generate_timer("skeleton/generate");
+
   // Clear the skeleton and start over.
   skeleton_.getSkeletonPoints().clear();
 
@@ -36,9 +38,17 @@ void SkeletonGenerator::generateSkeleton() {
         continue;
       }
 
-      // Get the floating-point distance of this voxel, normalized.
-      const Eigen::Vector3f parent_dir =
-          esdf_voxel.parent.cast<float>().normalized();
+      Point coords = esdf_block->computeCoordinatesFromVoxelIndex(voxel_index);
+
+      // Get the floating-point distance of this voxel, normalize it as long as
+      // it's not 0.
+      Eigen::Vector3f parent_dir = esdf_voxel.parent.cast<float>();
+
+      // Parent-less voxel (probably in max-distance area), just skip.
+      if (parent_dir.norm() < 1e-6) {
+        continue;
+      }
+      parent_dir.normalize();
 
       // See what the neighbors are pointing to. This is 26-connectivity
       // which is probably completely unnecessary.
@@ -89,38 +99,41 @@ void SkeletonGenerator::generateSkeleton() {
             neighbor_voxel.parent.cast<float>() + directions[i].cast<float>();
 
         if (relative_direction.norm() < 1e-6) {
-          // This is pointing at us! We're its parent. No way is this a skeleton point.
+          // This is pointing at us! We're its parent. No way is this a skeleton
+          // point.
           continue;
         }
         relative_direction.normalize();
 
         // Compute the dot product between the two...
         float dot_prod = relative_direction.dot(parent_dir);
-        if (dot_prod <= -min_separation_angle_) {
+        if (dot_prod <= min_separation_angle_) {
           // Then this is a ridge or something! Probably. Who knows.
           on_skeleton = true;
           skeleton_point.num_basis_points++;
           skeleton_point.basis_directions.push_back(relative_direction);
           /* printf(
-              "Parent direciton: %f %f %f Neighbor direction: %d %d %d "
+              "Coord: %f %f %f Parent direction: %f %f %f Voxel parent: %f %f "
+              "%f "
+              "Neighbor direction: %d %d %d "
               "Direction to/from neighbor: %d %d %d Relative direction: %f %f "
               "%f Dot product: %f\n",
-              parent_dir.x(), parent_dir.y(), parent_dir.z(),
-              neighbor_voxel.parent.x(), neighbor_voxel.parent.y(),
-              neighbor_voxel.parent.z(), directions[i].x(), directions[i].y(),
-              directions[i].z(), relative_direction.x(), relative_direction.y(),
+              coords.x(), coords.y(), coords.z(), parent_dir.x(),
+              parent_dir.y(), parent_dir.z(), voxel_parent.x(),
+              voxel_parent.y(), voxel_parent.z(), neighbor_voxel.parent.x(),
+              neighbor_voxel.parent.y(), neighbor_voxel.parent.z(),
+              directions[i].x(), directions[i].y(), directions[i].z(),
+              relative_direction.x(), relative_direction.y(),
               relative_direction.z(), dot_prod); */
         }
       }
       if (on_skeleton) {
-        Point coords =
-            esdf_block->computeCoordinatesFromVoxelIndex(voxel_index);
         skeleton_point.distance =
             esdf_block->getVoxelByVoxelIndex(voxel_index).distance;
 
         skeleton_point.point = coords;
         skeleton_.getSkeletonPoints().push_back(skeleton_point);
-        //return;
+        // return;
       }
     }
   }

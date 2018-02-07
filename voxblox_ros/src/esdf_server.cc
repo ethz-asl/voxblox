@@ -181,10 +181,22 @@ void EsdfServer::updateEsdf() {
   }
 }
 
-void EsdfServer::updateEsdfBatch() {
+void EsdfServer::updateEsdfBatch(bool full_euclidean) {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
-    esdf_integrator_->updateFromTsdfLayerBatch();
+    if (full_euclidean) {
+      esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
+    } else {
+      esdf_integrator_->updateFromTsdfLayerBatch();
+    }
   }
+}
+
+float EsdfServer::getEsdfMaxDistance() const {
+  return esdf_integrator_->getEsdfMaxDistance();
+}
+
+void EsdfServer::setEsdfMaxDistance(float max_distance) {
+  esdf_integrator_->setEsdfMaxDistance(max_distance);
 }
 
 void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
