@@ -2,6 +2,7 @@
 #define VOXBLOX_UTILS_EVALUATION_UTILS_H_
 
 #include <algorithm>
+#include <string>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -27,6 +28,20 @@ struct VoxelEvaluationDetails {
   size_t num_ignored_voxels = 0u;
   size_t num_overlapping_voxels = 0u;
   size_t num_non_overlapping_voxels = 0u;
+
+  std::string toString() const {
+    std::stringstream ss;
+    ss << "\n\n======= Layer Evaluation Results =======\n"
+       << " num evaluated voxels:       " << num_evaluated_voxels << "\n"
+       << " num overlapping voxels:     " << num_overlapping_voxels << "\n"
+       << " num non-overlapping voxels: " << num_non_overlapping_voxels << "\n"
+       << " num ignored voxels:         " << num_ignored_voxels << "\n"
+       << " min error:                  " << min_error << "\n"
+       << " max error:                  " << max_error << "\n"
+       << " RMSE:                       " << rmse << "\n"
+       << "========================================\n";
+    return ss.str();
+  }
 };
 
 template <typename VoxelType>
@@ -136,21 +151,12 @@ FloatingPoint evaluateLayersRmse(
         sqrt(total_squared_error / evaluation_details.num_evaluated_voxels);
   }
 
-  LOG(INFO) << "\nLayer comparison result:"
-            << "\n\tnum evaluated voxels:\t\t "
-            << evaluation_details.num_evaluated_voxels
-            << "\n\tnum overlapping voxels:\t\t "
-            << evaluation_details.num_overlapping_voxels
-            << "\n\tnum non-overlapping voxels:\t "
-            << evaluation_details.num_non_overlapping_voxels
-            << "\n\tnum ignored voxels:\t\t "
-            << evaluation_details.num_ignored_voxels << "\n\tRMSE:\t\t\t\t "
-            << evaluation_details.rmse;
-
   // If the details are requested, output them.
   if (evaluation_result != nullptr) {
     *evaluation_result = evaluation_details;
   }
+
+  VLOG(2) << evaluation_details.toString();
 
   return evaluation_details.rmse;
 }
