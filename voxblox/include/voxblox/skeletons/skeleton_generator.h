@@ -46,7 +46,7 @@ class SkeletonGenerator {
   // Follow an edge through the layer, aborting when either no more neighbors
   // exist or a vertex is found.
   bool followEdge(const BlockIndex& start_block_index,
-                  const VoxelIndex& start_vertex_index,
+                  const VoxelIndex& start_voxel_index,
                   const Eigen::Vector3i& direction_from_vertex,
                   int64_t* connected_vertex_id, float* min_distance,
                   float* max_distance);

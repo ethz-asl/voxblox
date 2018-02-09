@@ -358,11 +358,76 @@ void SkeletonGenerator::getNeighbor(const BlockIndex& block_index,
 }
 
 bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
-                                   const VoxelIndex& start_vertex_index,
+                                   const VoxelIndex& start_voxel_index,
                                    const Eigen::Vector3i& direction_from_vertex,
                                    int64_t* connected_vertex_id,
                                    float* min_distance, float* max_distance) {
-  return true;
+  BlockIndex block_index = start_block_index;
+  VoxelIndex voxel_index = start_voxel_index;
+
+  Block<SkeletonVoxel>::Ptr block_ptr =
+      skeleton_layer_->getBlockPtrByIndex(start_block_index);
+  SkeletonVoxel& voxel = block_ptr->getVoxelByVoxelIndex(start_voxel_index);
+
+  *min_distance = voxel.distance;
+  *max_distance = voxel.distance;
+  Eigen::Vector3i last_direction = direction_from_vertex;
+
+  bool vertex_found = false;
+  bool still_got_neighbors = true;
+  // For now only ever search the first edge for some reason.
+  while (vertex_found == false && still_got_neighbors == true) {
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
+
+    getNeighborsAndDistances(block_index, voxel_index, 6, &neighbors,
+                             &distances, &directions);
+    still_got_neighbors = false;
+    for (size_t i = 0; i < neighbors.size(); ++i) {
+      if (directions[i] == -last_direction) {
+        continue;
+      }
+
+      BlockIndex neighbor_block_index = neighbors[i].first;
+      VoxelIndex neighbor_voxel_index = neighbors[i].second;
+      Block<SkeletonVoxel>::Ptr neighbor_block;
+      if (neighbor_block_index == block_index) {
+        neighbor_block = block_ptr;
+      } else {
+        neighbor_block =
+            skeleton_layer_->getBlockPtrByIndex(neighbor_block_index);
+      }
+      if (!neighbor_block) {
+        continue;
+      }
+      SkeletonVoxel& neighbor_voxel =
+          neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+      if (neighbor_voxel.is_vertex) {
+        // UUUUHHHH how do I find which ID this vertex belongs to...
+        // Just have its point :(
+        *connected_vertex_id = neighbor_voxel.vertex_id;
+        return true;
+      }
+      if (neighbor_voxel.is_edge) {
+        still_got_neighbors = true;
+        if (neighbor_voxel.distance < *min_distance) {
+          *min_distance = neighbor_voxel.distance;
+        }
+        if (neighbor_voxel.distance > *max_distance) {
+          *max_distance = neighbor_voxel.distance;
+        }
+
+        block_index = neighbor_block_index;
+        voxel_index = neighbor_voxel_index;
+        block_ptr = neighbor_block;
+        last_direction = directions[i];
+        continue;
+      }
+    }
+  }
+
+  return false;
 }
 
 }  // namespace voxblox
