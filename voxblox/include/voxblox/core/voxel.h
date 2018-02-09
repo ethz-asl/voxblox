@@ -10,16 +10,12 @@
 namespace voxblox {
 
 struct TsdfVoxel {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   float distance = 0.0f;
   float weight = 0.0f;
   Color color;
 };
 
 struct EsdfVoxel {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   float distance = 0.0f;
   bool observed = false;
   bool in_queue = false;
@@ -27,13 +23,20 @@ struct EsdfVoxel {
   // Relative direction toward parent. If itself, then either uninitialized
   // or in the fixed frontier.
   Eigen::Vector3i parent = Eigen::Vector3i::Zero();
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct OccupancyVoxel {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   float probability_log = 0.0f;
   bool observed = false;
+};
+
+struct SkeletonVoxel {
+  float distance = 0.0f;
+  int num_basis_points = 0;
+  bool is_edge = false;
+  bool is_vertex = false;
 };
 
 // Used for serialization only.
