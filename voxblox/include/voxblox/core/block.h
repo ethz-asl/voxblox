@@ -157,6 +157,7 @@ class Block {
   FloatingPoint voxel_size_inv() const { return voxel_size_inv_; }
   size_t num_voxels() const { return num_voxels_; }
   Point origin() const { return origin_; }
+  void setOrigin(const Point& new_origin) { origin_ = new_origin; }
   FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
@@ -193,7 +194,7 @@ class Block {
   // Base parameters.
   const size_t voxels_per_side_;
   const FloatingPoint voxel_size_;
-  const Point origin_;
+  Point origin_;
 
   // Derived, cached parameters.
   FloatingPoint voxel_size_inv_;

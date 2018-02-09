@@ -134,9 +134,6 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
          input_linear_voxel_idx <
          static_cast<IndexElement>(input_block.num_voxels());
          ++input_linear_voxel_idx) {
-      const VoxelType& input_voxel =
-          input_block.getVoxelByLinearIndex(input_linear_voxel_idx);
-
       // find voxel centers location in the output
       const Point voxel_center =
           T_out_in *
