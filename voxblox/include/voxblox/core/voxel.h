@@ -37,6 +37,7 @@ struct SkeletonVoxel {
   int num_basis_points = 0;
   bool is_edge = false;
   bool is_vertex = false;
+  int64_t vertex_id;
 };
 
 // Used for serialization only.
