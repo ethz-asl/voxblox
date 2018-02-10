@@ -157,6 +157,8 @@ void SkeletonGenerator::generateSkeleton() {
 }
 
 void SkeletonGenerator::generateSparseGraph() {
+  timing::Timer generate_timer("skeleton/graph");
+
   graph_.clear();
 
   // Start with all the vertices.
@@ -173,11 +175,19 @@ void SkeletonGenerator::generateSparseGraph() {
     vertex.distance = point.distance;
     int64_t vertex_id = graph_.addVertex(vertex);
     vertex_ids.push_back(vertex_id);
+
+    // Also set the vertex ids in the layer (uuuughhhh)
+    Block<SkeletonVoxel>::Ptr block_ptr;
+    block_ptr = skeleton_layer_->getBlockPtrByCoordinates(vertex.point);
+    CHECK(block_ptr);
+    SkeletonVoxel& voxel = block_ptr->getVoxelByCoordinates(vertex.point);
+    voxel.vertex_id = vertex_id;
   }
 
   // Then figure out how to connect them to other vertices by following the
   // skeleton layer voxels.
   for (int64_t vertex_id : vertex_ids) {
+    LOG(INFO) << "Checking vertex id: " << vertex_id;
     SkeletonVertex& vertex = graph_.getVertex(vertex_id);
 
     // Search the edge map for this guy's neighbors.
@@ -185,6 +195,7 @@ void SkeletonGenerator::generateSparseGraph() {
         skeleton_layer_->computeBlockIndexFromCoordinates(vertex.point);
     Block<SkeletonVoxel>::Ptr block_ptr;
     block_ptr = skeleton_layer_->getBlockPtrByIndex(block_index);
+    CHECK(block_ptr);
     VoxelIndex voxel_index =
         block_ptr->computeVoxelIndexFromCoordinates(vertex.point);
 
@@ -219,7 +230,7 @@ void SkeletonGenerator::generateSparseGraph() {
       SkeletonVoxel& neighbor_voxel =
           neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
 
-      if (!neighbor_voxel.is_edge && !neighbor_voxel.is_vertex) {
+      if (!neighbor_voxel.is_edge) {
         continue;
       }
       // We should probably just ignore adjacent vertices anyway, but figure
@@ -233,13 +244,22 @@ void SkeletonGenerator::generateSparseGraph() {
                      &connected_vertex_id, &min_distance, &max_distance);
 
       if (vertex_found) {
+        if (connected_vertex_id == vertex_id) {
+          // I am still unclear on how this happens but apparently it does.
+          continue;
+        }
         // Before adding an edge, make sure it's not already in there...
+        bool already_exists = false;
         for (int64_t edge_id : vertex.edge_list) {
           SkeletonEdge& edge = graph_.getEdge(edge_id);
           if (edge.start_vertex == connected_vertex_id ||
               edge.end_vertex == connected_vertex_id) {
-            continue;
+            already_exists = true;
+            break;
           }
+        }
+        if (already_exists) {
+          continue;
         }
 
         // Ok it's new, let's add this little guy.
@@ -249,7 +269,10 @@ void SkeletonGenerator::generateSparseGraph() {
         edge.start_distance = min_distance;
         edge.end_distance = max_distance;
         // Start and end are filled in by the addEdge function.
-        graph_.addEdge(edge);
+        int64_t edge_id = graph_.addEdge(edge);
+        LOG(INFO) << "Added an edge (" << edge_id << ") from "
+                  << edge.start_vertex << " to " << edge.end_vertex
+                  << " with distance: " << min_distance;
       }
     }
   }
@@ -331,7 +354,7 @@ void SkeletonGenerator::getNeighborsAndDistances(
     }
   }
 
-  CHECK_EQ(neighbors->size(), kNumNeighbors);
+  // CHECK_EQ(neighbors->size(), kNumNeighbors);
 }
 
 void SkeletonGenerator::getNeighbor(const BlockIndex& block_index,
@@ -367,6 +390,7 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
 
   Block<SkeletonVoxel>::Ptr block_ptr =
       skeleton_layer_->getBlockPtrByIndex(start_block_index);
+  CHECK(block_ptr);
   SkeletonVoxel& voxel = block_ptr->getVoxelByVoxelIndex(start_voxel_index);
 
   *min_distance = voxel.distance;
@@ -375,8 +399,11 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
 
   bool vertex_found = false;
   bool still_got_neighbors = true;
+  const int kMaxFollows = 100;
+  int j = 0;
   // For now only ever search the first edge for some reason.
-  while (vertex_found == false && still_got_neighbors == true) {
+  while (vertex_found == false && still_got_neighbors == true &&
+         j < kMaxFollows) {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
@@ -422,6 +449,7 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
         voxel_index = neighbor_voxel_index;
         block_ptr = neighbor_block;
         last_direction = directions[i];
+        j++;
         continue;
       }
     }

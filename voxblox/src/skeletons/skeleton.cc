@@ -99,4 +99,19 @@ void SparseSkeletonGraph::clear() {
   edge_map_.clear();
 }
 
+void SparseSkeletonGraph::getAllVertexIds(
+    std::vector<int64_t>* vertex_ids) const {
+  vertex_ids->reserve(vertex_map_.size());
+  for (const std::pair<int64_t, SkeletonVertex>& kv : vertex_map_) {
+    vertex_ids->push_back(kv.first);
+  }
+}
+
+void SparseSkeletonGraph::getAllEdgeIds(std::vector<int64_t>* edge_ids) const {
+  edge_ids->reserve(edge_map_.size());
+  for (const std::pair<int64_t, SkeletonEdge>& kv : edge_map_) {
+    edge_ids->push_back(kv.first);
+  }
+}
+
 }  // namespace voxblox
