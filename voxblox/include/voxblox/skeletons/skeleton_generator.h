@@ -27,6 +27,10 @@ class SkeletonGenerator {
   const Skeleton& getSkeleton() const { return skeleton_; }
   Skeleton& getSkeleton() { return skeleton_; }
 
+  // Sparse graph access.
+  const SparseSkeletonGraph& getSparseGraph() const { return graph_; }
+  SparseSkeletonGraph& getSparseGraph() { return graph_; }
+
   float getMinSeparationAngle() const { return min_separation_angle_; }
   void setMinSeparationAngle(float min_separation_angle) {
     min_separation_angle_ = min_separation_angle;

@@ -89,6 +89,11 @@ class SparseSkeletonGraph {
   SkeletonVertex& getVertex(int64_t id);
   SkeletonEdge& getEdge(int64_t id);
 
+  // Accessors to just get all the vertex and edge IDs.
+  void getAllVertexIds(std::vector<int64_t>* vertex_ids) const;
+  void getAllEdgeIds(std::vector<int64_t>* edge_ids) const;
+
+
   void clear();
 
  private:

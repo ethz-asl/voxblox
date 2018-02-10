@@ -2,11 +2,12 @@
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/skeletons/skeleton_generator.h>
 
+#include "voxblox_ros/conversions.h"
 #include "voxblox_ros/esdf_server.h"
 #include "voxblox_ros/mesh_pcl.h"
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
-#include "voxblox_ros/conversions.h"
+#include "voxblox_ros/skeleton_vis.h"
 
 namespace voxblox {
 
@@ -16,6 +17,8 @@ class SkeletonizerNode {
       : nh_(nh), nh_private_(nh_private), esdf_server_(nh_, nh_private_) {
     skeleton_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZ> >(
         "skeleton", 1, true);
+    sparse_graph_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
+        "sparse_graph", 1, true);
   }
 
   // Initialize the node.
@@ -30,6 +33,7 @@ class SkeletonizerNode {
   ros::NodeHandle nh_private_;
 
   ros::Publisher skeleton_pub_;
+  ros::Publisher sparse_graph_pub_;
 
   EsdfServer esdf_server_;
 };
@@ -72,6 +76,18 @@ void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
   skeleton_generator.generateSkeleton();
   skeleton_generator.getSkeleton().getPointcloudWithDistances(pointcloud,
                                                               distances);
+  ROS_INFO("Finished generating skeleton.");
+
+  skeleton_generator.generateSparseGraph();
+  ROS_INFO("Finished generating sparse graph.");
+
+  ROS_INFO_STREAM("Total Timings: " << std::endl << timing::Timing::Print());
+
+  // Now visualize the graph.
+  const SparseSkeletonGraph& graph = skeleton_generator.getSparseGraph();
+  visualization_msgs::MarkerArray marker_array;
+  visualizeSkeletonGraph(graph, "world", &marker_array);
+  sparse_graph_pub_.publish(marker_array);
 }
 
 }  // namespace voxblox
