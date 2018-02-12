@@ -35,6 +35,7 @@ struct OccupancyVoxel {
 struct SkeletonVoxel {
   float distance = 0.0f;
   int num_basis_points = 0;
+  bool is_face = false;
   bool is_edge = false;
   bool is_vertex = false;
   int64_t vertex_id;

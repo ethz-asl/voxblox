@@ -141,6 +141,7 @@ void SkeletonGenerator::generateSkeleton() {
             skeleton_block->getVoxelByVoxelIndex(voxel_index);
         skeleton_voxel.distance = skeleton_point.distance;
         skeleton_voxel.num_basis_points = skeleton_point.num_basis_points;
+        skeleton_voxel.is_face = (skeleton_voxel.num_basis_points == 2);
         skeleton_voxel.is_edge = (skeleton_voxel.num_basis_points == 3);
         skeleton_voxel.is_vertex = (skeleton_voxel.num_basis_points == 4);
 
@@ -399,7 +400,7 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
 
   bool vertex_found = false;
   bool still_got_neighbors = true;
-  const int kMaxFollows = 100;
+  const int kMaxFollows = 300;
   int j = 0;
   // For now only ever search the first edge for some reason.
   while (vertex_found == false && still_got_neighbors == true &&
@@ -411,6 +412,13 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
     getNeighborsAndDistances(block_index, voxel_index, 6, &neighbors,
                              &distances, &directions);
     still_got_neighbors = false;
+
+    // Choose the best candidate neighbor with the biggest dot product to the
+    // parent vertex direction (attempt to follow straight line away from
+    // vertex).
+    size_t best_neighbor = 0;
+    float best_dot_prod = -2.0;
+
     for (size_t i = 0; i < neighbors.size(); ++i) {
       if (directions[i] == -last_direction) {
         continue;
@@ -438,20 +446,42 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
       }
       if (neighbor_voxel.is_edge) {
         still_got_neighbors = true;
-        if (neighbor_voxel.distance < *min_distance) {
-          *min_distance = neighbor_voxel.distance;
+        float dot_prod = direction_from_vertex.cast<float>().normalized().dot(
+            directions[i].cast<float>().normalized());
+        if (dot_prod > best_dot_prod) {
+          best_neighbor = i;
+          best_dot_prod = dot_prod;
         }
-        if (neighbor_voxel.distance > *max_distance) {
-          *max_distance = neighbor_voxel.distance;
-        }
-
-        block_index = neighbor_block_index;
-        voxel_index = neighbor_voxel_index;
-        block_ptr = neighbor_block;
-        last_direction = directions[i];
-        j++;
-        continue;
       }
+    }
+
+    if (still_got_neighbors) {
+      // Get the best one out AGAIN...
+
+      BlockIndex neighbor_block_index = neighbors[best_neighbor].first;
+      VoxelIndex neighbor_voxel_index = neighbors[best_neighbor].second;
+      Block<SkeletonVoxel>::Ptr neighbor_block;
+      if (neighbor_block_index == block_index) {
+        neighbor_block = block_ptr;
+      } else {
+        neighbor_block =
+            skeleton_layer_->getBlockPtrByIndex(neighbor_block_index);
+      }
+      SkeletonVoxel& neighbor_voxel =
+          neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+
+      if (neighbor_voxel.distance < *min_distance) {
+        *min_distance = neighbor_voxel.distance;
+      }
+      if (neighbor_voxel.distance > *max_distance) {
+        *max_distance = neighbor_voxel.distance;
+      }
+
+      block_index = neighbor_block_index;
+      voxel_index = neighbor_voxel_index;
+      block_ptr = neighbor_block;
+      last_direction = directions[best_neighbor];
+      j++;
     }
   }
 
