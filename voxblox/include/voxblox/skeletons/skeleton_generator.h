@@ -23,6 +23,10 @@ class SkeletonGenerator {
   void generateSkeleton();
   void generateSparseGraph();
 
+  // Additional helper functions, in case generate by neighbor layers is set.
+  void generateEdgesByLayerNeighbors();
+  void generateVerticesByLayerNeighbors();
+
   // Skeleton access.
   const Skeleton& getSkeleton() const { return skeleton_; }
   Skeleton& getSkeleton() { return skeleton_; }
@@ -34,6 +38,18 @@ class SkeletonGenerator {
   float getMinSeparationAngle() const { return min_separation_angle_; }
   void setMinSeparationAngle(float min_separation_angle) {
     min_separation_angle_ = min_separation_angle;
+  }
+
+  bool getGenerateByLayerNeighbors() const {
+    return generate_by_layer_neighbors_;
+  }
+  void setGenerateByLayerNeighbors(bool generate_by_layer_neighbors) {
+    generate_by_layer_neighbors_ = generate_by_layer_neighbors;
+  }
+
+  int getNumNeighborsForEdge() const { return num_neighbors_for_edge_; }
+  void setNumNeighborsForEdge(int num_neighbors_for_edge) {
+    num_neighbors_for_edge_ = num_neighbors_for_edge;
   }
 
   void getNeighborsAndDistances(
@@ -58,6 +74,11 @@ class SkeletonGenerator {
  private:
   float min_separation_angle_;
   int esdf_voxels_per_side_;
+
+  // Whether generate vertices/edges by number of basis points (false, default)
+  // or number of neighbors on the discretized medial axis (true).
+  bool generate_by_layer_neighbors_;
+  int num_neighbors_for_edge_;
 
   Skeleton skeleton_;
 
