@@ -59,6 +59,7 @@ set("${PROJECT_NAME}_SRCS"
   src/simulation/simulation_world.cc
   src/skeletons/skeleton.cc
   src/skeletons/skeleton_generator.cc
+  src/skeletons/voxel_template_matcher.cc
   src/utils/camera_model.cc
   src/utils/evaluation_utils.cc
   src/utils/layer_utils.cc

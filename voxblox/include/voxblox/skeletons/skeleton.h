@@ -33,12 +33,17 @@ class Skeleton {
   AlignedVector<SkeletonPoint>& getEdgePoints() { return edges_; }
   AlignedVector<SkeletonPoint>& getVertexPoints() { return vertices_; }
 
-  // Converts the points to a pointcloud with no other information.
+  // Converts the points to a pointcloud with no other information, for all
+  // points on the GVD.
   void getPointcloud(Pointcloud* pointcloud) const;
 
   // Also get a vector for the distance information.
   void getPointcloudWithDistances(Pointcloud* pointcloud,
                                   std::vector<float>* distances) const;
+  void getEdgePointcloudWithDistances(Pointcloud* pointcloud,
+                                      std::vector<float>* distances) const;
+  void getVertexPointcloudWithDistances(Pointcloud* pointcloud,
+                                        std::vector<float>* distances) const;
 
  private:
   AlignedVector<SkeletonPoint> points_;
@@ -92,7 +97,6 @@ class SparseSkeletonGraph {
   // Accessors to just get all the vertex and edge IDs.
   void getAllVertexIds(std::vector<int64_t>* vertex_ids) const;
   void getAllEdgeIds(std::vector<int64_t>* edge_ids) const;
-
 
   void clear();
 

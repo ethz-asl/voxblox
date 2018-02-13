@@ -3,7 +3,10 @@
 namespace voxblox {
 
 SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
-    : min_separation_angle_(0.7), esdf_layer_(esdf_layer) {
+    : min_separation_angle_(0.7),
+      generate_by_layer_neighbors_(false),
+      num_neighbors_for_edge_(5),
+      esdf_layer_(esdf_layer) {
   CHECK_NOTNULL(esdf_layer);
 
   esdf_voxels_per_side_ = esdf_layer_->voxels_per_side();
@@ -15,7 +18,7 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
 }
 
 void SkeletonGenerator::generateSkeleton() {
-  timing::Timer generate_timer("skeleton/generate");
+  timing::Timer generate_timer("skeleton/gvd");
 
   // Clear the skeleton and start over.
   skeleton_.getSkeletonPoints().clear();
@@ -141,18 +144,146 @@ void SkeletonGenerator::generateSkeleton() {
             skeleton_block->getVoxelByVoxelIndex(voxel_index);
         skeleton_voxel.distance = skeleton_point.distance;
         skeleton_voxel.num_basis_points = skeleton_point.num_basis_points;
-        skeleton_voxel.is_face = (skeleton_voxel.num_basis_points == 2);
-        skeleton_voxel.is_edge = (skeleton_voxel.num_basis_points == 3);
-        skeleton_voxel.is_vertex = (skeleton_voxel.num_basis_points == 4);
+        if (!generate_by_layer_neighbors_) {
+          skeleton_voxel.is_face = (skeleton_voxel.num_basis_points == 2);
+          skeleton_voxel.is_edge = (skeleton_voxel.num_basis_points == 3);
+          skeleton_voxel.is_vertex = (skeleton_voxel.num_basis_points == 4);
 
-        if (skeleton_voxel.is_edge) {
-          skeleton_.getEdgePoints().push_back(skeleton_point);
-        }
-        if (skeleton_voxel.is_vertex) {
-          skeleton_.getVertexPoints().push_back(skeleton_point);
+          if (skeleton_voxel.is_edge) {
+            skeleton_.getEdgePoints().push_back(skeleton_point);
+          }
+          if (skeleton_voxel.is_vertex) {
+            skeleton_.getVertexPoints().push_back(skeleton_point);
+          }
+        } else {
+          // If we're generating by layer neighbors, don't bother setting
+          // vertex vs. edge yet.
+          skeleton_voxel.is_face = true;
         }
         // return;
       }
+    }
+  }
+
+  if (generate_by_layer_neighbors_) {
+    generateEdgesByLayerNeighbors();
+    generateVerticesByLayerNeighbors();
+  }
+}
+
+void SkeletonGenerator::generateEdgesByLayerNeighbors() {
+  timing::Timer generate_timer("skeleton/neighbor_gvd_edge");
+
+  // Rather than iterate over the entire layer, let's just go over all the
+  // points in the skeleton.
+  const AlignedVector<SkeletonPoint>& skeleton_points =
+      skeleton_.getSkeletonPoints();
+
+  // Then figure out how to connect them to other vertices by following the
+  // skeleton layer voxels.
+  for (const SkeletonPoint& point : skeleton_points) {
+    // Get the voxel.
+    BlockIndex block_index =
+        skeleton_layer_->computeBlockIndexFromCoordinates(point.point);
+    Block<SkeletonVoxel>::Ptr block_ptr;
+    block_ptr = skeleton_layer_->getBlockPtrByIndex(block_index);
+    CHECK(block_ptr);
+    VoxelIndex voxel_index =
+        block_ptr->computeVoxelIndexFromCoordinates(point.point);
+    SkeletonVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+
+    // Now just get the neighbors and count how many are on the skeleton.
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
+    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
+                             &distances, &directions);
+
+    int num_neighbors_on_medial_axis = 0;
+    // Just go though the 6-connectivity set of this to start.
+    for (size_t i = 0; i < neighbors.size(); ++i) {
+      // Get this voxel with way too many checks.
+      // Get the block for this voxel.
+      BlockIndex neighbor_block_index = neighbors[i].first;
+      VoxelIndex neighbor_voxel_index = neighbors[i].second;
+      Block<SkeletonVoxel>::Ptr neighbor_block;
+      if (neighbor_block_index == block_index) {
+        neighbor_block = block_ptr;
+      } else {
+        neighbor_block =
+            skeleton_layer_->getBlockPtrByIndex(neighbor_block_index);
+      }
+      if (!neighbor_block) {
+        continue;
+      }
+      SkeletonVoxel& neighbor_voxel =
+          neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+
+      if (neighbor_voxel.is_face) {
+        num_neighbors_on_medial_axis++;
+      }
+    }
+    if (num_neighbors_on_medial_axis >= num_neighbors_for_edge_) {
+      voxel.is_edge = true;
+      skeleton_.getEdgePoints().push_back(point);
+    }
+  }
+}
+
+void SkeletonGenerator::generateVerticesByLayerNeighbors() {
+  timing::Timer generate_timer("skeleton/neighbor_gvd_vertex");
+
+  // Rather than iterate over the entire layer, let's just go over all the
+  // points in the skeleton.
+  const AlignedVector<SkeletonPoint>& edge_points = skeleton_.getEdgePoints();
+
+  // Then figure out how to connect them to other vertices by following the
+  // skeleton layer voxels.
+  for (const SkeletonPoint& point : edge_points) {
+    // Get the voxel.
+    BlockIndex block_index =
+        skeleton_layer_->computeBlockIndexFromCoordinates(point.point);
+    Block<SkeletonVoxel>::Ptr block_ptr;
+    block_ptr = skeleton_layer_->getBlockPtrByIndex(block_index);
+    CHECK(block_ptr);
+    VoxelIndex voxel_index =
+        block_ptr->computeVoxelIndexFromCoordinates(point.point);
+    SkeletonVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+
+    // Now just get the neighbors and count how many are on the skeleton.
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
+    getNeighborsAndDistances(block_index, voxel_index, 6, &neighbors,
+                             &distances, &directions);
+
+    int num_neighbors_on_edges = 0;
+    // Just go though the 6-connectivity set of this to start.
+    for (size_t i = 0; i < neighbors.size(); ++i) {
+      // Get this voxel with way too many checks.
+      // Get the block for this voxel.
+      BlockIndex neighbor_block_index = neighbors[i].first;
+      VoxelIndex neighbor_voxel_index = neighbors[i].second;
+      Block<SkeletonVoxel>::Ptr neighbor_block;
+      if (neighbor_block_index == block_index) {
+        neighbor_block = block_ptr;
+      } else {
+        neighbor_block =
+            skeleton_layer_->getBlockPtrByIndex(neighbor_block_index);
+      }
+      if (!neighbor_block) {
+        continue;
+      }
+      SkeletonVoxel& neighbor_voxel =
+          neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+
+      if (neighbor_voxel.is_edge) {
+        num_neighbors_on_edges++;
+      }
+    }
+    if (num_neighbors_on_edges >= 4 || num_neighbors_on_edges == 1) {
+      voxel.is_vertex = true;
+      skeleton_.getVertexPoints().push_back(point);
     }
   }
 }
@@ -354,8 +485,6 @@ void SkeletonGenerator::getNeighborsAndDistances(
       }
     }
   }
-
-  // CHECK_EQ(neighbors->size(), kNumNeighbors);
 }
 
 void SkeletonGenerator::getNeighbor(const BlockIndex& block_index,
@@ -457,7 +586,6 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
 
     if (still_got_neighbors) {
       // Get the best one out AGAIN...
-
       BlockIndex neighbor_block_index = neighbors[best_neighbor].first;
       VoxelIndex neighbor_voxel_index = neighbors[best_neighbor].second;
       Block<SkeletonVoxel>::Ptr neighbor_block;

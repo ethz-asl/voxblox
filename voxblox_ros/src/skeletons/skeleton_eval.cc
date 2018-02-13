@@ -109,9 +109,9 @@ void SkeletonEvalNode::generateWorld() {
       Point(13.75, 8.5, 1.25), Point(2.5, 2.0, 2.5), voxblox::Color::Green())));
 
   // ..."Fun" object...
-  world_.addObject(std::unique_ptr<voxblox::Object>(
+  /* world_.addObject(std::unique_ptr<voxblox::Object>(
       new voxblox::Cube(Point(12.5, 3.125, 1.25), Point(1.0, 3.75, 2.5),
-                        voxblox::Color::Pink())));
+                         voxblox::Color::Pink()))); */
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Cylinder(
       Point(12.5, 5.0, 1.25), 0.5, 2.5, voxblox::Color::Pink())));
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Sphere(
@@ -137,12 +137,23 @@ void SkeletonEvalNode::generateSkeleton() {
   SkeletonGenerator skeleton_generator(
       voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
   skeleton_generator.setMinSeparationAngle(0.7);
+  bool generate_by_layer_neighbors =
+      skeleton_generator.getGenerateByLayerNeighbors();
+  nh_private_.param("generate_by_layer_neighbors", generate_by_layer_neighbors,
+                    generate_by_layer_neighbors);
+  skeleton_generator.setGenerateByLayerNeighbors(generate_by_layer_neighbors);
+
+  int num_neighbors_for_edge = skeleton_generator.getNumNeighborsForEdge();
+  nh_private_.param("num_neighbors_for_edge", num_neighbors_for_edge,
+                    num_neighbors_for_edge);
+  skeleton_generator.setNumNeighborsForEdge(num_neighbors_for_edge);
+
   skeleton_generator.generateSkeleton();
 
   Pointcloud pointcloud;
   std::vector<float> distances;
-  skeleton_generator.getSkeleton().getPointcloudWithDistances(&pointcloud,
-                                                              &distances);
+  skeleton_generator.getSkeleton().getEdgePointcloudWithDistances(&pointcloud,
+                                                                  &distances);
 
   // Publish the skeleton.
   pcl::PointCloud<pcl::PointXYZI> ptcloud_pcl;

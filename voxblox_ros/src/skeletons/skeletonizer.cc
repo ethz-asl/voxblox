@@ -73,8 +73,23 @@ void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
                                    voxblox::Pointcloud* pointcloud,
                                    std::vector<float>* distances) {
   SkeletonGenerator skeleton_generator(esdf_layer);
+
+  bool generate_by_layer_neighbors =
+      skeleton_generator.getGenerateByLayerNeighbors();
+  skeleton_generator.setMinSeparationAngle(0.0);
+
+  nh_private_.param("generate_by_layer_neighbors", generate_by_layer_neighbors,
+                    generate_by_layer_neighbors);
+  skeleton_generator.setGenerateByLayerNeighbors(generate_by_layer_neighbors);
+
+  int num_neighbors_for_edge = skeleton_generator.getNumNeighborsForEdge();
+  nh_private_.param("num_neighbors_for_edge", num_neighbors_for_edge,
+                    num_neighbors_for_edge);
+  skeleton_generator.setNumNeighborsForEdge(num_neighbors_for_edge);
+
+
   skeleton_generator.generateSkeleton();
-  skeleton_generator.getSkeleton().getPointcloudWithDistances(pointcloud,
+  skeleton_generator.getSkeleton().getEdgePointcloudWithDistances(pointcloud,
                                                               distances);
   ROS_INFO("Finished generating skeleton.");
 
