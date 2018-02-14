@@ -27,6 +27,9 @@ class SkeletonGenerator {
   void generateEdgesByLayerNeighbors();
   void generateVerticesByLayerNeighbors();
 
+  // Pruning function by fitting template neighbors.
+  void pruneDiagramEdges();
+
   // Skeleton access.
   const Skeleton& getSkeleton() const { return skeleton_; }
   Skeleton& getSkeleton() { return skeleton_; }
@@ -70,6 +73,8 @@ class SkeletonGenerator {
                   const Eigen::Vector3i& direction_from_vertex,
                   int64_t* connected_vertex_id, float* min_distance,
                   float* max_distance);
+
+  size_t mapNeighborIndexToBitsetIndex(size_t neighbor_index);
 
  private:
   float min_separation_angle_;

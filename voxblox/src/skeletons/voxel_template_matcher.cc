@@ -13,6 +13,7 @@ void VoxelTemplateMatcher::addIntegerTemplate(int32_t neighbor_mask_dec,
   VoxelTemplate voxel_template;
   voxel_template.neighbor_mask = neighbor_mask_dec;
   voxel_template.neighbor_template = neighbor_template_dec;
+  templates_.push_back(voxel_template);
 }
 
 bool VoxelTemplateMatcher::fitsTemplates(

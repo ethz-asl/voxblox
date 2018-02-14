@@ -29,9 +29,7 @@ class VoxelTemplateMatcher {
   // Returns true if ANY template is matched.
   bool fitsTemplates(const std::bitset<27>& voxel_neighbors);
 
-
   void setDefaultTemplates();
-
 
  private:
   std::vector<VoxelTemplate> templates_;
