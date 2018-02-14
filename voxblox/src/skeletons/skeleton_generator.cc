@@ -1,3 +1,5 @@
+#include "voxblox/skeletons/voxel_template_matcher.h"
+
 #include "voxblox/skeletons/skeleton_generator.h"
 
 namespace voxblox {
@@ -167,6 +169,7 @@ void SkeletonGenerator::generateSkeleton() {
 
   if (generate_by_layer_neighbors_) {
     generateEdgesByLayerNeighbors();
+    //pruneDiagramEdges();
     generateVerticesByLayerNeighbors();
   }
 }
@@ -200,9 +203,7 @@ void SkeletonGenerator::generateEdgesByLayerNeighbors() {
                              &distances, &directions);
 
     int num_neighbors_on_medial_axis = 0;
-    // Just go though the 6-connectivity set of this to start.
     for (size_t i = 0; i < neighbors.size(); ++i) {
-      // Get this voxel with way too many checks.
       // Get the block for this voxel.
       BlockIndex neighbor_block_index = neighbors[i].first;
       VoxelIndex neighbor_voxel_index = neighbors[i].second;
@@ -228,6 +229,139 @@ void SkeletonGenerator::generateEdgesByLayerNeighbors() {
       skeleton_.getEdgePoints().push_back(point);
     }
   }
+}
+
+void SkeletonGenerator::pruneDiagramEdges() {
+  timing::Timer timer("skeleton/prune_edges");
+
+  VoxelTemplateMatcher template_matcher;
+  template_matcher.setDefaultTemplates();
+
+  // Go through all edge points, checking them against the templates. Remove
+  // any that fit the template, and mark them in removal indices.
+  std::vector<size_t> removal_indices;
+
+  const AlignedVector<SkeletonPoint>& edge_points = skeleton_.getEdgePoints();
+
+  size_t j = 0;
+  for (const SkeletonPoint& edge : edge_points) {
+    // Get the voxel.
+    BlockIndex block_index =
+        skeleton_layer_->computeBlockIndexFromCoordinates(edge.point);
+    Block<SkeletonVoxel>::Ptr block_ptr;
+    block_ptr = skeleton_layer_->getBlockPtrByIndex(block_index);
+    CHECK(block_ptr);
+    VoxelIndex voxel_index =
+        block_ptr->computeVoxelIndexFromCoordinates(edge.point);
+    SkeletonVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+
+    // Now just get the neighbors and count how many are on the skeleton.
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
+    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
+                             &distances, &directions);
+
+    std::bitset<27> neighbor_bitset;
+    for (size_t i = 0; i < neighbors.size(); ++i) {
+      // Get the block for this voxel.
+      BlockIndex neighbor_block_index = neighbors[i].first;
+      VoxelIndex neighbor_voxel_index = neighbors[i].second;
+      Block<SkeletonVoxel>::Ptr neighbor_block;
+      if (neighbor_block_index == block_index) {
+        neighbor_block = block_ptr;
+      } else {
+        neighbor_block =
+            skeleton_layer_->getBlockPtrByIndex(neighbor_block_index);
+      }
+      if (!neighbor_block) {
+        continue;
+      }
+      SkeletonVoxel& neighbor_voxel =
+          neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
+
+      if (neighbor_voxel.is_edge) {
+        neighbor_bitset[mapNeighborIndexToBitsetIndex(i)] = true;
+      }
+    }
+    if (template_matcher.fitsTemplates(neighbor_bitset)) {
+      LOG(INFO) << "Removing edge number " << j;
+      voxel.is_edge = false;
+      removal_indices.push_back(j);
+    }
+    j++;
+  }
+
+  AlignedVector<SkeletonPoint>& non_const_edge_points =
+      skeleton_.getEdgePoints();
+  std::reverse(removal_indices.begin(), removal_indices.end());
+
+  for (size_t index : removal_indices) {
+    non_const_edge_points.erase(non_const_edge_points.begin() + index);
+  }
+}
+
+size_t SkeletonGenerator::mapNeighborIndexToBitsetIndex(size_t neighbor_index) {
+  // This is the mapping between 6-connectivity first, then 18- then 26-
+  // to just [0 1 2; 3 4 5; 6 7 8] etc. in 3D.
+  switch (neighbor_index) {
+    case 21:
+      return 0;
+    case 13:
+      return 1;
+    case 25:
+      return 2;
+    case 16:
+      return 3;
+    case 5:
+      return 4;
+    case 17:
+      return 5;
+    case 19:
+      return 6;
+    case 11:
+      return 7;
+    case 23:
+      return 8;
+    case 7:
+      return 9;
+    case 3:
+      return 10;
+    case 9:
+      return 11;
+    case 0:
+      return 12;
+    // 13 is skipped since it's the center voxel, and therefore not in the
+    // neighbor index.
+    case 1:
+      return 14;
+    case 6:
+      return 15;
+    case 2:
+      return 16;
+    case 8:
+      return 17;
+    case 20:
+      return 18;
+    case 12:
+      return 19;
+    case 24:
+      return 20;
+    case 14:
+      return 21;
+    case 4:
+      return 22;
+    case 15:
+      return 23;
+    case 18:
+      return 24;
+    case 10:
+      return 25;
+    case 22:
+      return 26;
+    default:
+      return 13;  // This is the center pixel (not used).
+  };
 }
 
 void SkeletonGenerator::generateVerticesByLayerNeighbors() {
@@ -319,7 +453,7 @@ void SkeletonGenerator::generateSparseGraph() {
   // Then figure out how to connect them to other vertices by following the
   // skeleton layer voxels.
   for (int64_t vertex_id : vertex_ids) {
-    LOG(INFO) << "Checking vertex id: " << vertex_id;
+    // LOG(INFO) << "Checking vertex id: " << vertex_id;
     SkeletonVertex& vertex = graph_.getVertex(vertex_id);
 
     // Search the edge map for this guy's neighbors.
@@ -402,9 +536,9 @@ void SkeletonGenerator::generateSparseGraph() {
         edge.end_distance = max_distance;
         // Start and end are filled in by the addEdge function.
         int64_t edge_id = graph_.addEdge(edge);
-        LOG(INFO) << "Added an edge (" << edge_id << ") from "
+        /* LOG(INFO) << "Added an edge (" << edge_id << ") from "
                   << edge.start_vertex << " to " << edge.end_vertex
-                  << " with distance: " << min_distance;
+                  << " with distance: " << min_distance; */
       }
     }
   }
