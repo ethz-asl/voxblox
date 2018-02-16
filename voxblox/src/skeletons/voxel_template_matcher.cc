@@ -27,7 +27,7 @@ bool VoxelTemplateMatcher::fitsTemplates(
   return false;
 }
 
-void VoxelTemplateMatcher::setDefaultTemplates() {
+void VoxelTemplateMatcher::setDeletionTemplates() {
   // These are the templates from "Improved 3D Thinning Algorithms for
   // Skeleton Extraction" by She 2009.
   // Template A.
@@ -75,6 +75,71 @@ void VoxelTemplateMatcher::setDefaultTemplates() {
   addIntegerTemplate(38339730, 128);
   addIntegerTemplate(38339730, 524288);
   addIntegerTemplate(38339730, 33554432);
+
+  // Template from Ma "Connectivity Preservation of 3D 6-Subiteration
+  // Thinning Algorithms"
+  /* addIntegerTemplate(134209535, 23096);
+addIntegerTemplate(134209535, 104066);
+addIntegerTemplate(134209535, 184376);
+addIntegerTemplate(134209535, 216194);
+addIntegerTemplate(134209535, 6816794);
+addIntegerTemplate(134209535, 6819866);
+addIntegerTemplate(134209535, 13108274);
+addIntegerTemplate(134209535, 13123634);
+addIntegerTemplate(134209535, 14703104);
+addIntegerTemplate(134209535, 14864384);
+addIntegerTemplate(134209535, 34182656);
+addIntegerTemplate(134209535, 34294784);
+addIntegerTemplate(134209535, 39850136);
+addIntegerTemplate(134209535, 39911576);
+addIntegerTemplate(134209535, 46153904);
+addIntegerTemplate(134209535, 46203056); */
+}
+
+void VoxelTemplateMatcher::setConnectivityTemplates() {
+// Template G, for end-points
+  addIntegerTemplate(4281360, 16);
+addIntegerTemplate(4281360, 1024);
+addIntegerTemplate(4281360, 4096);
+addIntegerTemplate(4281360, 16384);
+addIntegerTemplate(4281360, 65536);
+addIntegerTemplate(4281360, 4194304);
+
+  // Template H, possibly for matching straight lines.
+addIntegerTemplate(87226, 16);
+addIntegerTemplate(4742674, 1024);
+addIntegerTemplate(6395416, 4096);
+addIntegerTemplate(12799024, 16384);
+addIntegerTemplate(37998736, 65536);
+addIntegerTemplate(48845824, 4194304);
+
+  // Template E
+ /* addIntegerTemplate(1042, 1040);
+addIntegerTemplate(4120, 4112);
+addIntegerTemplate(5632, 5120);
+addIntegerTemplate(16432, 16400);
+addIntegerTemplate(19456, 17408);
+addIntegerTemplate(65680, 65552);
+addIntegerTemplate(102400, 69632);
+addIntegerTemplate(212992, 81920);
+addIntegerTemplate(4719616, 4195328);
+addIntegerTemplate(6295552, 4198400);
+addIntegerTemplate(12599296, 4210688);
+addIntegerTemplate(37814272, 4259840);
+
+  // Template F
+  addIntegerTemplate(4281360, 1040);
+  addIntegerTemplate(4281360, 4112);
+  addIntegerTemplate(4281360, 5120);
+  addIntegerTemplate(4281360, 16400);
+  addIntegerTemplate(4281360, 17408);
+  addIntegerTemplate(4281360, 65552);
+  addIntegerTemplate(4281360, 69632);
+  addIntegerTemplate(4281360, 81920);
+  addIntegerTemplate(4281360, 4195328);
+  addIntegerTemplate(4281360, 4198400);
+  addIntegerTemplate(4281360, 4210688);
+  addIntegerTemplate(4281360, 4259840); */
 }
 
 }  // namespace voxblox
