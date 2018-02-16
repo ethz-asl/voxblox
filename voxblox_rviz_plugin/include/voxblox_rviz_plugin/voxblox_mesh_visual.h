@@ -8,7 +8,7 @@
 
 namespace voxblox_rviz_plugin {
 
-// Visualizes a single grid_map_msgs::GridMap message.
+// Visualizes a single voxblox_msgs::Mesh message.
 class VoxbloxMeshVisual {
  public:
   VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
