@@ -29,7 +29,11 @@ class VoxelTemplateMatcher {
   // Returns true if ANY template is matched.
   bool fitsTemplates(const std::bitset<27>& voxel_neighbors);
 
-  void setDefaultTemplates();
+  // Default deletion templates from She et al.
+  void setDeletionTemplates();
+
+  // Our custom connectivity templates, generalized to 3D from Lau et al.
+  void setConnectivityTemplates();
 
  private:
   std::vector<VoxelTemplate> templates_;

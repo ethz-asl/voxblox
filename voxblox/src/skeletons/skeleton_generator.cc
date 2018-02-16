@@ -169,7 +169,7 @@ void SkeletonGenerator::generateSkeleton() {
 
   if (generate_by_layer_neighbors_) {
     generateEdgesByLayerNeighbors();
-    //pruneDiagramEdges();
+    pruneDiagramEdges();
     generateVerticesByLayerNeighbors();
   }
 }
@@ -235,7 +235,9 @@ void SkeletonGenerator::pruneDiagramEdges() {
   timing::Timer timer("skeleton/prune_edges");
 
   VoxelTemplateMatcher template_matcher;
-  template_matcher.setDefaultTemplates();
+  template_matcher.setDeletionTemplates();
+
+  //template_matcher.setConnectivityTemplates();
 
   // Go through all edge points, checking them against the templates. Remove
   // any that fit the template, and mark them in removal indices.
@@ -297,7 +299,8 @@ void SkeletonGenerator::pruneDiagramEdges() {
   std::reverse(removal_indices.begin(), removal_indices.end());
 
   for (size_t index : removal_indices) {
-    non_const_edge_points.erase(non_const_edge_points.begin() + index);
+    non_const_edge_points[index].distance = -1.0;
+    //non_const_edge_points.erase(non_const_edge_points.begin() + index);
   }
 }
 
