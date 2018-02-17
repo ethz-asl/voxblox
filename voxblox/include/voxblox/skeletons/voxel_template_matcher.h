@@ -27,13 +27,20 @@ class VoxelTemplateMatcher {
                           int32_t neighbor_template_dec);
 
   // Returns true if ANY template is matched.
-  bool fitsTemplates(const std::bitset<27>& voxel_neighbors);
+  bool fitsTemplates(const std::bitset<27>& voxel_neighbors) const;
 
   // Default deletion templates from She et al.
   void setDeletionTemplates();
 
   // Our custom connectivity templates, generalized to 3D from Lau et al.
   void setConnectivityTemplates();
+
+  // Corner templates for detecting corners.
+  void setCornerTemplates();
+
+  std::bitset<27> get6ConnNeighborMask() const;
+  std::bitset<27> get18ConnNeighborMask() const;
+
 
  private:
   std::vector<VoxelTemplate> templates_;

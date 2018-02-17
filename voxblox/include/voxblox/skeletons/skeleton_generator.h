@@ -11,6 +11,7 @@
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/skeletons/skeleton.h"
+#include "voxblox/skeletons/voxel_template_matcher.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -28,7 +29,12 @@ class SkeletonGenerator {
   void generateVerticesByLayerNeighbors();
 
   // Pruning function by fitting template neighbors.
-  void pruneDiagramEdges();
+  size_t pruneDiagramEdges();
+
+  // Prune the vertices by taking only the one with the largest distance in a
+  // certain search radius.
+  // Demotes vertices back to edges.
+  void pruneDiagramVertices();
 
   // Skeleton access.
   const Skeleton& getSkeleton() const { return skeleton_; }
@@ -74,7 +80,14 @@ class SkeletonGenerator {
                   int64_t* connected_vertex_id, float* min_distance,
                   float* max_distance);
 
-  size_t mapNeighborIndexToBitsetIndex(size_t neighbor_index);
+  size_t mapNeighborIndexToBitsetIndex(size_t neighbor_index) const;
+
+  // Determine whether a point is simple or not.
+  bool isSimplePoint(const std::bitset<27>& neighbors) const;
+  void octreeLabeling(int octant, int label, std::vector<int>* cube) const;
+
+  // Determine whether a point is an endpoint (using our own amazing algorithm).
+  bool isEndPoint(const std::bitset<27>& neighbors) const;
 
  private:
   float min_separation_angle_;
@@ -84,6 +97,11 @@ class SkeletonGenerator {
   // or number of neighbors on the discretized medial axis (true).
   bool generate_by_layer_neighbors_;
   int num_neighbors_for_edge_;
+
+
+  // Template matchers.
+  VoxelTemplateMatcher pruning_template_matcher_;
+  VoxelTemplateMatcher corner_template_matcher_;
 
   Skeleton skeleton_;
 
