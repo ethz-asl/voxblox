@@ -17,7 +17,7 @@ void VoxelTemplateMatcher::addIntegerTemplate(int32_t neighbor_mask_dec,
 }
 
 bool VoxelTemplateMatcher::fitsTemplates(
-    const std::bitset<27>& voxel_neighbors) {
+    const std::bitset<27>& voxel_neighbors) const {
   for (const VoxelTemplate& temp : templates_) {
     if (((voxel_neighbors ^ temp.neighbor_template) & temp.neighbor_mask)
             .none()) {
@@ -97,49 +97,78 @@ addIntegerTemplate(134209535, 46203056); */
 }
 
 void VoxelTemplateMatcher::setConnectivityTemplates() {
-// Template G, for end-points
+  // Template G, for end-points
   addIntegerTemplate(4281360, 16);
-addIntegerTemplate(4281360, 1024);
-addIntegerTemplate(4281360, 4096);
-addIntegerTemplate(4281360, 16384);
-addIntegerTemplate(4281360, 65536);
-addIntegerTemplate(4281360, 4194304);
+  addIntegerTemplate(4281360, 1024);
+  addIntegerTemplate(4281360, 4096);
+  addIntegerTemplate(4281360, 16384);
+  addIntegerTemplate(4281360, 65536);
+  addIntegerTemplate(4281360, 4194304);
 
   // Template H, possibly for matching straight lines.
-addIntegerTemplate(87226, 16);
-addIntegerTemplate(4742674, 1024);
-addIntegerTemplate(6395416, 4096);
-addIntegerTemplate(12799024, 16384);
-addIntegerTemplate(37998736, 65536);
-addIntegerTemplate(48845824, 4194304);
+  addIntegerTemplate(87226, 16);
+  addIntegerTemplate(4742674, 1024);
+  addIntegerTemplate(6395416, 4096);
+  addIntegerTemplate(12799024, 16384);
+  addIntegerTemplate(37998736, 65536);
+  addIntegerTemplate(48845824, 4194304);
 
   // Template E
- /* addIntegerTemplate(1042, 1040);
-addIntegerTemplate(4120, 4112);
-addIntegerTemplate(5632, 5120);
-addIntegerTemplate(16432, 16400);
-addIntegerTemplate(19456, 17408);
-addIntegerTemplate(65680, 65552);
-addIntegerTemplate(102400, 69632);
-addIntegerTemplate(212992, 81920);
-addIntegerTemplate(4719616, 4195328);
-addIntegerTemplate(6295552, 4198400);
-addIntegerTemplate(12599296, 4210688);
-addIntegerTemplate(37814272, 4259840);
+  /* addIntegerTemplate(1042, 1040);
+ addIntegerTemplate(4120, 4112);
+ addIntegerTemplate(5632, 5120);
+ addIntegerTemplate(16432, 16400);
+ addIntegerTemplate(19456, 17408);
+ addIntegerTemplate(65680, 65552);
+ addIntegerTemplate(102400, 69632);
+ addIntegerTemplate(212992, 81920);
+ addIntegerTemplate(4719616, 4195328);
+ addIntegerTemplate(6295552, 4198400);
+ addIntegerTemplate(12599296, 4210688);
+ addIntegerTemplate(37814272, 4259840);
 
-  // Template F
-  addIntegerTemplate(4281360, 1040);
-  addIntegerTemplate(4281360, 4112);
-  addIntegerTemplate(4281360, 5120);
-  addIntegerTemplate(4281360, 16400);
-  addIntegerTemplate(4281360, 17408);
-  addIntegerTemplate(4281360, 65552);
-  addIntegerTemplate(4281360, 69632);
-  addIntegerTemplate(4281360, 81920);
-  addIntegerTemplate(4281360, 4195328);
-  addIntegerTemplate(4281360, 4198400);
-  addIntegerTemplate(4281360, 4210688);
-  addIntegerTemplate(4281360, 4259840); */
+   // Template F
+   addIntegerTemplate(4281360, 1040);
+   addIntegerTemplate(4281360, 4112);
+   addIntegerTemplate(4281360, 5120);
+   addIntegerTemplate(4281360, 16400);
+   addIntegerTemplate(4281360, 17408);
+   addIntegerTemplate(4281360, 65552);
+   addIntegerTemplate(4281360, 69632);
+   addIntegerTemplate(4281360, 81920);
+   addIntegerTemplate(4281360, 4195328);
+   addIntegerTemplate(4281360, 4198400);
+   addIntegerTemplate(4281360, 4210688);
+   addIntegerTemplate(4281360, 4259840); */
+}
+
+void VoxelTemplateMatcher::setCornerTemplates() {
+  addIntegerTemplate(1904639, 65536);
+  addIntegerTemplate(19190783, 16384);
+  addIntegerTemplate(20766287, 16384);
+  addIntegerTemplate(23368703, 4194304);
+  addIntegerTemplate(76700159, 4096);
+  addIntegerTemplate(77487911, 4096);
+  addIntegerTemplate(80890367, 4194304);
+  addIntegerTemplate(117671423, 1024);
+  addIntegerTemplate(120050633, 16384);
+  addIntegerTemplate(127130084, 4096);
+  addIntegerTemplate(133993049, 16);
+  addIntegerTemplate(134009417, 16384);
+  addIntegerTemplate(134024711, 65536);
+  addIntegerTemplate(134105396, 16);
+  addIntegerTemplate(134109476, 4096);
+  addIntegerTemplate(134186432, 1024);
+}
+
+std::bitset<27> VoxelTemplateMatcher::get6ConnNeighborMask() const {
+  std::bitset<27> conn_mask(4281360);
+  return conn_mask;
+}
+
+std::bitset<27> VoxelTemplateMatcher::get18ConnNeighborMask() const {
+  std::bitset<27> conn_mask(49012410);
+  return conn_mask;
 }
 
 }  // namespace voxblox

@@ -1,4 +1,4 @@
-#include "voxblox/skeletons/voxel_template_matcher.h"
+#include "voxblox/skeletons/nanoflann_interface.h"
 
 #include "voxblox/skeletons/skeleton_generator.h"
 
@@ -7,7 +7,7 @@ namespace voxblox {
 SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
     : min_separation_angle_(0.7),
       generate_by_layer_neighbors_(false),
-      num_neighbors_for_edge_(5),
+      num_neighbors_for_edge_(18),
       esdf_layer_(esdf_layer) {
   CHECK_NOTNULL(esdf_layer);
 
@@ -17,6 +17,10 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
   // the lists.
   skeleton_layer_.reset(new Layer<SkeletonVoxel>(
       esdf_layer_->voxel_size(), esdf_layer_->voxels_per_side()));
+
+  // Initialize the template matchers.
+  pruning_template_matcher_.setDeletionTemplates();
+  corner_template_matcher_.setCornerTemplates();
 }
 
 void SkeletonGenerator::generateSkeleton() {
@@ -169,7 +173,12 @@ void SkeletonGenerator::generateSkeleton() {
 
   if (generate_by_layer_neighbors_) {
     generateEdgesByLayerNeighbors();
-    pruneDiagramEdges();
+    // Keep going until a certain small percentage remains...
+    size_t num_pruned = 1;
+    while (num_pruned > 0) {
+      num_pruned = pruneDiagramEdges();
+    }
+
     generateVerticesByLayerNeighbors();
   }
 }
@@ -231,13 +240,8 @@ void SkeletonGenerator::generateEdgesByLayerNeighbors() {
   }
 }
 
-void SkeletonGenerator::pruneDiagramEdges() {
+size_t SkeletonGenerator::pruneDiagramEdges() {
   timing::Timer timer("skeleton/prune_edges");
-
-  VoxelTemplateMatcher template_matcher;
-  template_matcher.setDeletionTemplates();
-
-  //template_matcher.setConnectivityTemplates();
 
   // Go through all edge points, checking them against the templates. Remove
   // any that fit the template, and mark them in removal indices.
@@ -256,6 +260,10 @@ void SkeletonGenerator::pruneDiagramEdges() {
     VoxelIndex voxel_index =
         block_ptr->computeVoxelIndexFromCoordinates(edge.point);
     SkeletonVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+    if (!voxel.is_edge) {
+      // this is already deleted.
+      continue;
+    }
 
     // Now just get the neighbors and count how many are on the skeleton.
     AlignedVector<VoxelKey> neighbors;
@@ -286,81 +294,92 @@ void SkeletonGenerator::pruneDiagramEdges() {
         neighbor_bitset[mapNeighborIndexToBitsetIndex(i)] = true;
       }
     }
-    if (template_matcher.fitsTemplates(neighbor_bitset)) {
-      LOG(INFO) << "Removing edge number " << j;
-      voxel.is_edge = false;
-      removal_indices.push_back(j);
+    if (pruning_template_matcher_.fitsTemplates(neighbor_bitset)) {
+      if (isSimplePoint(neighbor_bitset) && !isEndPoint(neighbor_bitset)) {
+        // LOG(INFO) << "Removing edge number " << j;
+        voxel.is_edge = false;
+        removal_indices.push_back(j);
+      } else {
+        // LOG(INFO) << "Wanted to remove edge " << j << " but it is not
+        // simple.";
+      }
     }
     j++;
   }
 
+  size_t num_removed = removal_indices.size();
+
   AlignedVector<SkeletonPoint>& non_const_edge_points =
       skeleton_.getEdgePoints();
+  // They are necessarily already sorted, as we iterate over this vector
+  // to build the removal indices.
   std::reverse(removal_indices.begin(), removal_indices.end());
 
   for (size_t index : removal_indices) {
-    non_const_edge_points[index].distance = -1.0;
-    //non_const_edge_points.erase(non_const_edge_points.begin() + index);
+    non_const_edge_points[index].distance = -1;
+    non_const_edge_points.erase(non_const_edge_points.begin() + index);
   }
+  return num_removed;
 }
 
-size_t SkeletonGenerator::mapNeighborIndexToBitsetIndex(size_t neighbor_index) {
+size_t SkeletonGenerator::mapNeighborIndexToBitsetIndex(
+    size_t neighbor_index) const {
   // This is the mapping between 6-connectivity first, then 18- then 26-
   // to just [0 1 2; 3 4 5; 6 7 8] etc. in 3D.
   switch (neighbor_index) {
-    case 21:
+    case 24:
       return 0;
-    case 13:
+    case 12:
       return 1;
-    case 25:
+    case 20:
       return 2;
-    case 16:
+    case 15:
       return 3;
-    case 5:
+    case 4:
       return 4;
-    case 17:
+    case 14:
       return 5;
-    case 19:
+    case 22:
       return 6;
-    case 11:
+    case 10:
       return 7;
-    case 23:
+    case 18:
       return 8;
-    case 7:
+    case 9:
       return 9;
     case 3:
       return 10;
-    case 9:
+    case 7:
       return 11;
-    case 0:
+    case 1:
       return 12;
     // 13 is skipped since it's the center voxel, and therefore not in the
     // neighbor index.
-    case 1:
+    case 0:
       return 14;
-    case 6:
+    case 8:
       return 15;
     case 2:
       return 16;
-    case 8:
+    case 6:
       return 17;
-    case 20:
+    case 25:
       return 18;
-    case 12:
+    case 13:
       return 19;
-    case 24:
+    case 21:
       return 20;
-    case 14:
+    case 17:
       return 21;
-    case 4:
+    case 5:
       return 22;
-    case 15:
+    case 16:
       return 23;
-    case 18:
+    case 23:
       return 24;
-    case 10:
+    case 11:
       return 25;
-    case 22:
+    case 19:
       return 26;
     default:
       return 13;  // This is the center pixel (not used).
@@ -391,7 +410,7 @@ void SkeletonGenerator::generateVerticesByLayerNeighbors() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(block_index, voxel_index, 6, &neighbors,
+    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
                              &distances, &directions);
 
     int num_neighbors_on_edges = 0;
@@ -418,7 +437,7 @@ void SkeletonGenerator::generateVerticesByLayerNeighbors() {
         num_neighbors_on_edges++;
       }
     }
-    if (num_neighbors_on_edges >= 4 || num_neighbors_on_edges == 1) {
+    if (num_neighbors_on_edges >= 3 || num_neighbors_on_edges == 1) {
       voxel.is_vertex = true;
       skeleton_.getVertexPoints().push_back(point);
     }
@@ -474,10 +493,9 @@ void SkeletonGenerator::generateSparseGraph() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(block_index, voxel_index, 6, &neighbors,
+    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
                              &distances, &directions);
 
-    // Just go though the 6-connectivity set of this to start.
     for (size_t i = 0; i < neighbors.size(); ++i) {
       // Get this voxel with way too many checks.
       // Get the block for this voxel.
@@ -675,7 +693,7 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
 
-    getNeighborsAndDistances(block_index, voxel_index, 6, &neighbors,
+    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
                              &distances, &directions);
     still_got_neighbors = false;
 
@@ -751,6 +769,415 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
   }
 
   return false;
+}
+
+// Checks whether a point is simple, i.e., if its removal would not affect
+// the connectivity of its neighbors.
+// Uses a SIMILAR numbering to our bitset definitions, except without counting
+// 13 (the middle point). So it's a bitset of 26 rather than 27.
+// Adapted from Skeletonize3D in ImageJ.
+// http://imagejdocu.tudor.lu/doku.php?id=plugin:morphology:skeletonize3d:start
+bool SkeletonGenerator::isSimplePoint(const std::bitset<27>& neighbors) const {
+  // copy neighbors for labeling
+  std::vector<int> cube(26, 0);
+  int i;
+  for (i = 0; i < 13; i++) {  // i =  0..12 -> cube[0..12]
+    cube[i] = neighbors[i];
+  }
+  // i != 13 : ignore center pixel when counting (see [Lee94])
+  for (i = 14; i < 27; i++) {  // i = 14..26 -> cube[13..25]
+    cube[i - 1] = neighbors[i];
+  }
+  // set initial label
+  int label = 2;
+  // for all points in the neighborhood
+  for (i = 0; i < 26; i++) {
+    if (cube[i] == 1)  // voxel has not been labeled yet
+    {
+      // start recursion with any octant that contains the point i
+      switch (i) {
+        case 0:
+        case 1:
+        case 3:
+        case 4:
+        case 9:
+        case 10:
+        case 12:
+          octreeLabeling(1, label, &cube);
+          break;
+        case 2:
+        case 5:
+        case 11:
+        case 13:
+          octreeLabeling(2, label, &cube);
+          break;
+        case 6:
+        case 7:
+        case 14:
+        case 15:
+          octreeLabeling(3, label, &cube);
+          break;
+        case 8:
+        case 16:
+          octreeLabeling(4, label, &cube);
+          break;
+        case 17:
+        case 18:
+        case 20:
+        case 21:
+          octreeLabeling(5, label, &cube);
+          break;
+        case 19:
+        case 22:
+          octreeLabeling(6, label, &cube);
+          break;
+        case 23:
+        case 24:
+          octreeLabeling(7, label, &cube);
+          break;
+        case 25:
+          octreeLabeling(8, label, &cube);
+          break;
+      }
+      label++;
+      if (label - 2 >= 2) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// This is a recursive method that calculates the number of connected
+// components in the 3D neighborhood after the center pixel would
+// have been removed.
+// From Skeletonize3D from ImageJ.
+void SkeletonGenerator::octreeLabeling(int octant, int label,
+                                       std::vector<int>* cube) const {
+  // check if there are points in the octant with value 1
+  if (octant == 1) {
+    // set points in this octant to current label
+    // and recursive labeling of adjacent octants
+    if ((*cube)[0] == 1) {
+      (*cube)[0] = label;
+    }
+    if ((*cube)[1] == 1) {
+      (*cube)[1] = label;
+      octreeLabeling(2, label, cube);
+    }
+    if ((*cube)[3] == 1) {
+      (*cube)[3] = label;
+      octreeLabeling(3, label, cube);
+    }
+    if ((*cube)[4] == 1) {
+      (*cube)[4] = label;
+      octreeLabeling(2, label, cube);
+      octreeLabeling(3, label, cube);
+      octreeLabeling(4, label, cube);
+    }
+    if ((*cube)[9] == 1) {
+      (*cube)[9] = label;
+      octreeLabeling(5, label, cube);
+    }
+    if ((*cube)[10] == 1) {
+      (*cube)[10] = label;
+      octreeLabeling(2, label, cube);
+      octreeLabeling(5, label, cube);
+      octreeLabeling(6, label, cube);
+    }
+    if ((*cube)[12] == 1) {
+      (*cube)[12] = label;
+      octreeLabeling(3, label, cube);
+      octreeLabeling(5, label, cube);
+      octreeLabeling(7, label, cube);
+    }
+  }
+  if (octant == 2) {
+    if ((*cube)[1] == 1) {
+      (*cube)[1] = label;
+      octreeLabeling(1, label, cube);
+    }
+    if ((*cube)[4] == 1) {
+      (*cube)[4] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(3, label, cube);
+      octreeLabeling(4, label, cube);
+    }
+    if ((*cube)[10] == 1) {
+      (*cube)[10] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(5, label, cube);
+      octreeLabeling(6, label, cube);
+    }
+    if ((*cube)[2] == 1) {
+      (*cube)[2] = label;
+    }
+    if ((*cube)[5] == 1) {
+      (*cube)[5] = label;
+      octreeLabeling(4, label, cube);
+    }
+    if ((*cube)[11] == 1) {
+      (*cube)[11] = label;
+      octreeLabeling(6, label, cube);
+    }
+    if ((*cube)[13] == 1) {
+      (*cube)[13] = label;
+      octreeLabeling(4, label, cube);
+      octreeLabeling(6, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+  }
+  if (octant == 3) {
+    if ((*cube)[3] == 1) {
+      (*cube)[3] = label;
+      octreeLabeling(1, label, cube);
+    }
+    if ((*cube)[4] == 1) {
+      (*cube)[4] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(2, label, cube);
+      octreeLabeling(4, label, cube);
+    }
+    if ((*cube)[12] == 1) {
+      (*cube)[12] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(5, label, cube);
+      octreeLabeling(7, label, cube);
+    }
+    if ((*cube)[6] == 1) {
+      (*cube)[6] = label;
+    }
+    if ((*cube)[7] == 1) {
+      (*cube)[7] = label;
+      octreeLabeling(4, label, cube);
+    }
+    if ((*cube)[14] == 1) {
+      (*cube)[14] = label;
+      octreeLabeling(7, label, cube);
+    }
+    if ((*cube)[15] == 1) {
+      (*cube)[15] = label;
+      octreeLabeling(4, label, cube);
+      octreeLabeling(7, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+  }
+  if (octant == 4) {
+    if ((*cube)[4] == 1) {
+      (*cube)[4] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(2, label, cube);
+      octreeLabeling(3, label, cube);
+    }
+    if ((*cube)[5] == 1) {
+      (*cube)[5] = label;
+      octreeLabeling(2, label, cube);
+    }
+    if ((*cube)[13] == 1) {
+      (*cube)[13] = label;
+      octreeLabeling(2, label, cube);
+      octreeLabeling(6, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+    if ((*cube)[7] == 1) {
+      (*cube)[7] = label;
+      octreeLabeling(3, label, cube);
+    }
+    if ((*cube)[15] == 1) {
+      (*cube)[15] = label;
+      octreeLabeling(3, label, cube);
+      octreeLabeling(7, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+    if ((*cube)[8] == 1) {
+      (*cube)[8] = label;
+    }
+    if ((*cube)[16] == 1) {
+      (*cube)[16] = label;
+      octreeLabeling(8, label, cube);
+    }
+  }
+  if (octant == 5) {
+    if ((*cube)[9] == 1) {
+      (*cube)[9] = label;
+      octreeLabeling(1, label, cube);
+    }
+    if ((*cube)[10] == 1) {
+      (*cube)[10] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(2, label, cube);
+      octreeLabeling(6, label, cube);
+    }
+    if ((*cube)[12] == 1) {
+      (*cube)[12] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(3, label, cube);
+      octreeLabeling(7, label, cube);
+    }
+    if ((*cube)[17] == 1) {
+      (*cube)[17] = label;
+    }
+    if ((*cube)[18] == 1) {
+      (*cube)[18] = label;
+      octreeLabeling(6, label, cube);
+    }
+    if ((*cube)[20] == 1) {
+      (*cube)[20] = label;
+      octreeLabeling(7, label, cube);
+    }
+    if ((*cube)[21] == 1) {
+      (*cube)[21] = label;
+      octreeLabeling(6, label, cube);
+      octreeLabeling(7, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+  }
+  if (octant == 6) {
+    if ((*cube)[10] == 1) {
+      (*cube)[10] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(2, label, cube);
+      octreeLabeling(5, label, cube);
+    }
+    if ((*cube)[11] == 1) {
+      (*cube)[11] = label;
+      octreeLabeling(2, label, cube);
+    }
+    if ((*cube)[13] == 1) {
+      (*cube)[13] = label;
+      octreeLabeling(2, label, cube);
+      octreeLabeling(4, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+    if ((*cube)[18] == 1) {
+      (*cube)[18] = label;
+      octreeLabeling(5, label, cube);
+    }
+    if ((*cube)[21] == 1) {
+      (*cube)[21] = label;
+      octreeLabeling(5, label, cube);
+      octreeLabeling(7, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+    if ((*cube)[19] == 1) {
+      (*cube)[19] = label;
+    }
+    if ((*cube)[22] == 1) {
+      (*cube)[22] = label;
+      octreeLabeling(8, label, cube);
+    }
+  }
+  if (octant == 7) {
+    if ((*cube)[12] == 1) {
+      (*cube)[12] = label;
+      octreeLabeling(1, label, cube);
+      octreeLabeling(3, label, cube);
+      octreeLabeling(5, label, cube);
+    }
+    if ((*cube)[14] == 1) {
+      (*cube)[14] = label;
+      octreeLabeling(3, label, cube);
+    }
+    if ((*cube)[15] == 1) {
+      (*cube)[15] = label;
+      octreeLabeling(3, label, cube);
+      octreeLabeling(4, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+    if ((*cube)[20] == 1) {
+      (*cube)[20] = label;
+      octreeLabeling(5, label, cube);
+    }
+    if ((*cube)[21] == 1) {
+      (*cube)[21] = label;
+      octreeLabeling(5, label, cube);
+      octreeLabeling(6, label, cube);
+      octreeLabeling(8, label, cube);
+    }
+    if ((*cube)[23] == 1) {
+      (*cube)[23] = label;
+    }
+    if ((*cube)[24] == 1) {
+      (*cube)[24] = label;
+      octreeLabeling(8, label, cube);
+    }
+  }
+  if (octant == 8) {
+    if ((*cube)[13] == 1) {
+      (*cube)[13] = label;
+      octreeLabeling(2, label, cube);
+      octreeLabeling(4, label, cube);
+      octreeLabeling(6, label, cube);
+    }
+    if ((*cube)[15] == 1) {
+      (*cube)[15] = label;
+      octreeLabeling(3, label, cube);
+      octreeLabeling(4, label, cube);
+      octreeLabeling(7, label, cube);
+    }
+    if ((*cube)[16] == 1) {
+      (*cube)[16] = label;
+      octreeLabeling(4, label, cube);
+    }
+    if ((*cube)[21] == 1) {
+      (*cube)[21] = label;
+      octreeLabeling(5, label, cube);
+      octreeLabeling(6, label, cube);
+      octreeLabeling(7, label, cube);
+    }
+    if ((*cube)[22] == 1) {
+      (*cube)[22] = label;
+      octreeLabeling(6, label, cube);
+    }
+    if ((*cube)[24] == 1) {
+      (*cube)[24] = label;
+      octreeLabeling(7, label, cube);
+    }
+    if ((*cube)[25] == 1) {
+      (*cube)[25] = label;
+    }
+  }
+}
+
+bool SkeletonGenerator::isEndPoint(const std::bitset<27>& neighbors) const {
+  if (neighbors.count() == 1) {
+    return true;
+  }
+  // Check first that we have at most 1 6-connected component.
+  std::bitset<27> neighbor_mask_6 =
+      corner_template_matcher_.get6ConnNeighborMask();
+  if ((neighbor_mask_6 & neighbors).count() > 1) {
+    return false;
+  }
+  if (corner_template_matcher_.fitsTemplates(neighbors)) {
+    return true;
+  }
+  return false;
+}
+
+void SkeletonGenerator::pruneDiagramVertices() {
+  // Ok, first set up a kdtree/nanoflann instance using the skeleton point
+  // wrapper.
+  // We want it dynamic because we are gonna be dropping hella vertices.
+  // Or do we need to?
+  const int kDim = 3;
+  const int kMaxLeaf = 10;
+
+  // Create the adapter.
+  SkeletonPointVectorAdapter adapter(skeleton_.getVertexPoints());
+
+  // construct a kd-tree index:
+  typedef nanoflann::KDTreeSingleIndexDynamicAdaptor<
+      nanoflann::L2_Simple_Adaptor<FloatingPoint, SkeletonPointVectorAdapter>,
+      SkeletonPointVectorAdapter, kDim> SkeletonKdTree;
+
+  SkeletonKdTree kd_tree(kDim, adapter,
+                         nanoflann::KDTreeSingleIndexAdaptorParams(kMaxLeaf));
+
+  // This would be buildIndex if we were doing the non-dynamic version...
+  kd_tree.addPoints(0, adapter.kdtree_get_point_count());
+
+
 }
 
 }  // namespace voxblox
