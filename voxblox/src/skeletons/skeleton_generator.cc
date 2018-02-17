@@ -8,6 +8,7 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
     : min_separation_angle_(0.7),
       generate_by_layer_neighbors_(false),
       num_neighbors_for_edge_(18),
+      vertex_pruning_radius_(0.5),
       esdf_layer_(esdf_layer) {
   CHECK_NOTNULL(esdf_layer);
 
@@ -180,6 +181,7 @@ void SkeletonGenerator::generateSkeleton() {
     }
 
     generateVerticesByLayerNeighbors();
+    pruneDiagramVertices();
   }
 }
 
@@ -1156,6 +1158,8 @@ bool SkeletonGenerator::isEndPoint(const std::bitset<27>& neighbors) const {
 }
 
 void SkeletonGenerator::pruneDiagramVertices() {
+  timing::Timer generate_timer("skeleton/prune_vertices");
+
   // Ok, first set up a kdtree/nanoflann instance using the skeleton point
   // wrapper.
   // We want it dynamic because we are gonna be dropping hella vertices.
@@ -1163,11 +1167,15 @@ void SkeletonGenerator::pruneDiagramVertices() {
   const int kDim = 3;
   const int kMaxLeaf = 10;
 
+  const AlignedVector<SkeletonPoint>& const_vertices =
+      skeleton_.getVertexPoints();
+  const size_t num_vertices = const_vertices.size();
+
   // Create the adapter.
-  SkeletonPointVectorAdapter adapter(skeleton_.getVertexPoints());
+  SkeletonPointVectorAdapter adapter(const_vertices);
 
   // construct a kd-tree index:
-  typedef nanoflann::KDTreeSingleIndexDynamicAdaptor<
+  typedef nanoflann::KDTreeSingleIndexAdaptor<
       nanoflann::L2_Simple_Adaptor<FloatingPoint, SkeletonPointVectorAdapter>,
       SkeletonPointVectorAdapter, kDim> SkeletonKdTree;
 
@@ -1175,9 +1183,86 @@ void SkeletonGenerator::pruneDiagramVertices() {
                          nanoflann::KDTreeSingleIndexAdaptorParams(kMaxLeaf));
 
   // This would be buildIndex if we were doing the non-dynamic version...
-  kd_tree.addPoints(0, adapter.kdtree_get_point_count());
+  // kd_tree.addPoints(0, adapter.kdtree_get_point_count());
+  kd_tree.buildIndex();
 
+  // Keep a set (for fast look-ups) of all the indices that are slated for
+  // deletion. Will delete afterwards, so as to not mess up the data
+  // structure.
+  std::set<size_t> deletion_index;
 
+  // Go through all the vertices, check which ones have neighbors within a
+  // a radius, and cut all but the longest distance ones.
+  for (size_t i = 0; i < num_vertices; ++i) {
+    if (deletion_index.count(i) > 0) {
+      // Already deleted! Nothing to do.
+      continue;
+    }
+    // Pair from index and distance.
+    std::vector<std::pair<size_t, FloatingPoint> > returned_matches;
+    nanoflann::SearchParams params;  // Defaults are fine.
+
+    size_t num_matches =
+        kd_tree.radiusSearch(const_vertices[i].point.data(),
+                             vertex_pruning_radius_, returned_matches, params);
+
+    // Go through all the matches... Figure out if we actually need to delete
+    // something. Keep track of our favorite to keep.
+    size_t num_valid_matches = 0;
+    float largest_vertex_distance = const_vertices[i].distance;
+    size_t favorite_vertex_index = i;
+    for (const std::pair<size_t, FloatingPoint>& match : returned_matches) {
+      if (match.first == i) {
+        continue;
+      }
+      if (deletion_index.count(match.first) > 0) {
+        continue;
+      }
+      // Ok I guess now it's actually a valid match.
+      num_valid_matches++;
+      if (const_vertices[match.first].distance > largest_vertex_distance) {
+        // Then we should delete the current favorite, which starts out
+        // as ourselves. :(
+        deletion_index.insert(favorite_vertex_index);
+        largest_vertex_distance = const_vertices[match.first].distance;
+        favorite_vertex_index = match.first;
+      } else {
+        // Current favorite is still better, delete the match.
+        deletion_index.insert(match.first);
+      }
+    }
+  }
+
+  LOG(INFO) << "Number of vertices: " << num_vertices
+            << " Number of deleted vertices: " << deletion_index.size();
+
+  // Go through everything in the deletion index and remove it from the list.
+  // As always, have to go backwards to preserve voxel indices.
+
+  AlignedVector<SkeletonPoint>& non_const_vertices =
+      skeleton_.getVertexPoints();
+
+  for (std::set<size_t>::reverse_iterator rit = deletion_index.rbegin();
+       rit != deletion_index.rend(); ++rit) {
+    size_t index_to_delete = *rit;
+
+    // Make a copy! NOT a reference, as we're gonna delete it.
+    SkeletonPoint point = const_vertices[index_to_delete];
+
+    non_const_vertices.erase(non_const_vertices.begin() + index_to_delete);
+
+    // Get the voxel.
+    BlockIndex block_index =
+        skeleton_layer_->computeBlockIndexFromCoordinates(point.point);
+    Block<SkeletonVoxel>::Ptr block_ptr;
+    block_ptr = skeleton_layer_->getBlockPtrByIndex(block_index);
+    CHECK(block_ptr);
+    VoxelIndex voxel_index =
+        block_ptr->computeVoxelIndexFromCoordinates(point.point);
+    SkeletonVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
+    voxel.is_vertex = false;
+    voxel.is_edge = true;
+  }
 }
 
 }  // namespace voxblox
