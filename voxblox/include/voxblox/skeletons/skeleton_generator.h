@@ -98,6 +98,8 @@ class SkeletonGenerator {
   bool generate_by_layer_neighbors_;
   int num_neighbors_for_edge_;
 
+  // What minimum radius to prune vertices within.
+  float vertex_pruning_radius_;
 
   // Template matchers.
   VoxelTemplateMatcher pruning_template_matcher_;
