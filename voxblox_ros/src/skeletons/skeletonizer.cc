@@ -76,7 +76,7 @@ void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
 
   bool generate_by_layer_neighbors =
       skeleton_generator.getGenerateByLayerNeighbors();
-  skeleton_generator.setMinSeparationAngle(0.4);
+  skeleton_generator.setMinSeparationAngle(0.0);
 
   nh_private_.param("generate_by_layer_neighbors", generate_by_layer_neighbors,
                     generate_by_layer_neighbors);
