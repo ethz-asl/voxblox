@@ -18,6 +18,7 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
   // the lists.
   skeleton_layer_.reset(new Layer<SkeletonVoxel>(
       esdf_layer_->voxel_size(), esdf_layer_->voxels_per_side()));
+  neighbor_tools_.setLayer(skeleton_layer_.get());
 
   // Initialize the template matchers.
   pruning_template_matcher_.setDeletionTemplates();
@@ -72,8 +73,8 @@ void SkeletonGenerator::generateSkeleton() {
       AlignedVector<VoxelKey> neighbors;
       AlignedVector<float> distances;
       AlignedVector<Eigen::Vector3i> directions;
-      getNeighborsAndDistances(block_index, voxel_index, 6, &neighbors,
-                               &distances, &directions);
+      neighbor_tools_.getNeighborsAndDistances(
+          block_index, voxel_index, 6, &neighbors, &distances, &directions);
 
       // Just go though the 6-connectivity set of this to start.
       SkeletonPoint skeleton_point;
@@ -210,8 +211,8 @@ void SkeletonGenerator::generateEdgesByLayerNeighbors() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
-                             &distances, &directions);
+    neighbor_tools_.getNeighborsAndDistances(
+        block_index, voxel_index, 26, &neighbors, &distances, &directions);
 
     int num_neighbors_on_medial_axis = 0;
     for (size_t i = 0; i < neighbors.size(); ++i) {
@@ -271,8 +272,8 @@ size_t SkeletonGenerator::pruneDiagramEdges() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
-                             &distances, &directions);
+    neighbor_tools_.getNeighborsAndDistances(
+        block_index, voxel_index, 26, &neighbors, &distances, &directions);
 
     std::bitset<27> neighbor_bitset;
     for (size_t i = 0; i < neighbors.size(); ++i) {
@@ -412,8 +413,8 @@ void SkeletonGenerator::generateVerticesByLayerNeighbors() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
-                             &distances, &directions);
+    neighbor_tools_.getNeighborsAndDistances(
+        block_index, voxel_index, 26, &neighbors, &distances, &directions);
 
     int num_neighbors_on_edges = 0;
     // Just go though the 6-connectivity set of this to start.
@@ -495,8 +496,8 @@ void SkeletonGenerator::generateSparseGraph() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
-                             &distances, &directions);
+    neighbor_tools_.getNeighborsAndDistances(
+        block_index, voxel_index, 26, &neighbors, &distances, &directions);
 
     for (size_t i = 0; i < neighbors.size(); ++i) {
       // Get this voxel with way too many checks.
@@ -567,106 +568,6 @@ void SkeletonGenerator::generateSparseGraph() {
   }
 }
 
-// Copied from ESDF integrator... Probably best to factor this out into
-// something.
-// Uses 26-connectivity and quasi-Euclidean distances.
-// Directions is the direction that the neighbor voxel lives in. If you
-// need the direction FROM the neighbor voxel TO the current voxel, take
-// negative of the given direction.
-void SkeletonGenerator::getNeighborsAndDistances(
-    const BlockIndex& block_index, const VoxelIndex& voxel_index,
-    int connectivity, AlignedVector<VoxelKey>* neighbors,
-    AlignedVector<float>* distances,
-    AlignedVector<Eigen::Vector3i>* directions) const {
-  CHECK_NOTNULL(neighbors);
-  CHECK_NOTNULL(distances);
-  CHECK_NOTNULL(directions);
-
-  static const double kSqrt2 = std::sqrt(2);
-  static const double kSqrt3 = std::sqrt(3);
-  static const size_t kNumNeighbors = 26;
-
-  neighbors->reserve(kNumNeighbors);
-  distances->reserve(kNumNeighbors);
-  directions->reserve(kNumNeighbors);
-
-  VoxelKey neighbor;
-  Eigen::Vector3i direction;
-  direction.setZero();
-  // Distance 1 set.
-  for (unsigned int i = 0; i < 3; ++i) {
-    for (int j = -1; j <= 1; j += 2) {
-      direction(i) = j;
-      getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                  &neighbor.second);
-      neighbors->emplace_back(neighbor);
-      distances->emplace_back(1.0);
-      directions->emplace_back(direction);
-    }
-    direction(i) = 0;
-  }
-  if (connectivity > 6) {
-    // Distance sqrt(2) set.
-    for (unsigned int i = 0; i < 3; ++i) {
-      unsigned int next_i = (i + 1) % 3;
-      for (int j = -1; j <= 1; j += 2) {
-        direction(i) = j;
-        for (int k = -1; k <= 1; k += 2) {
-          direction(next_i) = k;
-          getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                      &neighbor.second);
-          neighbors->emplace_back(neighbor);
-          distances->emplace_back(kSqrt2);
-          directions->emplace_back(direction);
-        }
-        direction(i) = 0;
-        direction(next_i) = 0;
-      }
-    }
-  }
-
-  if (connectivity > 18) {
-    // Distance sqrt(3) set.
-    for (int i = -1; i <= 1; i += 2) {
-      direction(0) = i;
-      for (int j = -1; j <= 1; j += 2) {
-        direction(1) = j;
-        for (int k = -1; k <= 1; k += 2) {
-          direction(2) = k;
-          getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                      &neighbor.second);
-          neighbors->emplace_back(neighbor);
-          distances->emplace_back(kSqrt3);
-          directions->emplace_back(direction);
-        }
-      }
-    }
-  }
-}
-
-void SkeletonGenerator::getNeighbor(const BlockIndex& block_index,
-                                    const VoxelIndex& voxel_index,
-                                    const Eigen::Vector3i& direction,
-                                    BlockIndex* neighbor_block_index,
-                                    VoxelIndex* neighbor_voxel_index) const {
-  DCHECK(neighbor_block_index != NULL);
-  DCHECK(neighbor_voxel_index != NULL);
-
-  *neighbor_block_index = block_index;
-  *neighbor_voxel_index = voxel_index + direction;
-
-  for (unsigned int i = 0; i < 3; ++i) {
-    if ((*neighbor_voxel_index)(i) < 0) {
-      (*neighbor_block_index)(i)--;
-      (*neighbor_voxel_index)(i) += esdf_voxels_per_side_;
-    } else if ((*neighbor_voxel_index)(i) >=
-               static_cast<IndexElement>(esdf_voxels_per_side_)) {
-      (*neighbor_block_index)(i)++;
-      (*neighbor_voxel_index)(i) -= esdf_voxels_per_side_;
-    }
-  }
-}
-
 bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
                                    const VoxelIndex& start_voxel_index,
                                    const Eigen::Vector3i& direction_from_vertex,
@@ -684,29 +585,49 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
   *max_distance = voxel.distance;
   Eigen::Vector3i last_direction = direction_from_vertex;
 
+  // Lists to keep track of what voxels we've checked for the edge, with the
+  // contents being the RELATIVE INDICES starting at the start voxel.
+  AlignedStack<Eigen::Vector3i> directions_to_check;
+  IndexSet directions_checked;
+
   bool vertex_found = false;
   bool still_got_neighbors = true;
   const int kMaxFollows = 300;
   int j = 0;
+
+  // The sum total of the directions from the START VOXEL to the current checked
+  // voxel. Subtract the direction from vertex to this to get the directions
+  // from
+  // the vertex.
+  Eigen::Vector3i direction_to_here = Eigen::Vector3i::Zero();
+
   // For now only ever search the first edge for some reason.
   while (vertex_found == false && still_got_neighbors == true &&
          j < kMaxFollows) {
+    // Mark this voxel as checked.
+    directions_checked.insert(direction_to_here);
+
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
 
-    getNeighborsAndDistances(block_index, voxel_index, 26, &neighbors,
-                             &distances, &directions);
+    neighbor_tools_.getNeighborsAndDistances(
+        block_index, voxel_index, 26, &neighbors, &distances, &directions);
     still_got_neighbors = false;
 
     // Choose the best candidate neighbor with the biggest dot product to the
     // parent vertex direction (attempt to follow straight line away from
     // vertex).
-    size_t best_neighbor = 0;
+    int best_neighbor = -1;
     float best_dot_prod = -2.0;
 
     for (size_t i = 0; i < neighbors.size(); ++i) {
+      // We JUST came from here.
       if (directions[i] == -last_direction) {
+        continue;
+      }
+      // Also already checked this neighbor.
+      if (directions_checked.count(direction_to_here - directions[i]) > 0) {
         continue;
       }
 
@@ -732,9 +653,16 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
       }
       if (neighbor_voxel.is_edge) {
         still_got_neighbors = true;
-        float dot_prod = (direction_from_vertex.cast<float>().normalized()).dot(
-            directions[i].cast<float>().normalized());
+        float dot_prod = ((direction_to_here - direction_from_vertex)
+                              .cast<float>()
+                              .normalized())
+                             .dot(-directions[i].cast<float>().normalized());
         if (dot_prod > best_dot_prod) {
+          if (best_neighbor >= 0) {
+            // Then stick this in the checking stack...
+            directions_to_check.push(direction_to_here -
+                                     directions[best_neighbor]);
+          }
           best_neighbor = i;
           best_dot_prod = dot_prod;
         }
@@ -766,7 +694,31 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
       voxel_index = neighbor_voxel_index;
       block_ptr = neighbor_block;
       last_direction = directions[best_neighbor];
+      // Direction is FROM neighbor TO the voxel, so gotta reverse it.
+      direction_to_here -= last_direction;
       j++;
+    } else {
+      // If we don't have neighbors, check out one from to-check and see
+      // if we can do something there!
+      while (!directions_to_check.empty()) {
+        Eigen::Vector3i next_to_check = directions_to_check.top();
+        directions_to_check.pop();
+        // We've already checked this.
+        if (directions_checked.count(next_to_check) > 0) {
+          continue;
+        }
+
+        direction_to_here = next_to_check;
+        // No idea where we're coming from.
+        last_direction = Eigen::Vector3i::Zero();
+        // Get Neighbor now supports any length of distance.
+        neighbor_tools_.getNeighbor(start_block_index, start_voxel_index,
+                                    next_to_check, &block_index, &voxel_index);
+        // Update block ptr to match block index.
+        block_ptr = skeleton_layer_->getBlockPtrByIndex(block_index);
+        still_got_neighbors = true;
+        break;
+      }
     }
   }
 
@@ -1209,7 +1161,8 @@ void SkeletonGenerator::pruneDiagramVertices() {
     // Go through all the matches... Figure out if we actually need to delete
     // something. Keep track of our favorite to keep.
     size_t num_valid_matches = 0;
-    float largest_vertex_distance = const_vertices[i].distance;//const_vertices[i].distance;
+    float largest_vertex_distance =
+        const_vertices[i].distance;  // const_vertices[i].distance;
     size_t favorite_vertex_index = i;
     for (const std::pair<size_t, FloatingPoint>& match : returned_matches) {
       if (match.first == i) {
