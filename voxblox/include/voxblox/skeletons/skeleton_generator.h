@@ -12,6 +12,7 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/skeletons/skeleton.h"
 #include "voxblox/skeletons/voxel_template_matcher.h"
+#include "voxblox/skeletons/neighbor_tools.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -61,17 +62,6 @@ class SkeletonGenerator {
     num_neighbors_for_edge_ = num_neighbors_for_edge;
   }
 
-  void getNeighborsAndDistances(
-      const BlockIndex& block_index, const VoxelIndex& voxel_index,
-      int connectivity, AlignedVector<VoxelKey>* neighbors,
-      AlignedVector<float>* distances,
-      AlignedVector<Eigen::Vector3i>* directions) const;
-
-  void getNeighbor(const BlockIndex& block_index, const VoxelIndex& voxel_index,
-                   const Eigen::Vector3i& direction,
-                   BlockIndex* neighbor_block_index,
-                   VoxelIndex* neighbor_voxel_index) const;
-
   // Follow an edge through the layer, aborting when either no more neighbors
   // exist or a vertex is found.
   bool followEdge(const BlockIndex& start_block_index,
@@ -105,12 +95,17 @@ class SkeletonGenerator {
   VoxelTemplateMatcher pruning_template_matcher_;
   VoxelTemplateMatcher corner_template_matcher_;
 
+  // Neighbor tools, for finding nearest neighbors of things.
+  NeighborTools<SkeletonVoxel> neighbor_tools_;
+
   Skeleton skeleton_;
 
   Layer<EsdfVoxel>* esdf_layer_;
   // Owned by the generator! Since it's an intermediate by-product of
   // constructing the graph.
   std::unique_ptr<Layer<SkeletonVoxel>> skeleton_layer_;
+
+
 
   SparseSkeletonGraph graph_;
 };
