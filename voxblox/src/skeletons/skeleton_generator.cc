@@ -8,7 +8,7 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
     : min_separation_angle_(0.7),
       generate_by_layer_neighbors_(false),
       num_neighbors_for_edge_(18),
-      vertex_pruning_radius_(0.5),
+      vertex_pruning_radius_(0.25),
       esdf_layer_(esdf_layer) {
   CHECK_NOTNULL(esdf_layer);
 
@@ -732,7 +732,7 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
       }
       if (neighbor_voxel.is_edge) {
         still_got_neighbors = true;
-        float dot_prod = direction_from_vertex.cast<float>().normalized().dot(
+        float dot_prod = (direction_from_vertex.cast<float>().normalized()).dot(
             directions[i].cast<float>().normalized());
         if (dot_prod > best_dot_prod) {
           best_neighbor = i;
@@ -1209,7 +1209,7 @@ void SkeletonGenerator::pruneDiagramVertices() {
     // Go through all the matches... Figure out if we actually need to delete
     // something. Keep track of our favorite to keep.
     size_t num_valid_matches = 0;
-    float largest_vertex_distance = const_vertices[i].distance;
+    float largest_vertex_distance = const_vertices[i].distance;//const_vertices[i].distance;
     size_t favorite_vertex_index = i;
     for (const std::pair<size_t, FloatingPoint>& match : returned_matches) {
       if (match.first == i) {
