@@ -143,7 +143,7 @@ void VoxelTemplateMatcher::setConnectivityTemplates() {
 }
 
 void VoxelTemplateMatcher::setCornerTemplates() {
-  addIntegerTemplate(1904639, 65536);
+  /* addIntegerTemplate(1904639, 65536);
   addIntegerTemplate(19190783, 16384);
   addIntegerTemplate(20766287, 16384);
   addIntegerTemplate(23368703, 4194304);
@@ -158,7 +158,29 @@ void VoxelTemplateMatcher::setCornerTemplates() {
   addIntegerTemplate(134024711, 65536);
   addIntegerTemplate(134105396, 16);
   addIntegerTemplate(134109476, 4096);
-  addIntegerTemplate(134186432, 1024);
+  addIntegerTemplate(134186432, 1024); */
+
+  // New templates:
+  addIntegerTemplate(20766719, 16384);
+  addIntegerTemplate(20815871, 65536);
+  addIntegerTemplate(24944639, 4194304);
+  addIntegerTemplate(77488127, 4096);
+  addIntegerTemplate(120050687, 16384);
+  addIntegerTemplate(127127039, 1024);
+  addIntegerTemplate(127130111, 4096);
+  addIntegerTemplate(124228607, 4194304);
+  addIntegerTemplate(134012495, 16384);
+  addIntegerTemplate(134106935, 16);
+  addIntegerTemplate(134111015, 4096);
+  addIntegerTemplate(134061647, 65536);
+  addIntegerTemplate(134190041, 16);
+  addIntegerTemplate(134191049, 1024);
+  addIntegerTemplate(134203892, 16);
+  addIntegerTemplate(134204900, 1024);
+  addIntegerTemplate(134207972, 4096);
+  addIntegerTemplate(134206409, 16384);
+  addIntegerTemplate(134172455, 65536);
+  addIntegerTemplate(131320319, 4194304);
 }
 
 std::bitset<27> VoxelTemplateMatcher::get6ConnNeighborMask() const {
