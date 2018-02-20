@@ -34,6 +34,11 @@ class NeighborTools {
                    BlockIndex* neighbor_block_index,
                    VoxelIndex* neighbor_voxel_index) const;
 
+  Eigen::Vector3i getOffsetBetweenVoxels(
+      const BlockIndex& start_block_index, const VoxelIndex& start_voxel_index,
+      const BlockIndex& end_block_index,
+      const VoxelIndex& end_voxel_index) const;
+
  private:
   const Layer<VoxelType>* layer_;
 
@@ -117,11 +122,10 @@ void NeighborTools<VoxelType>::getNeighborsAndDistances(
 }
 
 template <typename VoxelType>
-void NeighborTools<VoxelType>::getNeighbor(const BlockIndex& block_index,
-                                    const VoxelIndex& voxel_index,
-                                    const Eigen::Vector3i& direction,
-                                    BlockIndex* neighbor_block_index,
-                                    VoxelIndex* neighbor_voxel_index) const {
+void NeighborTools<VoxelType>::getNeighbor(
+    const BlockIndex& block_index, const VoxelIndex& voxel_index,
+    const Eigen::Vector3i& direction, BlockIndex* neighbor_block_index,
+    VoxelIndex* neighbor_voxel_index) const {
   CHECK_NOTNULL(layer_);
   DCHECK(neighbor_block_index != NULL);
   DCHECK(neighbor_voxel_index != NULL);
@@ -140,6 +144,32 @@ void NeighborTools<VoxelType>::getNeighbor(const BlockIndex& block_index,
       (*neighbor_voxel_index)(i) -= voxels_per_side_;
     }
   }
+}
+
+template <typename VoxelType>
+Eigen::Vector3i NeighborTools<VoxelType>::getOffsetBetweenVoxels(
+    const BlockIndex& start_block_index, const VoxelIndex& start_voxel_index,
+    const BlockIndex& end_block_index,
+    const VoxelIndex& end_voxel_index) const {
+  BlockIndex current_block_index = end_block_index;
+  Eigen::Vector3i voxel_offset = Eigen::Vector3i::Zero();
+
+  // Line up the blocks so that they're in the same block.
+  for (unsigned int i = 0; i < 3; ++i) {
+    while (start_block_index(i) > current_block_index(i)) {
+      current_block_index(i)++;
+      voxel_offset(i) -= voxels_per_side_;
+    }
+    while (start_block_index(i) < current_block_index(i)) {
+      current_block_index(i)--;
+      voxel_offset(i) += voxels_per_side_;
+    }
+
+    // Then get the voxel distance, since they're in the same block.
+    // This can be negative, but that's totally fine.
+    voxel_offset(i) += end_voxel_index(i) - start_voxel_index(i);
+  }
+  return voxel_offset;
 }
 
 }  // namespace voxblox

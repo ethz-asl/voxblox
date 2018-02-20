@@ -9,10 +9,50 @@ bool SkeletonAStar::getPathOnDiagram(
   CHECK_NOTNULL(skeleton_layer_);
 
   // Look up where in the skeleton diagram the start position is.
+  // Get the voxel.
+  BlockIndex start_block_index =
+      skeleton_layer_->computeBlockIndexFromCoordinates(start_position);
+  Block<SkeletonVoxel>::ConstPtr start_block_ptr;
+  start_block_ptr = skeleton_layer_->getBlockPtrByIndex(start_block_index);
+  CHECK(start_block_ptr);
+  VoxelIndex start_voxel_index =
+      start_block_ptr->computeVoxelIndexFromCoordinates(start_position);
 
   // Get the distance to the goal position.
+  BlockIndex end_block_index =
+      skeleton_layer_->computeBlockIndexFromCoordinates(end_position);
+  Block<SkeletonVoxel>::ConstPtr end_block_ptr;
+  start_block_ptr = skeleton_layer_->getBlockPtrByIndex(end_block_index);
+  CHECK(end_block_ptr);
+  VoxelIndex end_voxel_index =
+      end_block_ptr->computeVoxelIndexFromCoordinates(end_position);
+
+  Eigen::Vector3i goal_voxel_offset = neighbor_tools_.getOffsetBetweenVoxels(
+      start_block_index, start_voxel_index, end_block_index, end_voxel_index);
 
   // Now get the path in voxels back out.
+  AlignedVector<Eigen::Vector3i> voxel_path;
+  bool success = getPathInVoxels(start_block_index, start_voxel_index,
+                                 goal_voxel_offset, &voxel_path);
+
+  if (!success) {
+    return false;
+  }
+
+  // Ok it worked, so convert the voxel offset path to a coordinate path.
+  // Get the voxel center start position back out.
+  Point start_position_center =
+      start_block_ptr->computeCoordinatesFromVoxelIndex(start_voxel_index);
+  FloatingPoint voxel_size = skeleton_layer_->voxel_size();
+
+  coordinate_path->clear();
+  coordinate_path->reserve(voxel_path.size());
+
+  for (const Eigen::Vector3i& voxel_offset : voxel_path) {
+    coordinate_path->push_back(start_position_center +
+                               voxel_offset.cast<FloatingPoint>() * voxel_size);
+  }
+  return success;
 }
 
 bool SkeletonAStar::getPathInVoxels(
