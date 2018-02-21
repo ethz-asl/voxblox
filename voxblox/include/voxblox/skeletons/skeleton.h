@@ -58,7 +58,7 @@ struct SkeletonVertex {
   Point point = Point::Zero();
   float distance = 0.0f;
 
-  std::vector<uint64_t> edge_list;
+  std::vector<int64_t> edge_list;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -85,8 +85,12 @@ class SparseSkeletonGraph {
   // edge.
   int64_t addEdge(const SkeletonEdge& edge);
 
+  // Removal operations... Takes care of breaking all previous connections.
+  void removeVertex(int64_t vertex_id);
+  void removeEdge(int64_t edge_id);
+
   bool hasVertex(int64_t id) const;
-  bool hadEdge(int64_t id) const;
+  bool hasEdge(int64_t id) const;
 
   const SkeletonVertex& getVertex(int64_t id) const;
   const SkeletonEdge& getEdge(int64_t id) const;

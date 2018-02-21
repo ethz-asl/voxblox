@@ -22,7 +22,7 @@ bool SkeletonAStar::getPathOnDiagram(
   BlockIndex end_block_index =
       skeleton_layer_->computeBlockIndexFromCoordinates(end_position);
   Block<SkeletonVoxel>::ConstPtr end_block_ptr;
-  start_block_ptr = skeleton_layer_->getBlockPtrByIndex(end_block_index);
+  end_block_ptr = skeleton_layer_->getBlockPtrByIndex(end_block_index);
   CHECK(end_block_ptr);
   VoxelIndex end_voxel_index =
       end_block_ptr->computeVoxelIndexFromCoordinates(end_position);
@@ -125,12 +125,12 @@ bool SkeletonAStar::getPathInVoxels(
 
       const SkeletonVoxel& neighbor_voxel =
           neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
-      if (!neighbor_voxel.is_edge) {
+      if (!neighbor_voxel.is_edge && !neighbor_voxel.is_vertex) {
         // Not an edge, can just skip this.
         continue;
       }
       Eigen::Vector3i neighbor_voxel_offset =
-          current_voxel_offset - directions[i];
+          current_voxel_offset + directions[i];
       if (closed_set.count(neighbor_voxel_offset) > 0) {
         // Already checked this guy as well.
         continue;

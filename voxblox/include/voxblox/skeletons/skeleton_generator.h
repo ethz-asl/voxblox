@@ -10,9 +10,10 @@
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
-#include "voxblox/skeletons/skeleton.h"
-#include "voxblox/skeletons/voxel_template_matcher.h"
 #include "voxblox/skeletons/neighbor_tools.h"
+#include "voxblox/skeletons/skeleton.h"
+#include "voxblox/skeletons/skeleton_planner.h"
+#include "voxblox/skeletons/voxel_template_matcher.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -24,6 +25,8 @@ class SkeletonGenerator {
 
   void generateSkeleton();
   void generateSparseGraph();
+  // Split non-straight edges on the sparse graph.
+  void splitEdges();
 
   // Additional helper functions, in case generate by neighbor layers is set.
   void generateEdgesByLayerNeighbors();
@@ -97,6 +100,7 @@ class SkeletonGenerator {
 
   // Neighbor tools, for finding nearest neighbors of things.
   NeighborTools<SkeletonVoxel> neighbor_tools_;
+  SkeletonAStar skeleton_planner_;
 
   Skeleton skeleton_;
 
@@ -104,8 +108,6 @@ class SkeletonGenerator {
   // Owned by the generator! Since it's an intermediate by-product of
   // constructing the graph.
   std::unique_ptr<Layer<SkeletonVoxel>> skeleton_layer_;
-
-
 
   SparseSkeletonGraph graph_;
 };

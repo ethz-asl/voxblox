@@ -38,14 +38,15 @@ class SkeletonAStar {
                        AlignedVector<Eigen::Vector3i>* voxel_path) const;
 
   Eigen::Vector3i popSmallestFromOpen(const IndexToDistanceMap& f_score_map,
-                                      IndexSet* open_set) const ;
+                                      IndexSet* open_set) const;
 
   void getSolutionPath(const Eigen::Vector3i& end_voxel_offset,
                        const IndexToParentMap& parent_map,
                        AlignedVector<Eigen::Vector3i>* voxel_path) const;
 
-  FloatingPoint estimateCostToGoal(const Eigen::Vector3i& voxel_offset,
-                                   const Eigen::Vector3i& goal_voxel_offset) const;
+  FloatingPoint estimateCostToGoal(
+      const Eigen::Vector3i& voxel_offset,
+      const Eigen::Vector3i& goal_voxel_offset) const;
 
  private:
   NeighborTools<SkeletonVoxel> neighbor_tools_;

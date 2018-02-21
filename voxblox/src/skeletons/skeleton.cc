@@ -100,7 +100,7 @@ bool SparseSkeletonGraph::hasVertex(int64_t id) const {
   return false;
 }
 
-bool SparseSkeletonGraph::hadEdge(int64_t id) const {
+bool SparseSkeletonGraph::hasEdge(int64_t id) const {
   if (edge_map_.find(id) != edge_map_.end()) {
     return true;
   }
@@ -144,6 +144,52 @@ void SparseSkeletonGraph::getAllEdgeIds(std::vector<int64_t>* edge_ids) const {
   for (const std::pair<int64_t, SkeletonEdge>& kv : edge_map_) {
     edge_ids->push_back(kv.first);
   }
+}
+
+void SparseSkeletonGraph::removeVertex(int64_t vertex_id) {
+  // Find the vertex.
+  std::map<int64_t, SkeletonVertex>::iterator iter =
+      vertex_map_.find(vertex_id);
+  if (iter == vertex_map_.end()) {
+    return;
+  }
+  const SkeletonVertex& vertex = iter->second;
+
+  // Remove all edges that are connected to it.
+  for (int64_t edge_id : vertex.edge_list) {
+    removeEdge(edge_id);
+  }
+
+  // Remove the vertex.
+  vertex_map_.erase(iter);
+}
+
+void SparseSkeletonGraph::removeEdge(int64_t edge_id) {
+  // Find the edge.
+  std::map<int64_t, SkeletonEdge>::iterator iter = edge_map_.find(edge_id);
+  if (iter == edge_map_.end()) {
+    return;
+  }
+  const SkeletonEdge& edge = iter->second;
+
+  // Remove this edge from both vertices.
+  SkeletonVertex& vertex_1 = getVertex(edge.start_vertex);
+  SkeletonVertex& vertex_2 = getVertex(edge.end_vertex);
+
+  for (size_t i = 0; i < vertex_1.edge_list.size(); i++) {
+    if (vertex_1.edge_list[i] == edge_id) {
+      vertex_1.edge_list.erase(vertex_1.edge_list.begin() + i);
+      break;
+    }
+  }
+  for (size_t i = 0; i < vertex_2.edge_list.size(); i++) {
+    if (vertex_2.edge_list[i] == edge_id) {
+      vertex_2.edge_list.erase(vertex_2.edge_list.begin() + i);
+      break;
+    }
+  }
+
+  edge_map_.erase(iter);
 }
 
 }  // namespace voxblox
