@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_ROS_ROS_PARAMS_H_
 #define VOXBLOX_ROS_ROS_PARAMS_H_
 
+#include <ros/ros.h>
+
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
