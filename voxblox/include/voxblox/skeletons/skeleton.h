@@ -104,6 +104,16 @@ class SparseSkeletonGraph {
 
   void clear();
 
+  // Only const access to the vertex and edge maps, mostly for kD-tree use.
+  // To modify the stuff, use add and remove vertex/edge, since this preserves
+  // the consistency of the graph.
+  const std::map<int64_t, SkeletonVertex>& getVertexMap() const {
+    return vertex_map_;
+  }
+  const std::map<int64_t, SkeletonEdge>& getEdgeMap() const {
+    return edge_map_;
+  }
+
  private:
   // Vertex and edge IDs are separate.
   std::map<int64_t, SkeletonVertex> vertex_map_;
