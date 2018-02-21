@@ -165,6 +165,8 @@ void SkeletonEvalNode::generateSkeleton() {
   skeleton_generator.generateSparseGraph();
   ROS_INFO("Finished generating sparse graph.");
 
+  skeleton_generator.splitEdges();
+
   ROS_INFO_STREAM("Total Timings: " << std::endl << timing::Timing::Print());
 
   // Now visualize the graph.

@@ -19,6 +19,7 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
   skeleton_layer_.reset(new Layer<SkeletonVoxel>(
       esdf_layer_->voxel_size(), esdf_layer_->voxels_per_side()));
   neighbor_tools_.setLayer(skeleton_layer_.get());
+  skeleton_planner_.setSkeletonLayer(skeleton_layer_.get());
 
   // Initialize the template matchers.
   pruning_template_matcher_.setDeletionTemplates();
@@ -1216,6 +1217,90 @@ void SkeletonGenerator::pruneDiagramVertices() {
     voxel.is_vertex = false;
     voxel.is_edge = true;
   }
+}
+
+void SkeletonGenerator::splitEdges() {
+  timing::Timer generate_timer("skeleton/split_edges");
+
+  // This is a number from a butt.
+  const FloatingPoint kMaxThreshold = 4 * skeleton_layer_->voxel_size();
+
+  std::vector<int64_t> edge_ids;
+  graph_.getAllEdgeIds(&edge_ids);
+
+  size_t num_vertices_added = 0;
+
+  // Need to use a regular (not range-based) for loop since we'll add a bunch
+  // of new edges to the end.
+  for (size_t i = 0; i < edge_ids.size(); ++i) {
+    int64_t edge_id = edge_ids[i];
+    if (!graph_.hasEdge(edge_id)) {
+      // This edge already got deleted.
+      continue;
+    }
+    // Get the start and end points.
+    SkeletonEdge& edge = graph_.getEdge(edge_id);
+    const Point& start = edge.start_point;
+    const Point& end = edge.end_point;
+
+    // Get the shortest path through the graph.
+    AlignedVector<Point> coordinate_path;
+    bool success =
+        skeleton_planner_.getPathOnDiagram(start, end, &coordinate_path);
+
+    /* LOG(INFO) << "Start: " << start.transpose() << " end: " <<
+       end.transpose()
+              << " Success? " << success; */
+
+    // Ok now figure out what the straight-line path between the two points
+    // would be.
+    FloatingPoint max_d = 0.0;
+    size_t max_d_ind = 0;
+    for (size_t j = 0; j < coordinate_path.size(); ++j) {
+      // Project every point in the coordinate path onto this.
+      // From http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+      const Point& point = coordinate_path[j];
+      FloatingPoint d =
+          ((end - start).cross(start - point)).norm() / (end - start).norm();
+      // LOG(INFO) << "Point: " << point.transpose() << " distance: " << d;
+
+      if (d > max_d) {
+        max_d = d;
+        max_d_ind = j;
+      }
+    }
+    // Impose some minimum distance...
+    if (max_d > kMaxThreshold) {
+      // Pick the point with the max deviation to insert a new voxel there.
+      SkeletonVertex new_vertex;
+      new_vertex.point = coordinate_path[max_d_ind];
+      // TODO(helenol): FILL IN DISTANCE.
+
+      int64_t vertex_id = graph_.addVertex(new_vertex);
+      num_vertices_added++;
+
+      // Remove the existing edge, add two new edges.
+
+      // TODO(helenol): FILL IN EDGE DISTANCE.
+
+      SkeletonEdge new_edge_1, new_edge_2;
+      new_edge_1.start_vertex = edge.start_vertex;
+      new_edge_1.end_vertex = vertex_id;
+      new_edge_2.start_vertex = vertex_id;
+      new_edge_2.end_vertex = edge.end_vertex;
+
+      int64_t edge_id_1 = graph_.addEdge(new_edge_1);
+      int64_t edge_id_2 = graph_.addEdge(new_edge_2);
+      // Make sure two new edges are going to be iteratively checked again.
+
+      edge_ids.push_back(edge_id_1);
+      edge_ids.push_back(edge_id_2);
+
+      graph_.removeEdge(edge_id);
+    }
+  }
+
+  LOG(INFO) << "Num vertices added: " << num_vertices_added;
 }
 
 }  // namespace voxblox
