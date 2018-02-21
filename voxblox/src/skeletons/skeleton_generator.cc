@@ -1223,7 +1223,23 @@ void SkeletonGenerator::splitEdges() {
   timing::Timer generate_timer("skeleton/split_edges");
 
   // This is a number from a butt.
-  const FloatingPoint kMaxThreshold = 4 * skeleton_layer_->voxel_size();
+  const FloatingPoint kMaxThreshold = 2 * skeleton_layer_->voxel_size();
+  const FloatingPoint kVertexSearchRadus = vertex_pruning_radius_;
+
+  // Build the kD Tree of the vertices at the current moment.
+  // Create the adapter.
+  SkeletonVertexMapAdapter adapter(graph_.getVertexMap());
+
+  // construct a kd-tree index:
+  const int kDim = 3;
+  const int kMaxLeaf = 10;
+  typedef nanoflann::KDTreeSingleIndexAdaptor<
+      nanoflann::L2_Simple_Adaptor<FloatingPoint, SkeletonVertexMapAdapter>,
+      SkeletonVertexMapAdapter, kDim> VertexGraphKdTree;
+
+  VertexGraphKdTree kd_tree(
+      kDim, adapter, nanoflann::KDTreeSingleIndexAdaptorParams(kMaxLeaf));
+  kd_tree.buildIndex();
 
   std::vector<int64_t> edge_ids;
   graph_.getAllEdgeIds(&edge_ids);
@@ -1276,13 +1292,70 @@ void SkeletonGenerator::splitEdges() {
       new_vertex.point = coordinate_path[max_d_ind];
       // TODO(helenol): FILL IN DISTANCE.
 
+      // Ok, let's check if there's something already close enough...
+      // I guess it would be best if this was a dynamic k-D tree, since we're
+      // adding/subtracting vertices at will.
+      // Also not necessarily indexed in order.
+      // Pair from index and distance.
+      std::vector<std::pair<size_t, FloatingPoint> > returned_matches;
+      nanoflann::SearchParams params;  // Defaults are fine.
+      size_t num_matches =
+          kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
+                               returned_matches, params);
+
+      if (num_matches > 0) {
+        // Get the first (closest?)
+        size_t map_index = returned_matches[0].first;
+        auto iter = graph_.getVertexMap().begin();
+        for (size_t i = 0; i < map_index; ++i) {
+          iter++;
+        }
+        const SkeletonVertex& vertex_candidate = iter->second;
+
+        if (vertex_candidate.vertex_id != edge.start_vertex &&
+            vertex_candidate.vertex_id != edge.end_vertex) {
+          // Try to find a connection from start vertex -> this and then from
+          // this to end vertex.
+          AlignedVector<Point> start_path, end_path;
+
+          LOG(INFO) << "Starting to search from: " << start.transpose()
+                    << " to " << vertex_candidate.point.transpose() << " and "
+                    << end.transpose();
+
+          bool success_start = skeleton_planner_.getPathOnDiagram(
+              start, vertex_candidate.point, &start_path);
+          bool success_end = skeleton_planner_.getPathOnDiagram(
+              vertex_candidate.point, end, &end_path);
+
+          if (success_start && success_end) {
+            LOG(INFO) << "Found a valid path!";
+            // Remove the existing edge, add two new edges.
+            // TODO(helenol): FILL IN EDGE DISTANCE.
+            SkeletonEdge new_edge_1, new_edge_2;
+            new_edge_1.start_vertex = edge.start_vertex;
+            new_edge_1.end_vertex = vertex_candidate.vertex_id;
+            new_edge_2.start_vertex = vertex_candidate.vertex_id;
+            new_edge_2.end_vertex = edge.end_vertex;
+
+            int64_t edge_id_1 = graph_.addEdge(new_edge_1);
+            int64_t edge_id_2 = graph_.addEdge(new_edge_2);
+            // Make sure two new edges are going to be iteratively checked
+            // again.
+
+            edge_ids.push_back(edge_id_1);
+            edge_ids.push_back(edge_id_2);
+
+            graph_.removeEdge(edge_id);
+            continue;
+          }
+        }
+      }
+
       int64_t vertex_id = graph_.addVertex(new_vertex);
       num_vertices_added++;
 
       // Remove the existing edge, add two new edges.
-
       // TODO(helenol): FILL IN EDGE DISTANCE.
-
       SkeletonEdge new_edge_1, new_edge_2;
       new_edge_1.start_vertex = edge.start_vertex;
       new_edge_1.end_vertex = vertex_id;
