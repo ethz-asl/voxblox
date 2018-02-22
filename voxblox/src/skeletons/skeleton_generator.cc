@@ -567,6 +567,8 @@ void SkeletonGenerator::generateSparseGraph() {
       }
     }
   }
+
+  splitEdges();
 }
 
 bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
@@ -1299,9 +1301,9 @@ void SkeletonGenerator::splitEdges() {
       // Pair from index and distance.
       std::vector<std::pair<size_t, FloatingPoint> > returned_matches;
       nanoflann::SearchParams params;  // Defaults are fine.
-      size_t num_matches =
-          kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
-                               returned_matches, params);
+      size_t num_matches = 0;
+         /* kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
+                               returned_matches, params); */
 
       if (num_matches > 0) {
         // Get the first (closest?)
@@ -1318,9 +1320,9 @@ void SkeletonGenerator::splitEdges() {
           // this to end vertex.
           AlignedVector<Point> start_path, end_path;
 
-          LOG(INFO) << "Starting to search from: " << start.transpose()
+          /* LOG(INFO) << "Starting to search from: " << start.transpose()
                     << " to " << vertex_candidate.point.transpose() << " and "
-                    << end.transpose();
+                    << end.transpose(); */
 
           bool success_start = skeleton_planner_.getPathOnDiagram(
               start, vertex_candidate.point, &start_path);
@@ -1328,7 +1330,7 @@ void SkeletonGenerator::splitEdges() {
               vertex_candidate.point, end, &end_path);
 
           if (success_start && success_end) {
-            LOG(INFO) << "Found a valid path!";
+            // LOG(INFO) << "Found a valid path!";
             // Remove the existing edge, add two new edges.
             // TODO(helenol): FILL IN EDGE DISTANCE.
             SkeletonEdge new_edge_1, new_edge_2;
@@ -1339,9 +1341,9 @@ void SkeletonGenerator::splitEdges() {
 
             int64_t edge_id_1 = graph_.addEdge(new_edge_1);
             int64_t edge_id_2 = graph_.addEdge(new_edge_2);
+
             // Make sure two new edges are going to be iteratively checked
             // again.
-
             edge_ids.push_back(edge_id_1);
             edge_ids.push_back(edge_id_2);
 

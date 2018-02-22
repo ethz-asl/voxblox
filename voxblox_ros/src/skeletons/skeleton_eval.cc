@@ -25,6 +25,19 @@ class SkeletonEvalNode {
   void generateWorld();
   void generateSkeleton();
 
+  void generateMapFromGroundTruth();
+  void generateMapFromRobotPoses(int num_poses, int seed,
+                                 FloatingPoint noise_level);
+
+  // Utility functions.
+  double randMToN(double m, double n) const;
+
+  bool selectRandomFreePose(const Point& min_bound, const Point& max_bound,
+                            Point* sampled_pose) const;
+  void transformPointcloud(const voxblox::Transformation& T_N_O,
+                           const voxblox::Pointcloud& ptcloud,
+                           voxblox::Pointcloud* ptcloud_out) const;
+
  private:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -40,6 +53,11 @@ class SkeletonEvalNode {
   double esdf_max_distance_;
   double tsdf_max_distance_;
 
+  Eigen::Vector2i camera_resolution_;
+  double camera_fov_h_rad_;
+  double camera_min_dist_;
+  double camera_max_dist_;
+
   voxblox::EsdfServer voxblox_server_;
   voxblox::SimulationWorld world_;
 };
@@ -53,6 +71,10 @@ SkeletonEvalNode::SkeletonEvalNode(const ros::NodeHandle& nh,
       full_euclidean_distance_(true),
       esdf_max_distance_(5.0),
       tsdf_max_distance_(0.4),
+      camera_resolution_(320, 240),
+      camera_fov_h_rad_(1.5708),  // 90 deg
+      camera_min_dist_(0.5),
+      camera_max_dist_(10.0),
       voxblox_server_(nh_, nh_private_) {
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("full_euclidean_distance", full_euclidean_distance_,
@@ -118,7 +140,9 @@ void SkeletonEvalNode::generateWorld() {
       Point(11.5, 1.5, 1.25), 1.0, voxblox::Color::Pink())));
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Sphere(
       Point(13.5, 1.5, 1.25), 1.0, voxblox::Color::Pink())));
+}
 
+void SkeletonEvalNode::generateMapFromGroundTruth() {
   voxblox_server_.setSliceLevel(1.5);
   // world_.generateSdfFromWorld<voxblox::EsdfVoxel>(
   //    esdf_max_distance_, voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
@@ -133,10 +157,97 @@ void SkeletonEvalNode::generateWorld() {
   }
 }
 
+double SkeletonEvalNode::randMToN(double m, double n) const {
+  return m + (rand() / (RAND_MAX / (n - m)));
+}
+
+bool SkeletonEvalNode::selectRandomFreePose(const Point& min_bound,
+                                            const Point& max_bound,
+                                            Point* sampled_pose) const {
+  CHECK_NOTNULL(sampled_pose);
+
+  const int max_tries = 100;
+  const FloatingPoint max_dist = 5.0;
+
+  for (int i = 0; i < max_tries; ++i) {
+    *sampled_pose = Point(randMToN(min_bound.x(), max_bound.x()),
+                          randMToN(min_bound.y(), max_bound.y()),
+                          randMToN(min_bound.z(), max_bound.z()));
+    if (world_.getDistanceToPoint(*sampled_pose, max_dist) > 0.0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void SkeletonEvalNode::transformPointcloud(
+    const voxblox::Transformation& T_N_O, const voxblox::Pointcloud& ptcloud,
+    voxblox::Pointcloud* ptcloud_out) const {
+  ptcloud_out->clear();
+  ptcloud_out->resize(ptcloud.size());
+
+  for (size_t i = 0; i < ptcloud.size(); ++i) {
+    (*ptcloud_out)[i] = T_N_O * ptcloud[i];
+  }
+}
+
+void SkeletonEvalNode::generateMapFromRobotPoses(int num_poses, int seed,
+                                                 FloatingPoint noise_level) {
+  voxblox_server_.setSliceLevel(1.5);
+  voxblox_server_.setClearSphere(true);
+
+  srand(seed);
+
+  Point min_boundary(1.0, 1.0, 1.0);
+  Point max_boundary(14.0, 10.0, 5.0);
+
+  for (int i = 0; i < num_poses; i++) {
+    Point view_origin = Point::Zero();
+    selectRandomFreePose(min_boundary, max_boundary, &view_origin);
+    Point view_direction(1.0, 0.0, 0.0);
+    Eigen::Quaternionf view_orientation(
+        Eigen::AngleAxisf(randMToN(0, 2 * M_PI), Eigen::Vector3f::UnitZ()));
+    view_direction = view_orientation * view_direction;
+
+    // T_G_C is from z-positive since that's how camera coordinates work.
+    voxblox::Transformation T_G_C(
+        view_origin.cast<float>(),
+        Eigen::Quaternionf::FromTwoVectors(Eigen::Vector3f(0.0, 0.0, 1.0),
+                                           view_direction));
+    // Step 2: actually get the pointcloud.
+    voxblox::Pointcloud ptcloud, ptcloud_C;
+    voxblox::Colors colors;
+    world_.getPointcloudFromViewpoint(view_origin, view_direction,
+                                      camera_resolution_, camera_fov_h_rad_,
+                                      camera_max_dist_, &ptcloud, &colors);
+
+    // Step 3: integrate into the map.
+    // Transform back into camera frame.
+    transformPointcloud(T_G_C.inverse(), ptcloud, &ptcloud_C);
+    voxblox_server_.integratePointcloud(T_G_C, ptcloud_C, colors);
+
+    // Step 4: update mesh and ESDF. NewPoseCallback will mark unknown as
+    // occupied and clear space otherwise.
+    voxblox_server_.newPoseCallback(T_G_C);
+    voxblox_server_.updateEsdf();
+  }
+
+  if (visualize_) {
+    voxblox_server_.generateMesh();
+    voxblox_server_.publishSlices();
+    voxblox_server_.publishPointclouds();
+  }
+}
+
 void SkeletonEvalNode::generateSkeleton() {
   SkeletonGenerator skeleton_generator(
       voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
-  skeleton_generator.setMinSeparationAngle(0.7);
+
+  FloatingPoint min_separation_angle =
+      skeleton_generator.getMinSeparationAngle();
+  nh_private_.param("min_separation_angle", min_separation_angle,
+                    min_separation_angle);
+  skeleton_generator.setMinSeparationAngle(min_separation_angle);
   bool generate_by_layer_neighbors =
       skeleton_generator.getGenerateByLayerNeighbors();
   nh_private_.param("generate_by_layer_neighbors", generate_by_layer_neighbors,
@@ -165,8 +276,6 @@ void SkeletonEvalNode::generateSkeleton() {
   skeleton_generator.generateSparseGraph();
   ROS_INFO("Finished generating sparse graph.");
 
-  skeleton_generator.splitEdges();
-
   ROS_INFO_STREAM("Total Timings: " << std::endl << timing::Timing::Print());
 
   // Now visualize the graph.
@@ -191,6 +300,9 @@ int main(int argc, char** argv) {
   voxblox::SkeletonEvalNode node(nh, nh_private);
 
   node.generateWorld();
+  node.generateMapFromRobotPoses(100, 0, 0.0);
+
+  // node.generateMapFromGroundTruth();
   node.generateSkeleton();
 
   ros::spin();
