@@ -19,7 +19,10 @@ enum PlyOutputTypes {
   // The full SDF colorized by the distance in each voxel.
   kSdfColoredDistanceField,
   // Output isosurface, i.e. the mesh for sdf voxel types.
-  kSdfIsosurface
+  kSdfIsosurface,
+  // Output isosurface, i.e. the mesh for sdf voxel types.
+  // Close vertices are connected and zero surface faces are removed.
+  kSdfIsosurfaceConnected
 };
 
 template <typename VoxelType>
@@ -136,9 +139,22 @@ bool outputLayerAsPly(const Layer<VoxelType>& layer,
       constexpr bool clear_updated_flag = false;
       mesh_integrator.generateMesh(only_mesh_updated_blocks,
                                    clear_updated_flag);
-
-      return outputMeshLayerAsPly(filename, *mesh);
+      constexpr bool kConnectedMesh = false;
+      return outputMeshLayerAsPly(filename, kConnectedMesh, *mesh);
     }
+    case PlyOutputTypes::kSdfIsosurfaceConnected: {
+      typename MeshIntegrator<VoxelType>::Config mesh_config;
+      MeshLayer::Ptr mesh(new MeshLayer(layer.block_size()));
+      MeshIntegrator<VoxelType> mesh_integrator(mesh_config, layer, mesh.get());
+
+      constexpr bool only_mesh_updated_blocks = false;
+      constexpr bool clear_updated_flag = false;
+      mesh_integrator.generateMesh(only_mesh_updated_blocks,
+                                   clear_updated_flag);
+      constexpr bool kConnectedMesh = true;
+      return outputMeshLayerAsPly(filename, kConnectedMesh, *mesh);
+    }
+
     default:
       LOG(FATAL) << "Unknown layer to ply output type: "
                  << static_cast<int>(type);
