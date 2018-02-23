@@ -1,3 +1,4 @@
+
 // The MIT License (MIT)
 // Copyright (c) 2014 Matthew Klingensmith and Ivan Dryanovski
 //
@@ -85,7 +86,7 @@ inline void toSimplifiedPCLPolygonMesh(
     const FloatingPoint vertex_proximity_threshold,
     pcl::PolygonMesh* polygon_mesh_ptr) {
   constexpr bool kSimplifiedAndConnectedMesh = true;
-  toPCLPolygonMesh(mesh_layer, frame_id, kConnectedMesh,
+  toPCLPolygonMesh(mesh_layer, frame_id, kSimplifiedAndConnectedMesh,
                    vertex_proximity_threshold, polygon_mesh_ptr);
 }
 
@@ -94,8 +95,8 @@ inline void toConnectedPCLPolygonMesh(const MeshLayer& mesh_layer,
                                       pcl::PolygonMesh* polygon_mesh_ptr) {
   constexpr bool kSimplifiedAndConnectedMesh = true;
   constexpr FloatingPoint kVertexThreshold = 1e-10;
-  toPCLPolygonMesh(mesh_layer, frame_id, kConnectedMesh, kVertexThreshold,
-                   polygon_mesh_ptr);
+  toPCLPolygonMesh(mesh_layer, frame_id, kSimplifiedAndConnectedMesh,
+                   kVertexThreshold, polygon_mesh_ptr);
 }
 
 }  // namespace voxblox
