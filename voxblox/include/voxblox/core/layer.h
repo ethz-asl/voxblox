@@ -50,20 +50,18 @@ class Layer {
 
   inline const BlockType& getBlockByIndex(const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
-    if (it != block_map_.end()) {
-      return *(it->second);
-    } else {
+    if (it == block_map_.end()) {
       LOG(FATAL) << "Accessed unallocated block at " << index.transpose();
     }
+    return *(it->second);
   }
 
   inline BlockType& getBlockByIndex(const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
-    if (it != block_map_.end()) {
-      return *(it->second);
-    } else {
+    if (it == block_map_.end()) {
       LOG(FATAL) << "Accessed unallocated block at " << index.transpose();
     }
+    return *(it->second);
   }
 
   inline typename BlockType::ConstPtr getBlockPtrByIndex(
