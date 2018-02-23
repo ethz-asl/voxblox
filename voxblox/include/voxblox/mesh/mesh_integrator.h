@@ -94,8 +94,11 @@ class MeshIntegrator {
         mesh_layer_(CHECK_NOTNULL(mesh_layer)) {
     initFromSdfLayer(sdf_layer);
 
-    cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
-        0, 0, 1, 1, 1, 1;
+    // clang-format off
+    cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0,
+                           0, 0, 1, 1, 0, 0, 1, 1,
+                           0, 0, 0, 0, 1, 1, 1, 1;
+    // clang-format on
 
     if (config_.integrator_threads == 0) {
       LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
@@ -176,9 +179,11 @@ class MeshIntegrator {
       }
     }
 
-    // Max X plane (takes care of max-Y corner as well).
+    // Max X plane
+    // takes care of edge (x_max, y_max, z),
+    // takes care of edge (x_max, y, z_max).
     voxel_index.x() = vps - 1;
-    for (voxel_index.z() = 0; voxel_index.z() < vps - 1; voxel_index.z()++) {
+    for (voxel_index.z() = 0; voxel_index.z() < vps; voxel_index.z()++) {
       for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
         extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
@@ -187,8 +192,10 @@ class MeshIntegrator {
     }
 
     // Max Y plane.
+    // takes care of edge (x, y_max, z_max),
+    // without corner (x_max, y_max, z_max).
     voxel_index.y() = vps - 1;
-    for (voxel_index.z() = 0; voxel_index.z() < vps - 1; voxel_index.z()++) {
+    for (voxel_index.z() = 0; voxel_index.z() < vps; voxel_index.z()++) {
       for (voxel_index.x() = 0; voxel_index.x() < vps - 1; voxel_index.x()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
         extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
@@ -196,10 +203,10 @@ class MeshIntegrator {
       }
     }
 
-    // Max Z plane (also takes care of corners).
+    // Max Z plane.
     voxel_index.z() = vps - 1;
-    for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
-      for (voxel_index.x() = 0; voxel_index.x() < vps; voxel_index.x()++) {
+    for (voxel_index.y() = 0; voxel_index.y() < vps - 1; voxel_index.y()++) {
+      for (voxel_index.x() = 0; voxel_index.x() < vps - 1; voxel_index.x()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
         extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
                             mesh.get());
@@ -292,7 +299,8 @@ class MeshIntegrator {
           if (corner_index(j) < 0) {
             block_offset(j) = -1;
             corner_index(j) = corner_index(j) + voxels_per_side_;
-          } else if (corner_index(j) >= static_cast<IndexElement>(voxels_per_side_)) {
+          } else if (corner_index(j) >=
+                     static_cast<IndexElement>(voxels_per_side_)) {
             block_offset(j) = 1;
             corner_index(j) = corner_index(j) - voxels_per_side_;
           }
@@ -339,7 +347,6 @@ class MeshIntegrator {
       VoxelIndex voxel_index = block.computeVoxelIndexFromCoordinates(vertex);
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
-
         utils::getColorIfValid(voxel, config_.min_weight, &(mesh->colors[i]));
       } else {
         const typename Block<VoxelType>::ConstPtr neighbor_block =
