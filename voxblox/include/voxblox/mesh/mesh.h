@@ -24,6 +24,7 @@
 #define VOXBLOX_MESH_MESH_H_
 
 #include <cstdint>
+#include <memory>
 
 #include "voxblox/core/common.h"
 
@@ -50,6 +51,42 @@ struct Mesh {
     normals.clear();
     colors.clear();
     indices.clear();
+  }
+
+  inline void resize(const size_t size, const bool has_normals = true,
+                     const bool has_colors = true,
+                     const bool has_indices = true) {
+    vertices.resize(size);
+
+    if (has_normals) {
+      normals.resize(size);
+    }
+
+    if (has_colors) {
+      colors.resize(size);
+    }
+
+    if (has_indices) {
+      indices.resize(size);
+    }
+  }
+
+  inline void reserve(const size_t size, const bool has_normals = true,
+                      const bool has_colors = true,
+                      const bool has_indices = true) {
+    vertices.reserve(size);
+
+    if (has_normals) {
+      normals.reserve(size);
+    }
+
+    if (has_colors) {
+      colors.reserve(size);
+    }
+
+    if (has_indices) {
+      indices.reserve(size);
+    }
   }
 
   Pointcloud vertices;
