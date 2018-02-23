@@ -26,9 +26,20 @@ namespace voxblox {
 
 bool outputMeshLayerAsPly(const std::string& filename,
                           const MeshLayer& mesh_layer) {
+  constexpr bool kConnectedMesh = true;
+  return outputMeshLayerAsPly(filename, kConnectedMesh, mesh_layer);
+}
+
+bool outputMeshLayerAsPly(const std::string& filename,
+                          const bool connected_mesh,
+                          const MeshLayer& mesh_layer) {
   Mesh::Ptr combined_mesh =
       aligned_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
-  mesh_layer.combineMesh(combined_mesh);
+  if (connected_mesh) {
+    mesh_layer.getConnectedMesh(combined_mesh);
+  } else {
+    mesh_layer.getMesh(combined_mesh);
+  }
 
   bool success = outputMeshAsPly(filename, *combined_mesh);
   if (!success) {

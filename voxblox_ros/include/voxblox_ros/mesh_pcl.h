@@ -38,13 +38,19 @@ namespace voxblox {
 
 inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
                              const std::string frame_id,
+                             const bool simplify_and_connect_mesh,
+                             const FloatingPoint vertex_proximity_threshold,
                              pcl::PolygonMesh* polygon_mesh_ptr) {
   // Constructing the vertices pointcloud
   pcl::PointCloud<pcl::PointXYZ> pointcloud;
   std::vector<pcl::Vertices> polygons;
 
   Mesh::Ptr mesh = aligned_shared<Mesh>(mesh_layer.block_size(), Point::Zero());
-  mesh_layer.combineMesh(mesh);
+  if (simplify_and_connect_mesh) {
+    mesh_layer.getConnectedMesh(mesh, vertex_proximity_threshold);
+  } else {
+    mesh_layer.getMesh(mesh);
+  }
 
   // add points
   pointcloud.reserve(mesh->vertices.size());
@@ -72,6 +78,24 @@ inline void toPCLPolygonMesh(const MeshLayer& mesh_layer,
   polygon_mesh_ptr->header.frame_id = frame_id;
   polygon_mesh_ptr->cloud = pointcloud2;
   polygon_mesh_ptr->polygons = polygons;
+}
+
+inline void toSimplifiedPCLPolygonMesh(
+    const MeshLayer& mesh_layer, const std::string frame_id,
+    const FloatingPoint vertex_proximity_threshold,
+    pcl::PolygonMesh* polygon_mesh_ptr) {
+  constexpr bool kSimplifiedAndConnectedMesh = true;
+  toPCLPolygonMesh(mesh_layer, frame_id, kConnectedMesh,
+                   vertex_proximity_threshold, polygon_mesh_ptr);
+}
+
+inline void toConnectedPCLPolygonMesh(const MeshLayer& mesh_layer,
+                                      const std::string frame_id,
+                                      pcl::PolygonMesh* polygon_mesh_ptr) {
+  constexpr bool kSimplifiedAndConnectedMesh = true;
+  constexpr FloatingPoint kVertexThreshold = 1e-10;
+  toPCLPolygonMesh(mesh_layer, frame_id, kConnectedMesh, kVertexThreshold,
+                   polygon_mesh_ptr);
 }
 
 }  // namespace voxblox

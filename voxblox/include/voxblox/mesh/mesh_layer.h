@@ -235,17 +235,12 @@ class MeshLayer {
     // Used to prevent double ups in vertices
     AnyIndexHashMapType<IndexElement>::type uniques;
 
-    std::cout << "approximate_vertex_proximity_threshold: "
-              << approximate_vertex_proximity_threshold << std::endl;
-
     // Some triangles will have zero area we store them here first then filter
     // them
     VertexIndexList temp_indices;
 
     const FloatingPoint threshold_inv =
         1. / approximate_vertex_proximity_threshold;
-
-    std::cout << "threshold_inv: " << threshold_inv << std::endl;
 
     // Combine everything in the layer into one giant combined mesh.
     size_t v = 0;
