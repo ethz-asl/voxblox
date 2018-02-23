@@ -2,6 +2,7 @@
 #define VOXBLOX_CORE_LAYER_INL_H_
 
 #include <fstream>  // NOLINT
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -60,8 +61,10 @@ Layer<VoxelType>::Layer(const Layer& other) {
        other.block_map_) {
     const BlockIndex& block_idx = key_value_pair.first;
     const typename BlockType::Ptr& block_ptr = key_value_pair.second;
+    CHECK(block_ptr);
 
     typename BlockType::Ptr new_block = allocateBlockPtrByIndex(block_idx);
+    CHECK(new_block);
 
     for (size_t linear_idx = 0u; linear_idx < block_ptr->num_voxels();
          ++linear_idx) {
