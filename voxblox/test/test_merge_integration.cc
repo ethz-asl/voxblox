@@ -107,12 +107,12 @@ TEST_F(TsdfLayerMergeToolTest, MergeTwoTsdfLayers) {
   const std::string kWorldAPlyFile = kFolderPrefix + "world_A.tsdf.ply";
   LOG(INFO) << "Writing world A to : " << kWorldAPlyFile;
   io::outputLayerAsPly(*world_A_, kWorldAPlyFile,
-                       io::PlyOutputTypes::kSdfIsosurfaceConnected);
+                       io::PlyOutputTypes::kSdfIsosurface);
 
   const std::string kWorldBPlyFile = kFolderPrefix + "world_B.tsdf.ply";
   LOG(INFO) << "Writing world B to : " << kWorldBPlyFile;
   io::outputLayerAsPly(*world_B_, kWorldBPlyFile,
-                       io::PlyOutputTypes::kSdfIsosurfaceConnected);
+                       io::PlyOutputTypes::kSdfIsosurface);
 
   LOG(INFO) << "Merging world A into world B...";
   constexpr bool kUseNaiveMethod = false;
@@ -140,7 +140,7 @@ TEST_F(TsdfLayerMergeToolTest, MergeTwoTsdfLayers) {
       kFolderPrefix + "world_A_and_B.tsdf.ply";
   LOG(INFO) << "Writing merged world to : " << kMergedLayerPlyFile;
   io::outputLayerAsPly(*world_B_, kMergedLayerPlyFile,
-                       io::PlyOutputTypes::kSdfIsosurfaceConnected);
+                       io::PlyOutputTypes::kSdfIsosurface);
   LOG(INFO) << "Done.";
 }
 
