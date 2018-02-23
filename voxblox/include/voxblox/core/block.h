@@ -53,6 +53,10 @@ class Block {
     return linear_index;
   }
 
+  // NOTE: This function is dangerous, it will truncate the voxel index to an
+  // index that is within this block if you pass a coordinate outside the range
+  // of this block. Try not to use this function if there is an alternative to
+  // directly address the voxels via precise integer indexing math.
   inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Point& coords) const {
     const IndexElement max_value = voxels_per_side_ - 1;
@@ -65,6 +69,10 @@ class Block {
                       std::max(std::min(voxel_index.z(), max_value), 0));
   }
 
+  // NOTE: This function is dangerous, it will truncate the voxel index to an
+  // index that is within this block if you pass a coordinate outside the range
+  // of this block. Try not to use this function if there is an alternative to
+  // directly address the voxels via precise integer indexing math.
   inline size_t computeLinearIndexFromCoordinates(const Point& coords) const {
     return computeLinearIndexFromVoxelIndex(
         computeVoxelIndexFromCoordinates(coords));
@@ -103,6 +111,10 @@ class Block {
     return voxels_[computeLinearIndexFromVoxelIndex(index)];
   }
 
+  // NOTE: This function is dangerous, it will truncate the voxel index to an
+  // index that is within this block if you pass a coordinate outside the range
+  // of this block. Try not to use this function if there is an alternative to
+  // directly address the voxels via precise integer indexing math.
   inline const VoxelType& getVoxelByCoordinates(const Point& coords) const {
     return voxels_[computeLinearIndexFromCoordinates(coords)];
   }
