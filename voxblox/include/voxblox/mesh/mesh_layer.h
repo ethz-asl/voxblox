@@ -147,7 +147,7 @@ class MeshLayer {
     // If two vertexes are closer together than (voxel_size /
     // key_multiplication_factor), then the second vertex will be discarded and
     // the first one used in its place
-    constexpr FloatingPoint key_multiplication_factor = 10;
+    constexpr FloatingPoint key_multiplication_factor = 10000.0f;
 
     // Combine everything in the layer into one giant combined mesh.
     size_t v = 0;
@@ -159,7 +159,7 @@ class MeshLayer {
       for (size_t i = 0; i < mesh->vertices.size(); ++i) {
         // convert from 3D point to key
         BlockIndex vert_key =
-            (key_multiplication_factor * mesh->vertices[i] / block_size())
+            (key_multiplication_factor * mesh->vertices[i])
                 .cast<IndexElement>();
         if (uniques.find(vert_key) == uniques.end()) {
           uniques[vert_key] = v;
