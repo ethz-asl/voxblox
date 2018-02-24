@@ -49,6 +49,10 @@ void SkeletonizerNode::init() {
 
   esdf_server_.loadMap(input_filepath);
 
+  const bool full_euclidean_distance = true;
+  esdf_server_.updateEsdfBatch(full_euclidean_distance);
+
+
   // Visualize all parts.
   esdf_server_.updateMesh();
   esdf_server_.publishPointclouds();
@@ -76,7 +80,7 @@ void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
 
   bool generate_by_layer_neighbors =
       skeleton_generator.getGenerateByLayerNeighbors();
-  skeleton_generator.setMinSeparationAngle(0.0);
+  skeleton_generator.setMinSeparationAngle(0.7);
 
   nh_private_.param("generate_by_layer_neighbors", generate_by_layer_neighbors,
                     generate_by_layer_neighbors);

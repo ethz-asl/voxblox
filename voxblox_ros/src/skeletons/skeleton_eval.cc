@@ -168,12 +168,13 @@ bool SkeletonEvalNode::selectRandomFreePose(const Point& min_bound,
 
   const int max_tries = 100;
   const FloatingPoint max_dist = 5.0;
+  const FloatingPoint robot_radius = 0.5;
 
   for (int i = 0; i < max_tries; ++i) {
     *sampled_pose = Point(randMToN(min_bound.x(), max_bound.x()),
                           randMToN(min_bound.y(), max_bound.y()),
                           randMToN(min_bound.z(), max_bound.z()));
-    if (world_.getDistanceToPoint(*sampled_pose, max_dist) > 0.0) {
+    if (world_.getDistanceToPoint(*sampled_pose, max_dist) > robot_radius) {
       return true;
     }
   }
@@ -195,6 +196,7 @@ void SkeletonEvalNode::generateMapFromRobotPoses(int num_poses, int seed,
                                                  FloatingPoint noise_level) {
   voxblox_server_.setSliceLevel(1.5);
   voxblox_server_.setClearSphere(true);
+  voxblox_server_.setEsdfMaxDistance(esdf_max_distance_);
 
   srand(seed);
 
@@ -231,6 +233,9 @@ void SkeletonEvalNode::generateMapFromRobotPoses(int num_poses, int seed,
     voxblox_server_.newPoseCallback(T_G_C);
     voxblox_server_.updateEsdf();
   }
+
+  voxblox_server_.updateEsdfBatch(full_euclidean_distance_);
+
 
   if (visualize_) {
     voxblox_server_.generateMesh();
@@ -300,9 +305,9 @@ int main(int argc, char** argv) {
   voxblox::SkeletonEvalNode node(nh, nh_private);
 
   node.generateWorld();
-  node.generateMapFromRobotPoses(100, 0, 0.0);
+  node.generateMapFromRobotPoses(200, 1, 0.0);
 
-  // node.generateMapFromGroundTruth();
+  //node.generateMapFromGroundTruth();
   node.generateSkeleton();
 
   ros::spin();
