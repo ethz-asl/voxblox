@@ -8,7 +8,7 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
     : min_separation_angle_(0.7),
       generate_by_layer_neighbors_(false),
       num_neighbors_for_edge_(18),
-      vertex_pruning_radius_(0.25),
+      vertex_pruning_radius_(0.5),
       esdf_layer_(esdf_layer) {
   CHECK_NOTNULL(esdf_layer);
 
@@ -155,7 +155,7 @@ void SkeletonGenerator::generateSkeleton() {
         skeleton_voxel.num_basis_points = skeleton_point.num_basis_points;
         if (!generate_by_layer_neighbors_) {
           skeleton_voxel.is_face = (skeleton_voxel.num_basis_points == 2);
-          skeleton_voxel.is_edge = (skeleton_voxel.num_basis_points == 3);
+          skeleton_voxel.is_edge = (skeleton_voxel.num_basis_points >= 3);
           skeleton_voxel.is_vertex = (skeleton_voxel.num_basis_points == 4);
 
           if (skeleton_voxel.is_edge) {
