@@ -82,35 +82,44 @@ class SkeletonGenerator {
   // Determine whether a point is an endpoint (using our own amazing algorithm).
   bool isEndPoint(const std::bitset<27>& neighbors) const;
 
- private:
-  float min_separation_angle_;
-  int esdf_voxels_per_side_;
+  // Utility functions for edge stuff.
+  FloatingPoint getMaxEdgeDistanceFromStraightLine(
+      const Point& start, const Point& end,
+      AlignedVector<Point>* coordinate_path, size_t* max_index);
+    FloatingPoint getMaxEdgeDistanceOnPath(
+        const Point& start, const Point& end,
+        const AlignedVector<Point>& coordinate_path, size_t* max_index);
 
-  // Whether generate vertices/edges by number of basis points (false, default)
-  // or number of neighbors on the discretized medial axis (true).
-  bool generate_by_layer_neighbors_;
-  int num_neighbors_for_edge_;
+   private:
+    float min_separation_angle_;
+    int esdf_voxels_per_side_;
 
-  // What minimum radius to prune vertices within.
-  float vertex_pruning_radius_;
+    // Whether generate vertices/edges by number of basis points (false,
+    // default)
+    // or number of neighbors on the discretized medial axis (true).
+    bool generate_by_layer_neighbors_;
+    int num_neighbors_for_edge_;
 
-  // Template matchers.
-  VoxelTemplateMatcher pruning_template_matcher_;
-  VoxelTemplateMatcher corner_template_matcher_;
+    // What minimum radius to prune vertices within.
+    float vertex_pruning_radius_;
 
-  // Neighbor tools, for finding nearest neighbors of things.
-  NeighborTools<SkeletonVoxel> neighbor_tools_;
-  SkeletonAStar skeleton_planner_;
+    // Template matchers.
+    VoxelTemplateMatcher pruning_template_matcher_;
+    VoxelTemplateMatcher corner_template_matcher_;
 
-  Skeleton skeleton_;
+    // Neighbor tools, for finding nearest neighbors of things.
+    NeighborTools<SkeletonVoxel> neighbor_tools_;
+    SkeletonAStar skeleton_planner_;
 
-  Layer<EsdfVoxel>* esdf_layer_;
-  // Owned by the generator! Since it's an intermediate by-product of
-  // constructing the graph.
-  std::unique_ptr<Layer<SkeletonVoxel>> skeleton_layer_;
+    Skeleton skeleton_;
 
-  SparseSkeletonGraph graph_;
-};
+    Layer<EsdfVoxel>* esdf_layer_;
+    // Owned by the generator! Since it's an intermediate by-product of
+    // constructing the graph.
+    std::unique_ptr<Layer<SkeletonVoxel>> skeleton_layer_;
+
+    SparseSkeletonGraph graph_;
+  };
 
 }  // namespace voxblox
 

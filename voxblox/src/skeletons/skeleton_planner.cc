@@ -2,6 +2,14 @@
 
 namespace voxblox {
 
+SkeletonAStar::SkeletonAStar() : max_iterations_(0) {}
+
+SkeletonAStar::SkeletonAStar(const Layer<SkeletonVoxel>* skeleton_layer)
+    : max_iterations_(0), skeleton_layer_(skeleton_layer) {
+  CHECK_NOTNULL(skeleton_layer_);
+  neighbor_tools_.setLayer(skeleton_layer_);
+}
+
 bool SkeletonAStar::getPathOnDiagram(
     const Point& start_position, const Point& end_position,
     AlignedVector<Point>* coordinate_path) const {
@@ -62,6 +70,8 @@ bool SkeletonAStar::getPathInVoxels(
   CHECK_NOTNULL(voxel_path);
   CHECK_NOTNULL(skeleton_layer_);
 
+  int num_iterations = 0;
+
   // Make the 3 maps we need.
   IndexToDistanceMap f_score_map;
   IndexToDistanceMap g_score_map;
@@ -88,6 +98,10 @@ bool SkeletonAStar::getPathInVoxels(
 
   // TODO(helenol): also set max number of iterations?
   while (!open_set.empty()) {
+    num_iterations++;
+    if (max_iterations_ > 0 && num_iterations > max_iterations_) {
+      break;
+    }
     // Find the smallest f-value in the open set.
     current_voxel_offset = popSmallestFromOpen(f_score_map, &open_set);
 

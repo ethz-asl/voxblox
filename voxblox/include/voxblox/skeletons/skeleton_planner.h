@@ -15,17 +15,19 @@ class SkeletonAStar {
   typedef typename AnyIndexHashMapType<FloatingPoint>::type IndexToDistanceMap;
   typedef typename AnyIndexHashMapType<Eigen::Vector3i>::type IndexToParentMap;
 
-  SkeletonAStar() {}
-  SkeletonAStar(const Layer<SkeletonVoxel>* skeleton_layer)
-      : skeleton_layer_(skeleton_layer) {
-    CHECK_NOTNULL(skeleton_layer_);
-    neighbor_tools_.setLayer(skeleton_layer_);
-  }
+  SkeletonAStar();
+  SkeletonAStar(const Layer<SkeletonVoxel>* skeleton_layer);
 
   inline void setSkeletonLayer(const Layer<SkeletonVoxel>* skeleton_layer) {
     CHECK_NOTNULL(skeleton_layer);
     skeleton_layer_ = skeleton_layer;
     neighbor_tools_.setLayer(skeleton_layer_);
+  }
+
+  // If 0, then unlimited iterations.
+  int getMaxIterations() const { return max_iterations_; }
+  void setMaxIterations(int max_iterations) {
+    max_iterations_ = max_iterations;
   }
 
   // Requires that the start and end points are on the diagram.
@@ -49,6 +51,10 @@ class SkeletonAStar {
       const Eigen::Vector3i& goal_voxel_offset) const;
 
  private:
+  // Max number of voxel evaluations the algorithm is allowed to do. If 0
+  // (default), this is limitless.
+  int max_iterations_;
+
   NeighborTools<SkeletonVoxel> neighbor_tools_;
 
   const Layer<SkeletonVoxel>* skeleton_layer_;
