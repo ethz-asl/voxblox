@@ -192,4 +192,18 @@ void SparseSkeletonGraph::removeEdge(int64_t edge_id) {
   edge_map_.erase(iter);
 }
 
+bool SparseSkeletonGraph::areVerticesDirectlyConnected(
+    int64_t vertex_id_1, int64_t vertex_id_2) const {
+  const SkeletonVertex& vertex_1 = getVertex(vertex_id_1);
+  // Iterate over all edges of vertex 1.
+  for (int64_t edge_id : vertex_1.edge_list) {
+    // Check if any connect to vertex 2.
+    const SkeletonEdge& edge = getEdge(edge_id);
+    if (edge.start_vertex == vertex_id_2 || edge.end_vertex == vertex_id_2) {
+      return true;
+    }
+  }
+
+  return false;
+}
 }  // namespace voxblox

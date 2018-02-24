@@ -1226,7 +1226,7 @@ void SkeletonGenerator::splitEdges() {
 
   // This is a number from a butt.
   const FloatingPoint kMaxThreshold = 2 * skeleton_layer_->voxel_size();
-  const FloatingPoint kVertexSearchRadus = vertex_pruning_radius_;
+  const FloatingPoint kVertexSearchRadus = vertex_pruning_radius_ / 1.0;
 
   // Build the kD Tree of the vertices at the current moment.
   // Create the adapter.
@@ -1262,31 +1262,11 @@ void SkeletonGenerator::splitEdges() {
     const Point& end = edge.end_point;
 
     // Get the shortest path through the graph.
-    AlignedVector<Point> coordinate_path;
-    bool success =
-        skeleton_planner_.getPathOnDiagram(start, end, &coordinate_path);
-
-    /* LOG(INFO) << "Start: " << start.transpose() << " end: " <<
-       end.transpose()
-              << " Success? " << success; */
-
-    // Ok now figure out what the straight-line path between the two points
-    // would be.
-    FloatingPoint max_d = 0.0;
     size_t max_d_ind = 0;
-    for (size_t j = 0; j < coordinate_path.size(); ++j) {
-      // Project every point in the coordinate path onto this.
-      // From http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
-      const Point& point = coordinate_path[j];
-      FloatingPoint d =
-          ((end - start).cross(start - point)).norm() / (end - start).norm();
-      // LOG(INFO) << "Point: " << point.transpose() << " distance: " << d;
+    AlignedVector<Point> coordinate_path;
+    FloatingPoint max_d = getMaxEdgeDistanceFromStraightLine(
+        start, end, &coordinate_path, &max_d_ind);
 
-      if (d > max_d) {
-        max_d = d;
-        max_d_ind = j;
-      }
-    }
     // Impose some minimum distance...
     if (max_d > kMaxThreshold) {
       // Pick the point with the max deviation to insert a new voxel there.
@@ -1301,9 +1281,9 @@ void SkeletonGenerator::splitEdges() {
       // Pair from index and distance.
       std::vector<std::pair<size_t, FloatingPoint> > returned_matches;
       nanoflann::SearchParams params;  // Defaults are fine.
-      size_t num_matches = 0;
-         /* kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
-                               returned_matches, params); */
+      size_t num_matches =
+          kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
+                               returned_matches, params);
 
       if (num_matches > 0) {
         // Get the first (closest?)
@@ -1316,39 +1296,61 @@ void SkeletonGenerator::splitEdges() {
 
         if (vertex_candidate.vertex_id != edge.start_vertex &&
             vertex_candidate.vertex_id != edge.end_vertex) {
-          // Try to find a connection from start vertex -> this and then from
-          // this to end vertex.
-          AlignedVector<Point> start_path, end_path;
+          if (graph_.areVerticesDirectlyConnected(vertex_candidate.vertex_id,
+                                                  edge.start_vertex) &&
+              graph_.areVerticesDirectlyConnected(vertex_candidate.vertex_id,
+                                                  edge.end_vertex)) {
+            LOG(INFO) << "Already connected, skipping.";
+          } else {
+            // Try to find a connection from start vertex -> this and then from
+            // this to end vertex.
+            AlignedVector<Point> start_path, end_path;
 
-          /* LOG(INFO) << "Starting to search from: " << start.transpose()
-                    << " to " << vertex_candidate.point.transpose() << " and "
-                    << end.transpose(); */
+            LOG(INFO) << "Starting to search from: [" << edge.start_vertex
+                      << "] " << start.transpose() << " to ["
+                      << vertex_candidate.vertex_id << "] "
+                      << vertex_candidate.point.transpose() << " and ["
+                      << edge.end_vertex << "] " << end.transpose();
 
-          bool success_start = skeleton_planner_.getPathOnDiagram(
-              start, vertex_candidate.point, &start_path);
-          bool success_end = skeleton_planner_.getPathOnDiagram(
-              vertex_candidate.point, end, &end_path);
+            bool success_start = skeleton_planner_.getPathOnDiagram(
+                start, vertex_candidate.point, &start_path);
+            bool success_end = skeleton_planner_.getPathOnDiagram(
+                vertex_candidate.point, end, &end_path);
 
-          if (success_start && success_end) {
-            // LOG(INFO) << "Found a valid path!";
-            // Remove the existing edge, add two new edges.
-            // TODO(helenol): FILL IN EDGE DISTANCE.
-            SkeletonEdge new_edge_1, new_edge_2;
-            new_edge_1.start_vertex = edge.start_vertex;
-            new_edge_1.end_vertex = vertex_candidate.vertex_id;
-            new_edge_2.start_vertex = vertex_candidate.vertex_id;
-            new_edge_2.end_vertex = edge.end_vertex;
+            if (success_start && success_end) {
+              LOG(INFO) << "Found a valid path!";
+              // Iterate over both start and end path to make sure this
+              // *ACTUALLY* lowers our distance.
+              size_t max_start_index = 0, max_end_index = 0;
+              FloatingPoint max_d_start = getMaxEdgeDistanceOnPath(
+                  start, vertex_candidate.point, start_path, &max_start_index);
+              FloatingPoint max_d_end = getMaxEdgeDistanceOnPath(
+                  vertex_candidate.point, end, end_path, &max_end_index);
 
-            int64_t edge_id_1 = graph_.addEdge(new_edge_1);
-            int64_t edge_id_2 = graph_.addEdge(new_edge_2);
+              if (max_d_start < max_d && max_d_end < max_d) {
+                LOG(INFO) << "Actually gonna add it in!";
+                // Only connect to this if it ACTUALLY lowers the costs!
 
-            // Make sure two new edges are going to be iteratively checked
-            // again.
-            edge_ids.push_back(edge_id_1);
-            edge_ids.push_back(edge_id_2);
+                // Remove the existing edge, add two new edges.
+                // TODO(helenol): FILL IN EDGE DISTANCE.
+                SkeletonEdge new_edge_1, new_edge_2;
+                new_edge_1.start_vertex = edge.start_vertex;
+                new_edge_1.end_vertex = vertex_candidate.vertex_id;
+                new_edge_2.start_vertex = vertex_candidate.vertex_id;
+                new_edge_2.end_vertex = edge.end_vertex;
 
-            graph_.removeEdge(edge_id);
-            continue;
+                int64_t edge_id_1 = graph_.addEdge(new_edge_1);
+                int64_t edge_id_2 = graph_.addEdge(new_edge_2);
+
+                // Make sure two new edges are going to be iteratively checked
+                // again.
+                edge_ids.push_back(edge_id_1);
+                edge_ids.push_back(edge_id_2);
+
+                graph_.removeEdge(edge_id);
+                continue;
+              }
+            }
           }
         }
       }
@@ -1372,10 +1374,52 @@ void SkeletonGenerator::splitEdges() {
       edge_ids.push_back(edge_id_2);
 
       graph_.removeEdge(edge_id);
+      // TODO(helenol): check if this is necessary,... Rebuild KD tree index.
+      kd_tree.buildIndex();
     }
   }
 
   LOG(INFO) << "Num vertices added: " << num_vertices_added;
+}
+
+FloatingPoint SkeletonGenerator::getMaxEdgeDistanceFromStraightLine(
+    const Point& start, const Point& end, AlignedVector<Point>* coordinate_path,
+    size_t* max_index) {
+  CHECK_NOTNULL(coordinate_path);
+  CHECK_NOTNULL(max_index);
+  *max_index = 0;
+  bool success =
+      skeleton_planner_.getPathOnDiagram(start, end, coordinate_path);
+
+  if (!success) {
+    LOG(INFO) << "Something is wrong!";
+    return 0.0;
+  }
+
+  FloatingPoint max_d =
+      getMaxEdgeDistanceOnPath(start, end, *coordinate_path, max_index);
+  return max_d;
+}
+
+FloatingPoint SkeletonGenerator::getMaxEdgeDistanceOnPath(
+    const Point& start, const Point& end,
+    const AlignedVector<Point>& coordinate_path, size_t* max_index) {
+  // Ok now figure out what the straight-line path between the two points
+  // would be.
+  FloatingPoint max_d = 0.0;
+  for (size_t j = 0; j < coordinate_path.size(); ++j) {
+    // Project every point in the coordinate path onto this.
+    // From http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+    const Point& point = (coordinate_path)[j];
+    FloatingPoint d =
+        ((end - start).cross(start - point)).norm() / (end - start).norm();
+
+    if (d > max_d) {
+      max_d = d;
+      *max_index = j;
+    }
+  }
+  return max_d;
 }
 
 }  // namespace voxblox
