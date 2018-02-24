@@ -121,10 +121,11 @@ void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
 }
 
 // Updates tsdf_voxel. Thread safe.
-void TsdfIntegratorBase::updateTsdfVoxel(
-    const Point& origin, const Point& point_G,
-    const VoxelIndex& global_voxel_idx, const Color& color, const float weight,
-    TsdfVoxel* tsdf_voxel) {
+void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
+                                         const Point& point_G,
+                                         const VoxelIndex& global_voxel_idx,
+                                         const Color& color, const float weight,
+                                         TsdfVoxel* tsdf_voxel) {
   DCHECK(tsdf_voxel != nullptr);
 
   const Point voxel_center =
@@ -187,9 +188,9 @@ void TsdfIntegratorBase::updateTsdfVoxel(
 // To do this, project the voxel_center onto the ray from origin to point G.
 // Then check if the the magnitude of the vector is smaller or greater than
 // the original distance...
-inline float TsdfIntegratorBase::computeDistance(
-    const Point& origin, const Point& point_G,
-    const Point& voxel_center) const {
+float TsdfIntegratorBase::computeDistance(const Point& origin,
+                                          const Point& point_G,
+                                          const Point& voxel_center) const {
   const Point v_voxel_origin = voxel_center - origin;
   const Point v_point_origin = point_G - origin;
 
