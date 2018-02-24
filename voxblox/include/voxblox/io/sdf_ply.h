@@ -31,45 +31,11 @@ bool getColorFromVoxel(const VoxelType& voxel, const FloatingPoint max_distance,
 
 template <>
 bool getColorFromVoxel(const TsdfVoxel& voxel, const FloatingPoint max_distance,
-                       Color* color) {
-  CHECK_NOTNULL(color);
-
-  static constexpr float kTolerance = 1e-6;
-  if (voxel.weight <= kTolerance) {
-    return false;
-  }
-
-  // Decide how to color this.
-  // Distance > 0 = blue, distance < 0 = red.
-  Color distance_color = Color::blendTwoColors(
-      Color(255, 0, 0, 0),
-      std::max<float>(1 - voxel.distance / max_distance, 0.0),
-      Color(0, 0, 255, 0),
-      std::max<float>(1 + voxel.distance / max_distance, 0.0));
-
-  *color = distance_color;
-  return true;
-}
+                       Color* color);
 
 template <>
 bool getColorFromVoxel(const EsdfVoxel& voxel, const FloatingPoint max_distance,
-                       Color* color) {
-  CHECK_NOTNULL(color);
-  if (!voxel.observed) {
-    return false;
-  }
-
-  // Decide how to color this.
-  // Distance > 0 = blue, distance < 0 = red.
-  Color distance_color = Color::blendTwoColors(
-      Color(255, 0, 0, 0),
-      std::max<float>(1 - voxel.distance / max_distance, 0.0),
-      Color(0, 0, 255, 0),
-      std::max<float>(1 + voxel.distance / max_distance, 0.0));
-
-  *color = distance_color;
-  return true;
-}
+                       Color* color);
 
 template <typename VoxelType>
 bool outputLayerAsPly(const Layer<VoxelType>& layer,
@@ -90,18 +56,17 @@ bool outputLayerAsPly(const Layer<VoxelType>& layer,
       // weight...
       size_t total_voxels = num_blocks * num_voxels_per_block;
       const bool has_color = true;
-      writer.addVerticesWithProperties(total_voxels, has_color);
-      if (!writer.writeHeader()) {
-        return false;
-      }
 
       BlockIndexList blocks;
       layer.getAllAllocatedBlocks(&blocks);
 
       int observed_voxels = 0;
 
+
+      std::vector<std::pair<Point, Color>> points;
+
       // Iterate over all blocks.
-      const float max_distance = 20;
+      const float max_distance = layer.voxel_size() * 10;
       for (const BlockIndex& index : blocks) {
         // Iterate over all voxels in said blocks.
         const Block<VoxelType>& block = layer.getBlockByIndex(index);
@@ -116,16 +81,25 @@ bool outputLayerAsPly(const Layer<VoxelType>& layer,
               // Get back the original coordinate of this voxel.
               Point coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
 
-              Color color;
+              Color color(255u,255u,255u,0u);
               if (getColorFromVoxel(voxel, max_distance, &color)) {
                 ++observed_voxels;
+                points.emplace_back(coord, color);
               }
-
-              writer.writeVertex(coord, color);
             }
           }
         }
       }
+
+      writer.addVerticesWithProperties(observed_voxels, has_color);
+      if (!writer.writeHeader()) {
+        return false;
+      }
+
+      for(const std::pair<Point, Color>& point : points){
+        writer.writeVertex(point.first, point.second);
+      }
+
       LOG(INFO) << "Number of observed voxels: " << observed_voxels;
       writer.closeFile();
       return true;
