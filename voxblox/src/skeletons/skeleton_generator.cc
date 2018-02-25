@@ -4,14 +4,27 @@
 
 namespace voxblox {
 
-SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
+SkeletonGenerator::SkeletonGenerator()
     : min_separation_angle_(0.7),
       generate_by_layer_neighbors_(true),
       num_neighbors_for_edge_(18),
       vertex_pruning_radius_(0.5),
-      min_gvd_distance_(0.4),
-      esdf_layer_(esdf_layer) {
+      min_gvd_distance_(0.4) {
+  // Initialize the template matchers.
+  pruning_template_matcher_.setDeletionTemplates();
+  corner_template_matcher_.setCornerTemplates();
+}
+
+SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
+
+    : SkeletonGenerator() {
+  setEsdfLayer(esdf_layer);
   CHECK_NOTNULL(esdf_layer);
+}
+
+void SkeletonGenerator::setEsdfLayer(Layer<EsdfVoxel>* esdf_layer) {
+  CHECK_NOTNULL(esdf_layer);
+  esdf_layer_ = esdf_layer;
 
   esdf_voxels_per_side_ = esdf_layer_->voxels_per_side();
 
@@ -21,10 +34,6 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
       esdf_layer_->voxel_size(), esdf_layer_->voxels_per_side()));
   neighbor_tools_.setLayer(skeleton_layer_.get());
   skeleton_planner_.setSkeletonLayer(skeleton_layer_.get());
-
-  // Initialize the template matchers.
-  pruning_template_matcher_.setDeletionTemplates();
-  corner_template_matcher_.setCornerTemplates();
 }
 
 void SkeletonGenerator::generateSkeleton() {
@@ -1354,7 +1363,7 @@ void SkeletonGenerator::splitEdges() {
                   vertex_candidate.point, end, end_path, &max_end_index);
 
               if (max_d_start < max_d && max_d_end < max_d) {
-                //LOG(INFO) << "Actually gonna add it in!";
+                // LOG(INFO) << "Actually gonna add it in!";
                 // Only connect to this if it ACTUALLY lowers the costs!
 
                 // Remove the existing edge, add two new edges.
@@ -1453,6 +1462,12 @@ FloatingPoint SkeletonGenerator::getMaxEdgeDistanceOnPath(
     }
   }
   return max_d;
+}
+
+void SkeletonGenerator::setSkeletonLayer(Layer<SkeletonVoxel>* skeleton_layer) {
+  skeleton_layer_.reset(skeleton_layer);
+  neighbor_tools_.setLayer(skeleton_layer_.get());
+  skeleton_planner_.setSkeletonLayer(skeleton_layer_.get());
 }
 
 }  // namespace voxblox
