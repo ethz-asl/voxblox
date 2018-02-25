@@ -18,6 +18,8 @@ inline void visualizeSkeletonGraph(
 
   visualization_msgs::Marker vertex_marker;
   vertex_marker.points.reserve(vertex_ids.size());
+  // Also create the free-space marker.
+  visualization_msgs::Marker vertex_free_space_marker;
 
   vertex_marker.header.frame_id = frame_id;
   vertex_marker.ns = "vertices";
@@ -29,11 +31,27 @@ inline void visualizeSkeletonGraph(
   vertex_marker.color.r = 1.0;
   vertex_marker.color.a = 1.0;
 
+  vertex_free_space_marker.header.frame_id = frame_id;
+  vertex_free_space_marker.type = visualization_msgs::Marker::SPHERE;
+  vertex_free_space_marker.ns = "vertex_space";
+  vertex_free_space_marker.color.a = 0.2;
+  vertex_free_space_marker.color.r = 1.0;
+  vertex_free_space_marker.color.g = 1.0;
+
   for (int64_t vertex_id : vertex_ids) {
     geometry_msgs::Point point_msg;
-    tf::pointEigenToMsg(graph.getVertex(vertex_id).point.cast<double>(),
-                        point_msg);
+    const SkeletonVertex& vertex = graph.getVertex(vertex_id);
+    tf::pointEigenToMsg(vertex.point.cast<double>(), point_msg);
     vertex_marker.points.push_back(point_msg);
+    if (vertex.distance > 1e-1) {
+      vertex_free_space_marker.pose.orientation.w = 1.0;
+      vertex_free_space_marker.pose.position = point_msg;
+      vertex_free_space_marker.scale.x = vertex.distance;
+      vertex_free_space_marker.scale.y = vertex.distance;
+      vertex_free_space_marker.scale.z = vertex.distance;
+      marker_array->markers.push_back(vertex_free_space_marker);
+      vertex_free_space_marker.id++;
+    }
   }
 
   marker_array->markers.push_back(vertex_marker);

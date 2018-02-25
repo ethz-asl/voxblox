@@ -6,9 +6,10 @@ namespace voxblox {
 
 SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
     : min_separation_angle_(0.7),
-      generate_by_layer_neighbors_(false),
+      generate_by_layer_neighbors_(true),
       num_neighbors_for_edge_(18),
-      vertex_pruning_radius_(0.5),
+      vertex_pruning_radius_(0.25),
+      min_gvd_distance_(0.4),
       esdf_layer_(esdf_layer) {
   CHECK_NOTNULL(esdf_layer);
 
@@ -52,7 +53,7 @@ void SkeletonGenerator::generateSkeleton() {
       VoxelIndex voxel_index =
           esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
 
-      if (!esdf_voxel.observed || esdf_voxel.distance < 0.0f ||
+      if (!esdf_voxel.observed || esdf_voxel.distance < min_gvd_distance_ ||
           esdf_voxel.fixed) {
         continue;
       }
@@ -101,7 +102,8 @@ void SkeletonGenerator::generateSkeleton() {
         EsdfVoxel& neighbor_voxel =
             neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
 
-        if (!neighbor_voxel.observed || neighbor_voxel.distance < 0.0f ||
+        if (!neighbor_voxel.observed ||
+            neighbor_voxel.distance < min_gvd_distance_ ||
             neighbor_voxel.fixed) {
           continue;
         }
@@ -567,6 +569,8 @@ void SkeletonGenerator::generateSparseGraph() {
       }
     }
   }
+
+  generate_timer.Stop();
 
   splitEdges();
 }
@@ -1227,6 +1231,8 @@ void SkeletonGenerator::splitEdges() {
   // This is a number from a butt.
   const FloatingPoint kMaxThreshold = 2 * skeleton_layer_->voxel_size();
   const FloatingPoint kVertexSearchRadus = vertex_pruning_radius_ / 1.0;
+  const int kMaxAstarIterations = 500;
+  skeleton_planner_.setMaxIterations(kMaxAstarIterations);
 
   // Build the kD Tree of the vertices at the current moment.
   // Create the adapter.
@@ -1261,6 +1267,11 @@ void SkeletonGenerator::splitEdges() {
     const Point& start = edge.start_point;
     const Point& end = edge.end_point;
 
+    // Don't bother with tiny edges.
+    /* if ((start - end).norm() <= 5 * skeleton_layer_->voxel_size()) {
+      continue;
+    } */
+
     // Get the shortest path through the graph.
     size_t max_d_ind = 0;
     AlignedVector<Point> coordinate_path;
@@ -1281,8 +1292,7 @@ void SkeletonGenerator::splitEdges() {
       // Pair from index and distance.
       std::vector<std::pair<size_t, FloatingPoint> > returned_matches;
       nanoflann::SearchParams params;  // Defaults are fine.
-      size_t num_matches =
-          kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
+      size_t num_matches = kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
                                returned_matches, params);
 
       if (num_matches > 0) {
@@ -1300,7 +1310,7 @@ void SkeletonGenerator::splitEdges() {
                                                   edge.start_vertex) &&
               graph_.areVerticesDirectlyConnected(vertex_candidate.vertex_id,
                                                   edge.end_vertex)) {
-            LOG(INFO) << "Already connected, skipping.";
+            // LOG(INFO) << "Already connected, skipping.";
           } else {
             // Try to find a connection from start vertex -> this and then from
             // this to end vertex.
@@ -1318,7 +1328,7 @@ void SkeletonGenerator::splitEdges() {
                 vertex_candidate.point, end, &end_path);
 
             if (success_start && success_end) {
-              LOG(INFO) << "Found a valid path!";
+              // LOG(INFO) << "Found a valid path!";
               // Iterate over both start and end path to make sure this
               // *ACTUALLY* lowers our distance.
               size_t max_start_index = 0, max_end_index = 0;
@@ -1375,10 +1385,15 @@ void SkeletonGenerator::splitEdges() {
 
       graph_.removeEdge(edge_id);
       // TODO(helenol): check if this is necessary,... Rebuild KD tree index.
-      kd_tree.buildIndex();
+      if (num_vertices_added % 10 == 0) {
+        timing::Timer kdtree_timer("skeleton/kdtree");
+        kd_tree.buildIndex();
+        kdtree_timer.Stop();
+      }
     }
   }
 
+  skeleton_planner_.setMaxIterations(0);
   LOG(INFO) << "Num vertices added: " << num_vertices_added;
 }
 

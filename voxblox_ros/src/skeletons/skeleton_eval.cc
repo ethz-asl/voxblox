@@ -58,6 +58,9 @@ class SkeletonEvalNode {
   double camera_min_dist_;
   double camera_max_dist_;
 
+  bool apply_noise_;
+  FloatingPoint noise_sigma_;
+
   voxblox::EsdfServer voxblox_server_;
   voxblox::SimulationWorld world_;
 };
@@ -75,6 +78,8 @@ SkeletonEvalNode::SkeletonEvalNode(const ros::NodeHandle& nh,
       camera_fov_h_rad_(1.5708),  // 90 deg
       camera_min_dist_(0.5),
       camera_max_dist_(10.0),
+      apply_noise_(false),
+      noise_sigma_(0.0),
       voxblox_server_(nh_, nh_private_) {
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("full_euclidean_distance", full_euclidean_distance_,
@@ -83,6 +88,8 @@ SkeletonEvalNode::SkeletonEvalNode(const ros::NodeHandle& nh,
                     esdf_max_distance_);
   nh_private_.param("tsdf_max_distance", tsdf_max_distance_,
                     tsdf_max_distance_);
+  nh_private_.param("apply_noise", apply_noise_, apply_noise_);
+  nh_private_.param("noise_sigma", noise_sigma_, noise_sigma_);
 
   skeleton_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZ> >(
       "skeleton", 1, true);
@@ -131,9 +138,9 @@ void SkeletonEvalNode::generateWorld() {
       Point(13.75, 8.5, 1.25), Point(2.5, 2.0, 2.5), voxblox::Color::Green())));
 
   // ..."Fun" object...
-  /* world_.addObject(std::unique_ptr<voxblox::Object>(
+  world_.addObject(std::unique_ptr<voxblox::Object>(
       new voxblox::Cube(Point(12.5, 3.125, 1.25), Point(1.0, 3.75, 2.5),
-                         voxblox::Color::Pink()))); */
+                         voxblox::Color::Pink())));
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Cylinder(
       Point(12.5, 5.0, 1.25), 0.5, 2.5, voxblox::Color::Pink())));
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Sphere(
@@ -219,9 +226,15 @@ void SkeletonEvalNode::generateMapFromRobotPoses(int num_poses, int seed,
     // Step 2: actually get the pointcloud.
     voxblox::Pointcloud ptcloud, ptcloud_C;
     voxblox::Colors colors;
-    world_.getPointcloudFromViewpoint(view_origin, view_direction,
-                                      camera_resolution_, camera_fov_h_rad_,
-                                      camera_max_dist_, &ptcloud, &colors);
+    if (!apply_noise_) {
+      world_.getPointcloudFromViewpoint(view_origin, view_direction,
+                                        camera_resolution_, camera_fov_h_rad_,
+                                        camera_max_dist_, &ptcloud, &colors);
+    } else {
+      world_.getNoisyPointcloudFromViewpoint(
+          view_origin, view_direction, camera_resolution_, camera_fov_h_rad_,
+          camera_max_dist_, noise_sigma_, &ptcloud, &colors);
+    }
 
     // Step 3: integrate into the map.
     // Transform back into camera frame.
@@ -230,12 +243,11 @@ void SkeletonEvalNode::generateMapFromRobotPoses(int num_poses, int seed,
 
     // Step 4: update mesh and ESDF. NewPoseCallback will mark unknown as
     // occupied and clear space otherwise.
-    voxblox_server_.newPoseCallback(T_G_C);
-    voxblox_server_.updateEsdf();
+    // voxblox_server_.newPoseCallback(T_G_C);
+    // voxblox_server_.updateEsdf();
   }
 
   voxblox_server_.updateEsdfBatch(full_euclidean_distance_);
-
 
   if (visualize_) {
     voxblox_server_.generateMesh();
@@ -288,6 +300,21 @@ void SkeletonEvalNode::generateSkeleton() {
   visualization_msgs::MarkerArray marker_array;
   visualizeSkeletonGraph(graph, frame_id_, &marker_array);
   sparse_graph_pub_.publish(marker_array);
+
+  std::vector<int64_t> vertex_ids, edge_ids;
+  skeleton_generator.getSparseGraph().getAllEdgeIds(&edge_ids);
+  skeleton_generator.getSparseGraph().getAllVertexIds(&vertex_ids);
+
+  // Now output some staaaaats.
+  ROS_INFO("Map voxel size: %f Noise on? %d Noise level: %f",
+           voxblox_server_.getTsdfMapPtr()->getTsdfLayerPtr()->voxel_size(),
+           apply_noise_, noise_sigma_);
+  ROS_INFO(
+      "Diagram edges: %lu Diagram vertices: %lu Graph edges: %lu Graph "
+      "vertices: %lu",
+      skeleton_generator.getSkeleton().getEdgePoints().size(),
+      skeleton_generator.getSkeleton().getVertexPoints().size(),
+      edge_ids.size(), vertex_ids.size());
 }
 
 }  // namespace voxblox
@@ -305,9 +332,9 @@ int main(int argc, char** argv) {
   voxblox::SkeletonEvalNode node(nh, nh_private);
 
   node.generateWorld();
-  node.generateMapFromRobotPoses(200, 1, 0.0);
+  //node.generateMapFromRobotPoses(200, 1, 0.0);
 
-  //node.generateMapFromGroundTruth();
+  node.generateMapFromGroundTruth();
   node.generateSkeleton();
 
   ros::spin();

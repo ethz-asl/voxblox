@@ -101,7 +101,10 @@ class SkeletonGenerator {
     int num_neighbors_for_edge_;
 
     // What minimum radius to prune vertices within.
-    float vertex_pruning_radius_;
+    FloatingPoint vertex_pruning_radius_;
+
+    // Minimum distance that the GVD is computed at. 0 by default.
+    FloatingPoint min_gvd_distance_;
 
     // Template matchers.
     VoxelTemplateMatcher pruning_template_matcher_;
