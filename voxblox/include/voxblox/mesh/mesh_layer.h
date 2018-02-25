@@ -140,7 +140,9 @@ class MeshLayer {
 
   // Get mesh from mesh layer. NOTE: The triangles and vertices in this mesh are
   // distinct, hence, this will not produce a connected mesh.
-  void getMesh(Mesh::Ptr combined_mesh) const {
+  void getMesh(Mesh* combined_mesh) const {
+    CHECK_NOTNULL(combined_mesh);
+
     // Combine everything in the layer into one giant combined mesh.
 
     BlockIndexList mesh_indices;
@@ -157,7 +159,7 @@ class MeshLayer {
         if (!mesh->vertices.empty()) {
           has_colors = mesh->hasColors();
           has_normals = mesh->hasNormals();
-          has_indices = mesh->hasIndices();
+          has_indices = mesh->hasTriangles();
           break;
         }
       }
@@ -182,7 +184,7 @@ class MeshLayer {
       if (!mesh->vertices.empty()) {
         CHECK_EQ(has_colors, mesh->hasColors());
         CHECK_EQ(has_normals, mesh->hasNormals());
-        CHECK_EQ(has_indices, mesh->hasIndices());
+        CHECK_EQ(has_indices, mesh->hasTriangles());
       }
 
       // Copy the mesh content into the combined mesh. This is done in triplets
@@ -229,9 +231,11 @@ class MeshLayer {
   // the mesh, chose a threshold greater or near the voxel size until you
   // reached the level of simpliciation desired.
   void getConnectedMesh(
-      Mesh::Ptr combined_mesh,
+      Mesh* combined_mesh,
       const FloatingPoint approximate_vertex_proximity_threshold =
           1e-10) const {
+    CHECK_NOTNULL(combined_mesh);
+
     // Used to prevent double ups in vertices
     AnyIndexHashMapType<IndexElement>::type uniques;
 
