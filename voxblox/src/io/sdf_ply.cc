@@ -9,8 +9,8 @@ namespace voxblox {
 namespace io {
 
 template <>
-bool getColorFromVoxel(const TsdfVoxel& voxel, const FloatingPoint max_distance,
-                       Color* color) {
+bool getColorFromVoxel(const TsdfVoxel& voxel,
+                       const FloatingPoint max_sdf_distance, Color* color) {
   CHECK_NOTNULL(color);
 
   static constexpr float kTolerance = 1e-6;
@@ -18,35 +18,39 @@ bool getColorFromVoxel(const TsdfVoxel& voxel, const FloatingPoint max_distance,
     return false;
   }
 
-  // Decide how to color this.
-  // Distance > 0 = blue, distance < 0 = red.
-  Color distance_color = Color::blendTwoColors(
-      Color(255, 0, 0, 0),
-      std::max<float>(1 - voxel.distance / max_distance, 0.0),
-      Color(0, 0, 255, 0),
-      std::max<float>(1 + voxel.distance / max_distance, 0.0));
+  FloatingPoint truncated_voxel_distance =
+      std::min(std::max(voxel.distance, -max_sdf_distance), max_sdf_distance);
 
-  *color = distance_color;
+  FloatingPoint color_factor =
+      0.5 * (1.0 + (truncated_voxel_distance / max_sdf_distance));
+
+  CHECK_LE(color_factor, 1.0);
+  CHECK_GE(color_factor, 0.0);
+
+  *color = rainbowColorMap(color_factor);
+
   return true;
 }
 
 template <>
-bool getColorFromVoxel(const EsdfVoxel& voxel, const FloatingPoint max_distance,
-                       Color* color) {
+bool getColorFromVoxel(const EsdfVoxel& voxel,
+                       const FloatingPoint max_sdf_distance, Color* color) {
   CHECK_NOTNULL(color);
   if (!voxel.observed) {
     return false;
   }
 
-  // Decide how to color this.
-  // Distance > 0 = blue, distance < 0 = red.
-  Color distance_color = Color::blendTwoColors(
-      Color(255, 0, 0, 0),
-      std::max<float>(1 - voxel.distance / max_distance, 0.0),
-      Color(0, 0, 255, 0),
-      std::max<float>(1 + voxel.distance / max_distance, 0.0));
+  FloatingPoint truncated_voxel_distance =
+      std::min(std::max(voxel.distance, -max_sdf_distance), max_sdf_distance);
 
-  *color = distance_color;
+  FloatingPoint color_factor =
+      0.5 * (1.0 + (truncated_voxel_distance / max_sdf_distance));
+
+  CHECK_LE(color_factor, 1.0);
+  CHECK_GE(color_factor, 0.0);
+
+  *color = rainbowColorMap(color_factor);
+
   return true;
 }
 

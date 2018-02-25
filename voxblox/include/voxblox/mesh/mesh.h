@@ -37,14 +37,25 @@ struct Mesh {
   typedef std::shared_ptr<Mesh> Ptr;
   typedef std::shared_ptr<const Mesh> ConstPtr;
 
+  static constexpr FloatingPoint kInvalidBlockSize = -1.0;
+
+  Mesh()
+      : block_size(kInvalidBlockSize), origin(Point::Zero()), updated(false) {
+    // Do nothing.
+  }
+
   Mesh(FloatingPoint _block_size, const Point& _origin)
-      : block_size(_block_size), origin(_origin), updated(false) {}
+      : block_size(_block_size), origin(_origin), updated(false) {
+    CHECK_GT(block_size, 0.0);
+  }
   virtual ~Mesh() {}
 
   inline bool hasVertices() const { return !vertices.empty(); }
   inline bool hasNormals() const { return !normals.empty(); }
   inline bool hasColors() const { return !colors.empty(); }
-  inline bool hasIndices() const { return !indices.empty(); }
+  inline bool hasTriangles() const { return !indices.empty(); }
+
+  inline size_t size() const { return vertices.size(); }
 
   inline void clear() {
     vertices.clear();
@@ -52,6 +63,10 @@ struct Mesh {
     colors.clear();
     indices.clear();
   }
+
+  inline void clearTriangles() { indices.clear(); }
+  inline void clearNormals() { normals.clear(); }
+  inline void clearColors() { colors.clear(); }
 
   inline void resize(const size_t size, const bool has_normals = true,
                      const bool has_colors = true,
@@ -73,7 +88,7 @@ struct Mesh {
 
   inline void reserve(const size_t size, const bool has_normals = true,
                       const bool has_colors = true,
-                      const bool has_indices = true) {
+                      const bool has_triangles = true) {
     vertices.reserve(size);
 
     if (has_normals) {
@@ -84,8 +99,37 @@ struct Mesh {
       colors.reserve(size);
     }
 
-    if (has_indices) {
+    if (has_triangles) {
       indices.reserve(size);
+    }
+  }
+
+  void colorizeMesh(const Color& new_color) {
+    colors.clear();
+    colors.resize(vertices.size(), new_color);
+  }
+
+  void concatenateMesh(const Mesh& other_mesh) {
+    CHECK_EQ(other_mesh.hasColors(), hasColors());
+    CHECK_EQ(other_mesh.hasNormals(), hasNormals());
+    CHECK_EQ(other_mesh.hasTriangles(), hasTriangles());
+
+    reserve(size() + other_mesh.size(), hasNormals(), hasColors(),
+            hasTriangles());
+
+    const size_t num_vertices_before = vertices.size();
+
+    for (const Point& vertex : other_mesh.vertices) {
+      vertices.push_back(vertex);
+    }
+    for (const Color& color : other_mesh.colors) {
+      colors.push_back(color);
+    }
+    for (const Point& normal : other_mesh.normals) {
+      normals.push_back(normal);
+    }
+    for (const size_t index : other_mesh.indices) {
+      indices.push_back(index + num_vertices_before);
     }
   }
 

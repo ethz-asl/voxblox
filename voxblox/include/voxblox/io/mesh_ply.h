@@ -31,6 +31,10 @@
 
 namespace voxblox {
 
+bool convertMeshLayerToMesh(
+    const MeshLayer& mesh_layer, Mesh* mesh, const bool connected_mesh = true,
+    const FloatingPoint vertex_proximity_threshold = 1e-10);
+
 // Default behaviour is to simplify the mesh.
 bool outputMeshLayerAsPly(const std::string& filename,
                           const MeshLayer& mesh_layer);
