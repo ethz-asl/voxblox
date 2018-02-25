@@ -126,7 +126,7 @@ FloatingPoint evaluateLayersRmse(
           if (error_block) {
             VoxelType& error_voxel =
                 error_block->getVoxelByLinearIndex(linear_index);
-            setVoxelSdf<VoxelType>(error, &error_voxel);
+            setVoxelSdf<VoxelType>(std::abs(error), &error_voxel);
             setVoxelWeight<VoxelType>(1.0, &error_voxel);
           }
 

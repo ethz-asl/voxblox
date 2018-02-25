@@ -103,9 +103,9 @@ bool convertLayerToMesh(
   // Extract mesh from mesh layer, either by simply concatenating all meshes
   // (there is one per block) or by connecting them.
   if (connected_mesh) {
-    mesh_layer.getMesh(mesh);
-  } else {
     mesh_layer.getConnectedMesh(mesh, vertex_proximity_threshold);
+  } else {
+    mesh_layer.getMesh(mesh);
   }
   return mesh->size() > 0u;
 }
