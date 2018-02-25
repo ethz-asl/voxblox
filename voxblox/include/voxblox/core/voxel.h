@@ -34,11 +34,11 @@ struct OccupancyVoxel {
 
 struct SkeletonVoxel {
   float distance = 0.0f;
-  int num_basis_points = 0;
+  uint8_t num_basis_points = 0;
   bool is_face = false;
   bool is_edge = false;
   bool is_vertex = false;
-  int64_t vertex_id;
+  int64_t vertex_id = -1;
 };
 
 // Used for serialization only.
@@ -47,6 +47,7 @@ const std::string kNotSerializable = "not_serializable";
 const std::string kTsdf = "tsdf";
 const std::string kEsdf = "esdf";
 const std::string kOccupancy = "occupancy";
+const std::string kSkeleton = "skeleton";
 }  // namespace voxel_types
 
 template <typename Type>
@@ -68,6 +69,12 @@ template <>
 inline std::string getVoxelType<OccupancyVoxel>() {
   return voxel_types::kOccupancy;
 }
+
+template <>
+inline std::string getVoxelType<SkeletonVoxel>() {
+  return voxel_types::kSkeleton;
+}
+
 
 }  // namespace voxblox
 
