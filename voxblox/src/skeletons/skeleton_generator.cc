@@ -8,7 +8,7 @@ SkeletonGenerator::SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer)
     : min_separation_angle_(0.7),
       generate_by_layer_neighbors_(true),
       num_neighbors_for_edge_(18),
-      vertex_pruning_radius_(0.25),
+      vertex_pruning_radius_(0.5),
       min_gvd_distance_(0.4),
       esdf_layer_(esdf_layer) {
   CHECK_NOTNULL(esdf_layer);
@@ -1163,7 +1163,8 @@ void SkeletonGenerator::pruneDiagramVertices() {
 
     size_t num_matches =
         kd_tree.radiusSearch(const_vertices[i].point.data(),
-                             vertex_pruning_radius_, returned_matches, params);
+                             vertex_pruning_radius_ * vertex_pruning_radius_,
+                             returned_matches, params);
 
     // Go through all the matches... Figure out if we actually need to delete
     // something. Keep track of our favorite to keep.
@@ -1230,7 +1231,8 @@ void SkeletonGenerator::splitEdges() {
 
   // This is a number from a butt.
   const FloatingPoint kMaxThreshold = 2 * skeleton_layer_->voxel_size();
-  const FloatingPoint kVertexSearchRadus = vertex_pruning_radius_ / 1.0;
+  const FloatingPoint kVertexSearchRadus =
+      vertex_pruning_radius_ * vertex_pruning_radius_ / 1.0;
   const int kMaxAstarIterations = 500;
   skeleton_planner_.setMaxIterations(kMaxAstarIterations);
 
@@ -1241,13 +1243,19 @@ void SkeletonGenerator::splitEdges() {
   // construct a kd-tree index:
   const int kDim = 3;
   const int kMaxLeaf = 10;
-  typedef nanoflann::KDTreeSingleIndexAdaptor<
+
+  typedef nanoflann::KDTreeSingleIndexDynamicAdaptor<
       nanoflann::L2_Simple_Adaptor<FloatingPoint, SkeletonVertexMapAdapter>,
       SkeletonVertexMapAdapter, kDim> VertexGraphKdTree;
 
+  /*  typedef nanoflann::KDTreeSingleIndexAdaptor<
+        nanoflann::L2_Simple_Adaptor<FloatingPoint, SkeletonVertexMapAdapter>,
+        SkeletonVertexMapAdapter, kDim> VertexGraphKdTree;
+    */
   VertexGraphKdTree kd_tree(
       kDim, adapter, nanoflann::KDTreeSingleIndexAdaptorParams(kMaxLeaf));
-  kd_tree.buildIndex();
+  // kd_tree.buildIndex();
+  kd_tree.addPoints(0, adapter.kdtree_get_point_count() - 1);
 
   std::vector<int64_t> edge_ids;
   graph_.getAllEdgeIds(&edge_ids);
@@ -1292,12 +1300,20 @@ void SkeletonGenerator::splitEdges() {
       // Pair from index and distance.
       std::vector<std::pair<size_t, FloatingPoint> > returned_matches;
       nanoflann::SearchParams params;  // Defaults are fine.
-      size_t num_matches = kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
-                               returned_matches, params);
+      size_t num_results = 1;
+      nanoflann::KNNResultSet<FloatingPoint> result_set(num_results);
+      FloatingPoint squared_distance;
+      size_t ret_index = 0;
+      result_set.init(&ret_index, &squared_distance);
+      /* size_t num_matches =
+          kd_tree.radiusSearch(new_vertex.point.data(), kVertexSearchRadus,
+                               returned_matches, params); */
 
-      if (num_matches > 0) {
+      kd_tree.findNeighbors(result_set, new_vertex.point.data(), params);
+
+      if (squared_distance < kVertexSearchRadus) {  //(num_matches > 0) {
         // Get the first (closest?)
-        size_t map_index = returned_matches[0].first;
+        size_t map_index = ret_index;  // returned_matches[0].first;
         auto iter = graph_.getVertexMap().begin();
         for (size_t i = 0; i < map_index; ++i) {
           iter++;
@@ -1316,11 +1332,11 @@ void SkeletonGenerator::splitEdges() {
             // this to end vertex.
             AlignedVector<Point> start_path, end_path;
 
-            LOG(INFO) << "Starting to search from: [" << edge.start_vertex
+            /* LOG(INFO) << "Starting to search from: [" << edge.start_vertex
                       << "] " << start.transpose() << " to ["
                       << vertex_candidate.vertex_id << "] "
                       << vertex_candidate.point.transpose() << " and ["
-                      << edge.end_vertex << "] " << end.transpose();
+                      << edge.end_vertex << "] " << end.transpose(); */
 
             bool success_start = skeleton_planner_.getPathOnDiagram(
                 start, vertex_candidate.point, &start_path);
@@ -1338,7 +1354,7 @@ void SkeletonGenerator::splitEdges() {
                   vertex_candidate.point, end, end_path, &max_end_index);
 
               if (max_d_start < max_d && max_d_end < max_d) {
-                LOG(INFO) << "Actually gonna add it in!";
+                //LOG(INFO) << "Actually gonna add it in!";
                 // Only connect to this if it ACTUALLY lowers the costs!
 
                 // Remove the existing edge, add two new edges.
@@ -1385,9 +1401,11 @@ void SkeletonGenerator::splitEdges() {
 
       graph_.removeEdge(edge_id);
       // TODO(helenol): check if this is necessary,... Rebuild KD tree index.
-      if (num_vertices_added % 10 == 0) {
+      if (num_vertices_added % 1 == 0) {
         timing::Timer kdtree_timer("skeleton/kdtree");
-        kd_tree.buildIndex();
+        kd_tree.addPoints(adapter.kdtree_get_point_count() - 1,
+                          adapter.kdtree_get_point_count() - 1);
+        // kd_tree.buildIndex();
         kdtree_timer.Stop();
       }
     }
