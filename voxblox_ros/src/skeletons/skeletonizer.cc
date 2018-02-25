@@ -36,12 +36,15 @@ class SkeletonizerNode {
   ros::Publisher sparse_graph_pub_;
 
   EsdfServer esdf_server_;
+
+  SkeletonGenerator skeleton_generator_;
 };
 
 void SkeletonizerNode::init() {
   // Load a file from the params.
-  std::string input_filepath;
+  std::string input_filepath, output_filepath;
   nh_private_.param("input_filepath", input_filepath, input_filepath);
+  nh_private_.param("output_filepath", output_filepath, output_filepath);
 
   if (input_filepath.empty()) {
     return;
@@ -51,7 +54,6 @@ void SkeletonizerNode::init() {
 
   const bool full_euclidean_distance = true;
   esdf_server_.updateEsdfBatch(full_euclidean_distance);
-
 
   // Visualize all parts.
   esdf_server_.updateMesh();
@@ -71,39 +73,48 @@ void SkeletonizerNode::init() {
   skeleton_pub_.publish(ptcloud_pcl);
 
   // Optionally save back to file.
+  if (!output_filepath.empty()) {
+    // Put the TSDF, ESDF, and skeleton layer in the same bucket.
+    if (esdf_server_.saveMap(output_filepath)) {
+      constexpr bool kClearFile = false;
+      io::SaveLayer<SkeletonVoxel>(*skeleton_generator_.getSkeletonLayer(),
+                                      output_filepath, kClearFile);
+    } else {
+      ROS_ERROR("Couldn't output map to: %s", output_filepath.c_str());
+    }
+  }
 }
 
 void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
                                    voxblox::Pointcloud* pointcloud,
                                    std::vector<float>* distances) {
-  SkeletonGenerator skeleton_generator(esdf_layer);
+  skeleton_generator_.setEsdfLayer(esdf_layer);
 
   bool generate_by_layer_neighbors =
-      skeleton_generator.getGenerateByLayerNeighbors();
-  skeleton_generator.setMinSeparationAngle(0.7);
+      skeleton_generator_.getGenerateByLayerNeighbors();
+  skeleton_generator_.setMinSeparationAngle(0.7);
 
   nh_private_.param("generate_by_layer_neighbors", generate_by_layer_neighbors,
                     generate_by_layer_neighbors);
-  skeleton_generator.setGenerateByLayerNeighbors(generate_by_layer_neighbors);
+  skeleton_generator_.setGenerateByLayerNeighbors(generate_by_layer_neighbors);
 
-  int num_neighbors_for_edge = skeleton_generator.getNumNeighborsForEdge();
+  int num_neighbors_for_edge = skeleton_generator_.getNumNeighborsForEdge();
   nh_private_.param("num_neighbors_for_edge", num_neighbors_for_edge,
                     num_neighbors_for_edge);
-  skeleton_generator.setNumNeighborsForEdge(num_neighbors_for_edge);
+  skeleton_generator_.setNumNeighborsForEdge(num_neighbors_for_edge);
 
-
-  skeleton_generator.generateSkeleton();
-  skeleton_generator.getSkeleton().getEdgePointcloudWithDistances(pointcloud,
-                                                              distances);
+  skeleton_generator_.generateSkeleton();
+  skeleton_generator_.getSkeleton().getEdgePointcloudWithDistances(pointcloud,
+                                                                   distances);
   ROS_INFO("Finished generating skeleton.");
 
-  skeleton_generator.generateSparseGraph();
+  skeleton_generator_.generateSparseGraph();
   ROS_INFO("Finished generating sparse graph.");
 
   ROS_INFO_STREAM("Total Timings: " << std::endl << timing::Timing::Print());
 
   // Now visualize the graph.
-  const SparseSkeletonGraph& graph = skeleton_generator.getSparseGraph();
+  const SparseSkeletonGraph& graph = skeleton_generator_.getSparseGraph();
   visualization_msgs::MarkerArray marker_array;
   visualizeSkeletonGraph(graph, "world", &marker_array);
   sparse_graph_pub_.publish(marker_array);

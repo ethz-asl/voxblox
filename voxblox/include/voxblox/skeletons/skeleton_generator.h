@@ -21,7 +21,10 @@ namespace voxblox {
 // TODO(helenol): move as an integrator?
 class SkeletonGenerator {
  public:
+  SkeletonGenerator();
   SkeletonGenerator(Layer<EsdfVoxel>* esdf_layer);
+
+  void setEsdfLayer(Layer<EsdfVoxel>* esdf_layer);
 
   void generateSkeleton();
   void generateSparseGraph();
@@ -86,43 +89,49 @@ class SkeletonGenerator {
   FloatingPoint getMaxEdgeDistanceFromStraightLine(
       const Point& start, const Point& end,
       AlignedVector<Point>* coordinate_path, size_t* max_index);
-    FloatingPoint getMaxEdgeDistanceOnPath(
-        const Point& start, const Point& end,
-        const AlignedVector<Point>& coordinate_path, size_t* max_index);
+  FloatingPoint getMaxEdgeDistanceOnPath(
+      const Point& start, const Point& end,
+      const AlignedVector<Point>& coordinate_path, size_t* max_index);
 
-   private:
-    float min_separation_angle_;
-    int esdf_voxels_per_side_;
+  // Get the skeleton layer.
+  Layer<SkeletonVoxel>* getSkeletonLayer() { return skeleton_layer_.get(); }
 
-    // Whether generate vertices/edges by number of basis points (false,
-    // default)
-    // or number of neighbors on the discretized medial axis (true).
-    bool generate_by_layer_neighbors_;
-    int num_neighbors_for_edge_;
+  // Set the skeleton layer! Takes ownership.
+  void setSkeletonLayer(Layer<SkeletonVoxel>* skeleton_layer);
 
-    // What minimum radius to prune vertices within.
-    FloatingPoint vertex_pruning_radius_;
+ private:
+  float min_separation_angle_;
+  int esdf_voxels_per_side_;
 
-    // Minimum distance that the GVD is computed at. 0 by default.
-    FloatingPoint min_gvd_distance_;
+  // Whether generate vertices/edges by number of basis points (false,
+  // default)
+  // or number of neighbors on the discretized medial axis (true).
+  bool generate_by_layer_neighbors_;
+  int num_neighbors_for_edge_;
 
-    // Template matchers.
-    VoxelTemplateMatcher pruning_template_matcher_;
-    VoxelTemplateMatcher corner_template_matcher_;
+  // What minimum radius to prune vertices within.
+  FloatingPoint vertex_pruning_radius_;
 
-    // Neighbor tools, for finding nearest neighbors of things.
-    NeighborTools<SkeletonVoxel> neighbor_tools_;
-    SkeletonAStar skeleton_planner_;
+  // Minimum distance that the GVD is computed at. 0 by default.
+  FloatingPoint min_gvd_distance_;
 
-    Skeleton skeleton_;
+  // Template matchers.
+  VoxelTemplateMatcher pruning_template_matcher_;
+  VoxelTemplateMatcher corner_template_matcher_;
 
-    Layer<EsdfVoxel>* esdf_layer_;
-    // Owned by the generator! Since it's an intermediate by-product of
-    // constructing the graph.
-    std::unique_ptr<Layer<SkeletonVoxel>> skeleton_layer_;
+  // Neighbor tools, for finding nearest neighbors of things.
+  NeighborTools<SkeletonVoxel> neighbor_tools_;
+  SkeletonAStar skeleton_planner_;
 
-    SparseSkeletonGraph graph_;
-  };
+  Skeleton skeleton_;
+
+  Layer<EsdfVoxel>* esdf_layer_;
+  // Owned by the generator! Since it's an intermediate by-product of
+  // constructing the graph.
+  std::unique_ptr<Layer<SkeletonVoxel>> skeleton_layer_;
+
+  SparseSkeletonGraph graph_;
+};
 
 }  // namespace voxblox
 
