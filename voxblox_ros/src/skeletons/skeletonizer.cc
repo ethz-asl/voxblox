@@ -79,6 +79,7 @@ void SkeletonizerNode::init() {
       constexpr bool kClearFile = false;
       io::SaveLayer<SkeletonVoxel>(*skeleton_generator_.getSkeletonLayer(),
                                       output_filepath, kClearFile);
+      ROS_INFO("Output map to: %s", output_filepath.c_str());
     } else {
       ROS_ERROR("Couldn't output map to: %s", output_filepath.c_str());
     }
@@ -90,10 +91,13 @@ void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
                                    std::vector<float>* distances) {
   skeleton_generator_.setEsdfLayer(esdf_layer);
 
+  FloatingPoint min_separation_angle =
+      skeleton_generator_.getMinSeparationAngle();
+  nh_private_.param("min_separation_angle", min_separation_angle,
+                    min_separation_angle);
+  skeleton_generator_.setMinSeparationAngle(min_separation_angle);
   bool generate_by_layer_neighbors =
       skeleton_generator_.getGenerateByLayerNeighbors();
-  skeleton_generator_.setMinSeparationAngle(0.7);
-
   nh_private_.param("generate_by_layer_neighbors", generate_by_layer_neighbors,
                     generate_by_layer_neighbors);
   skeleton_generator_.setGenerateByLayerNeighbors(generate_by_layer_neighbors);
@@ -102,6 +106,10 @@ void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
   nh_private_.param("num_neighbors_for_edge", num_neighbors_for_edge,
                     num_neighbors_for_edge);
   skeleton_generator_.setNumNeighborsForEdge(num_neighbors_for_edge);
+
+  FloatingPoint min_gvd_distance = skeleton_generator_.getMinGvdDistance();
+  nh_private_.param("min_gvd_distance", min_gvd_distance, min_gvd_distance);
+  skeleton_generator_.setMinGvdDistance(min_gvd_distance);
 
   skeleton_generator_.generateSkeleton();
   skeleton_generator_.getSkeleton().getEdgePointcloudWithDistances(pointcloud,
