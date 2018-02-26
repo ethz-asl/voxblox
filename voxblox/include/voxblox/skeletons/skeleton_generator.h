@@ -35,6 +35,10 @@ class SkeletonGenerator {
   void generateEdgesByLayerNeighbors();
   void generateVerticesByLayerNeighbors();
 
+  // Clear the current points in the skeleton and re-construct it based on
+  // the layer.
+  void updateSkeletonFromLayer();
+
   // Pruning function by fitting template neighbors.
   size_t pruneDiagramEdges();
 
@@ -61,6 +65,11 @@ class SkeletonGenerator {
   }
   void setGenerateByLayerNeighbors(bool generate_by_layer_neighbors) {
     generate_by_layer_neighbors_ = generate_by_layer_neighbors;
+  }
+
+  FloatingPoint getMinGvdDistance() const { return min_gvd_distance_; }
+  void setMinGvdDistance(FloatingPoint min_gvd_distance) {
+    min_gvd_distance_ = min_gvd_distance;
   }
 
   int getNumNeighborsForEdge() const { return num_neighbors_for_edge_; }

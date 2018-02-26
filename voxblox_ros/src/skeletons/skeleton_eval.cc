@@ -140,7 +140,7 @@ void SkeletonEvalNode::generateWorld() {
   // ..."Fun" object...
   world_.addObject(std::unique_ptr<voxblox::Object>(
       new voxblox::Cube(Point(12.5, 3.125, 1.25), Point(1.0, 3.75, 2.5),
-                         voxblox::Color::Pink())));
+                        voxblox::Color::Pink())));
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Cylinder(
       Point(12.5, 5.0, 1.25), 0.5, 2.5, voxblox::Color::Pink())));
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Sphere(
@@ -276,6 +276,10 @@ void SkeletonEvalNode::generateSkeleton() {
                     num_neighbors_for_edge);
   skeleton_generator.setNumNeighborsForEdge(num_neighbors_for_edge);
 
+  FloatingPoint min_gvd_distance = skeleton_generator.getMinGvdDistance();
+  nh_private_.param("min_gvd_distance", min_gvd_distance, min_gvd_distance);
+  skeleton_generator.setMinGvdDistance(min_gvd_distance);
+
   skeleton_generator.generateSkeleton();
 
   Pointcloud pointcloud;
@@ -332,7 +336,7 @@ int main(int argc, char** argv) {
   voxblox::SkeletonEvalNode node(nh, nh_private);
 
   node.generateWorld();
-  //node.generateMapFromRobotPoses(200, 1, 0.0);
+  // node.generateMapFromRobotPoses(200, 1, 0.0);
 
   node.generateMapFromGroundTruth();
   node.generateSkeleton();

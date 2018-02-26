@@ -36,6 +36,50 @@ void SkeletonGenerator::setEsdfLayer(Layer<EsdfVoxel>* esdf_layer) {
   skeleton_planner_.setSkeletonLayer(skeleton_layer_.get());
 }
 
+void SkeletonGenerator::updateSkeletonFromLayer() {
+  CHECK(skeleton_layer_);
+  // Clear whatever's in there.
+  skeleton_.getSkeletonPoints().clear();
+  skeleton_.getEdgePoints().clear();
+  skeleton_.getVertexPoints().clear();
+
+  //  Now iterate over the whole thing, and stick any face/edge/vertex points
+  // in there.
+  BlockIndexList blocks;
+  skeleton_layer_->getAllAllocatedBlocks(&blocks);
+
+  for (const BlockIndex& block_index : blocks) {
+    const Block<SkeletonVoxel>::Ptr skeleton_block =
+        skeleton_layer_->getBlockPtrByIndex(block_index);
+
+    const size_t num_voxels_per_block = skeleton_block->num_voxels();
+
+    for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
+      const SkeletonVoxel& skeleton_voxel =
+          skeleton_block->getVoxelByLinearIndex(lin_index);
+      VoxelIndex voxel_index =
+          skeleton_block->computeVoxelIndexFromLinearIndex(lin_index);
+
+      if (!skeleton_voxel.is_face) {
+        continue;
+      }
+      Point coords =
+          skeleton_block->computeCoordinatesFromVoxelIndex(voxel_index);
+      SkeletonPoint skeleton_point;
+      skeleton_point.distance = skeleton_voxel.distance;
+      skeleton_point.num_basis_points = skeleton_voxel.num_basis_points;
+      skeleton_point.point = coords;
+      skeleton_.getSkeletonPoints().push_back(skeleton_point);
+      if (skeleton_voxel.is_edge) {
+        skeleton_.getEdgePoints().push_back(skeleton_point);
+      }
+      if (skeleton_voxel.is_vertex) {
+        skeleton_.getVertexPoints().push_back(skeleton_point);
+      }
+    }
+  }
+}
+
 void SkeletonGenerator::generateSkeleton() {
   timing::Timer generate_timer("skeleton/gvd");
 
@@ -69,7 +113,8 @@ void SkeletonGenerator::generateSkeleton() {
 
       Point coords = esdf_block->computeCoordinatesFromVoxelIndex(voxel_index);
 
-      // Get the floating-point distance of this voxel, normalize it as long as
+      // Get the floating-point distance of this voxel, normalize it as long
+      // as
       // it's not 0.
       Eigen::Vector3f parent_dir = esdf_voxel.parent.cast<float>();
 
@@ -124,7 +169,8 @@ void SkeletonGenerator::generateSkeleton() {
             neighbor_voxel.parent.cast<float>() + directions[i].cast<float>();
 
         if (relative_direction.norm() < 1e-6) {
-          // This is pointing at us! We're its parent. No way is this a skeleton
+          // This is pointing at us! We're its parent. No way is this a
+          // skeleton
           // point.
           continue;
         }
@@ -138,10 +184,12 @@ void SkeletonGenerator::generateSkeleton() {
           skeleton_point.num_basis_points++;
           skeleton_point.basis_directions.push_back(relative_direction);
           /* printf(
-              "Coord: %f %f %f Parent direction: %f %f %f Voxel parent: %f %f "
+              "Coord: %f %f %f Parent direction: %f %f %f Voxel parent: %f %f
+             "
               "%f "
               "Neighbor direction: %d %d %d "
-              "Direction to/from neighbor: %d %d %d Relative direction: %f %f "
+              "Direction to/from neighbor: %d %d %d Relative direction: %f %f
+             "
               "%f Dot product: %f\n",
               coords.x(), coords.y(), coords.z(), parent_dir.x(),
               parent_dir.y(), parent_dir.z(), voxel_parent.x(),
@@ -611,7 +659,8 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
   const int kMaxFollows = 300;
   int j = 0;
 
-  // The sum total of the directions from the START VOXEL to the current checked
+  // The sum total of the directions from the START VOXEL to the current
+  // checked
   // voxel. Subtract the direction from vertex to this to get the directions
   // from
   // the vertex.
@@ -1337,7 +1386,8 @@ void SkeletonGenerator::splitEdges() {
                                                   edge.end_vertex)) {
             // LOG(INFO) << "Already connected, skipping.";
           } else {
-            // Try to find a connection from start vertex -> this and then from
+            // Try to find a connection from start vertex -> this and then
+            // from
             // this to end vertex.
             AlignedVector<Point> start_path, end_path;
 
