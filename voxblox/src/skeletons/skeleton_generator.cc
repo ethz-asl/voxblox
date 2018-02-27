@@ -1557,8 +1557,8 @@ void SkeletonGenerator::repairGraph() {
     }
     int subgraph_id = ++last_subgraph;
     int num_labelled = recursivelyLabel(vertex_id, subgraph_id);
-    LOG(INFO) << "Subgraph ID: " << subgraph_id
-              << " Num labelled: " << num_labelled;
+    /* LOG(INFO) << "Subgraph ID: " << subgraph_id
+              << " Num labelled: " << num_labelled; */
     if (num_labelled == 1) {
       graph_.removeVertex(vertex_id);
     } else {
@@ -1596,14 +1596,14 @@ void SkeletonGenerator::repairGraph() {
       bool success = skeleton_planner_.getPathOnDiagram(
           vertex1.point, vertex2.point, &coordinate_path);
       if (success) {
-        LOG(INFO) << "Got a connection between subgraph " << subgraph1.first
-                  << " and " << subgraph2.first;
+        /* LOG(INFO) << "Got a connection between subgraph " << subgraph1.first
+                  << " and " << subgraph2.first; */
         tryToFindEdgesInCoordinatePath(coordinate_path, subgraph1.first,
                                        subgraph2.first, &new_edge_ids);
         // recursivelyLabel(subgraph2.second, subgraph1.first);
       } else {
-        LOG(INFO) << "No connection between subgraph " << subgraph1.first
-                  << " and " << subgraph2.first;
+       /*  LOG(INFO) << "No connection between subgraph " << subgraph1.first
+                  << " and " << subgraph2.first; */
       }
     }
   }
