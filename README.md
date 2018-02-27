@@ -173,6 +173,7 @@ The voxblox_node publishes and subscribes to the following topics:
 - Subscribed topics:
   - **`transform`** of type `geometry_msgs::TransformStamped`. Only appears if `use_tf_transforms` is false. The transformation from the world frame to the current sensor frame.
   - **`pointcloud`** of type `sensor_msgs::PointCloud2`. The input pointcloud to be integrated.
+  - **`freespace_pointcloud`** of type `sensor_msgs::PointCLoud2`. Only appears if `use_freespace_pointcloud` is true. Unlike the `pointcloud` topic where the given points lie on surfaces, the points in the `freespace_pointcloud` are taken to be floating in empty space. These points can assist in generating more complete freespace information in a map.
 
 ## Services
 
@@ -214,6 +215,7 @@ The most important parameter here is the selection of the method:
 | `max_weight` | The upper limit for the weight assigned to a voxel | 10000.0 |
 | `use_const_weight` | If true all points along a ray have equal weighting | false |
 | `allow_clear` | If true points beyond the `max_ray_length_m` will be integrated up to this distance | true |
+| `use_freespace_pointcloud` | If true a second subscription topic `freespace_pointcloud` appears. Points in this pointcloud are taken to be floating in freespace. Clearing rays are cast from beyond the points truncation distance to assist in clearing freespace voxels.  
 
 ### Fast TSDF Integrator Specific Parameters
 These parameters are only used if the integrator `method` is set to "fast".
