@@ -39,9 +39,20 @@ class SkeletonAStar {
     max_iterations_ = max_iterations;
   }
 
+  float getMinEsdfDistance() const { return min_esdf_distance_; }
+  void setMinEsdfDistance(float min_esdf_distance) {
+    min_esdf_distance_ = min_esdf_distance;
+  }
+
   // Search JUST in the ESDF.
   bool getPathInEsdf(const Point& start_position, const Point& end_position,
                      AlignedVector<Point>* coordinate_path) const;
+
+  // First gets the path in the ESDF to the beginning of the diagram, then
+  // along the diagram, then at the end to the point on the ESDF.
+  bool getPathUsingEsdfAndDiagram(const Point& start_position,
+                                  const Point& end_position,
+                                  AlignedVector<Point>* coordinate_path) const;
 
   // Requires that the start and end points are on the diagram.
   bool getPathOnDiagram(const Point& start_position, const Point& end_position,
@@ -71,12 +82,21 @@ class SkeletonAStar {
       AlignedVector<Point>* coordinate_path) const;
 
  private:
+  bool getPathToNearestDiagramPt(
+      const BlockIndex& start_block_index, const VoxelIndex& start_voxel_index,
+      const Eigen::Vector3i& goal_voxel_offset,
+      AlignedVector<Eigen::Vector3i>* voxel_path) const;
+
   // Is this voxel a valid neighbor for the A*?
   template <typename VoxelType>
   bool isValidVoxel(const BlockIndex& block_index,
                     const VoxelIndex& voxel_index,
                     const BlockIndex& block_ptr_index,
                     typename Block<VoxelType>::ConstPtr block_ptr) const;
+
+  template <typename VoxelType>
+  typename Block<VoxelType>::ConstPtr getBlockPtrByIndex(
+      const BlockIndex& block_index) const;
 
   // Calculate what the block and voxel indices should be based on different
   // layer types.
@@ -123,8 +143,8 @@ bool SkeletonAStar::getPathInVoxels(
   // Set up storage for voxels and blocks.
   BlockIndex block_index = start_block_index;
   VoxelIndex voxel_index = start_voxel_index;
-  Block<SkeletonVoxel>::ConstPtr block_ptr =
-      skeleton_layer_->getBlockPtrByIndex(block_index);
+  typename Block<VoxelType>::ConstPtr block_ptr =
+      getBlockPtrByIndex<VoxelType>(block_index);
 
   f_score_map[current_voxel_offset] =
       estimateCostToGoal(current_voxel_offset, goal_voxel_offset);
@@ -135,6 +155,12 @@ bool SkeletonAStar::getPathInVoxels(
   // TODO(helenol): also set max number of iterations?
   while (!open_set.empty()) {
     num_iterations++;
+    if (num_iterations % 1000 == 0) {
+      LOG(INFO) << "Iterations: " << num_iterations
+                << " Closed set size: " << closed_set.size()
+                << " Open set size: " << open_set.size()
+                << " Current offset: " << current_voxel_offset.transpose();
+    }
     if (max_iterations_ > 0 && num_iterations > max_iterations_) {
       break;
     }
@@ -153,7 +179,7 @@ bool SkeletonAStar::getPathInVoxels(
     neighbor_tools_.getNeighbor(start_block_index, start_voxel_index,
                                 current_voxel_offset, &block_index,
                                 &voxel_index);
-    block_ptr = skeleton_layer_->getBlockPtrByIndex(block_index);
+    block_ptr = getBlockPtrByIndex<VoxelType>(block_index);
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
@@ -162,21 +188,9 @@ bool SkeletonAStar::getPathInVoxels(
     for (size_t i = 0; i < neighbors.size(); ++i) {
       BlockIndex neighbor_block_index = neighbors[i].first;
       VoxelIndex neighbor_voxel_index = neighbors[i].second;
-      Block<SkeletonVoxel>::ConstPtr neighbor_block;
-      if (neighbor_block_index == block_index) {
-        neighbor_block = block_ptr;
-      } else {
-        neighbor_block =
-            skeleton_layer_->getBlockPtrByIndex(neighbor_block_index);
-      }
-      if (!neighbor_block) {
-        continue;
-      }
 
-      const SkeletonVoxel& neighbor_voxel =
-          neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
-      if (!neighbor_voxel.is_edge && !neighbor_voxel.is_vertex) {
-        // Not an edge, can just skip this.
+      if (!isValidVoxel<VoxelType>(neighbor_block_index, neighbor_voxel_index,
+                                   block_index, block_ptr)) {
         continue;
       }
       Eigen::Vector3i neighbor_voxel_offset =

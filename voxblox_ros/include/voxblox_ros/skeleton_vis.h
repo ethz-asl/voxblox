@@ -3,6 +3,7 @@
 
 #include <voxblox/core/common.h>
 #include <voxblox/skeletons/skeleton.h>
+#include <voxblox/core/color.h>
 
 #include "voxblox_ros/conversions.h"
 
@@ -11,6 +12,8 @@ namespace voxblox {
 inline void visualizeSkeletonGraph(
     const SparseSkeletonGraph& graph, const std::string& frame_id,
     visualization_msgs::MarkerArray* marker_array) {
+  bool visualize_subgraphs = true;
+  bool visualize_freespace = false;
   CHECK_NOTNULL(marker_array);
   // Get a list of all vertices and visualize them as spheres.
   std::vector<int64_t> vertex_ids;
@@ -23,7 +26,12 @@ inline void visualizeSkeletonGraph(
 
   vertex_marker.header.frame_id = frame_id;
   vertex_marker.ns = "vertices";
-  vertex_marker.type = visualization_msgs::Marker::SPHERE_LIST;
+  if (!visualize_subgraphs) {
+    vertex_marker.type = visualization_msgs::Marker::SPHERE_LIST;
+  } else {
+    vertex_marker.type = visualization_msgs::Marker::CUBE_LIST;
+  }
+
   vertex_marker.pose.orientation.w = 1.0;
   vertex_marker.scale.x = 0.2;
   vertex_marker.scale.y = vertex_marker.scale.x;
@@ -43,14 +51,24 @@ inline void visualizeSkeletonGraph(
     const SkeletonVertex& vertex = graph.getVertex(vertex_id);
     tf::pointEigenToMsg(vertex.point.cast<double>(), point_msg);
     vertex_marker.points.push_back(point_msg);
-    if (vertex.distance > 1e-1) {
-      vertex_free_space_marker.pose.orientation.w = 1.0;
-      vertex_free_space_marker.pose.position = point_msg;
-      vertex_free_space_marker.scale.x = vertex.distance;
-      vertex_free_space_marker.scale.y = vertex.distance;
-      vertex_free_space_marker.scale.z = vertex.distance;
-      marker_array->markers.push_back(vertex_free_space_marker);
-      vertex_free_space_marker.id++;
+
+    if (visualize_subgraphs) {
+      std_msgs::ColorRGBA color_msg;
+      Color color = rainbowColorMap(vertex.subgraph_id % 10 / 10.0);
+      colorVoxbloxToMsg(color, &color_msg);
+      vertex_marker.colors.push_back(color_msg);
+    }
+
+    if (visualize_freespace) {
+      if (vertex.distance > 1e-1) {
+        vertex_free_space_marker.pose.orientation.w = 1.0;
+        vertex_free_space_marker.pose.position = point_msg;
+        vertex_free_space_marker.scale.x = vertex.distance;
+        vertex_free_space_marker.scale.y = vertex.distance;
+        vertex_free_space_marker.scale.z = vertex.distance;
+        marker_array->markers.push_back(vertex_free_space_marker);
+        vertex_free_space_marker.id++;
+      }
     }
   }
 

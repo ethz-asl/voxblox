@@ -1290,7 +1290,7 @@ void SkeletonGenerator::splitEdges() {
   // This is a number from a butt.
   const FloatingPoint kMaxThreshold = 2 * skeleton_layer_->voxel_size();
   const FloatingPoint kVertexSearchRadus =
-      vertex_pruning_radius_ * vertex_pruning_radius_ / 1.0;
+      vertex_pruning_radius_ * vertex_pruning_radius_;
   const int kMaxAstarIterations = 500;
   skeleton_planner_.setMaxIterations(kMaxAstarIterations);
 
@@ -1343,6 +1343,10 @@ void SkeletonGenerator::splitEdges() {
     AlignedVector<Point> coordinate_path;
     FloatingPoint max_d = getMaxEdgeDistanceFromStraightLine(
         start, end, &coordinate_path, &max_d_ind);
+
+    if (max_d <= -1.0) {
+      graph_.removeEdge(edge_id);
+    }
 
     // Impose some minimum distance...
     if (max_d > kMaxThreshold) {
@@ -1485,7 +1489,7 @@ FloatingPoint SkeletonGenerator::getMaxEdgeDistanceFromStraightLine(
 
   if (!success) {
     LOG(INFO) << "Something is wrong!";
-    return 0.0;
+    return -1.0;
   }
 
   FloatingPoint max_d =
@@ -1518,6 +1522,51 @@ void SkeletonGenerator::setSkeletonLayer(Layer<SkeletonVoxel>* skeleton_layer) {
   skeleton_layer_.reset(skeleton_layer);
   neighbor_tools_.setLayer(skeleton_layer_.get());
   skeleton_planner_.setSkeletonLayer(skeleton_layer_.get());
+}
+
+void SkeletonGenerator::repairGraph() {
+  timing::Timer generate_timer("skeleton/repair_graph");
+
+  // Go over all the vertices in the sparse graph and flood fill to label
+  // unconnected components.
+  std::vector<int64_t> vertex_ids;
+  graph_.getAllVertexIds(&vertex_ids);
+
+  int last_subgraph = 0;
+  for (const int64_t vertex_id : vertex_ids) {
+    SkeletonVertex& vertex = graph_.getVertex(vertex_id);
+    if (vertex.subgraph_id > 0) {
+      // This vertex is already labelled.
+      continue;
+    }
+    int subgraph_id = ++last_subgraph;
+    int num_labelled = recursivelyLabel(vertex_id, subgraph_id);
+    LOG(INFO) << "Subgraph ID: " << subgraph_id
+              << " Num labelled: " << num_labelled;
+    if (num_labelled == 1) {
+      graph_.removeVertex(vertex_id);
+    }
+  }
+}
+
+int SkeletonGenerator::recursivelyLabel(int64_t vertex_id, int subgraph_id) {
+  int num_labelled = 1;
+  SkeletonVertex& vertex = graph_.getVertex(vertex_id);
+  if (vertex.subgraph_id == subgraph_id) {
+    return 0;
+  }
+  vertex.subgraph_id = subgraph_id;
+  for (int64_t edge_id : vertex.edge_list) {
+    const SkeletonEdge& edge = graph_.getEdge(edge_id);
+    int64_t neighbor_vertex_id = -1;
+    if (edge.start_vertex == vertex_id) {
+      neighbor_vertex_id = edge.end_vertex;
+    } else {
+      neighbor_vertex_id = edge.start_vertex;
+    }
+    num_labelled += recursivelyLabel(neighbor_vertex_id, subgraph_id);
+  }
+  return num_labelled;
 }
 
 }  // namespace voxblox
