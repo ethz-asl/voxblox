@@ -119,6 +119,8 @@ void SkeletonizerNode::skeletonize(Layer<EsdfVoxel>* esdf_layer,
   skeleton_generator_.generateSparseGraph();
   ROS_INFO("Finished generating sparse graph.");
 
+  skeleton_generator_.repairGraph();
+
   ROS_INFO_STREAM("Total Timings: " << std::endl << timing::Timing::Print());
 
   // Now visualize the graph.

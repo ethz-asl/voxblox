@@ -41,6 +41,18 @@ Point SkeletonAStar::getBlockAndVoxelIndex<EsdfVoxel>(
 }
 
 template <>
+inline Block<SkeletonVoxel>::ConstPtr SkeletonAStar::getBlockPtrByIndex<
+    SkeletonVoxel>(const BlockIndex& block_index) const {
+  return skeleton_layer_->getBlockPtrByIndex(block_index);
+}
+
+template <>
+inline Block<EsdfVoxel>::ConstPtr SkeletonAStar::getBlockPtrByIndex<EsdfVoxel>(
+    const BlockIndex& block_index) const {
+  return esdf_layer_->getBlockPtrByIndex(block_index);
+}
+
+template <>
 bool SkeletonAStar::isValidVoxel<SkeletonVoxel>(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
     const BlockIndex& block_ptr_index,
@@ -162,6 +174,89 @@ bool SkeletonAStar::getPathOnDiagram(
   return success;
 }
 
+bool SkeletonAStar::getPathUsingEsdfAndDiagram(
+    const Point& start_position, const Point& end_position,
+    AlignedVector<Point>* coordinate_path) const {
+  // First, we need to find the start and end points on the diagram.
+  CHECK_NOTNULL(coordinate_path);
+  CHECK_NOTNULL(skeleton_layer_);
+  CHECK_NOTNULL(esdf_layer_);
+
+  // Look up where in the skeleton diagram the start position is.
+  // Get the voxel.
+  BlockIndex start_block_index, end_block_index;
+  VoxelIndex start_voxel_index, end_voxel_index;
+
+  Point start_position_center = getBlockAndVoxelIndex<EsdfVoxel>(
+      start_position, &start_block_index, &start_voxel_index);
+  Point end_position_center = getBlockAndVoxelIndex<EsdfVoxel>(
+      end_position, &end_block_index, &end_voxel_index);
+
+  // Get the distance to the goal index.
+  Eigen::Vector3i goal_voxel_offset = neighbor_tools_.getOffsetBetweenVoxels(
+      start_block_index, start_voxel_index, end_block_index, end_voxel_index);
+
+  // First the diagram start and end points.
+  // For the diagram start, search toward the goal until you hit the diagram.
+  AlignedVector<Eigen::Vector3i> voxel_path_to_start, voxel_path_from_end,
+      voxel_path_on_diagram;
+  if (!getPathToNearestDiagramPt(start_block_index, start_voxel_index,
+                                 goal_voxel_offset, &voxel_path_to_start)) {
+    return false;
+  }
+  // Now figure out where the end is.
+  if (!getPathToNearestDiagramPt(end_block_index, end_voxel_index,
+                                 -goal_voxel_offset, &voxel_path_from_end)) {
+    return false;
+  }
+
+  // Figure out the start and end voxel positions on the diagram.
+  BlockIndex diagram_start_block_index, diagram_end_block_index;
+  VoxelIndex diagram_start_voxel_index, diagram_end_voxel_index;
+  // Get the block and voxel index of this guy.
+  neighbor_tools_.getNeighbor(
+      start_block_index, start_voxel_index, voxel_path_to_start.back(),
+      &diagram_start_block_index, &diagram_start_voxel_index);
+  neighbor_tools_.getNeighbor(
+      end_block_index, end_voxel_index, voxel_path_from_end.back(),
+      &diagram_end_block_index, &diagram_end_voxel_index);
+
+  goal_voxel_offset = neighbor_tools_.getOffsetBetweenVoxels(
+      diagram_start_block_index, diagram_start_voxel_index,
+      diagram_end_block_index, diagram_end_voxel_index);
+
+  if (!getPathInVoxels<SkeletonVoxel>(
+          diagram_start_block_index, diagram_start_voxel_index,
+          goal_voxel_offset, &voxel_path_on_diagram)) {
+    return false;
+  }
+
+  AlignedVector<Point> coordinate_path_start, coordinate_path_diagram,
+      coordinate_path_end;
+
+  // Get the coordinates back out, one at a time.
+  voxelPathToCoordinatePath(start_position_center,
+                            skeleton_layer_->voxel_size(), voxel_path_to_start,
+                            &coordinate_path_start);
+  voxelPathToCoordinatePath(coordinate_path_start.back(),
+                            skeleton_layer_->voxel_size(),
+                            voxel_path_on_diagram, &coordinate_path_diagram);
+  voxelPathToCoordinatePath(end_position_center, skeleton_layer_->voxel_size(),
+                            voxel_path_from_end, &coordinate_path_end);
+  // Reverse the last one...
+  std::reverse(coordinate_path_end.begin(), coordinate_path_end.end());
+
+  // Now concatenate them together.
+  coordinate_path->insert(coordinate_path->end(), coordinate_path_start.begin(),
+                          coordinate_path_start.end());
+  coordinate_path->insert(coordinate_path->end(),
+                          coordinate_path_diagram.begin(),
+                          coordinate_path_diagram.end());
+  coordinate_path->insert(coordinate_path->end(), coordinate_path_end.begin(),
+                          coordinate_path_end.end());
+  return true;
+}
+
 void SkeletonAStar::voxelPathToCoordinatePath(
     const Point& start_location, FloatingPoint voxel_size,
     const AlignedVector<Eigen::Vector3i>& voxel_path,
@@ -215,6 +310,118 @@ FloatingPoint SkeletonAStar::estimateCostToGoal(
   return (goal_voxel_offset.cast<FloatingPoint>() -
           voxel_offset.cast<FloatingPoint>())
       .norm();
+}
+
+// TODO(helenol): figure out how to do this without SOOOOO much copy and paste.
+bool SkeletonAStar::getPathToNearestDiagramPt(
+    const BlockIndex& start_block_index, const VoxelIndex& start_voxel_index,
+    const Eigen::Vector3i& goal_voxel_offset,
+    AlignedVector<Eigen::Vector3i>* voxel_path) const {
+  CHECK_NOTNULL(voxel_path);
+  CHECK_NOTNULL(skeleton_layer_);
+
+  int num_iterations = 0;
+
+  // Make the 3 maps we need.
+  IndexToDistanceMap f_score_map;
+  IndexToDistanceMap g_score_map;
+  IndexToParentMap parent_map;
+
+  // Make the 2 sets we need.
+  IndexSet open_set;  // This should be a priority queue... But then harder
+  // to check for belonging. Ehhh. Just sort it each time.
+  IndexSet closed_set;
+
+  Eigen::Vector3i current_voxel_offset = Eigen::Vector3i::Zero();
+
+  // Set up storage for voxels and blocks.
+  BlockIndex block_index = start_block_index;
+  VoxelIndex voxel_index = start_voxel_index;
+  Block<EsdfVoxel>::ConstPtr block_ptr =
+      getBlockPtrByIndex<EsdfVoxel>(block_index);
+
+  f_score_map[current_voxel_offset] =
+      estimateCostToGoal(current_voxel_offset, goal_voxel_offset);
+  g_score_map[current_voxel_offset] = 0.0;
+
+  open_set.insert(current_voxel_offset);
+
+  // TODO(helenol): also set max number of iterations?
+  while (!open_set.empty()) {
+    num_iterations++;
+    if (num_iterations % 1000 == 0) {
+      LOG(INFO) << "Iterations: " << num_iterations
+                << " Closed set size: " << closed_set.size()
+                << " Open set size: " << open_set.size()
+                << " Current offset: " << current_voxel_offset.transpose();
+    }
+    if (max_iterations_ > 0 && num_iterations > max_iterations_) {
+      break;
+    }
+    // Find the smallest f-value in the open set.
+    current_voxel_offset = popSmallestFromOpen(f_score_map, &open_set);
+
+    // Check if this is already the goal...
+    if (current_voxel_offset == goal_voxel_offset) {
+      getSolutionPath(goal_voxel_offset, parent_map, voxel_path);
+      return true;
+    }
+
+    closed_set.insert(current_voxel_offset);
+
+    // Get the block and voxel index of this guy.
+    neighbor_tools_.getNeighbor(start_block_index, start_voxel_index,
+                                current_voxel_offset, &block_index,
+                                &voxel_index);
+    block_ptr = getBlockPtrByIndex<EsdfVoxel>(block_index);
+
+    // Figure out if this is on the diagram.
+    // TODO(helenol): this is the only new part...
+    Block<SkeletonVoxel>::ConstPtr skeleton_block_ptr =
+        getBlockPtrByIndex<SkeletonVoxel>(block_index);
+    if (isValidVoxel<SkeletonVoxel>(block_index, voxel_index, block_index,
+                                    skeleton_block_ptr)) {
+      // Consider this done!
+      getSolutionPath(current_voxel_offset, parent_map, voxel_path);
+      return true;
+    }
+
+    AlignedVector<VoxelKey> neighbors;
+    AlignedVector<float> distances;
+    AlignedVector<Eigen::Vector3i> directions;
+    neighbor_tools_.getNeighborsAndDistances(
+        block_index, voxel_index, 26, &neighbors, &distances, &directions);
+    for (size_t i = 0; i < neighbors.size(); ++i) {
+      BlockIndex neighbor_block_index = neighbors[i].first;
+      VoxelIndex neighbor_voxel_index = neighbors[i].second;
+
+      if (!isValidVoxel<EsdfVoxel>(neighbor_block_index, neighbor_voxel_index,
+                                   block_index, block_ptr)) {
+        continue;
+      }
+      Eigen::Vector3i neighbor_voxel_offset =
+          current_voxel_offset + directions[i];
+      if (closed_set.count(neighbor_voxel_offset) > 0) {
+        // Already checked this guy as well.
+        continue;
+      }
+      if (open_set.count(neighbor_voxel_offset) == 0) {
+        open_set.insert(neighbor_voxel_offset);
+      }
+
+      FloatingPoint tentative_g_score =
+          g_score_map[current_voxel_offset] + distances[i];
+      if (g_score_map.count(neighbor_voxel_offset) == 0 ||
+          g_score_map[neighbor_voxel_offset] < tentative_g_score) {
+        g_score_map[neighbor_voxel_offset] = tentative_g_score;
+        f_score_map[neighbor_voxel_offset] =
+            tentative_g_score +
+            estimateCostToGoal(neighbor_voxel_offset, goal_voxel_offset);
+        parent_map[neighbor_voxel_offset] = current_voxel_offset;
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace voxblox

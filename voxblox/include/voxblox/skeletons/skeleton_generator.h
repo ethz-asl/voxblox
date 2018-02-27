@@ -47,6 +47,10 @@ class SkeletonGenerator {
   // Demotes vertices back to edges.
   void pruneDiagramVertices();
 
+  // Repair the sparse graph after everything is said and done. Does some
+  // dark magic to re-establish graph connectivity.
+  void repairGraph();
+
   // Skeleton access.
   const Skeleton& getSkeleton() const { return skeleton_; }
   Skeleton& getSkeleton() { return skeleton_; }
@@ -107,6 +111,8 @@ class SkeletonGenerator {
 
   // Set the skeleton layer! Takes ownership.
   void setSkeletonLayer(Layer<SkeletonVoxel>* skeleton_layer);
+
+  int recursivelyLabel(int64_t vertex_id, int subgraph_id);
 
  private:
   float min_separation_angle_;

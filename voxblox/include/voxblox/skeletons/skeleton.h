@@ -60,6 +60,8 @@ struct SkeletonVertex {
 
   std::vector<int64_t> edge_list;
 
+  int subgraph_id = 0;
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
