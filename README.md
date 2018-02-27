@@ -215,7 +215,7 @@ The most important parameter here is the selection of the method:
 | `max_weight` | The upper limit for the weight assigned to a voxel | 10000.0 |
 | `use_const_weight` | If true all points along a ray have equal weighting | false |
 | `allow_clear` | If true points beyond the `max_ray_length_m` will be integrated up to this distance | true |
-| `use_freespace_pointcloud` | If true a second subscription topic `freespace_pointcloud` appears. Points in this pointcloud are taken to be floating in freespace. Clearing rays are cast from beyond the points truncation distance to assist in clearing freespace voxels.  
+| `use_freespace_pointcloud` | If true a second subscription topic `freespace_pointcloud` appears. Clearing rays are cast from beyond this topic's points' truncation distance to assist in clearing freespace voxels | false | 
 
 ### Fast TSDF Integrator Specific Parameters
 These parameters are only used if the integrator `method` is set to "fast".
