@@ -213,6 +213,24 @@ class Layer {
     return &block.getVoxelByVoxelIndex(local_voxel_index);
   }
 
+  inline const VoxelType* getVoxelPtrByCoordinates(const Point& coords) const {
+    typename Block<VoxelType>::ConstPtr block_ptr =
+        getBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
+    if (!block_ptr) {
+      return nullptr;
+    }
+    return block_ptr->getVoxelPtrByCoordinates(coords);
+  }
+
+  inline VoxelType* getVoxelPtrByCoordinates(const Point& coords) {
+    typename Block<VoxelType>::Ptr block_ptr =
+        getBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
+    if (!block_ptr) {
+      return nullptr;
+    }
+    return block_ptr->getVoxelPtrByCoordinates(coords);
+  }
+
   FloatingPoint block_size() const { return block_size_; }
   FloatingPoint block_size_inv() const { return block_size_inv_; }
   FloatingPoint voxel_size() const { return voxel_size_; }

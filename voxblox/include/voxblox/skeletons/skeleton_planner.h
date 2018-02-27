@@ -152,14 +152,13 @@ bool SkeletonAStar::getPathInVoxels(
 
   open_set.insert(current_voxel_offset);
 
-  // TODO(helenol): also set max number of iterations?
   while (!open_set.empty()) {
     num_iterations++;
     if (num_iterations % 1000 == 0) {
-      LOG(INFO) << "Iterations: " << num_iterations
+      /* LOG(INFO) << "Iterations: " << num_iterations
                 << " Closed set size: " << closed_set.size()
                 << " Open set size: " << open_set.size()
-                << " Current offset: " << current_voxel_offset.transpose();
+                << " Current offset: " << current_voxel_offset.transpose(); */
     }
     if (max_iterations_ > 0 && num_iterations > max_iterations_) {
       break;

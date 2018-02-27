@@ -138,9 +138,9 @@ void SkeletonEvalNode::generateWorld() {
       Point(13.75, 8.5, 1.25), Point(2.5, 2.0, 2.5), voxblox::Color::Green())));
 
   // ..."Fun" object...
-  world_.addObject(std::unique_ptr<voxblox::Object>(
+  /* world_.addObject(std::unique_ptr<voxblox::Object>(
       new voxblox::Cube(Point(12.5, 3.125, 1.25), Point(1.0, 3.75, 2.5),
-                        voxblox::Color::Pink())));
+                        voxblox::Color::Pink()))); */
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Cylinder(
       Point(12.5, 5.0, 1.25), 0.5, 2.5, voxblox::Color::Pink())));
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Sphere(
@@ -281,7 +281,6 @@ void SkeletonEvalNode::generateSkeleton() {
   skeleton_generator.setMinGvdDistance(min_gvd_distance);
 
   skeleton_generator.generateSkeleton();
-
   Pointcloud pointcloud;
   std::vector<float> distances;
   skeleton_generator.getSkeleton().getEdgePointcloudWithDistances(&pointcloud,
@@ -295,6 +294,7 @@ void SkeletonEvalNode::generateSkeleton() {
   ROS_INFO("Finished generating skeleton.");
 
   skeleton_generator.generateSparseGraph();
+  skeleton_generator.repairGraph();
   ROS_INFO("Finished generating sparse graph.");
 
   ROS_INFO_STREAM("Total Timings: " << std::endl << timing::Timing::Print());
@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
   voxblox::SkeletonEvalNode node(nh, nh_private);
 
   node.generateWorld();
-  // node.generateMapFromRobotPoses(200, 1, 0.0);
+  //node.generateMapFromRobotPoses(200, 1, 0.0);
 
   node.generateMapFromGroundTruth();
   node.generateSkeleton();

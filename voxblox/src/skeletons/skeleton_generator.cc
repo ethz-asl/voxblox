@@ -630,6 +630,7 @@ void SkeletonGenerator::generateSparseGraph() {
   generate_timer.Stop();
 
   splitEdges();
+  repairGraph();
 }
 
 bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
@@ -1286,6 +1287,15 @@ void SkeletonGenerator::pruneDiagramVertices() {
 
 void SkeletonGenerator::splitEdges() {
   timing::Timer generate_timer("skeleton/split_edges");
+  std::vector<int64_t> edge_ids;
+  graph_.getAllEdgeIds(&edge_ids);
+
+  splitSpecificEdges(edge_ids);
+}
+
+void SkeletonGenerator::splitSpecificEdges(
+    const std::vector<int64_t>& starting_edge_ids) {
+  std::vector<int64_t> edge_ids = starting_edge_ids;
 
   // This is a number from a butt.
   const FloatingPoint kMaxThreshold = 2 * skeleton_layer_->voxel_size();
@@ -1315,9 +1325,6 @@ void SkeletonGenerator::splitEdges() {
   // kd_tree.buildIndex();
   kd_tree.addPoints(0, adapter.kdtree_get_point_count() - 1);
 
-  std::vector<int64_t> edge_ids;
-  graph_.getAllEdgeIds(&edge_ids);
-
   size_t num_vertices_added = 0;
 
   // Need to use a regular (not range-based) for loop since we'll add a bunch
@@ -1334,7 +1341,7 @@ void SkeletonGenerator::splitEdges() {
     const Point& end = edge.end_point;
 
     // Don't bother with tiny edges.
-    /* if ((start - end).norm() <= 5 * skeleton_layer_->voxel_size()) {
+    /* if ((start - end).norm() <= 4 * skeleton_layer_->voxel_size()) {
       continue;
     } */
 
@@ -1391,8 +1398,7 @@ void SkeletonGenerator::splitEdges() {
             // LOG(INFO) << "Already connected, skipping.";
           } else {
             // Try to find a connection from start vertex -> this and then
-            // from
-            // this to end vertex.
+            // from this to end vertex.
             AlignedVector<Point> start_path, end_path;
 
             /* LOG(INFO) << "Starting to search from: [" << edge.start_vertex
@@ -1446,6 +1452,14 @@ void SkeletonGenerator::splitEdges() {
 
       int64_t vertex_id = graph_.addVertex(new_vertex);
       num_vertices_added++;
+
+      // Get the point from the diagram and label it.
+      SkeletonVoxel* voxel =
+          skeleton_layer_->getVoxelPtrByCoordinates(new_vertex.point);
+      if (voxel != nullptr) {
+        voxel->is_vertex = true;
+        voxel->vertex_id = vertex_id;
+      }
 
       // Remove the existing edge, add two new edges.
       // TODO(helenol): FILL IN EDGE DISTANCE.
@@ -1531,6 +1545,8 @@ void SkeletonGenerator::repairGraph() {
   // unconnected components.
   std::vector<int64_t> vertex_ids;
   graph_.getAllVertexIds(&vertex_ids);
+  std::map<int, int64_t> subgraph_vertex_examples;
+  std::vector<int64_t> new_edge_ids;
 
   int last_subgraph = 0;
   for (const int64_t vertex_id : vertex_ids) {
@@ -1545,8 +1561,54 @@ void SkeletonGenerator::repairGraph() {
               << " Num labelled: " << num_labelled;
     if (num_labelled == 1) {
       graph_.removeVertex(vertex_id);
+    } else {
+      subgraph_vertex_examples[subgraph_id] = vertex_id;
     }
   }
+
+  // Ok now we presumably have more than 1 disconnected subgraph...
+  if (subgraph_vertex_examples.size() <= 1) {
+    // Nope only one subgraph, we're done!
+    return;
+  }
+
+  // Go through all combinations of subgraphs until we're connected.
+  for (const std::pair<int, int64_t> subgraph1 : subgraph_vertex_examples) {
+    const SkeletonVertex& vertex1 = graph_.getVertex(subgraph1.second);
+    if (vertex1.subgraph_id != subgraph1.first) {
+      // This already got absorbed into another subgraph.
+      continue;
+    }
+
+    for (const std::pair<int, int64_t> subgraph2 : subgraph_vertex_examples) {
+      if (subgraph1.first == subgraph2.first) {
+        continue;
+      }
+      const SkeletonVertex& vertex2 = graph_.getVertex(subgraph2.second);
+      if (vertex2.subgraph_id != subgraph2.first) {
+        // This already got absorbed into another subgraph.
+        continue;
+      }
+
+      // Ok now presumably we have two different subgraphs that we're gonna try
+      // to connect.
+      AlignedVector<Point> coordinate_path;
+      bool success = skeleton_planner_.getPathOnDiagram(
+          vertex1.point, vertex2.point, &coordinate_path);
+      if (success) {
+        LOG(INFO) << "Got a connection between subgraph " << subgraph1.first
+                  << " and " << subgraph2.first;
+        tryToFindEdgesInCoordinatePath(coordinate_path, subgraph1.first,
+                                       subgraph2.first, &new_edge_ids);
+        // recursivelyLabel(subgraph2.second, subgraph1.first);
+      } else {
+        LOG(INFO) << "No connection between subgraph " << subgraph1.first
+                  << " and " << subgraph2.first;
+      }
+    }
+  }
+
+  splitSpecificEdges(new_edge_ids);
 }
 
 int SkeletonGenerator::recursivelyLabel(int64_t vertex_id, int subgraph_id) {
@@ -1567,6 +1629,63 @@ int SkeletonGenerator::recursivelyLabel(int64_t vertex_id, int subgraph_id) {
     num_labelled += recursivelyLabel(neighbor_vertex_id, subgraph_id);
   }
   return num_labelled;
+}
+
+void SkeletonGenerator::tryToFindEdgesInCoordinatePath(
+    const AlignedVector<Point>& coordinate_path, int subgraph_id_start,
+    int subgraph_id_end, std::vector<int64_t>* new_edge_ids) {
+  CHECK_NOTNULL(new_edge_ids);
+  // Just appends to new edge Ids, doesn't clear 'em.
+  // Go through the coordinate path, looking up vertices in the sparse graph
+  // any time that their IDs are set.
+  // When two graph-adjacent vertices have a different subgraph index, add
+  // an edge between them.
+  int last_subgraph_id = subgraph_id_start;
+  int64_t last_vertex_id = -1;
+
+  if (coordinate_path.empty()) {
+    return;
+  }
+
+  for (const Point& coord : coordinate_path) {
+    // Look up the voxel in the map.
+    SkeletonVoxel* voxel = skeleton_layer_->getVoxelPtrByCoordinates(coord);
+    if (voxel == nullptr) {
+      continue;
+    }
+    if (voxel->is_vertex && voxel->vertex_id >= 0) {
+      int64_t vertex_id = voxel->vertex_id;
+      // Look up this vertex.
+      if (graph_.hasVertex(vertex_id)) {
+        SkeletonVertex& vertex = graph_.getVertex(vertex_id);
+        if (vertex.subgraph_id > 0) {
+          // If this is the same subgraph ID as the previous one, then just
+          // store it as the latest.
+          if (vertex.subgraph_id == last_subgraph_id) {
+            last_vertex_id = vertex_id;
+          } else if (last_vertex_id != -1) {
+            // Ok this is a different subgraph! Let's put in an edge.
+            SkeletonEdge new_edge;
+            new_edge.start_vertex = last_vertex_id;
+            new_edge.end_vertex = vertex_id;
+            int64_t edge_id = graph_.addEdge(new_edge);
+            new_edge_ids->push_back(edge_id);
+            // Probably the right time to recursively label stuff too.
+            recursivelyLabel(vertex_id, last_subgraph_id);
+          } else {
+            // I'm very confused.
+          }
+
+          last_vertex_id = vertex_id;
+          // last_subgraph_id = vertex.subgraph_id;
+          if (last_subgraph_id == subgraph_id_end) {
+            // Ok we're done.
+            return;
+          }
+        }
+      }
+    }
+  }
 }
 
 }  // namespace voxblox
