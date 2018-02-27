@@ -12,7 +12,7 @@ namespace voxblox {
 inline void visualizeSkeletonGraph(
     const SparseSkeletonGraph& graph, const std::string& frame_id,
     visualization_msgs::MarkerArray* marker_array) {
-  bool visualize_subgraphs = true;
+  bool visualize_subgraphs = false;
   bool visualize_freespace = false;
   CHECK_NOTNULL(marker_array);
   // Get a list of all vertices and visualize them as spheres.
