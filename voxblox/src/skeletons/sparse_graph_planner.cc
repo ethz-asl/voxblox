@@ -33,11 +33,11 @@ bool SparseGraphPlanner::getPath(const Point& start_position,
   // this works.
   std::vector<int64_t> start_vertex_inds, end_vertex_inds;
 
-  getNClosestVertices(start_position, 10, &start_vertex_inds);
+  getNClosestVertices(start_position, 1, &start_vertex_inds);
   int64_t start_vertex_id = start_vertex_inds[0];
-  getNClosestVertices(end_position, 10, &end_vertex_inds);
+  getNClosestVertices(end_position, 1, &end_vertex_inds);
   int64_t end_vertex_id = end_vertex_inds[0];
-
+  /*
   // Pick the best start and end.
   for (int64_t vertex_id : start_vertex_inds) {
     const SkeletonVertex& vertex = graph_->getVertex(vertex_id);
@@ -56,7 +56,7 @@ bool SparseGraphPlanner::getPath(const Point& start_position,
                 << " Position: " << vertex.point.transpose();
       break;
     }
-  }
+  } */
 
   std::vector<int64_t> vertex_path;
   if (!getPathBetweenVertices(start_vertex_id, end_vertex_id, &vertex_path)) {
@@ -98,10 +98,10 @@ bool SparseGraphPlanner::getPathBetweenVertices(
     current_vertex_id = popSmallestFromOpen(f_score_map, &open_set);
 
     const SkeletonVertex& vertex = graph_->getVertex(current_vertex_id);
-    LOG(INFO) << " Closed set size: " << closed_set.size()
+    /* LOG(INFO) << " Closed set size: " << closed_set.size()
               << " Open set size: " << open_set.size()
               << " Current id: " << current_vertex_id
-              << " Current position: " << vertex.point.transpose();
+              << " Current position: " << vertex.point.transpose(); */
     // Check if this is already the goal...
     if (current_vertex_id == end_vertex_id) {
       getSolutionPath(end_vertex_id, parent_map, vertex_path);

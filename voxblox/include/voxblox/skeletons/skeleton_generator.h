@@ -113,6 +113,11 @@ class SkeletonGenerator {
   void setSkeletonLayer(Layer<SkeletonVoxel>* skeleton_layer);
 
   int recursivelyLabel(int64_t vertex_id, int subgraph_id);
+  void tryToFindEdgesInCoordinatePath(
+      const AlignedVector<Point>& coordinate_path, int subgraph_id_start,
+      int subgraph_id_end, std::vector<int64_t>* new_edge_ids);
+void splitSpecificEdges(const std::vector<int64_t>& starting_edge_ids);
+
 
  private:
   float min_separation_angle_;
