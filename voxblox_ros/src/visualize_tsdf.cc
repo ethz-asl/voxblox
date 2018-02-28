@@ -134,7 +134,7 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
   {
     std::shared_ptr<MeshLayer> mesh_layer;
     mesh_layer.reset(new MeshLayer(tsdf_layer.block_size()));
-    MeshIntegrator<TsdfVoxel>::Config mesh_config;
+    MeshIntegratorConfig mesh_config;
     std::shared_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator;
     mesh_integrator.reset(new MeshIntegrator<TsdfVoxel>(mesh_config, tsdf_layer,
                                                         mesh_layer.get()));
