@@ -86,12 +86,11 @@ bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
 // connect all identical vertices to create a connected mesh.
 template <typename VoxelType>
 bool convertLayerToMesh(
-    const Layer<VoxelType>& layer, voxblox::Mesh* mesh,
-    const bool connected_mesh = true,
+    const Layer<VoxelType>& layer, const MeshIntegratorConfig& mesh_config,
+    voxblox::Mesh* mesh, const bool connected_mesh = true,
     const FloatingPoint vertex_proximity_threshold = 1e-10) {
   CHECK_NOTNULL(mesh);
 
-  typename MeshIntegrator<VoxelType>::Config mesh_config;
   MeshLayer mesh_layer(layer.block_size());
   MeshIntegrator<VoxelType> mesh_integrator(mesh_config, layer, &mesh_layer);
 
@@ -108,6 +107,15 @@ bool convertLayerToMesh(
     mesh_layer.getMesh(mesh);
   }
   return mesh->size() > 0u;
+}
+template <typename VoxelType>
+bool convertLayerToMesh(
+    const Layer<VoxelType>& layer, voxblox::Mesh* mesh,
+    const bool connected_mesh = true,
+    const FloatingPoint vertex_proximity_threshold = 1e-10) {
+  MeshIntegratorConfig mesh_config;
+  return convertLayerToMesh(layer, mesh_config, mesh, connected_mesh,
+                            vertex_proximity_threshold);
 }
 
 // Output the layer to ply file. Depending on the ply output type, this either

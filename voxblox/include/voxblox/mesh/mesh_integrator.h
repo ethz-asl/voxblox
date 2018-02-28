@@ -42,18 +42,19 @@
 
 namespace voxblox {
 
+struct MeshIntegratorConfig {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  bool use_color = true;
+  float min_weight = 1e-4;
+
+  size_t integrator_threads = std::thread::hardware_concurrency();
+};
+
 template <typename VoxelType>
 class MeshIntegrator {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  struct Config {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-    bool use_color = true;
-    float min_weight = 1e-4;
-    size_t integrator_threads = std::thread::hardware_concurrency();
-  };
 
   void initFromSdfLayer(const Layer<VoxelType>& sdf_layer) {
     voxel_size_ = sdf_layer.voxel_size();
@@ -67,8 +68,8 @@ class MeshIntegrator {
 
   // Use this constructor in case you would like to modify the layer during mesh
   // extraction, i.e. modify the updated flag.
-  MeshIntegrator(const Config& config, Layer<VoxelType>* sdf_layer,
-                 MeshLayer* mesh_layer)
+  MeshIntegrator(const MeshIntegratorConfig& config,
+                 Layer<VoxelType>* sdf_layer, MeshLayer* mesh_layer)
       : config_(config),
         sdf_layer_mutable_(CHECK_NOTNULL(sdf_layer)),
         sdf_layer_const_(CHECK_NOTNULL(sdf_layer)),
@@ -86,8 +87,8 @@ class MeshIntegrator {
 
   // This constructor will not allow you to modify the layer, i.e. clear the
   // updated flag.
-  MeshIntegrator(const Config& config, const Layer<VoxelType>& sdf_layer,
-                 MeshLayer* mesh_layer)
+  MeshIntegrator(const MeshIntegratorConfig& config,
+                 const Layer<VoxelType>& sdf_layer, MeshLayer* mesh_layer)
       : config_(config),
         sdf_layer_mutable_(nullptr),
         sdf_layer_const_(&sdf_layer),
@@ -358,7 +359,7 @@ class MeshIntegrator {
   }
 
  protected:
-  Config config_;
+  MeshIntegratorConfig config_;
 
   // Having both a const and a mutable pointer to the layer allows this
   // integrator to work both with a const layer (in case you don't want to clear

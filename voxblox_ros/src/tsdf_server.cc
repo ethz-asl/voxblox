@@ -121,7 +121,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   }
 
-  MeshIntegrator<TsdfVoxel>::Config mesh_config;
+  MeshIntegratorConfig mesh_config;
   nh_private_.param("mesh_min_weight", mesh_config.min_weight,
                     mesh_config.min_weight);
 
@@ -140,7 +140,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   publish_pointclouds_srv_ = nh_private_.advertiseService(
       "publish_pointclouds", &TsdfServer::publishPointcloudsCallback, this);
   publish_tsdf_map_srv_ = nh_private_.advertiseService(
-          "publish_map", &TsdfServer::publishTsdfMapCallback, this);
+      "publish_map", &TsdfServer::publishTsdfMapCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
   double update_mesh_every_n_sec = 0.0;
@@ -309,8 +309,8 @@ void TsdfServer::publishMap() {
     const bool only_updated = false;
     timing::Timer publish_map_timer("map/update");
     voxblox_msgs::Layer layer_msg;
-    serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(), only_updated,
-                                   &layer_msg);
+    serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
+                                   only_updated, &layer_msg);
     this->tsdf_map_pub_.publish(layer_msg);
     publish_map_timer.Stop();
   }
@@ -419,8 +419,8 @@ bool TsdfServer::publishPointcloudsCallback(
 }
 
 bool TsdfServer::publishTsdfMapCallback(
-        std_srvs::Empty::Request& /*request*/,
-        std_srvs::Empty::Response& /*response*/) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
   publishMap();
   return true;
 }
