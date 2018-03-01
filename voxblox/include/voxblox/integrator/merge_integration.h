@@ -258,7 +258,7 @@ void evaluateLayerRmseAtPoses(
     std::vector<utils::VoxelEvaluationDetails>* voxel_evaluation_details_vector,
     std::vector<std::pair<typename voxblox::Layer<VoxelType>::Ptr,
                           typename voxblox::Layer<VoxelType>::Ptr>>*
-        aligned_objects_and_error_layers) {
+        aligned_objects_and_error_layers = nullptr) {
   CHECK_NOTNULL(voxel_evaluation_details_vector);
   // Check if world TSDF layer agrees with merged object at all object poses.
 
@@ -306,7 +306,7 @@ void evaluateLayerRmseAtPoses(
     std::vector<utils::VoxelEvaluationDetails>* voxel_evaluation_details_vector,
     std::vector<std::pair<typename voxblox::Layer<VoxelType>::Ptr,
                           typename voxblox::Layer<VoxelType>::Ptr>>*
-        aligned_objects_and_error_layers) {
+        aligned_objects_and_error_layers = nullptr) {
   CHECK_NOTNULL(voxel_evaluation_details_vector);
   std::vector<Transformation> kindr_transforms_W_O;
   for (const Eigen::Matrix<float, 4, 4>& transform_W_O : transforms_W_O) {
