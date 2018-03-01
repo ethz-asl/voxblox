@@ -294,7 +294,6 @@ void SkeletonEvalNode::generateSkeleton() {
   ROS_INFO("Finished generating skeleton.");
 
   skeleton_generator.generateSparseGraph();
-  skeleton_generator.repairGraph();
   ROS_INFO("Finished generating sparse graph.");
 
   ROS_INFO_STREAM("Total Timings: " << std::endl << timing::Timing::Print());
@@ -336,7 +335,7 @@ int main(int argc, char** argv) {
   voxblox::SkeletonEvalNode node(nh, nh_private);
 
   node.generateWorld();
-  //node.generateMapFromRobotPoses(200, 1, 0.0);
+  // node.generateMapFromRobotPoses(200, 1, 0.0);
 
   node.generateMapFromGroundTruth();
   node.generateSkeleton();
