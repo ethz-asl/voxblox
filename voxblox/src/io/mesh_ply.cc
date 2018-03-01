@@ -82,6 +82,7 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
     stream << "property uchar red" << std::endl;
     stream << "property uchar green" << std::endl;
     stream << "property uchar blue" << std::endl;
+    stream << "property uchar alpha" << std::endl;
   }
   if (mesh.hasTriangles()) {
     stream << "element face " << mesh.indices.size() / 3 << std::endl;
@@ -101,8 +102,9 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
       int r = static_cast<int>(color.r);
       int g = static_cast<int>(color.g);
       int b = static_cast<int>(color.b);
+      int a = static_cast<int>(color.a);
       // Uint8 prints as character otherwise. :(
-      stream << " " << r << " " << g << " " << b;
+      stream << " " << r << " " << g << " " << b << " " << a;
     }
 
     stream << std::endl;
