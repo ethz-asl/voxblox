@@ -2,6 +2,7 @@
 #define VOXBLOX_INTEGRATOR_MERGE_INTEGRATION_H_
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include <glog/logging.h>
@@ -241,6 +242,79 @@ void transformLayer(const Layer<VoxelType>& layer_in,
       layer_out->removeBlock(block_idx);
     }
   }
+}
+
+typedef std::pair<voxblox::Layer<voxblox::TsdfVoxel>::Ptr,
+                  voxblox::Layer<voxblox::TsdfVoxel>::Ptr>
+    AlignedObjectAndErrorLayer;
+typedef std::vector<AlignedObjectAndErrorLayer> AlignedObjectAndErrorLayers;
+
+template <typename VoxelType>
+void evaluateLayerRmseAtPoses(
+    const utils::VoxelEvaluationMode& voxel_evaluation_mode,
+    const Layer<VoxelType>& layer,
+    const Layer<VoxelType>& merged_object_layer_O,
+    const std::vector<Transformation>& transforms_W_O,
+    std::vector<utils::VoxelEvaluationDetails>* voxel_evaluation_details_vector,
+    std::vector<std::pair<typename voxblox::Layer<VoxelType>::Ptr,
+                          typename voxblox::Layer<VoxelType>::Ptr>>*
+        aligned_objects_and_error_layers) {
+  CHECK_NOTNULL(voxel_evaluation_details_vector);
+  // Check if world TSDF layer agrees with merged object at all object poses.
+
+  for (size_t i = 0u; i < transforms_W_O.size(); ++i) {
+    const Transformation& transform_W_O = transforms_W_O[i];
+    typename Layer<VoxelType>::Ptr merged_object_layer_W(
+        new Layer<VoxelType>(merged_object_layer_O.voxel_size(),
+                             merged_object_layer_O.voxels_per_side()));
+
+    Layer<VoxelType>* error_layer = nullptr;
+    if (aligned_objects_and_error_layers != nullptr) {
+      CHECK_EQ(aligned_objects_and_error_layers->size(), transforms_W_O.size());
+
+      // Initialize and get ptr to error layer to fill out later.
+      (*aligned_objects_and_error_layers)[i].second =
+          typename voxblox::Layer<VoxelType>::Ptr(new voxblox::Layer<VoxelType>(
+              layer.voxel_size(), layer.voxels_per_side()));
+      error_layer = (*aligned_objects_and_error_layers)[i].second.get();
+
+      // Store the aligned object as well.
+      (*aligned_objects_and_error_layers)[i].first = merged_object_layer_W;
+    }
+
+    // Transform merged object into the world frame.
+    transformLayer<VoxelType>(merged_object_layer_O, transform_W_O,
+                              merged_object_layer_W.get());
+
+    utils::VoxelEvaluationDetails voxel_evaluation_details;
+    // Evaluate the RMSE of the merged object layer in the world layer.
+    utils::evaluateLayersRmse(layer, *merged_object_layer_W,
+                              voxel_evaluation_mode, &voxel_evaluation_details,
+                              error_layer);
+    voxel_evaluation_details_vector->push_back(voxel_evaluation_details);
+  }
+}
+
+template <typename VoxelType>
+void evaluateLayerRmseAtPoses(
+    const utils::VoxelEvaluationMode& voxel_evaluation_mode,
+    const Layer<VoxelType>& layer,
+    const Layer<VoxelType>& merged_object_layer_O,
+    const std::vector<Eigen::Matrix<float, 4, 4>,
+                      Eigen::aligned_allocator<Eigen::Matrix<float, 4, 4>>>&
+        transforms_W_O,
+    std::vector<utils::VoxelEvaluationDetails>* voxel_evaluation_details_vector,
+    std::vector<std::pair<typename voxblox::Layer<VoxelType>::Ptr,
+                          typename voxblox::Layer<VoxelType>::Ptr>>*
+        aligned_objects_and_error_layers) {
+  CHECK_NOTNULL(voxel_evaluation_details_vector);
+  std::vector<Transformation> kindr_transforms_W_O;
+  for (const Eigen::Matrix<float, 4, 4>& transform_W_O : transforms_W_O) {
+    kindr_transforms_W_O.emplace_back(transform_W_O);
+  }
+  evaluateLayerRmseAtPoses(
+      voxel_evaluation_mode, layer, merged_object_layer_O, kindr_transforms_W_O,
+      voxel_evaluation_details_vector, aligned_objects_and_error_layers);
 }
 
 }  // namespace voxblox
