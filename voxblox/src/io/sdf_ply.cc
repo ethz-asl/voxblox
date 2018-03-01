@@ -27,7 +27,7 @@ bool getColorFromVoxel(const TsdfVoxel& voxel,
   CHECK_LE(color_factor, 1.0);
   CHECK_GE(color_factor, 0.0);
 
-  *color = rainbowColorMap(color_factor);
+  *color = rainbowColorMap(0.66 - 0.66 * color_factor);
 
   return true;
 }
@@ -49,7 +49,7 @@ bool getColorFromVoxel(const EsdfVoxel& voxel,
   CHECK_LE(color_factor, 1.0);
   CHECK_GE(color_factor, 0.0);
 
-  *color = rainbowColorMap(color_factor);
+  *color = rainbowColorMap(0.66 - 0.66 * color_factor);
 
   return true;
 }
