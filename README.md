@@ -50,6 +50,9 @@ This library was written primarily by Helen Oleynikova and Marius Fehr, with sig
 A mesh produced by Voxblox running inside a manifold mapper that fuses a SLAM systems poses with the output of a realsense D415 depthcamera. The map was generated while all systems were running fully onboard the pictured micro aerial vehicle. 
 ![manifold_mapping](https://i.imgur.com/t5DHpJh.png)
 
+A higher resolution mesh of the same area that was processed by voxblox offline is shown below.
+![offline_manifold](https://i.imgur.com/pvHhVsL.png)
+
 Voxblox running on the cow and lady dataset on a laptop equiped with an i7-4810MQ 2.80GHz CPU. In this example the system is integrating a TSDF, generating a mesh and publishing the result to RViz in real time.
 ![example_gif](http://i.imgur.com/2wLztFm.gif)
 
@@ -149,7 +152,7 @@ The easiest way to start is to download the [cow and lady dataset](http://projec
 If you open rviz, you should be able to see the the mesh visualized on the `/voxblox_node/mesh` MarkerArray topic, in the `world` static frame, as shown below.
 The mesh only updates once per second (this is a setting in the launch file).
 
-![cow_and_lady_rviz](https://cloud.githubusercontent.com/assets/5616392/25223468/bbd6b3cc-25bb-11e7-8c06-61baa87655ca.png)
+![cow_and_lady_rviz](https://i.imgur.com/nSX5Qsh.jpg)
 
 The rest of the commonly-used settings are parameters in the launch file.
 
