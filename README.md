@@ -140,6 +140,12 @@ wstool set voxblox         --git https://github.com/ethz-asl/voxblox.git
 wstool update
 ```
 
+Compile:
+```
+cd ~/catkin_ws/src/
+catkin build voxblox_ros
+catkin build voxblox_rviz_plugin  # for visualization in Rviz
+```
 # Running Voxblox
 The easiest way to test out voxblox is to try it out on a dataset.
 We have launch files for our [own dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), the [Euroc Vicon Room datasets](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets), and the [KITTI raw datasets](http://www.cvlibs.net/datasets/kitti/) processed through [kitti_to_rosbag](https://github.com/ethz-asl/kitti_to_rosbag).
