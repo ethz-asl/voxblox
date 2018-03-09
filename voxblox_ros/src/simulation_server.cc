@@ -321,7 +321,7 @@ void SimulationServer::visualize() {
 
   if (generate_mesh_) {
     // Generate TSDF GT mesh.
-    MeshIntegrator<TsdfVoxel>::Config mesh_config;
+    MeshIntegratorConfig mesh_config;
     MeshLayer::Ptr mesh(new MeshLayer(tsdf_gt_->block_size()));
     MeshIntegrator<TsdfVoxel> mesh_integrator(mesh_config, tsdf_gt_.get(),
                                               mesh.get());

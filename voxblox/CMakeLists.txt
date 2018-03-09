@@ -54,6 +54,7 @@ set("${PROJECT_NAME}_SRCS"
   src/integrator/merge_integration.cc
   src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
+  src/io/sdf_ply.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
