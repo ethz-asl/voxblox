@@ -1,8 +1,9 @@
-#ifndef VOXBLOX_BLOCK_HASH_H_
-#define VOXBLOX_BLOCK_HASH_H_
+#ifndef VOXBLOX_CORE_BLOCK_HASH_H_
+#define VOXBLOX_CORE_BLOCK_HASH_H_
 
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include <Eigen/Core>
@@ -70,4 +71,4 @@ struct LongIndexHashMapType {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_BLOCK_HASH_H_
+#endif  // VOXBLOX_CORE_BLOCK_HASH_H_
