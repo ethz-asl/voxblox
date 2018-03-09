@@ -246,51 +246,64 @@ void transformLayer(const Layer<VoxelType>& layer_in,
 
 typedef std::pair<voxblox::Layer<voxblox::TsdfVoxel>::Ptr,
                   voxblox::Layer<voxblox::TsdfVoxel>::Ptr>
-    AlignedObjectAndErrorLayer;
-typedef std::vector<AlignedObjectAndErrorLayer> AlignedObjectAndErrorLayers;
+    AlignedLayerAndErrorLayer;
+typedef std::vector<AlignedLayerAndErrorLayer> AlignedLayerAndErrorLayers;
 
+// This function will align layer B to layer A, transforming and interpolating
+// layer B into voxel grid A for every transformation in `transforms_A_B` and
+// evaluate them. If `aligned_layers_and_error_layers` is set, this function
+// returns a vector containing the aligned layer_B and an error layer for every
+// transformation. The error layer contains the absolute SDF error for every
+// voxel of the comparison between layer_A and aligned layer_B. This function
+// currently only supports SDF type layers, like TsdfVoxel and EsdfVoxel.
 template <typename VoxelType>
 void evaluateLayerRmseAtPoses(
     const utils::VoxelEvaluationMode& voxel_evaluation_mode,
-    const Layer<VoxelType>& layer,
-    const Layer<VoxelType>& merged_object_layer_O,
-    const std::vector<Transformation>& transforms_W_O,
+    const Layer<VoxelType>& layer_A, const Layer<VoxelType>& layer_B,
+    const std::vector<Transformation>& transforms_A_B,
     std::vector<utils::VoxelEvaluationDetails>* voxel_evaluation_details_vector,
     std::vector<std::pair<typename voxblox::Layer<VoxelType>::Ptr,
                           typename voxblox::Layer<VoxelType>::Ptr>>*
-        aligned_objects_and_error_layers = nullptr) {
+        aligned_layers_and_error_layers = nullptr) {
   CHECK_NOTNULL(voxel_evaluation_details_vector);
+
+  // Check if layers are compatible.
+  CHECK_NEAR(layer_A.voxel_size(), layer_B.voxel_size(), 1e-8);
+  CHECK_EQ(layer_A.voxels_per_side(), layer_B.voxels_per_side());
+
   // Check if world TSDF layer agrees with merged object at all object poses.
 
-  for (size_t i = 0u; i < transforms_W_O.size(); ++i) {
-    const Transformation& transform_W_O = transforms_W_O[i];
-    typename Layer<VoxelType>::Ptr merged_object_layer_W(
-        new Layer<VoxelType>(merged_object_layer_O.voxel_size(),
-                             merged_object_layer_O.voxels_per_side()));
+  for (size_t i = 0u; i < transforms_A_B.size(); ++i) {
+    const Transformation& transform_A_B = transforms_A_B[i];
+
+    // Layer B transformed to the coordinate frame A.
+    typename Layer<VoxelType>::Ptr aligned_layer_B(
+        new Layer<VoxelType>(layer_B.voxel_size(), layer_B.voxels_per_side()));
 
     Layer<VoxelType>* error_layer = nullptr;
-    if (aligned_objects_and_error_layers != nullptr) {
-      CHECK_EQ(aligned_objects_and_error_layers->size(), transforms_W_O.size());
+    if (aligned_layers_and_error_layers != nullptr) {
+      if (aligned_layers_and_error_layers->size() != transforms_A_B.size()) {
+        aligned_layers_and_error_layers->clear();
+        aligned_layers_and_error_layers->resize(transforms_A_B.size());
+      }
 
       // Initialize and get ptr to error layer to fill out later.
-      (*aligned_objects_and_error_layers)[i].second =
+      (*aligned_layers_and_error_layers)[i].second =
           typename voxblox::Layer<VoxelType>::Ptr(new voxblox::Layer<VoxelType>(
-              layer.voxel_size(), layer.voxels_per_side()));
-      error_layer = (*aligned_objects_and_error_layers)[i].second.get();
+              layer_A.voxel_size(), layer_A.voxels_per_side()));
+      error_layer = (*aligned_layers_and_error_layers)[i].second.get();
 
       // Store the aligned object as well.
-      (*aligned_objects_and_error_layers)[i].first = merged_object_layer_W;
+      (*aligned_layers_and_error_layers)[i].first = aligned_layer_B;
     }
 
     // Transform merged object into the world frame.
-    transformLayer<VoxelType>(merged_object_layer_O, transform_W_O,
-                              merged_object_layer_W.get());
+    transformLayer<VoxelType>(layer_B, transform_A_B, aligned_layer_B);
 
     utils::VoxelEvaluationDetails voxel_evaluation_details;
     // Evaluate the RMSE of the merged object layer in the world layer.
-    utils::evaluateLayersRmse(layer, *merged_object_layer_W,
-                              voxel_evaluation_mode, &voxel_evaluation_details,
-                              error_layer);
+    utils::evaluateLayersRmse(layer_A, *aligned_layer_B, voxel_evaluation_mode,
+                              &voxel_evaluation_details, error_layer);
     voxel_evaluation_details_vector->push_back(voxel_evaluation_details);
   }
 }
@@ -298,23 +311,22 @@ void evaluateLayerRmseAtPoses(
 template <typename VoxelType>
 void evaluateLayerRmseAtPoses(
     const utils::VoxelEvaluationMode& voxel_evaluation_mode,
-    const Layer<VoxelType>& layer,
-    const Layer<VoxelType>& merged_object_layer_O,
+    const Layer<VoxelType>& layer_A, const Layer<VoxelType>& layer_B,
     const std::vector<Eigen::Matrix<float, 4, 4>,
                       Eigen::aligned_allocator<Eigen::Matrix<float, 4, 4>>>&
-        transforms_W_O,
+        transforms_A_B,
     std::vector<utils::VoxelEvaluationDetails>* voxel_evaluation_details_vector,
     std::vector<std::pair<typename voxblox::Layer<VoxelType>::Ptr,
                           typename voxblox::Layer<VoxelType>::Ptr>>*
-        aligned_objects_and_error_layers = nullptr) {
+        aligned_layers_and_error_layers = nullptr) {
   CHECK_NOTNULL(voxel_evaluation_details_vector);
-  std::vector<Transformation> kindr_transforms_W_O;
-  for (const Eigen::Matrix<float, 4, 4>& transform_W_O : transforms_W_O) {
-    kindr_transforms_W_O.emplace_back(transform_W_O);
+  std::vector<Transformation> kindr_transforms_A_B;
+  for (const Eigen::Matrix<float, 4, 4>& transform_A_B : transforms_A_B) {
+    kindr_transforms_A_B.emplace_back(transform_A_B);
   }
   evaluateLayerRmseAtPoses(
-      voxel_evaluation_mode, layer, merged_object_layer_O, kindr_transforms_W_O,
-      voxel_evaluation_details_vector, aligned_objects_and_error_layers);
+      voxel_evaluation_mode, layer_A, layer_B, kindr_transforms_A_B,
+      voxel_evaluation_details_vector, aligned_layers_and_error_layers);
 }
 
 }  // namespace voxblox
