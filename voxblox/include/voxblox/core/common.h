@@ -40,6 +40,7 @@ inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
 // Types.
 typedef float FloatingPoint;
 typedef int IndexElement;
+typedef long long LongIndexElement;
 
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Point;
 typedef Eigen::Matrix<FloatingPoint, 3, 1> Ray;
@@ -47,6 +48,8 @@ typedef Eigen::Matrix<FloatingPoint, 3, 1> Ray;
 typedef Eigen::Matrix<IndexElement, 3, 1> AnyIndex;
 typedef AnyIndex VoxelIndex;
 typedef AnyIndex BlockIndex;
+
+typedef Eigen::Matrix<LongIndexElement, 3, 1> LongIndex;
 
 typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 
