@@ -137,9 +137,10 @@ constexpr float kFloatEpsilon = 1e-6;     // Used for weights.
 
 // Grid <-> point conversion functions.
 
-// IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
+// NOTE: Due the limited accuracy of the FloatingPoint type, this
 // function doesn't always compute the correct grid index for coordinates
-// near the grid cell boundaries.
+// near the grid cell boundaries. Use the safer `getGridIndexFromOriginPoint` if
+// the origin point is available.
 inline AnyIndex getGridIndexFromPoint(const Point& point,
                                       const FloatingPoint grid_size_inv) {
   return AnyIndex(std::floor(point.x() * grid_size_inv + kEpsilon),
@@ -147,7 +148,7 @@ inline AnyIndex getGridIndexFromPoint(const Point& point,
                   std::floor(point.z() * grid_size_inv + kEpsilon));
 }
 
-// IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
+// NOTE: Due the limited accuracy of the FloatingPoint type, this
 // function doesn't always compute the correct grid index for coordinates
 // near the grid cell boundaries.
 inline AnyIndex getGridIndexFromPoint(const Point& scaled_point) {
@@ -156,11 +157,15 @@ inline AnyIndex getGridIndexFromPoint(const Point& scaled_point) {
                   std::floor(scaled_point.z() + kEpsilon));
 }
 
+// NOTE: This function is safer than `getGridIndexFromPoint`, because it assumes
+// we pass in not an arbitrary point in the grid cell, but the ORIGIN. This way
+// we can avoid the floating point precision issue that arrises for calls to
+// `getGridIndexFromPoint`for arbitrary points near the border of the grid cell.
 inline AnyIndex getGridIndexFromOriginPoint(const Point& point,
                                             const FloatingPoint grid_size_inv) {
-  return AnyIndex(std::round(point.x() * grid_size_inv),
-                  std::round(point.y() * grid_size_inv),
-                  std::round(point.z() * grid_size_inv));
+  return AnyIndex(std::floor(point.x() * grid_size_inv + 0.5),
+                  std::floor(point.y() * grid_size_inv + 0.5),
+                  std::floor(point.z() * grid_size_inv + 0.5));
 }
 
 inline Point getCenterPointFromGridIndex(const AnyIndex& idx,

@@ -20,22 +20,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef VOXBLOX_MESH_MESH_PLY_H_
-#define VOXBLOX_MESH_MESH_PLY_H_
+#ifndef VOXBLOX_IO_MESH_PLY_H_
+#define VOXBLOX_IO_MESH_PLY_H_
 
 #include "voxblox/mesh/mesh_layer.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 namespace voxblox {
 
+bool convertMeshLayerToMesh(
+    const MeshLayer& mesh_layer, Mesh* mesh, const bool connected_mesh = true,
+    const FloatingPoint vertex_proximity_threshold = 1e-10);
+
+// Default behaviour is to simplify the mesh.
 bool outputMeshLayerAsPly(const std::string& filename,
+                          const MeshLayer& mesh_layer);
+
+bool outputMeshLayerAsPly(const std::string& filename,
+                          const bool connected_mesh,
                           const MeshLayer& mesh_layer);
 
 bool outputMeshAsPly(const std::string& filename, const Mesh& mesh);
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_MESH_MESH_PLY_H_
+#endif  // VOXBLOX_IO_MESH_PLY_H_
