@@ -2,6 +2,7 @@
 #define VOXBLOX_UTILS_EVALUATION_UTILS_H_
 
 #include <algorithm>
+#include <string>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -27,6 +28,20 @@ struct VoxelEvaluationDetails {
   size_t num_ignored_voxels = 0u;
   size_t num_overlapping_voxels = 0u;
   size_t num_non_overlapping_voxels = 0u;
+
+  std::string toString() const {
+    std::stringstream ss;
+    ss << "\n\n======= Layer Evaluation Results =======\n"
+       << " num evaluated voxels:       " << num_evaluated_voxels << "\n"
+       << " num overlapping voxels:     " << num_overlapping_voxels << "\n"
+       << " num non-overlapping voxels: " << num_non_overlapping_voxels << "\n"
+       << " num ignored voxels:         " << num_ignored_voxels << "\n"
+       << " min error:                  " << min_error << "\n"
+       << " max error:                  " << max_error << "\n"
+       << " RMSE:                       " << rmse << "\n"
+       << "========================================\n";
+    return ss.str();
+  }
 };
 
 template <typename VoxelType>
@@ -42,15 +57,22 @@ bool isObservedVoxel(const VoxelType& voxel);
 template <typename VoxelType>
 FloatingPoint getVoxelSdf(const VoxelType& voxel);
 
+template <typename VoxelType>
+void setVoxelSdf(const FloatingPoint sdf, VoxelType* voxel);
+
+template <typename VoxelType>
+void setVoxelWeight(const FloatingPoint weight, VoxelType* voxel);
+
 // Evaluate a test layer vs a ground truth layer. The comparison is symmetrical
 // unless the VoxelEvaluationMode is set to ignore the voxels of one of the two
-// layers behind the surface. The parameter 'evaluation_result' can be a
-// nullptr.
+// layers behind the surface. The parameter 'evaluation_result' and
+// 'error_layer' can be a nullptr.
 template <typename VoxelType>
 FloatingPoint evaluateLayersRmse(
     const Layer<VoxelType>& layer_gt, const Layer<VoxelType>& layer_test,
     const VoxelEvaluationMode& voxel_evaluation_mode,
-    VoxelEvaluationDetails* evaluation_result) {
+    VoxelEvaluationDetails* evaluation_result = nullptr,
+    Layer<VoxelType>* error_layer = nullptr) {
   // Iterate over all voxels in the test layer and look them up in the ground
   // truth layer. Then compute RMSE.
   BlockIndexList block_list;
@@ -78,6 +100,11 @@ FloatingPoint evaluateLayersRmse(
     }
     const Block<VoxelType>& gt_block = layer_gt.getBlockByIndex(block_index);
 
+    typename Block<VoxelType>::Ptr error_block;
+    if (error_layer != nullptr) {
+      error_block = error_layer->allocateBlockPtrByIndex(block_index);
+    }
+
     for (size_t linear_index = 0u; linear_index < num_voxels_per_block;
          ++linear_index) {
       FloatingPoint error = 0.0;
@@ -95,6 +122,14 @@ FloatingPoint evaluateLayersRmse(
               std::max(evaluation_details.max_error, std::abs(error));
           ++evaluation_details.num_evaluated_voxels;
           ++evaluation_details.num_overlapping_voxels;
+
+          if (error_block) {
+            VoxelType& error_voxel =
+                error_block->getVoxelByLinearIndex(linear_index);
+            setVoxelSdf<VoxelType>(std::abs(error), &error_voxel);
+            setVoxelWeight<VoxelType>(1.0, &error_voxel);
+          }
+
           break;
         case VoxelEvaluationResult::kIgnored:
           ++evaluation_details.num_ignored_voxels;
@@ -136,21 +171,12 @@ FloatingPoint evaluateLayersRmse(
         sqrt(total_squared_error / evaluation_details.num_evaluated_voxels);
   }
 
-  LOG(INFO) << "\nLayer comparison result:"
-            << "\n\tnum evaluated voxels:\t\t "
-            << evaluation_details.num_evaluated_voxels
-            << "\n\tnum overlapping voxels:\t\t "
-            << evaluation_details.num_overlapping_voxels
-            << "\n\tnum non-overlapping voxels:\t "
-            << evaluation_details.num_non_overlapping_voxels
-            << "\n\tnum ignored voxels:\t\t "
-            << evaluation_details.num_ignored_voxels << "\n\tRMSE:\t\t\t\t "
-            << evaluation_details.rmse;
-
   // If the details are requested, output them.
   if (evaluation_result != nullptr) {
     *evaluation_result = evaluation_details;
   }
+
+  VLOG(2) << evaluation_details.toString();
 
   return evaluation_details.rmse;
 }
@@ -161,8 +187,7 @@ template <typename VoxelType>
 FloatingPoint evaluateLayersRmse(const Layer<VoxelType>& layer_gt,
                                  const Layer<VoxelType>& layer_test) {
   return evaluateLayersRmse<VoxelType>(
-      layer_gt, layer_test, VoxelEvaluationMode::kIgnoreErrorBehindTestSurface,
-      nullptr);
+      layer_gt, layer_test, VoxelEvaluationMode::kIgnoreErrorBehindTestSurface);
 }
 
 template <typename VoxelType>
@@ -196,24 +221,21 @@ VoxelEvaluationResult computeVoxelError(
 }
 
 template <>
-inline bool isObservedVoxel(const TsdfVoxel& voxel) {
-  return voxel.weight > 1e-6;
-}
-
+bool isObservedVoxel(const TsdfVoxel& voxel);
 template <>
-inline bool isObservedVoxel(const EsdfVoxel& voxel) {
-  return voxel.observed;
-}
-
+bool isObservedVoxel(const EsdfVoxel& voxel);
 template <>
-inline FloatingPoint getVoxelSdf(const TsdfVoxel& voxel) {
-  return voxel.distance;
-}
-
+FloatingPoint getVoxelSdf(const TsdfVoxel& voxel);
 template <>
-inline FloatingPoint getVoxelSdf(const EsdfVoxel& voxel) {
-  return voxel.distance;
-}
+FloatingPoint getVoxelSdf(const EsdfVoxel& voxel);
+template <>
+void setVoxelSdf(const FloatingPoint sdf, TsdfVoxel* voxel);
+template <>
+void setVoxelSdf(const FloatingPoint sdf, EsdfVoxel* voxel);
+template <>
+void setVoxelWeight(const FloatingPoint weight, TsdfVoxel* voxel);
+template <>
+void setVoxelWeight(const FloatingPoint weight, EsdfVoxel* voxel);
 
 }  // namespace utils
 }  // namespace voxblox

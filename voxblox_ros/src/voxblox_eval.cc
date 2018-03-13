@@ -224,7 +224,7 @@ void VoxbloxEvaluator::evaluate() {
 
 void VoxbloxEvaluator::visualize() {
   // Generate the mesh.
-  MeshIntegrator<TsdfVoxel>::Config mesh_config;
+  MeshIntegratorConfig mesh_config;
   mesh_layer_.reset(new MeshLayer(tsdf_layer_->block_size()));
   mesh_integrator_.reset(new MeshIntegrator<TsdfVoxel>(
       mesh_config, tsdf_layer_.get(), mesh_layer_.get()));

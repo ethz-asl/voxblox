@@ -23,7 +23,7 @@
 namespace voxblox {
 class SimpleTsdfVisualizer {
  public:
-  SimpleTsdfVisualizer(const ros::NodeHandle& nh_private)
+  explicit SimpleTsdfVisualizer(const ros::NodeHandle& nh_private)
       : nh_private_(nh_private),
         tsdf_surface_distance_threshold_factor_(2.0),
         tsdf_world_frame_("world"),
@@ -134,7 +134,7 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
   {
     std::shared_ptr<MeshLayer> mesh_layer;
     mesh_layer.reset(new MeshLayer(tsdf_layer.block_size()));
-    MeshIntegrator<TsdfVoxel>::Config mesh_config;
+    MeshIntegratorConfig mesh_config;
     std::shared_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator;
     mesh_integrator.reset(new MeshIntegrator<TsdfVoxel>(mesh_config, tsdf_layer,
                                                         mesh_layer.get()));
@@ -157,7 +157,7 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
 
     // Output as pcl mesh.
     pcl::PolygonMesh polygon_mesh;
-    toPCLPolygonMesh(*mesh_layer, tsdf_world_frame_, &polygon_mesh);
+    toConnectedPCLPolygonMesh(*mesh_layer, tsdf_world_frame_, &polygon_mesh);
     pcl_msgs::PolygonMesh pcl_mesh_msg;
     pcl_conversions::fromPCL(polygon_mesh, pcl_mesh_msg);
     mesh_msg.header.stamp = ros::Time::now();

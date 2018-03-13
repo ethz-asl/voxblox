@@ -42,18 +42,19 @@
 
 namespace voxblox {
 
+struct MeshIntegratorConfig {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  bool use_color = true;
+  float min_weight = 1e-4;
+
+  size_t integrator_threads = std::thread::hardware_concurrency();
+};
+
 template <typename VoxelType>
 class MeshIntegrator {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  struct Config {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-    bool use_color = true;
-    float min_weight = 1e-4;
-    size_t integrator_threads = std::thread::hardware_concurrency();
-  };
 
   void initFromSdfLayer(const Layer<VoxelType>& sdf_layer) {
     voxel_size_ = sdf_layer.voxel_size();
@@ -67,8 +68,8 @@ class MeshIntegrator {
 
   // Use this constructor in case you would like to modify the layer during mesh
   // extraction, i.e. modify the updated flag.
-  MeshIntegrator(const Config& config, Layer<VoxelType>* sdf_layer,
-                 MeshLayer* mesh_layer)
+  MeshIntegrator(const MeshIntegratorConfig& config,
+                 Layer<VoxelType>* sdf_layer, MeshLayer* mesh_layer)
       : config_(config),
         sdf_layer_mutable_(CHECK_NOTNULL(sdf_layer)),
         sdf_layer_const_(CHECK_NOTNULL(sdf_layer)),
@@ -86,16 +87,19 @@ class MeshIntegrator {
 
   // This constructor will not allow you to modify the layer, i.e. clear the
   // updated flag.
-  MeshIntegrator(const Config& config, const Layer<VoxelType>& sdf_layer,
-                 MeshLayer* mesh_layer)
+  MeshIntegrator(const MeshIntegratorConfig& config,
+                 const Layer<VoxelType>& sdf_layer, MeshLayer* mesh_layer)
       : config_(config),
         sdf_layer_mutable_(nullptr),
         sdf_layer_const_(&sdf_layer),
         mesh_layer_(CHECK_NOTNULL(mesh_layer)) {
     initFromSdfLayer(sdf_layer);
 
-    cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
-        0, 0, 1, 1, 1, 1;
+    // clang-format off
+    cube_index_offsets_ << 0, 1, 1, 0, 0, 1, 1, 0,
+                           0, 0, 1, 1, 0, 0, 1, 1,
+                           0, 0, 0, 0, 1, 1, 1, 1;
+    // clang-format on
 
     if (config_.integrator_threads == 0) {
       LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
@@ -176,9 +180,11 @@ class MeshIntegrator {
       }
     }
 
-    // Max X plane (takes care of max-Y corner as well).
+    // Max X plane
+    // takes care of edge (x_max, y_max, z),
+    // takes care of edge (x_max, y, z_max).
     voxel_index.x() = vps - 1;
-    for (voxel_index.z() = 0; voxel_index.z() < vps - 1; voxel_index.z()++) {
+    for (voxel_index.z() = 0; voxel_index.z() < vps; voxel_index.z()++) {
       for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
         extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
@@ -187,8 +193,10 @@ class MeshIntegrator {
     }
 
     // Max Y plane.
+    // takes care of edge (x, y_max, z_max),
+    // without corner (x_max, y_max, z_max).
     voxel_index.y() = vps - 1;
-    for (voxel_index.z() = 0; voxel_index.z() < vps - 1; voxel_index.z()++) {
+    for (voxel_index.z() = 0; voxel_index.z() < vps; voxel_index.z()++) {
       for (voxel_index.x() = 0; voxel_index.x() < vps - 1; voxel_index.x()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
         extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
@@ -196,10 +204,10 @@ class MeshIntegrator {
       }
     }
 
-    // Max Z plane (also takes care of corners).
+    // Max Z plane.
     voxel_index.z() = vps - 1;
-    for (voxel_index.y() = 0; voxel_index.y() < vps; voxel_index.y()++) {
-      for (voxel_index.x() = 0; voxel_index.x() < vps; voxel_index.x()++) {
+    for (voxel_index.y() = 0; voxel_index.y() < vps - 1; voxel_index.y()++) {
+      for (voxel_index.x() = 0; voxel_index.x() < vps - 1; voxel_index.x()++) {
         Point coords = block->computeCoordinatesFromVoxelIndex(voxel_index);
         extractMeshOnBorder(*block, voxel_index, coords, &next_mesh_index,
                             mesh.get());
@@ -292,7 +300,8 @@ class MeshIntegrator {
           if (corner_index(j) < 0) {
             block_offset(j) = -1;
             corner_index(j) = corner_index(j) + voxels_per_side_;
-          } else if (corner_index(j) >= static_cast<IndexElement>(voxels_per_side_)) {
+          } else if (corner_index(j) >=
+                     static_cast<IndexElement>(voxels_per_side_)) {
             block_offset(j) = 1;
             corner_index(j) = corner_index(j) - voxels_per_side_;
           }
@@ -339,7 +348,6 @@ class MeshIntegrator {
       VoxelIndex voxel_index = block.computeVoxelIndexFromCoordinates(vertex);
       if (block.isValidVoxelIndex(voxel_index)) {
         const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
-
         utils::getColorIfValid(voxel, config_.min_weight, &(mesh->colors[i]));
       } else {
         const typename Block<VoxelType>::ConstPtr neighbor_block =
@@ -351,7 +359,7 @@ class MeshIntegrator {
   }
 
  protected:
-  Config config_;
+  MeshIntegratorConfig config_;
 
   // Having both a const and a mutable pointer to the layer allows this
   // integrator to work both with a const layer (in case you don't want to clear
