@@ -121,7 +121,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   }
 
-  MeshIntegrator<TsdfVoxel>::Config mesh_config;
+  MeshIntegratorConfig mesh_config;
   nh_private_.param("mesh_min_weight", mesh_config.min_weight,
                     mesh_config.min_weight);
 
