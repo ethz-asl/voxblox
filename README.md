@@ -94,9 +94,9 @@ Rendered Mesh | Setup
 To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) or [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu).
 These instructions are for Ubuntu, Voxblox will also run on OS X, but you're more or less on your own there.
 
-First install additional system dependencies (swap indigo for kinetic as necessary):
+First install additional system dependencies (swap kinetic for indigo as necessary):
 ```
-sudo apt-get install python-wstool python-catkin-tools ros-indigo-cmake-modules protobuf-compiler
+sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler
 ```
 
 Next, add a few other dependencies.
@@ -105,7 +105,7 @@ If you don't have a catkin workspace yet, set it up as follows:
 mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws
 catkin init
-catkin config --extend /opt/ros/indigo
+catkin config --extend /opt/ros/kinetic
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
 catkin config --merge-devel
 ```
