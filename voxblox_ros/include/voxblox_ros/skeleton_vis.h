@@ -86,9 +86,16 @@ inline void visualizeSkeletonGraph(
   edge_marker.type = visualization_msgs::Marker::LINE_LIST;
   edge_marker.pose.orientation.w = 1.0;
   edge_marker.scale.x = 0.1;
+  //edge_marker.scale.x = 0.025;
+
   edge_marker.scale.y = edge_marker.scale.x;
   edge_marker.scale.z = edge_marker.scale.x;
   edge_marker.color.b = 1.0;
+
+  //edge_marker.color.r = 1.0;
+  //edge_marker.color.g = 1.0;
+
+
   edge_marker.color.a = 1.0;
 
   for (int64_t edge_id : edge_ids) {

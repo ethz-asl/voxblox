@@ -1,6 +1,7 @@
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/skeletons/skeleton_generator.h>
+#include <voxblox/integrator/merge_integration.h>
 
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/esdf_server.h"
@@ -52,6 +53,32 @@ void SkeletonizerNode::init() {
 
   esdf_server_.loadMap(input_filepath);
 
+  // Rotate the layer.
+  bool should_rotate = true;
+  if (should_rotate) {
+    // Copy the original layer.
+    Eigen::Matrix4f transform_mat;
+    transform_mat << -0.06003693612025088, -0.9981723400647389,
+        0.006895348502918008, -0.06239961565320997, -0.6113046304631935,
+        0.03130539682806774, -0.7907759612581153, -0.0011645461428879474,
+        0.7891148300948043, -0.05169092433997463, -0.6120668535914421,
+        -0.09136807240962909, 0.0, 0.0, 0.0, 1.0;
+    transform_mat = transform_mat.inverse();
+    Transformation T_out_in =
+        Transformation::constructAndRenormalizeRotation(transform_mat);
+    Rotation rot_adjust(Eigen::AngleAxisf(-0.05, Eigen::Vector3f::UnitY()) *
+                        Eigen::AngleAxisf(0.33, Eigen::Vector3f::UnitZ()));
+    Transformation T_adjust(rot_adjust, Point::Identity());
+
+    Layer<TsdfVoxel> temp_layer(
+        *esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr());
+    esdf_server_.clear();
+    transformLayer<TsdfVoxel>(temp_layer, T_adjust * T_out_in,
+                              esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr());
+
+    esdf_server_.TsdfServer::generateMesh();
+  }
+
   const bool full_euclidean_distance = true;
   esdf_server_.updateEsdfBatch(full_euclidean_distance);
 
@@ -78,7 +105,7 @@ void SkeletonizerNode::init() {
     if (esdf_server_.saveMap(output_filepath)) {
       constexpr bool kClearFile = false;
       io::SaveLayer<SkeletonVoxel>(*skeleton_generator_.getSkeletonLayer(),
-                                      output_filepath, kClearFile);
+                                   output_filepath, kClearFile);
       ROS_INFO("Output map to: %s", output_filepath.c_str());
     } else {
       ROS_ERROR("Couldn't output map to: %s", output_filepath.c_str());
