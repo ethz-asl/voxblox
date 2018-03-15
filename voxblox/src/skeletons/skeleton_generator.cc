@@ -8,7 +8,7 @@ SkeletonGenerator::SkeletonGenerator()
     : min_separation_angle_(0.7),
       generate_by_layer_neighbors_(true),
       num_neighbors_for_edge_(18),
-      vertex_pruning_radius_(0.5),
+      vertex_pruning_radius_(0.35),
       min_gvd_distance_(0.4) {
   // Initialize the template matchers.
   pruning_template_matcher_.setDeletionTemplates();
@@ -1450,16 +1450,25 @@ void SkeletonGenerator::splitSpecificEdges(
         }
       }
 
-      int64_t vertex_id = graph_.addVertex(new_vertex);
-      num_vertices_added++;
-
-      // Get the point from the diagram and label it.
+      // Get this point from the diagram.
+      // Check if it's already a vertex!
       SkeletonVoxel* voxel =
           skeleton_layer_->getVoxelPtrByCoordinates(new_vertex.point);
       if (voxel != nullptr) {
-        voxel->is_vertex = true;
-        voxel->vertex_id = vertex_id;
+        if (voxel == nullptr || (voxel->is_vertex && voxel->vertex_id > -1)) {
+          continue;
+        }
       }
+
+      int64_t vertex_id = graph_.addVertex(new_vertex);
+      num_vertices_added++;
+
+      /* LOG(INFO) << "Adding new vertex: " << vertex_id
+                << " Location: " << new_vertex.point.transpose(); */
+
+      // Get the point from the diagram and label it.
+      voxel->is_vertex = true;
+      voxel->vertex_id = vertex_id;
 
       // Remove the existing edge, add two new edges.
       // TODO(helenol): FILL IN EDGE DISTANCE.
@@ -1602,8 +1611,8 @@ void SkeletonGenerator::repairGraph() {
                                        subgraph2.first, &new_edge_ids);
         // recursivelyLabel(subgraph2.second, subgraph1.first);
       } else {
-       /*  LOG(INFO) << "No connection between subgraph " << subgraph1.first
-                  << " and " << subgraph2.first; */
+        /*  LOG(INFO) << "No connection between subgraph " << subgraph1.first
+                   << " and " << subgraph2.first; */
       }
     }
   }
