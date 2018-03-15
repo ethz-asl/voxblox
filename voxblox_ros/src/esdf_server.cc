@@ -135,6 +135,7 @@ void EsdfServer::updateMesh() {
 
 void EsdfServer::publishPointclouds() {
   publishAllUpdatedEsdfVoxels();
+  publishSlices();
 
   TsdfServer::publishPointclouds();
 }
@@ -178,6 +179,24 @@ void EsdfServer::updateEsdf() {
     const bool clear_updated_flag_esdf = true;
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   }
+}
+
+void EsdfServer::updateEsdfBatch(bool full_euclidean) {
+  if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+    if (full_euclidean) {
+      esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
+    } else {
+      esdf_integrator_->updateFromTsdfLayerBatch();
+    }
+  }
+}
+
+float EsdfServer::getEsdfMaxDistance() const {
+  return esdf_integrator_->getEsdfMaxDistance();
+}
+
+void EsdfServer::setEsdfMaxDistance(float max_distance) {
+  esdf_integrator_->setEsdfMaxDistance(max_distance);
 }
 
 void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
