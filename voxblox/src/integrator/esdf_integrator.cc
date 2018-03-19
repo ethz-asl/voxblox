@@ -52,10 +52,11 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   timing::Timer clear_timer("esdf/clear_radius");
 
   // First set all in inner sphere to free.
-  BlockVoxelListMap block_voxel_list;
+  BlockVoxelListMap block_voxel_list_free;
   getSphereAroundPoint(position, config_.clear_sphere_radius,
-                       &block_voxel_list);
-  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
+                       &block_voxel_list_free);
+  for (const std::pair<BlockIndex, VoxelIndexList>& kv :
+       block_voxel_list_free) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr =
         esdf_layer_->allocateBlockPtrByIndex(kv.first);
@@ -70,17 +71,16 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_voxel.distance = config_.default_distance_m;
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
-        pushNeighborsToOpen(kv.first, voxel_index);
         updated_blocks_.insert(kv.first);
       }
     }
   }
 
   // Second set all remaining unknown to occupied.
-  block_voxel_list.clear();
+  BlockVoxelListMap block_voxel_list_occ;
   getSphereAroundPoint(position, config_.occupied_sphere_radius,
-                       &block_voxel_list);
-  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
+                       &block_voxel_list_occ);
+  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_occ) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr =
         esdf_layer_->allocateBlockPtrByIndex(kv.first);
@@ -94,11 +94,27 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_voxel.distance = -config_.default_distance_m;
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
-        pushNeighborsToOpen(kv.first, voxel_index);
         updated_blocks_.insert(kv.first);
       }
     }
   }
+
+  // Now push all the neighbors to open, now that all the relevant neighbors
+  // are allocated.
+  // Don't need to check the free set, as the occupied voxel list contains also
+  // the inner free sphere.
+  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_occ) {
+    for (const VoxelIndex& voxel_index : kv.second) {
+      pushNeighborsToOpen(kv.first, voxel_index);
+    }
+  }
+
+  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_free) {
+    for (const VoxelIndex& voxel_index : kv.second) {
+      pushNeighborsToOpen(kv.first, voxel_index);
+    }
+  }
+
   VLOG(3) << "Changed " << updated_blocks_.size()
           << " blocks from unknown to free or occupied near the robot.";
   clear_timer.Stop();
