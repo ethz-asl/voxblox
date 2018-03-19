@@ -44,7 +44,7 @@ class SimulationWorld {
                                   FloatingPoint max_dist, Pointcloud* ptcloud,
                                   Colors* colors) const;
   // Same thing, but also adds a noise in the *distance* of the measurement,
-  // given by noise_sigma (Gaussian noise).
+  // given by noise_sigma (Gaussian noise). No noise in the bearing.
   void getNoisyPointcloudFromViewpoint(const Point& view_origin,
                                        const Point& view_direction,
                                        const Eigen::Vector2i& camera_res,
