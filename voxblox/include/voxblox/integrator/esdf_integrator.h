@@ -128,6 +128,15 @@ class EsdfIntegrator {
     raise_ = AlignedQueue<VoxelKey>();
   }
 
+  // Update some specific settings.
+  float getEsdfMaxDistance() const { return config_.max_distance_m; }
+  void setEsdfMaxDistance(float max_distance) {
+    config_.max_distance_m = max_distance;
+    if (config_.default_distance_m < max_distance) {
+      config_.default_distance_m = max_distance;
+    }
+  }
+
  protected:
   // Convenience functions for planning.
   typedef AnyIndexHashMapType<VoxelIndexList>::type BlockVoxelListMap;

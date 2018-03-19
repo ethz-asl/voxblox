@@ -112,8 +112,7 @@ class EsdfMap {
   unsigned int coordPlaneSliceGetDistance(
       unsigned int free_plane_index, double free_plane_val,
       EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-      Eigen::Ref<Eigen::VectorXd> distances,
-      unsigned int max_points) const;
+      Eigen::Ref<Eigen::VectorXd> distances, unsigned int max_points) const;
 
  protected:
   FloatingPoint block_size_;
