@@ -65,9 +65,11 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         continue;
       }
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
-      if (!esdf_voxel.observed) {
+      // We can clear unobserved or hallucinated voxels.
+      if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
         esdf_voxel.distance = config_.default_distance_m;
         esdf_voxel.observed = true;
+        esdf_voxel.hallucinated = true;
         pushNeighborsToOpen(kv.first, voxel_index);
         updated_blocks_.insert(kv.first);
       }
@@ -91,6 +93,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
       if (!esdf_voxel.observed) {
         esdf_voxel.distance = -config_.default_distance_m;
         esdf_voxel.observed = true;
+        esdf_voxel.hallucinated = true;
         pushNeighborsToOpen(kv.first, voxel_index);
         updated_blocks_.insert(kv.first);
       }
@@ -264,6 +267,8 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       }
 
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
+      // This voxel definitely exists in the real map.
+      esdf_voxel.hallucinated = false;
       VoxelIndex voxel_index =
           esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
       // Check for frontier voxels.

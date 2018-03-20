@@ -142,13 +142,16 @@ class MarchingCubes {
   static inline Point interpolateVertex(const Point& vertex1,
                                         const Point& vertex2, float sdf1,
                                         float sdf2) {
-    const FloatingPoint min_diff = 1e-6;
+    static constexpr FloatingPoint kMinSdfDifference = 1e-6;
     const FloatingPoint sdf_diff = sdf1 - sdf2;
-    if (std::abs(sdf_diff) < min_diff) {
-      return Point(vertex1 + 0.5 * vertex2);
+    // Only compute the actual interpolation value if the sdf_difference is not
+    // too small, this is to counteract issues with floating point precision.
+    if (std::abs(sdf_diff) >= kMinSdfDifference) {
+      const FloatingPoint t = sdf1 / sdf_diff;
+      return Point(vertex1 + t * (vertex2 - vertex1));
+    } else {
+      return Point(0.5 * (vertex1 + vertex2));
     }
-    const FloatingPoint t = sdf1 / sdf_diff;
-    return Point(vertex1 + t * (vertex2 - vertex1));
   }
 };
 

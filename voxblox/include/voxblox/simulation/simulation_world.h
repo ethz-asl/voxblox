@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <list>
+#include <random>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
@@ -42,9 +43,17 @@ class SimulationWorld {
                                   FloatingPoint fov_h_rad,
                                   FloatingPoint max_dist, Pointcloud* ptcloud,
                                   Colors* colors) const;
+  // Same thing, but also adds a noise in the *distance* of the measurement,
+  // given by noise_sigma (Gaussian noise). No noise in the bearing.
+  void getNoisyPointcloudFromViewpoint(const Point& view_origin,
+                                       const Point& view_direction,
+                                       const Eigen::Vector2i& camera_res,
+                                       FloatingPoint fov_h_rad,
+                                       FloatingPoint max_dist,
+                                       FloatingPoint noise_sigma,
+                                       Pointcloud* ptcloud, Colors* colors);
 
   // === Computing ground truth SDFs ===
-  //// ??? How to do this for both ESDF and TSDF and whatever?
   template <typename VoxelType>
   void generateSdfFromWorld(FloatingPoint max_dist,
                             Layer<VoxelType>* layer) const;
@@ -65,6 +74,8 @@ class SimulationWorld {
   template <typename VoxelType>
   void setVoxel(FloatingPoint dist, const Color& color, VoxelType* voxel) const;
 
+  FloatingPoint getNoise(FloatingPoint noise_sigma);
+
   // List storing pointers to all the objects in this world.
   std::list<std::unique_ptr<Object> > objects_;
 
@@ -72,6 +83,9 @@ class SimulationWorld {
   // generation and visualization bounds, accurate only up to block size.
   Point min_bound_;
   Point max_bound_;
+
+  // For producing noise. Sets a fixed seed (0).
+  std::default_random_engine generator_;
 };
 
 }  // namespace voxblox

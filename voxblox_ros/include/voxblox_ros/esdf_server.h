@@ -32,20 +32,30 @@ class EsdfServer : public TsdfServer {
   virtual void updateMesh();
   virtual void publishPointclouds();
   virtual void newPoseCallback(const Transformation& T_G_C);
+  virtual void publishMap();
+  virtual bool saveMap(const std::string& file_path);
+  virtual bool loadMap(const std::string& file_path);
 
   // Call updateMesh if you want everything updated; call this specifically
   // if you don't want the mesh or visualization.
   void updateEsdf();
+  // Update the ESDF all at once; clear the existing map.
+  void updateEsdfBatch(bool full_euclidean = false);
 
   // Overwrites the layer with what's coming from the topic!
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
-  std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
+  inline std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
+  inline std::shared_ptr<const EsdfMap> getEsdfMapPtr() const {
+    return esdf_map_;
+  }
 
   bool getClearSphere() const { return clear_sphere_for_planning_; }
   void setClearSphere(bool clear_sphere_for_planning) {
     clear_sphere_for_planning_ = clear_sphere_for_planning;
   }
+  float getEsdfMaxDistance() const;
+  void setEsdfMaxDistance(float max_distance);
 
   virtual void clear();
 

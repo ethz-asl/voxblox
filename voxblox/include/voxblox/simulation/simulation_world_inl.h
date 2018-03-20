@@ -6,12 +6,15 @@
 #include <memory>
 
 #include "voxblox/core/block.h"
+#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
 template <typename VoxelType>
 void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
                                            Layer<VoxelType>* layer) const {
+  timing::Timer sim_timer("sim/generate_sdf");
+
   CHECK_NOTNULL(layer);
   // Iterate over every voxel in the layer and compute its distance to all
   // objects.
@@ -19,13 +22,15 @@ void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
   // Get all blocks within bounds. For now, only respect bounds approximately:
   // that is, up to block boundaries.
   FloatingPoint block_size = layer->block_size();
+  FloatingPoint half_block_size = block_size / 2.0;
 
   BlockIndexList blocks;
-  for (FloatingPoint x = min_bound_.x(); x <= max_bound_.x(); x += block_size) {
-    for (FloatingPoint y = min_bound_.y(); y <= max_bound_.y();
-         y += block_size) {
-      for (FloatingPoint z = min_bound_.z(); z <= max_bound_.z();
-           z += block_size) {
+  for (FloatingPoint x = min_bound_.x() - half_block_size;
+       x <= max_bound_.x() + half_block_size; x += block_size) {
+    for (FloatingPoint y = min_bound_.y() - half_block_size;
+         y <= max_bound_.y() + half_block_size; y += block_size) {
+      for (FloatingPoint z = min_bound_.z() - half_block_size;
+           z <= max_bound_.z() + half_block_size; z += block_size) {
         blocks.push_back(
             layer->computeBlockIndexFromCoordinates(Point(x, y, z)));
       }

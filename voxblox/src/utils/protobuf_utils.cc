@@ -14,7 +14,7 @@ bool readProtoMsgCountToStream(std::fstream* stream_in, uint32_t* message_count,
   CHECK_NOTNULL(byte_offset);
   CHECK(stream_in->is_open());
   stream_in->clear();
-  stream_in->seekg(0, std::ios::beg);
+  stream_in->seekg(*byte_offset, std::ios::beg);
   google::protobuf::io::IstreamInputStream raw_in(stream_in);
   google::protobuf::io::CodedInputStream coded_in(&raw_in);
   const int prev_position = coded_in.CurrentPosition();
@@ -22,7 +22,7 @@ bool readProtoMsgCountToStream(std::fstream* stream_in, uint32_t* message_count,
     LOG(ERROR) << "Could not read message size.";
     return false;
   }
-  *byte_offset = coded_in.CurrentPosition() - prev_position;
+  *byte_offset += coded_in.CurrentPosition() - prev_position;
   return true;
 }
 
@@ -31,7 +31,6 @@ bool writeProtoMsgCountToStream(uint32_t message_count,
   CHECK_NOTNULL(stream_out);
   CHECK(stream_out->is_open());
   stream_out->clear();
-  stream_out->seekg(0, std::ios::beg);
   google::protobuf::io::OstreamOutputStream raw_out(stream_out);
   google::protobuf::io::CodedOutputStream coded_out(&raw_out);
   coded_out.WriteVarint32(message_count);

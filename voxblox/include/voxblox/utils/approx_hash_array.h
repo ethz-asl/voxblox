@@ -69,7 +69,7 @@ class ApproxHashSet {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ApproxHashSet() : offset_(0) {
+  ApproxHashSet() : offset_(0), pseudo_set_(pseudo_set_size_) {
     for (std::atomic<size_t>& value : pseudo_set_) {
       value.store(0, std::memory_order_relaxed);
     }
@@ -133,9 +133,9 @@ class ApproxHashSet {
 
   // If unmasked_bits is large, the array takes a lot of memory, this makes
   // clearing it slow.
-  // However offsetting which bin hashes are placed into have the same effect.
-  // Once we run out of room to offset by (determined by full_reset_threshold we
-  // clear the memory).
+  // However offsetting which bin hashes are placed into has the same effect.
+  // Once we run out of room to offset by (determined by full_reset_threshold)
+  // we clear the memory).
   // This function is not thread safe.
   void resetApproxSet() {
     if (++offset_ >= full_reset_threshold) {
@@ -158,7 +158,7 @@ class ApproxHashSet {
   static constexpr size_t bit_mask_ = (1 << unmasked_bits) - 1;
 
   size_t offset_;
-  std::array<std::atomic<size_t>, pseudo_set_size_> pseudo_set_;
+  std::vector<std::atomic<size_t>> pseudo_set_;
 
   AnyIndexHash hasher_;
 };
