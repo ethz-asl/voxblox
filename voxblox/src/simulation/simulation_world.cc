@@ -3,7 +3,7 @@
 namespace voxblox {
 
 SimulationWorld::SimulationWorld()
-    : min_bound_(-5.0, -5.0, -1.0), max_bound_(5.0, 5.0, 9.0) {}
+    : min_bound_(-5.0, -5.0, -1.0), max_bound_(5.0, 5.0, 9.0), generator_(0) {}
 
 void SimulationWorld::addObject(std::unique_ptr<Object> object) {
   objects_.emplace_back(std::move(object));
@@ -51,21 +51,22 @@ void SimulationWorld::getPointcloudFromViewpoint(
     const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
     FloatingPoint max_dist, Pointcloud* ptcloud, Colors* colors) const {
   // Focal length based on fov.
-  FloatingPoint focal_length = camera_res.x() / (2 * tan(fov_h_rad / 2.0));
+  const FloatingPoint focal_length =
+      camera_res.x() / (2 * tan(fov_h_rad / 2.0));
 
   // Calculate transformation between nominal camera view direction and our
   // view direction. Nominal view is positive x direction.
-  Point nominal_view_direction(1.0, 0.0, 0.0);
-  Eigen::Quaternion<FloatingPoint> ray_rotation =
-      Eigen::Quaternion<FloatingPoint>::FromTwoVectors(nominal_view_direction,
-                                                       view_direction);
+  const Point nominal_view_direction(1.0, 0.0, 0.0);
+  const Rotation ray_rotation(Eigen::Quaternion<FloatingPoint>::FromTwoVectors(
+      nominal_view_direction, view_direction));
 
   // Now actually iterate over all pixels.
   for (int u = -camera_res.x() / 2; u < camera_res.x() / 2; ++u) {
     for (int v = -camera_res.y() / 2; v < camera_res.y() / 2; ++v) {
       Point ray_camera_direction =
           Point(1.0, u / focal_length, v / focal_length);
-      Point ray_direction = ray_rotation * (ray_camera_direction).normalized();
+      Point ray_direction =
+          ray_rotation.rotate((ray_camera_direction).normalized());
 
       // Cast this ray into every object.
       bool ray_valid = false;
@@ -75,9 +76,9 @@ void SimulationWorld::getPointcloudFromViewpoint(
       for (const std::unique_ptr<Object>& object : objects_) {
         Point object_intersect;
         FloatingPoint object_dist;
-        bool intersects = object->getRayIntersection(
-            view_origin, ray_direction, max_dist, &object_intersect,
-            &object_dist);
+        bool intersects =
+            object->getRayIntersection(view_origin, ray_direction, max_dist,
+                                       &object_intersect, &object_dist);
         if (intersects) {
           if (!ray_valid || object_dist < ray_dist) {
             ray_valid = true;
@@ -93,6 +94,72 @@ void SimulationWorld::getPointcloudFromViewpoint(
       }
     }
   }
+}
+
+void SimulationWorld::getNoisyPointcloudFromViewpoint(
+    const Point& view_origin, const Point& view_direction,
+    const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
+    FloatingPoint max_dist, FloatingPoint noise_sigma, Pointcloud* ptcloud,
+    Colors* colors) {
+  // Focal length based on fov.
+  const FloatingPoint focal_length =
+      camera_res.x() / (2 * tan(fov_h_rad / 2.0));
+
+  // Calculate transformation between nominal camera view direction and our
+  // view direction. Nominal view is positive x direction.
+  const Point nominal_view_direction(1.0, 0.0, 0.0);
+  const Rotation ray_rotation(Eigen::Quaternion<FloatingPoint>::FromTwoVectors(
+      nominal_view_direction, view_direction));
+
+  // Now actually iterate over all pixels.
+  for (int u = -camera_res.x() / 2; u < camera_res.x() / 2; ++u) {
+    for (int v = -camera_res.y() / 2; v < camera_res.y() / 2; ++v) {
+      Point ray_camera_direction =
+          Point(1.0, u / focal_length, v / focal_length);
+      Point ray_direction =
+          ray_rotation.rotate((ray_camera_direction).normalized());
+
+      // Cast this ray into every object.
+      bool ray_valid = false;
+      FloatingPoint ray_dist = max_dist;
+      Point ray_intersect = Point::Zero();
+      Color ray_color;
+      for (const std::unique_ptr<Object>& object : objects_) {
+        Point object_intersect;
+        FloatingPoint object_dist;
+        bool intersects =
+            object->getRayIntersection(view_origin, ray_direction, max_dist,
+                                       &object_intersect, &object_dist);
+        if (intersects) {
+          if (!ray_valid || object_dist < ray_dist) {
+            ray_valid = true;
+            ray_dist = object_dist;
+            ray_intersect = object_intersect;
+            ray_color = object->getColor();
+          }
+        }
+      }
+      if (ray_valid) {
+        // Apply noise now!
+        FloatingPoint noise = getNoise(noise_sigma);
+        ray_dist += noise;
+        if (ray_dist < 0.0) {
+          ray_dist = 0.0;
+        }
+        ray_intersect = view_origin + ray_dist * ray_direction;
+
+        ptcloud->push_back(ray_intersect);
+        colors->push_back(ray_color);
+      }
+    }
+  }
+}
+
+FloatingPoint SimulationWorld::getNoise(FloatingPoint noise_sigma) {
+  const FloatingPoint mean = 0.0;
+  std::normal_distribution<FloatingPoint> dist(mean, noise_sigma);
+
+  return dist(generator_);
 }
 
 }  // namespace voxblox

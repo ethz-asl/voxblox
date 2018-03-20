@@ -23,5 +23,7 @@ void tango_layer_interface_bind(py::module& m) {
       .def_property_readonly("voxels_per_side",
                              &TangoLayerInterface::voxels_per_side)
 
-      .def("saveToFile", &TangoLayerInterface::saveToFile);
+      .def("saveToFile",
+           (bool (TangoLayerInterface::*)(const std::string&) const) &
+               TangoLayerInterface::saveToFile);
 }

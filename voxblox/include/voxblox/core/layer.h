@@ -50,20 +50,18 @@ class Layer {
 
   inline const BlockType& getBlockByIndex(const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);
-    if (it != block_map_.end()) {
-      return *(it->second);
-    } else {
+    if (it == block_map_.end()) {
       LOG(FATAL) << "Accessed unallocated block at " << index.transpose();
     }
+    return *(it->second);
   }
 
   inline BlockType& getBlockByIndex(const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
-    if (it != block_map_.end()) {
-      return *(it->second);
-    } else {
+    if (it == block_map_.end()) {
       LOG(FATAL) << "Accessed unallocated block at " << index.transpose();
     }
+    return *(it->second);
   }
 
   inline typename BlockType::ConstPtr getBlockPtrByIndex(
@@ -127,8 +125,8 @@ class Layer {
                    voxels_per_side_, voxel_size_,
                    getOriginPointFromGridIndex(index, block_size_)));
 
-    DCHECK(insert_status.second)
-        << "Block already exists when allocating at " << index.transpose();
+    DCHECK(insert_status.second) << "Block already exists when allocating at "
+                                 << index.transpose();
 
     DCHECK(insert_status.first->second);
     DCHECK_EQ(insert_status.first->first, index);
@@ -224,10 +222,11 @@ class Layer {
   void getProto(LayerProto* proto) const;
   bool isCompatible(const LayerProto& layer_proto) const;
   bool isCompatible(const BlockProto& layer_proto) const;
-  bool saveToFile(const std::string& file_path) const;
+  bool saveToFile(const std::string& file_path, bool clear_file = true) const;
+  // Default behavior is to clear the file.
   bool saveSubsetToFile(const std::string& file_path,
                         BlockIndexList blocks_to_include,
-                        bool include_all_blocks) const;
+                        bool include_all_blocks, bool clear_file = true) const;
   bool addBlockFromProto(const BlockProto& block_proto,
                          BlockMergingStrategy strategy);
 
