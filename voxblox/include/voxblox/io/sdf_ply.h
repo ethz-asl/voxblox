@@ -97,9 +97,9 @@ template <typename VoxelType>
 bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
                                   const float sdf_color_range,
                                   voxblox::Mesh* point_cloud) {
-  constexpr float kInvalidSdfThreshold = -1.0f;
+  constexpr float kInvalidSdfMaxValue = -1.0f;
   return convertVoxelGridToPointCloud<VoxelType>(
-      layer, sdf_color_range, kInvalidSdfThreshold, point_cloud);
+      layer, sdf_color_range, kInvalidSdfMaxValue, point_cloud);
 }
 
 // Converts the layer to a mesh by extracting its ISO surface using marching
@@ -142,19 +142,19 @@ bool convertLayerToMesh(
 
 // Output the layer to ply file. Depending on the ply output type, this either
 // exports all voxel centers colored by th SDF values or extracts the ISO
-// surface as mesh. The parameter max_sdf_range is used to color the points for
+// surface as mesh. The parameter sdf_color_range is used to color the points for
 // modes that use an SDF-based point cloud coloring function.
 template <typename VoxelType>
 bool outputLayerAsPly(const Layer<VoxelType>& layer,
                       const std::string& filename, PlyOutputTypes type,
-                      const FloatingPoint max_sdf_range = 0.3,
+                      const FloatingPoint sdf_color_range = 0.3,
                       const FloatingPoint max_sdf_value_to_output = 0.3) {
   CHECK(!filename.empty());
   switch (type) {
     case PlyOutputTypes::kSdfColoredDistanceField: {
       voxblox::Mesh point_cloud;
       if (!convertVoxelGridToPointCloud(
-              layer, max_sdf_range, max_sdf_value_to_output, &point_cloud)) {
+              layer, sdf_color_range, max_sdf_value_to_output, &point_cloud)) {
         return false;
       }
 
