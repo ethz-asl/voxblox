@@ -10,8 +10,8 @@ namespace io {
 
 template <>
 bool getColorFromVoxel(const TsdfVoxel& voxel,
-                       const FloatingPoint sdf_color_range,
-                       const FloatingPoint sdf_max_value, Color* color) {
+                       const float sdf_color_range,
+                       const float sdf_max_value, Color* color) {
   CHECK_NOTNULL(color);
 
   static constexpr float kTolerance = 1e-6;
@@ -23,10 +23,10 @@ bool getColorFromVoxel(const TsdfVoxel& voxel,
     return false;
   }
 
-  FloatingPoint truncated_voxel_distance =
+  float truncated_voxel_distance =
       std::min(std::max(voxel.distance, -sdf_color_range), sdf_color_range);
 
-  FloatingPoint color_factor =
+  float color_factor =
       0.5 * (1.0 + (truncated_voxel_distance / sdf_color_range));
 
   CHECK_LE(color_factor, 1.0);
@@ -39,8 +39,8 @@ bool getColorFromVoxel(const TsdfVoxel& voxel,
 
 template <>
 bool getColorFromVoxel(const EsdfVoxel& voxel,
-                       const FloatingPoint sdf_color_range,
-                       const FloatingPoint sdf_max_value, Color* color) {
+                       const float sdf_color_range,
+                       const float sdf_max_value, Color* color) {
   CHECK_NOTNULL(color);
   if (!voxel.observed) {
     return false;
@@ -50,10 +50,10 @@ bool getColorFromVoxel(const EsdfVoxel& voxel,
     return false;
   }
 
-  FloatingPoint truncated_voxel_distance =
+  float truncated_voxel_distance =
       std::min(std::max(voxel.distance, -sdf_color_range), sdf_color_range);
 
-  FloatingPoint color_factor =
+  float color_factor =
       0.5 * (1.0 + (truncated_voxel_distance / sdf_color_range));
 
   CHECK_LE(color_factor, 1.0);
