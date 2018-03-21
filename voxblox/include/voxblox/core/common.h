@@ -38,7 +38,7 @@ inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
 }
 
 // Types.
-typedef double FloatingPoint;
+typedef float FloatingPoint;
 typedef int IndexElement;
 typedef int64_t LongIndexElement;
 
