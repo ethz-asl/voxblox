@@ -19,8 +19,8 @@ class LayerUtilsTest : public ::testing::Test,
 
     SimulationWorld simulation;
     Point lower_bound, upper_bound;
-    lower_bound << -0.5, -0.5, -0.5;
-    upper_bound << 1.0, 1.0, 1.0;
+    lower_bound << -0.51, -0.51, -0.51;
+    upper_bound << 0.9, 0.9, 0.9;
     expected_new_coordinate_origin_ << 0.16, 0.16, 0.16;
 
     simulation.setBounds(lower_bound, upper_bound);
