@@ -142,9 +142,8 @@ void centerBlocksOfLayer(Layer<VoxelType>* layer, Point* new_layer_origin) {
   const FloatingPoint block_size = layer->block_size();
   *new_layer_origin = index_centroid.cast<FloatingPoint>() * block_size;
 
-  VLOG(1) << "The new origin of the coordinate frame (expressed in the old "
-             "coordinate frame) is: "
-          << *new_layer_origin;
+  VLOG(3) << "The new origin of the coordinate frame (expressed in the old "
+          << "coordinate frame) is: " << new_layer_origin->transpose();
 
   // Loop over all blocks and change their spatial indices.
   // The only way to do this is to remove them all, store them in a temporary
