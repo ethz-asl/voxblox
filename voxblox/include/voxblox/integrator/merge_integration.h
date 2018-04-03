@@ -298,7 +298,7 @@ void evaluateLayerRmseAtPoses(
     }
 
     // Transform merged object into the world frame.
-    transformLayer<VoxelType>(layer_B, transform_A_B, aligned_layer_B);
+    transformLayer<VoxelType>(layer_B, transform_A_B, aligned_layer_B.get());
 
     utils::VoxelEvaluationDetails voxel_evaluation_details;
     // Evaluate the RMSE of the merged object layer in the world layer.
