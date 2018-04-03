@@ -140,10 +140,13 @@ TEST_F(TsdfLayerMergeToolTest, MergeTwoTsdfLayers) {
   EXPECT_NEAR(result.max_error, 0.002, kFloatingPointToleranceHigh);
 
   constexpr size_t kUintTolerance = 10u;
-  EXPECT_NEAR(result.num_evaluated_voxels, 7529536, kUintTolerance);
+  // The overlap between B and A+B is obviously exactly as big as B itself.
+  EXPECT_NEAR(result.num_evaluated_voxels, 8000000, kUintTolerance);
+  EXPECT_NEAR(result.num_overlapping_voxels, 8000000, kUintTolerance);
   EXPECT_NEAR(result.num_ignored_voxels, 0, kUintTolerance);
-  EXPECT_NEAR(result.num_overlapping_voxels, 7529536, kUintTolerance);
-  EXPECT_NEAR(result.num_non_overlapping_voxels, 2861735, kUintTolerance);
+  // This results from the simulated world of A being transformed into b, i.e.
+  // this is A_transformed - B.
+  EXPECT_NEAR(result.num_non_overlapping_voxels, 4278466, kUintTolerance);
 
   const std::string kMergedLayerPlyFile =
       kFolderPrefix + "world_A_and_B.tsdf.ply";
