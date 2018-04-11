@@ -109,12 +109,6 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
     }
   }
 
-  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_free) {
-    for (const VoxelIndex& voxel_index : kv.second) {
-      pushNeighborsToOpen(kv.first, voxel_index);
-    }
-  }
-
   VLOG(3) << "Changed " << updated_blocks_.size()
           << " blocks from unknown to free or occupied near the robot.";
   clear_timer.Stop();
@@ -617,7 +611,7 @@ void EsdfIntegrator::processOpenSet() {
         continue;
       }
       CHECK(neighbor_block->isValidVoxelIndex(neighbor_voxel_index))
-          << "Neigbor voxel index: " << neighbor_voxel_index.transpose();
+          << "Neighbor voxel index: " << neighbor_voxel_index.transpose();
 
       EsdfVoxel& neighbor_voxel =
           neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
@@ -632,6 +626,16 @@ void EsdfIntegrator::processOpenSet() {
       // Don't bother updating fixed voxels.
       if (neighbor_voxel.fixed) {
         continue;
+      }
+
+      bool track_progress = false;
+      if (neighbor_voxel.hallucinated &&
+          neighbor_voxel.distance >= config_.max_distance_m) {
+        LOG(INFO) << "ESDF voxel distance: " << esdf_voxel.distance
+                  << " ESDF voxel hallucinated? " << esdf_voxel.hallucinated
+                  << " Distance to neighbor: " << distance_to_neighbor
+                  << " Is voxel in queue? " << neighbor_voxel.in_queue;
+        track_progress = true;
       }
 
       // Everything outside the surface.
@@ -668,11 +672,15 @@ void EsdfIntegrator::processOpenSet() {
         }
       }
 
-      // If there's a sign flippy flip.
-      if (signum(esdf_voxel.distance) != signum(neighbor_voxel.distance)) {
-        if (esdf_voxel.fixed &&
-            std::abs(neighbor_voxel.distance + esdf_voxel.distance) >
-                distance_to_neighbor) {
+      // If there's a sign flippy flip AND a discontinuity (i.e., difference
+      // between distances is greater than the Euclidean distance between
+      // the voxels).
+      if (signum(esdf_voxel.distance) != signum(neighbor_voxel.distance) &&
+          std::abs(neighbor_voxel.distance + esdf_voxel.distance) >
+              distance_to_neighbor) {
+        // The ESDF voxel is in the fixed band, and the distance between the
+        // two is greater than the actual distance (i.e., a discontinuity):
+        if (esdf_voxel.fixed) {
           neighbor_voxel.distance =
               esdf_voxel.distance -
               signum(esdf_voxel.distance) * distance_to_neighbor;
@@ -681,28 +689,33 @@ void EsdfIntegrator::processOpenSet() {
             open_.push(neighbors[i], neighbor_voxel.distance);
             neighbor_voxel.in_queue = true;
           }
-        } else if (std::abs(neighbor_voxel.distance + esdf_voxel.distance) <
-                   distance_to_neighbor) {
-          // Do nothing, we good.
-        } else if (neighbor_voxel.distance < 0.0 &&
-                   esdf_voxel.distance > distance_to_neighbor) {
-          // OK now the other case is if it's 2 totally different signs...
-          neighbor_voxel.distance = -distance_to_neighbor;
+          // ESDF voxel not in fixed band, and is outside an obstacle, while the
+          // neighbor voxel is inside an obstacle.
+        } else if (neighbor_voxel.distance < 0.0) {
+          //neighbor_voxel.distance = -distance_to_neighbor;
+          neighbor_voxel.distance = esdf_voxel.distance -
+              signum(esdf_voxel.distance) * distance_to_neighbor;
           neighbor_voxel.parent = -directions[i];
           if (!neighbor_voxel.in_queue) {
             open_.push(neighbors[i], neighbor_voxel.distance);
             neighbor_voxel.in_queue = true;
           }
-        } else if (neighbor_voxel.distance >= distance_to_neighbor &&
-                   esdf_voxel.distance < -distance_to_neighbor) {
-          // OK now the other case is if it's 2 totally different signs...
-          neighbor_voxel.distance = distance_to_neighbor;
+          // ESDF voxel isn't in the fixed band, neighbor is outside an
+          // obstacle, and ESDF voxel is inside.
+        } else if (neighbor_voxel.distance >= 0.0) {
+          //neighbor_voxel.distance = distance_to_neighbor;
+          neighbor_voxel.distance = esdf_voxel.distance -
+              signum(esdf_voxel.distance) * distance_to_neighbor;
           neighbor_voxel.parent = -directions[i];
           if (!neighbor_voxel.in_queue) {
             open_.push(neighbors[i], neighbor_voxel.distance);
             neighbor_voxel.in_queue = true;
           }
         }
+      }
+
+      if (track_progress) {
+        LOG(INFO) << "Neighbor distance: " << neighbor_voxel.distance;
       }
     }
 
