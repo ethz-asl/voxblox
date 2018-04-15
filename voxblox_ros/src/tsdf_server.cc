@@ -133,6 +133,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   // Advertise services.
   generate_mesh_srv_ = nh_private_.advertiseService(
       "generate_mesh", &TsdfServer::generateMeshCallback, this);
+  clear_map_srv_ = nh_private_.advertiseService(
+      "clear_map", &TsdfServer::clearMapCallback, this);
   save_map_srv_ = nh_private_.advertiseService(
       "save_map", &TsdfServer::saveMapCallback, this);
   load_map_srv_ = nh_private_.advertiseService(
@@ -401,6 +403,13 @@ bool TsdfServer::loadMap(const std::string& file_path) {
   return io::LoadBlocksFromFile(
       file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
       kMulitpleLayerSupport, tsdf_map_->getTsdfLayerPtr());
+}
+
+bool TsdfServer::clearMapCallback(
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+  clear();
+  return true;
 }
 
 bool TsdfServer::generateMeshCallback(
