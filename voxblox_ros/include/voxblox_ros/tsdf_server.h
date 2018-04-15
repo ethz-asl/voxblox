@@ -67,6 +67,8 @@ class TsdfServer {
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
+  bool clearMapCallback(std_srvs::Empty::Request& request,           // NOLINT
+                        std_srvs::Empty::Response& response);        // NOLINT
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
   bool loadMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
@@ -146,6 +148,7 @@ class TsdfServer {
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
+  ros::ServiceServer clear_map_srv_;
   ros::ServiceServer save_map_srv_;
   ros::ServiceServer load_map_srv_;
   ros::ServiceServer publish_pointclouds_srv_;
