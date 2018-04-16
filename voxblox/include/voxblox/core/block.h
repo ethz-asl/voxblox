@@ -186,7 +186,7 @@ class Block {
   void serializeToIntegers(std::vector<uint32_t>* data) const;
   void deserializeFromIntegers(const std::vector<uint32_t>& data);
 
-  bool mergeBlock(const Block<VoxelType>& other_block);
+  void mergeBlock(const Block<VoxelType>& other_block);
 
   size_t getMemorySize() const;
 

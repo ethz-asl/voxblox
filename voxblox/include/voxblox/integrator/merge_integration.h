@@ -17,39 +17,6 @@ namespace voxblox {
 
 static const FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
 
-template <typename VoxelType>
-void mergeVoxelAIntoVoxelB(const VoxelType& voxel_A, VoxelType* voxel_B);
-
-template <>
-void mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A, TsdfVoxel* voxel_B);
-
-template <>
-void mergeVoxelAIntoVoxelB(const OccupancyVoxel& voxel_A,
-                           OccupancyVoxel* voxel_B);
-
-template <typename VoxelType>
-void mergeBlockAIntoBlockB(const Block<VoxelType>& block_A,
-                           Block<VoxelType>* block_B) {
-  CHECK_EQ(block_A.voxel_size(), block_B->voxel_size());
-  CHECK_EQ(block_A.voxels_per_side(), block_B->voxels_per_side());
-  CHECK_NOTNULL(block_B);
-
-  if (!block_A.has_data()) {
-    return;
-  } else {
-    block_B->has_data() = true;
-    block_B->updated() = true;
-
-    for (IndexElement voxel_idx = 0;
-         voxel_idx < static_cast<IndexElement>(block_B->num_voxels());
-         ++voxel_idx) {
-      mergeVoxelAIntoVoxelB<VoxelType>(
-          block_A.getVoxelByLinearIndex(voxel_idx),
-          &(block_B->getVoxelByLinearIndex(voxel_idx)));
-    }
-  }
-}
-
 // Merges layers, when the voxel or block size differs resampling occurs.
 template <typename VoxelType>
 void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
@@ -82,7 +49,7 @@ void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
     }
 
     if ((block_A_ptr != nullptr) && (block_B_ptr != nullptr)) {
-      mergeBlockAIntoBlockB(*block_A_ptr, block_B_ptr.get());
+      block_B_ptr->mergeBlock(*block_A_ptr);
     }
   }
 }
