@@ -9,9 +9,8 @@ namespace voxblox {
 namespace io {
 
 template <>
-bool getColorFromVoxel(const TsdfVoxel& voxel,
-                       const FloatingPoint sdf_color_range,
-                       const FloatingPoint sdf_max_value, Color* color) {
+bool getColorFromVoxel(const TsdfVoxel& voxel, const float sdf_color_range,
+                       const float sdf_max_value, Color* color) {
   CHECK_NOTNULL(color);
 
   static constexpr float kTolerance = 1e-6;
@@ -19,47 +18,46 @@ bool getColorFromVoxel(const TsdfVoxel& voxel,
     return false;
   }
 
-  if (std::abs(voxel.distance) > sdf_max_value && sdf_max_value > 0.0) {
+  if (std::abs(voxel.distance) > sdf_max_value && sdf_max_value > 0.0f) {
     return false;
   }
 
-  FloatingPoint truncated_voxel_distance =
+  const float truncated_voxel_distance =
       std::min(std::max(voxel.distance, -sdf_color_range), sdf_color_range);
 
-  FloatingPoint color_factor =
-      0.5 * (1.0 + (truncated_voxel_distance / sdf_color_range));
+  const float color_factor =
+      0.5f * (1.0f + (truncated_voxel_distance / sdf_color_range));
 
-  CHECK_LE(color_factor, 1.0);
-  CHECK_GE(color_factor, 0.0);
+  CHECK_LE(color_factor, 1.0f);
+  CHECK_GE(color_factor, 0.0f);
 
-  *color = rainbowColorMap(0.66 - 0.66 * color_factor);
+  *color = rainbowColorMap(0.66f - 0.66f * color_factor);
 
   return true;
 }
 
 template <>
-bool getColorFromVoxel(const EsdfVoxel& voxel,
-                       const FloatingPoint sdf_color_range,
-                       const FloatingPoint sdf_max_value, Color* color) {
+bool getColorFromVoxel(const EsdfVoxel& voxel, const float sdf_color_range,
+                       const float sdf_max_value, Color* color) {
   CHECK_NOTNULL(color);
   if (!voxel.observed) {
     return false;
   }
 
-  if (std::abs(voxel.distance) > sdf_max_value && sdf_max_value > 0.0) {
+  if (std::abs(voxel.distance) > sdf_max_value && sdf_max_value > 0.0f) {
     return false;
   }
 
-  FloatingPoint truncated_voxel_distance =
+  const float truncated_voxel_distance =
       std::min(std::max(voxel.distance, -sdf_color_range), sdf_color_range);
 
-  FloatingPoint color_factor =
-      0.5 * (1.0 + (truncated_voxel_distance / sdf_color_range));
+  const float color_factor =
+      0.5f * (1.0f + (truncated_voxel_distance / sdf_color_range));
 
-  CHECK_LE(color_factor, 1.0);
-  CHECK_GE(color_factor, 0.0);
+  CHECK_LE(color_factor, 1.0f);
+  CHECK_GE(color_factor, 0.0f);
 
-  *color = rainbowColorMap(0.66 - 0.66 * color_factor);
+  *color = rainbowColorMap(0.66f - 0.66f * color_factor);
 
   return true;
 }

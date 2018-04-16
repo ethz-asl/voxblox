@@ -219,7 +219,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Colors& colors,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
-
+  CHECK_EQ(points_C.size(), colors.size());
   ThreadSafeIndex index_getter(points_C.size());
 
   std::list<std::thread> integration_threads;
@@ -282,6 +282,7 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Colors& colors,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
+  CHECK_EQ(points_C.size(), colors.size());
 
   // Pre-compute a list of unique voxels to end on.
   // Create a hashmap: VOXEL INDEX -> index in original cloud.
@@ -335,9 +336,9 @@ void MergedTsdfIntegrator::bundleRays(
     }
   }
 
-  LOG(INFO) << "Went from " << points_C.size() << " points to "
-            << voxel_map->size() << " raycasts  and " << clear_map->size()
-            << " clear rays.";
+  VLOG(3) << "Went from " << points_C.size() << " points to "
+          << voxel_map->size() << " raycasts  and " << clear_map->size()
+          << " clear rays.";
 }
 
 void MergedTsdfIntegrator::integrateVoxel(
@@ -523,6 +524,7 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const Colors& colors,
                                              const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
+  CHECK_EQ(points_C.size(), colors.size());
 
   integration_start_time_ = std::chrono::steady_clock::now();
 
