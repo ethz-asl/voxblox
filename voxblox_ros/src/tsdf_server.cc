@@ -306,13 +306,16 @@ void TsdfServer::publishSlices() {
   tsdf_slice_pub_.publish(pointcloud);
 }
 
-void TsdfServer::publishMap() {
+void TsdfServer::publishMap(const bool reset_remote_map) {
   if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
     const bool only_updated = false;
     timing::Timer publish_map_timer("map/publish_tsdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
                                    only_updated, &layer_msg);
+    if (reset_remote_map) {
+      layer_msg.action = static_cast<uint8_t>(MapDerializationAction::kReset);
+    }
     this->tsdf_map_pub_.publish(layer_msg);
     publish_map_timer.Stop();
   }
@@ -451,6 +454,10 @@ void TsdfServer::updateMeshEvent(const ros::TimerEvent& /*event*/) {
 void TsdfServer::clear() {
   tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
   mesh_layer_->clear();
+
+  // Publish a message to reset the map to all subscribers.
+  constexpr bool kResetRemoteMap = true;
+  publishMap(kResetRemoteMap);
 }
 
 void TsdfServer::tsdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
