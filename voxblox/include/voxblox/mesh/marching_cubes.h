@@ -41,7 +41,7 @@ class MarchingCubes {
       const Eigen::Matrix<FloatingPoint, 3, 8>& vertex_coordinates,
       const Eigen::Matrix<FloatingPoint, 8, 1>& vertex_sdf,
       TriangleVector* triangles) {
-    DCHECK_NOTNULL(triangles);
+    DCHECK(triangles != NULL);
 
     const int index = calculateVertexConfiguration(vertex_sdf);
 
@@ -67,8 +67,8 @@ class MarchingCubes {
   static void meshCube(const Eigen::Matrix<FloatingPoint, 3, 8>& vertex_coords,
                        const Eigen::Matrix<FloatingPoint, 8, 1>& vertex_sdf,
                        VertexIndex* next_index, Mesh* mesh) {
-    DCHECK_NOTNULL(next_index);
-    DCHECK_NOTNULL(mesh);
+    DCHECK(next_index != NULL);
+    DCHECK(mesh != NULL);
     const int index = calculateVertexConfiguration(vertex_sdf);
 
     // No edges in this cube.
@@ -123,7 +123,7 @@ class MarchingCubes {
       const Eigen::Matrix<FloatingPoint, 3, 8>& vertex_coords,
       const Eigen::Matrix<FloatingPoint, 8, 1>& vertex_sdf,
       Eigen::Matrix<FloatingPoint, 3, 12>* edge_coords) {
-    DCHECK_NOTNULL(edge_coords);
+    DCHECK(edge_coords != NULL);
     for (std::size_t i = 0; i < 12; ++i) {
       const int* pairs = kEdgeIndexPairs[i];
       const int edge0 = pairs[0];
@@ -142,13 +142,16 @@ class MarchingCubes {
   static inline Point interpolateVertex(const Point& vertex1,
                                         const Point& vertex2, float sdf1,
                                         float sdf2) {
-    const FloatingPoint min_diff = 1e-6;
+    static constexpr FloatingPoint kMinSdfDifference = 1e-6;
     const FloatingPoint sdf_diff = sdf1 - sdf2;
-    if (std::abs(sdf_diff) < min_diff) {
-      return Point(vertex1 + 0.5 * vertex2);
+    // Only compute the actual interpolation value if the sdf_difference is not
+    // too small, this is to counteract issues with floating point precision.
+    if (std::abs(sdf_diff) >= kMinSdfDifference) {
+      const FloatingPoint t = sdf1 / sdf_diff;
+      return Point(vertex1 + t * (vertex2 - vertex1));
+    } else {
+      return Point(0.5 * (vertex1 + vertex2));
     }
-    const FloatingPoint t = sdf1 / sdf_diff;
-    return Point(vertex1 + t * (vertex2 - vertex1));
   }
 };
 

@@ -66,6 +66,7 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
     std::vector<uint32_t> data = block_msg.data;
     block_ptr->deserializeFromIntegers(data);
   }
+  CHECK_EQ(layer->getNumberOfAllocatedBlocks(), msg.blocks.size());
 
   return true;
 }

@@ -1,9 +1,59 @@
 #include "voxblox_ros/tsdf_server.h"
 
+#include "voxblox_ros/ros_params.h"
+
 namespace voxblox {
 
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
+    : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
+                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
+
+void TsdfServer::getServerConfigFromRosParam(
+    const ros::NodeHandle& nh_private) {
+  // Before subscribing, determine minimum time between messages.
+  // 0 by default.
+  double min_time_between_msgs_sec = 0.0;
+  nh_private.param("min_time_between_msgs_sec", min_time_between_msgs_sec,
+                   min_time_between_msgs_sec);
+  min_time_between_msgs_.fromSec(min_time_between_msgs_sec);
+
+  nh_private.param("slice_level", slice_level_, slice_level_);
+  nh_private.param("world_frame", world_frame_, world_frame_);
+  nh_private.param("publish_tsdf_info", publish_tsdf_info_, publish_tsdf_info_);
+  nh_private.param("publish_slices", publish_slices_, publish_slices_);
+
+  nh_private.param("use_freespace_pointcloud", use_freespace_pointcloud_,
+                   use_freespace_pointcloud_);
+
+  nh_private.param("pointcloud_queue_size", pointcloud_queue_size_,
+                   pointcloud_queue_size_);
+
+  nh_private.param("verbose", verbose_, verbose_);
+
+  // Mesh settings.
+  nh_private.param("mesh_filename", mesh_filename_, mesh_filename_);
+  std::string color_mode("color");
+  nh_private.param("color_mode", color_mode, color_mode);
+  if (color_mode == "color" || color_mode == "colors") {
+    color_mode_ = ColorMode::kColor;
+  } else if (color_mode == "height") {
+    color_mode_ = ColorMode::kHeight;
+  } else if (color_mode == "normals") {
+    color_mode_ = ColorMode::kNormals;
+  } else if (color_mode == "lambert") {
+    color_mode_ = ColorMode::kLambert;
+  } else if (color_mode == "lambert_color") {
+    color_mode_ = ColorMode::kLambertColor;
+  } else {  // Default case is gray.
+    color_mode_ = ColorMode::kGray;
+  }
+}
+
+TsdfServer::TsdfServer(const ros::NodeHandle& nh,
+                       const ros::NodeHandle& nh_private,
+                       const TsdfMap::Config& config,
+                       const TsdfIntegratorBase::Config& integrator_config)
     : nh_(nh),
       nh_private_(nh_private),
       verbose_(true),
@@ -12,19 +62,10 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       use_freespace_pointcloud_(false),
       publish_tsdf_info_(false),
       publish_slices_(false),
+      publish_tsdf_map_(false),
+      pointcloud_queue_size_(1),
       transformer_(nh, nh_private) {
-  // Before subscribing, determine minimum time between messages.
-  // 0 by default.
-  double min_time_between_msgs_sec = 0.0;
-  nh_private_.param("min_time_between_msgs_sec", min_time_between_msgs_sec,
-                    min_time_between_msgs_sec);
-  min_time_between_msgs_.fromSec(min_time_between_msgs_sec);
-
-  nh_private_.param("slice_level", slice_level_, slice_level_);
-  nh_private_.param("world_frame", world_frame_, world_frame_);
-  nh_private_.param("publish_tsdf_info", publish_tsdf_info_,
-                    publish_tsdf_info_);
-  nh_private_.param("publish_slices", publish_slices_, publish_slices_);
+  getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
   mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
@@ -40,79 +81,29 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "tsdf_slice", 1, true);
 
-  int pointcloud_queue_size = 1;
-  nh_private_.param("pointcloud_queue_size", pointcloud_queue_size,
-                    pointcloud_queue_size);
-  pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size,
+  nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
+                    pointcloud_queue_size_);
+  pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size_,
                                   &TsdfServer::insertPointcloud, this);
 
-  nh_private_.param("use_freespace_pointcloud", use_freespace_pointcloud_,
-                    use_freespace_pointcloud_);
+  // Publishing/subscribing to a layer from another node (when using this as
+  // a library, for example within a planner).
+  tsdf_map_pub_ =
+      nh_private_.advertise<voxblox_msgs::Layer>("tsdf_map_out", 1, false);
+  tsdf_map_sub_ = nh_private_.subscribe("tsdf_map_in", 1,
+                                        &TsdfServer::tsdfMapCallback, this);
+  nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
+
   if (use_freespace_pointcloud_) {
     // points that are not inside an object, but may also not be on a surface.
     // These will only be used to mark freespace beyond the truncation distance.
     freespace_pointcloud_sub_ =
-        nh_.subscribe("freespace_pointcloud", pointcloud_queue_size,
+        nh_.subscribe("freespace_pointcloud", pointcloud_queue_size_,
                       &TsdfServer::insertFreespacePointcloud, this);
   }
 
-  nh_private_.param("verbose", verbose_, verbose_);
-
-  // Determine map parameters.
-  TsdfMap::Config config;
-  // Workaround for OS X on mac mini not having specializations for float
-  // for some reason.
-  double voxel_size = config.tsdf_voxel_size;
-  int voxels_per_side = config.tsdf_voxels_per_side;
-  nh_private_.param("tsdf_voxel_size", voxel_size, voxel_size);
-  nh_private_.param("tsdf_voxels_per_side", voxels_per_side, voxels_per_side);
-  if (!isPowerOfTwo(voxels_per_side)) {
-    ROS_ERROR("voxels_per_side must be a power of 2, setting to default value");
-    voxels_per_side = config.tsdf_voxels_per_side;
-  }
-
-  config.tsdf_voxel_size = static_cast<FloatingPoint>(voxel_size);
-  config.tsdf_voxels_per_side = voxels_per_side;
+  // Initialize TSDF Map and integrator.
   tsdf_map_.reset(new TsdfMap(config));
-
-  // Determine integrator parameters.
-  TsdfIntegratorBase::Config integrator_config;
-  integrator_config.voxel_carving_enabled = true;
-  // Used to be * 4 according to Marius's experience, now * 2.
-  // This should be made bigger again if behind-surface weighting is improved.
-  integrator_config.default_truncation_distance = config.tsdf_voxel_size * 4;
-
-  double truncation_distance = integrator_config.default_truncation_distance;
-  double max_weight = integrator_config.max_weight;
-  nh_private_.param("voxel_carving_enabled",
-                    integrator_config.voxel_carving_enabled,
-                    integrator_config.voxel_carving_enabled);
-  nh_private_.param("truncation_distance", truncation_distance,
-                    truncation_distance);
-  nh_private_.param("max_ray_length_m", integrator_config.max_ray_length_m,
-                    integrator_config.max_ray_length_m);
-  nh_private_.param("min_ray_length_m", integrator_config.min_ray_length_m,
-                    integrator_config.min_ray_length_m);
-  nh_private_.param("max_weight", max_weight, max_weight);
-  nh_private_.param("use_const_weight", integrator_config.use_const_weight,
-                    integrator_config.use_const_weight);
-  nh_private_.param("allow_clear", integrator_config.allow_clear,
-                    integrator_config.allow_clear);
-  nh_private_.param("start_voxel_subsampling_factor",
-                    integrator_config.start_voxel_subsampling_factor,
-                    integrator_config.start_voxel_subsampling_factor);
-  nh_private_.param("max_consecutive_ray_collisions",
-                    integrator_config.max_consecutive_ray_collisions,
-                    integrator_config.max_consecutive_ray_collisions);
-  nh_private_.param("clear_checks_every_n_frames",
-                    integrator_config.clear_checks_every_n_frames,
-                    integrator_config.clear_checks_every_n_frames);
-  nh_private_.param("max_integration_time_s",
-                    integrator_config.max_integration_time_s,
-                    integrator_config.max_integration_time_s);
-  integrator_config.default_truncation_distance =
-      static_cast<float>(truncation_distance);
-  integrator_config.max_weight = static_cast<float>(max_weight);
 
   std::string method("merged");
   nh_private_.param("method", method, method);
@@ -120,11 +111,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     tsdf_integrator_.reset(new SimpleTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged") == 0) {
-    integrator_config.enable_anti_grazing = false;
-    tsdf_integrator_.reset(new MergedTsdfIntegrator(
-        integrator_config, tsdf_map_->getTsdfLayerPtr()));
-  } else if (method.compare("merged_discard") == 0) {
-    integrator_config.enable_anti_grazing = true;
     tsdf_integrator_.reset(new MergedTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else if (method.compare("fast") == 0) {
@@ -135,25 +121,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   }
 
-  // Mesh settings.
-  nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
-  std::string color_mode("color");
-  nh_private_.param("color_mode", color_mode, color_mode);
-  if (color_mode == "color" || color_mode == "colors") {
-    color_mode_ = ColorMode::kColor;
-  } else if (color_mode == "height") {
-    color_mode_ = ColorMode::kHeight;
-  } else if (color_mode == "normals") {
-    color_mode_ = ColorMode::kNormals;
-  } else if (color_mode == "lambert") {
-    color_mode_ = ColorMode::kLambert;
-  } else if (color_mode == "lambert_color") {
-    color_mode_ = ColorMode::kLambertColor;
-  } else {  // Default case is gray.
-    color_mode_ = ColorMode::kGray;
-  }
-
-  MeshIntegrator<TsdfVoxel>::Config mesh_config;
+  MeshIntegratorConfig mesh_config;
   nh_private_.param("mesh_min_weight", mesh_config.min_weight,
                     mesh_config.min_weight);
 
@@ -169,6 +137,10 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "save_map", &TsdfServer::saveMapCallback, this);
   load_map_srv_ = nh_private_.advertiseService(
       "load_map", &TsdfServer::loadMapCallback, this);
+  publish_pointclouds_srv_ = nh_private_.advertiseService(
+      "publish_pointclouds", &TsdfServer::publishPointcloudsCallback, this);
+  publish_tsdf_map_srv_ = nh_private_.advertiseService(
+      "publish_map", &TsdfServer::publishTsdfMapCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
   double update_mesh_every_n_sec = 0.0;
@@ -332,6 +304,26 @@ void TsdfServer::publishSlices() {
   tsdf_slice_pub_.publish(pointcloud);
 }
 
+void TsdfServer::publishMap() {
+  if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
+    const bool only_updated = false;
+    timing::Timer publish_map_timer("map/publish_tsdf");
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
+                                   only_updated, &layer_msg);
+    this->tsdf_map_pub_.publish(layer_msg);
+    publish_map_timer.Stop();
+  }
+}
+
+void TsdfServer::publishPointclouds() {
+  // Combined function to publish all possible pointcloud messages -- surface
+  // pointclouds, updated points, and occupied points.
+  publishAllUpdatedTsdfVoxels();
+  publishTsdfSurfacePoints();
+  publishTsdfOccupiedNodes();
+}
+
 void TsdfServer::updateMesh() {
   if (verbose_) {
     ROS_INFO("Updating mesh.");
@@ -349,6 +341,14 @@ void TsdfServer::updateMesh() {
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
+
+  if (publish_tsdf_map_ && tsdf_map_pub_.getNumSubscribers() > 0u) {
+    constexpr bool only_publish_updated_blocks = false;
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<TsdfVoxel>(tsdf_map_->getTsdfLayer(),
+                                   only_publish_updated_blocks, &layer_msg);
+    tsdf_map_pub_.publish(layer_msg);
+  }
 }
 
 bool TsdfServer::generateMesh() {
@@ -376,7 +376,7 @@ bool TsdfServer::generateMesh() {
 
   if (!mesh_filename_.empty()) {
     timing::Timer output_mesh_timer("mesh/output");
-    bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
+    const bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
     output_mesh_timer.Stop();
     if (success) {
       ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
@@ -389,33 +389,76 @@ bool TsdfServer::generateMesh() {
   return true;
 }
 
+bool TsdfServer::saveMap(const std::string& file_path) {
+  // Inheriting classes should add saving other layers to this function.
+  return io::SaveLayer(tsdf_map_->getTsdfLayer(), file_path);
+}
+
+bool TsdfServer::loadMap(const std::string& file_path) {
+  // Inheriting classes should add other layers to load, as this will only load
+  // the TSDF layer.
+  constexpr bool kMulitpleLayerSupport = true;
+  return io::LoadBlocksFromFile(
+      file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
+      kMulitpleLayerSupport, tsdf_map_->getTsdfLayerPtr());
+}
+
 bool TsdfServer::generateMeshCallback(
-    std_srvs::Empty::Request& request,
-    std_srvs::Empty::Response& response) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
   return generateMesh();
 }
 
 bool TsdfServer::saveMapCallback(
     voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& response) {  // NOLINT
-  // Will only save TSDF layer for now.
-  return io::SaveLayer(tsdf_map_->getTsdfLayer(), request.file_path);
+    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
+  return saveMap(request.file_path);
 }
 
 bool TsdfServer::loadMapCallback(
     voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& response) {  // NOLINT
-  // Will only load TSDF layer for now.
-  return io::LoadBlocksFromFile(
-      request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
-      tsdf_map_->getTsdfLayerPtr());
+    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
+  return loadMap(request.file_path);
 }
 
-void TsdfServer::updateMeshEvent(const ros::TimerEvent& event) { updateMesh(); }
+bool TsdfServer::publishPointcloudsCallback(
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+  publishPointclouds();
+  return true;
+}
+
+bool TsdfServer::publishTsdfMapCallback(
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+  publishMap();
+  return true;
+}
+
+void TsdfServer::updateMeshEvent(const ros::TimerEvent& /*event*/) {
+  updateMesh();
+}
 
 void TsdfServer::clear() {
   tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
   mesh_layer_->clear();
+}
+
+void TsdfServer::tsdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  bool success =
+      deserializeMsgToLayer<TsdfVoxel>(layer_msg, tsdf_map_->getTsdfLayerPtr());
+
+  if (!success) {
+    ROS_ERROR_THROTTLE(10, "Got an invalid TSDF map message!");
+  } else {
+    ROS_INFO_ONCE("Got an TSDF map from ROS topic!");
+    if (publish_tsdf_info_) {
+      publishAllUpdatedTsdfVoxels();
+    }
+    if (publish_slices_) {
+      publishSlices();
+    }
+  }
 }
 
 }  // namespace voxblox

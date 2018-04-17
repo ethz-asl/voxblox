@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_ROS_ESDF_SERVER_H_
 #define VOXBLOX_ROS_ESDF_SERVER_H_
 
+#include <memory>
+
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox_msgs/Layer.h>
@@ -14,6 +16,11 @@ class EsdfServer : public TsdfServer {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+             const EsdfMap::Config& esdf_config,
+             const EsdfIntegrator::Config& esdf_integrator_config,
+             const TsdfMap::Config& tsdf_config,
+             const TsdfIntegratorBase::Config& tsdf_integrator_config);
   virtual ~EsdfServer() {}
 
   void publishAllUpdatedEsdfVoxels();
@@ -23,20 +30,32 @@ class EsdfServer : public TsdfServer {
                             std_srvs::Empty::Response& response);  // NOLINT
 
   virtual void updateMesh();
+  virtual void publishPointclouds();
   virtual void newPoseCallback(const Transformation& T_G_C);
+  virtual void publishMap();
+  virtual bool saveMap(const std::string& file_path);
+  virtual bool loadMap(const std::string& file_path);
 
   // Call updateMesh if you want everything updated; call this specifically
   // if you don't want the mesh or visualization.
   void updateEsdf();
+  // Update the ESDF all at once; clear the existing map.
+  void updateEsdfBatch(bool full_euclidean = false);
 
+  // Overwrites the layer with what's coming from the topic!
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
-  std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
+  inline std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
+  inline std::shared_ptr<const EsdfMap> getEsdfMapPtr() const {
+    return esdf_map_;
+  }
 
   bool getClearSphere() const { return clear_sphere_for_planning_; }
   void setClearSphere(bool clear_sphere_for_planning) {
     clear_sphere_for_planning_ = clear_sphere_for_planning;
   }
+  float getEsdfMaxDistance() const;
+  void setEsdfMaxDistance(float max_distance);
 
   virtual void clear();
 
@@ -55,6 +74,7 @@ class EsdfServer : public TsdfServer {
   ros::ServiceServer generate_esdf_srv_;
 
   bool clear_sphere_for_planning_;
+  bool publish_esdf_map_;
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
