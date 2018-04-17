@@ -14,6 +14,7 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 # Table of Contents
 * [Paper and Video](README.md#paper-and-video)
 * [Credits](README.md#credits)
+* [Example Outputs](README.md#example-outputs)
 * [Performance](README.md#performance)
 * [Installation](README.md#installation)
 * [Running Voxblox](README.md#running-voxblox)
@@ -23,33 +24,58 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
   * [Parameters](README.md#parameters)
 * [Modifying Voxblox](README.md#modifying-voxblox)
   * [Serialization](README.md#serialization)
+* [Transformations in Voxblox](README.md#transformations-in-voxblox)
 
 # Paper and Video
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
 A video of voxblox being used for online planning on-board a multicopter can be seen [here](https://youtu.be/lrGSwAPzMOQ).
 
-If using voxblox for scientific publications, please cite the following paper:
+If using voxblox for scientific publications, please cite the following paper, available [here](http://helenol.github.io/publications/iros_2017_voxblox.pdf):
 
-Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Building 3D Signed Distance Fields for Planning**”, *arXiv preprint arXiv:1611.03631*, 2016.
+Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Incremental 3D Euclidean Signed Distance Fields for On-Board MAV Planning**”, in *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2016.
 
 ```latex
-@article{oleynikova2016voxblox,
-  title={Voxblox: Building 3D Signed Distance Fields for Planning},
-  author={Oleynikova, Helen and Taylor, Zachary and Fehr, Marius and Nieto, Juan and Siegwart, Roland},
-  journal={arXiv preprint arXiv:1611.03631},
-  year={2016}
+@inproceedings{oleynikova2017voxblox,
+  author={Oleynikova, Helen and Taylor, Zachary and Fehr, Marius and Siegwart, Roland and  Nieto, Juan},
+  booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  title={Voxblox: Incremental 3D Euclidean Signed Distance Fields for On-Board MAV Planning},
+  year={2017}
 }
 ```
 
 # Credits
 This library was written primarily by Helen Oleynikova and Marius Fehr, with significant contributions from Zachary Taylor, Alexander Millane, and others. The marching cubes meshing and ROS mesh generation were taken or heavily derived from [open_chisel](https://github.com/personalrobotics/OpenChisel). We've retained the copyright headers for the relevant files.
 
-# Performance
-The Voxblox code has prioritized readability and easy extension over performance. It was also designed to operate on systems that lack a GPU. One of the main drives to create Voxblox was to create a volumetric mapping library that fit the needs of planning for robots, because of this, and unlike many TSDF libraries all possible freespace is mapped in addition to areas close to surfaces. These design decisions limit performance, however high quality real-time mapping of large enviroments is still easily acheivable. 
+# Example Outputs
+A mesh produced by Voxblox running inside a manifold mapper that fuses a SLAM systems poses with the output of a realsense D415 depthcamera. The map was generated while all systems were running fully onboard the pictured micro aerial vehicle. 
+![manifold_mapping](https://i.imgur.com/t5DHpJh.png)
 
-An example of the system integrating a TSDF, generating a mesh and publishing the result to RViz in real time is shown below. A table of the performance on the cow and lady dataset on a i7-4810MQ 2.80GHz CPU is also shown.
+A higher resolution mesh of the same area that was processed by voxblox offline is shown below.
+![offline_manifold](https://i.imgur.com/pvHhVsL.png)
 
+Voxblox running on the cow and lady dataset on a laptop equiped with an i7-4810MQ 2.80GHz CPU. In this example the system is integrating a TSDF, generating a mesh and publishing the result to RViz in real time.
 ![example_gif](http://i.imgur.com/2wLztFm.gif)
+
+Voxblox running fully onboard the Atom processor of an Intel-Euclid. Again, the system is integrating, meshing and publishing in realtime. In this example the system was also sharing the CPU with the localization system (ROVIO) and the sensor drivers. This left around one CPU core for Voxblox to use.
+<p align="center"> 
+<img src="https://i.imgur.com/98nAed3.gif">
+</p>
+
+A mesh produced from Voxblox when run on the KITTI dataset on a Desktop PC. The given localization solution and the pointcloud produced by the Velodyne were used.
+![velodyne_kitti](https://i.imgur.com/jAgLrZk.jpg)
+
+A voxblox mesh produced by the Maplab library running on the Stereo data provided by the EuRoC dataset. 
+<p align="center"> 
+<img src="https://raw.githubusercontent.com/wiki/ethz-asl/maplab/readme_images/stereo.png">
+</p>
+
+A map of a beach produced by a platform with two sets of stereo cameras flying an automated coverage path.
+<p align="center"> 
+<img src="https://i.imgur.com/uiE7WAx.gif">
+</p>
+
+# Performance
+The Voxblox code has prioritized readability and easy extension over performance. It was also designed to operate on systems that lack a GPU. One of the main drives to create Voxblox was to create a volumetric mapping library that fit the needs of planning for robots, because of this, and unlike many TSDF libraries all possible freespace is mapped in addition to areas close to surfaces. These design decisions limit performance, however high quality real-time mapping of large enviroments is still easily acheivable. A table of the performance on the cow and lady dataset on a i7-4810MQ 2.80GHz CPU is also shown.
 
 <center>
 
@@ -66,20 +92,20 @@ Rendered Mesh | Setup
 
 # Installation
 To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) or [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu).
-These instructions are for Ubuntu, but Voxblox will also run on OS X but you're more or less on your own there.
+These instructions are for Ubuntu, Voxblox will also run on OS X, but you're more or less on your own there.
 
-Then install additional system dependencies (swap indigo for kinetic as necessary):
+First install additional system dependencies (swap kinetic for indigo as necessary):
 ```
-sudo apt-get install python-wstool python-catkin-tools ros-indigo-cmake-modules protobuf-compiler
+sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler
 ```
 
-Finally, add a few other dependencies.
+Next, add a few other dependencies.
 If you don't have a catkin workspace yet, set it up as follows:
 ```
 mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws
 catkin init
-catkin config --extend /opt/ros/indigo
+catkin config --extend /opt/ros/kinetic
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
 catkin config --merge-devel
 ```
@@ -87,31 +113,23 @@ catkin config --merge-devel
 If using [**SSH keys for github**](https://help.github.com/articles/connecting-to-github-with-ssh/) (recommended):
 ```
 cd ~/catkin_ws/src/
-wstool init
-wstool set catkin_simple   --git git@github.com:catkin/catkin_simple.git
-wstool set eigen_catkin    --git git@github.com:ethz-asl/eigen_catkin.git
-wstool set eigen_checks    --git git@github.com:ethz-asl/eigen_checks.git
-wstool set gflags_catkin   --git git@github.com:ethz-asl/gflags_catkin.git
-wstool set glog_catkin     --git git@github.com:ethz-asl/glog_catkin.git
-wstool set minkindr        --git git@github.com:ethz-asl/minkindr.git
-wstool set minkindr_ros    --git git@github.com:ethz-asl/minkindr_ros.git
-wstool set voxblox         --git git@github.com:ethz-asl/voxblox.git
+wstool init . ./voxblox/voxblox_ssh.rosinstall
 wstool update
 ```
 
 If **not using SSH** keys but using https instead:
 ```
 cd ~/catkin_ws/src/
-wstool init
-wstool set catkin_simple   --git https://github.com/catkin/catkin_simple.git
-wstool set eigen_catkin    --git https://github.com/ethz-asl/eigen_catkin.git
-wstool set eigen_checks    --git https://github.com/ethz-asl/eigen_checks.git
-wstool set gflags_catkin   --git https://github.com/ethz-asl/gflags_catkin.git
-wstool set glog_catkin     --git https://github.com/ethz-asl/glog_catkin.git
-wstool set minkindr        --git https://github.com/ethz-asl/minkindr.git
-wstool set minkindr_ros    --git https://github.com/ethz-asl/minkindr_ros.git
-wstool set voxblox         --git https://github.com/ethz-asl/voxblox.git
+wstool init . ./voxblox/voxblox_https.rosinstall
 wstool update
+```
+
+If you have already initalized wstool replace the above `wstool init` with `wstool merge -t` 
+
+Compile:
+```
+cd ~/catkin_ws/src/
+catkin build voxblox_ros
 ```
 
 # Running Voxblox
@@ -126,7 +144,7 @@ The easiest way to start is to download the [cow and lady dataset](http://projec
 If you open rviz, you should be able to see the the mesh visualized on the `/voxblox_node/mesh` MarkerArray topic, in the `world` static frame, as shown below.
 The mesh only updates once per second (this is a setting in the launch file).
 
-![cow_and_lady_rviz](https://cloud.githubusercontent.com/assets/5616392/25223468/bbd6b3cc-25bb-11e7-8c06-61baa87655ca.png)
+![cow_and_lady_rviz](https://i.imgur.com/nSX5Qsh.jpg)
 
 The rest of the commonly-used settings are parameters in the launch file.
 
@@ -150,6 +168,7 @@ The voxblox_node publishes and subscribes to the following topics:
 - Subscribed topics:
   - **`transform`** of type `geometry_msgs::TransformStamped`. Only appears if `use_tf_transforms` is false. The transformation from the world frame to the current sensor frame.
   - **`pointcloud`** of type `sensor_msgs::PointCloud2`. The input pointcloud to be integrated.
+  - **`freespace_pointcloud`** of type `sensor_msgs::PointCLoud2`. Only appears if `use_freespace_pointcloud` is true. Unlike the `pointcloud` topic where the given points lie on surfaces, the points in the `freespace_pointcloud` are taken to be floating in empty space. These points can assist in generating more complete freespace information in a map.
 
 ## Services
 
@@ -191,6 +210,7 @@ The most important parameter here is the selection of the method:
 | `max_weight` | The upper limit for the weight assigned to a voxel | 10000.0 |
 | `use_const_weight` | If true all points along a ray have equal weighting | false |
 | `allow_clear` | If true points beyond the `max_ray_length_m` will be integrated up to this distance | true |
+| `use_freespace_pointcloud` | If true a second subscription topic `freespace_pointcloud` appears. Clearing rays are cast from beyond this topic's points' truncation distance to assist in clearing freespace voxels | false | 
 
 ### Fast TSDF Integrator Specific Parameters
 These parameters are only used if the integrator `method` is set to "fast".
@@ -199,6 +219,7 @@ These parameters are only used if the integrator `method` is set to "fast".
 | --------------------  |:-----------:| :-------:|
 | `start_voxel_subsampling_factor` | Before integration points are inserted into a sub-voxel, only one point is allowed per sub-voxel. This can be thought of as subsampling the pointcloud. The edge length of the sub-voxel is the voxel edge length divided by `start_voxel_subsampling_factor`. | 2 |
 | `max_consecutive_ray_collisions` | When a ray is cast by this integrator it detects if any other ray has already passed through the current voxel this scan. If it passes through more than `max_consecutive_ray_collisions` voxels other rays have seen in a row, it is taken to be adding no new information and the casting stops  | 2 |
+| `max_integration_time_s` | The time budget for frame integration, if this time is exceeded ray casting is stopped early. Used to guarantee real time performance. | 3.40282e+38 |
 | `clear_checks_every_n_frames` | Governs how often the sets that indicate if a sub-voxel is full or a voxel has had a ray passed through it are cleared. | 1 |
 
 ### ESDF Integrator Parameters
@@ -293,3 +314,8 @@ void Block<YOUR_FANCY_VOXEL>::SerializeVoxelData(const YOUR_FANCY_VOXEL* voxels,
   **Have a look at the example package:**
 
   TODO(mfehr, helenol): add example package with a new voxel type
+  
+# Transformations in Voxblox
+  
+Voxblox uses active transforms and Hamilton quaternions. For futher details on the notation used throughout the code see [the minkindr wiki](https://github.com/ethz-asl/minkindr/wiki/Common-Transformation-Conventions)
+  

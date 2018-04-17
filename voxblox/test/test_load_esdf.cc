@@ -22,8 +22,7 @@ int main(int argc, char** argv) {
   Layer<EsdfVoxel>::Ptr layer_from_file;
   io::LoadLayer<EsdfVoxel>(file, &layer_from_file);
 
-  LOG(INFO) << "Layer memory size: " << layer_from_file->getMemorySize()
-            << "\n";
+  LOG(INFO) << "Layer memory size: " << layer_from_file->getMemorySize();
 
   return 0;
 }

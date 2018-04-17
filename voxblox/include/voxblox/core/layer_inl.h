@@ -2,6 +2,7 @@
 #define VOXBLOX_CORE_LAYER_INL_H_
 
 #include <fstream>  // NOLINT
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -60,8 +61,10 @@ Layer<VoxelType>::Layer(const Layer& other) {
        other.block_map_) {
     const BlockIndex& block_idx = key_value_pair.first;
     const typename BlockType::Ptr& block_ptr = key_value_pair.second;
+    CHECK(block_ptr);
 
     typename BlockType::Ptr new_block = allocateBlockPtrByIndex(block_idx);
+    CHECK(new_block);
 
     for (size_t linear_idx = 0u; linear_idx < block_ptr->num_voxels();
          ++linear_idx) {
@@ -73,21 +76,32 @@ Layer<VoxelType>::Layer(const Layer& other) {
 }
 
 template <typename VoxelType>
-bool Layer<VoxelType>::saveToFile(const std::string& file_path) const {
+bool Layer<VoxelType>::saveToFile(const std::string& file_path,
+                                  bool clear_file) const {
   constexpr bool kIncludeAllBlocks = true;
-  return saveSubsetToFile(file_path, BlockIndexList(), kIncludeAllBlocks);
+  return saveSubsetToFile(file_path, BlockIndexList(), kIncludeAllBlocks,
+                          clear_file);
 }
 
 template <typename VoxelType>
 bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
                                         BlockIndexList blocks_to_include,
-                                        bool include_all_blocks) const {
+                                        bool include_all_blocks,
+                                        bool clear_file) const {
   CHECK_NE(getType().compare(voxel_types::kNotSerializable), 0)
       << "The voxel type of this layer is not serializable!";
 
   CHECK(!file_path.empty());
   std::fstream outfile;
-  outfile.open(file_path, std::fstream::out | std::fstream::binary);
+  // Will APPEND to the current file in case outputting multiple layers on the
+  // same file, depending on the flag.
+  std::ios_base::openmode file_flags = std::fstream::out | std::fstream::binary;
+  if (!clear_file) {
+    file_flags |= std::fstream::app | std::fstream::ate;
+  } else {
+    file_flags |= std::fstream::trunc;
+  }
+  outfile.open(file_path, file_flags);
   if (!outfile.is_open()) {
     LOG(ERROR) << "Could not open file for writing: " << file_path;
     return false;
@@ -210,16 +224,34 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
 template <typename VoxelType>
 bool Layer<VoxelType>::isCompatible(const LayerProto& layer_proto) const {
   bool compatible = true;
-  compatible &= (layer_proto.voxel_size() == voxel_size_);
+  compatible &= (std::fabs(layer_proto.voxel_size() - voxel_size_) <
+                 std::numeric_limits<FloatingPoint>::epsilon());
   compatible &= (layer_proto.voxels_per_side() == voxels_per_side_);
   compatible &= (getType().compare(layer_proto.type()) == 0);
+
+  if (!compatible) {
+    LOG(WARNING)
+        << "Voxel size of the loaded map is: " << layer_proto.voxel_size()
+        << " but the current map is: " << voxel_size_ << " check passed? "
+        << (std::fabs(layer_proto.voxel_size() - voxel_size_) <
+            std::numeric_limits<FloatingPoint>::epsilon())
+        << "\nVPS of the loaded map is: " << layer_proto.voxels_per_side()
+        << " but the current map is: " << voxels_per_side_ << " check passed? "
+        << (layer_proto.voxels_per_side() == voxels_per_side_)
+        << "\nLayer type of the loaded map is: " << getType()
+        << " but the current map is: " << layer_proto.type()
+        << " check passed? " << (getType().compare(layer_proto.type()) == 0)
+        << "\nAre the maps using the same floating-point type? "
+        << (layer_proto.voxel_size() == voxel_size_) << std::endl;
+  }
   return compatible;
 }
 
 template <typename VoxelType>
 bool Layer<VoxelType>::isCompatible(const BlockProto& block_proto) const {
   bool compatible = true;
-  compatible &= (block_proto.voxel_size() == voxel_size_);
+  compatible &= (std::fabs(block_proto.voxel_size() - voxel_size_) <
+                 std::numeric_limits<FloatingPoint>::epsilon());
   compatible &=
       (block_proto.voxels_per_side() == static_cast<int>(voxels_per_side_));
   return compatible;

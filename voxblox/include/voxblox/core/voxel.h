@@ -24,6 +24,9 @@ struct EsdfVoxel {
   bool observed = false;
   bool in_queue = false;
   bool fixed = false;
+  // Whether the voxel was copied from the TSDF (false) or created from a pose
+  // or some other source (true). This member is not serialized!!!
+  bool hallucinated = false;
   // Relative direction toward parent. If itself, then either uninitialized
   // or in the fixed frontier.
   Eigen::Vector3i parent = Eigen::Vector3i::Zero();

@@ -35,19 +35,6 @@ class EsdfMap {
     block_size_ = config.esdf_voxel_size * config.esdf_voxels_per_side;
   }
 
-  explicit EsdfMap(const std::string& file_path)
-      : esdf_layer_(
-            io::LoadOrCreateLayerHeader<EsdfVoxel>(file_path, 0.2, 16u)),
-        interpolator_(esdf_layer_.get()) {
-    if (!io::LoadBlocksFromFile<EsdfVoxel>(
-            file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kProhibit,
-            esdf_layer_.get())) {
-      // TODO(mereweth@jpl.nasa.gov) - throw std exception for Python to catch?
-      throw std::runtime_error(std::string("Invalid file path: ") + file_path);
-    }
-    block_size_ = esdf_layer_->block_size();
-  }
-
   // Creates a new EsdfMap based on a COPY of this layer.
   explicit EsdfMap(const Layer<EsdfVoxel>& layer)
       : EsdfMap(aligned_shared<Layer<EsdfVoxel>>(layer)) {}
@@ -55,6 +42,15 @@ class EsdfMap {
   // Creates a new EsdfMap that contains this layer.
   explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer)
       : esdf_layer_(layer), interpolator_(CHECK_NOTNULL(esdf_layer_.get())) {
+    if (!layer) {
+      /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
+       * This is idiomatic when wrapping C++ code for Python, especially with
+       * pybind11
+       */
+      throw std::runtime_error(std::string("Null Layer<EsdfVoxel>::Ptr") +
+                               " in EsdfMap constructor");
+    }
+
     block_size_ = layer->block_size();
   }
 
@@ -80,17 +76,16 @@ class EsdfMap {
 
   bool isObserved(const Eigen::Vector3d& position) const;
 
-  // Convenience functions for querying many points at once from Python
-
-  // TODO(mereweth@jpl.nasa.gov) - double check that position can not be mutated
-  // EigenDRef is fully dynamic stride type alias for Numpy array slices
-  // Use column-major matrices; column-by-column traversal is faster
-
-  // convenience alias borrowed from pybind11
+  /* NOTE(mereweth@jpl.nasa.gov)
+   * EigenDRef is fully dynamic stride type alias for Numpy array slices
+   * Use column-major matrices; column-by-column traversal is faster
+   * Convenience alias borrowed from pybind11
+   */
   using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
   template <typename MatrixType>
   using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
 
+  // Convenience functions for querying many points at once from Python
   void batchGetDistanceAtPosition(
       EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
       Eigen::Ref<Eigen::VectorXd> distances,
@@ -109,10 +104,15 @@ class EsdfMap {
   unsigned int coordPlaneSliceGetCount(unsigned int free_plane_index,
                                        double free_plane_val) const;
 
+  /* Extract all voxels on a slice plane that is parallel to one of the
+   * axis-aligned planes.
+   * free_plane_index specifies the free coordinate (zero-based; x, y, z order)
+   * free_plane_val specifies the plane intercept coordinate along that axis
+   */
   unsigned int coordPlaneSliceGetDistance(
       unsigned int free_plane_index, double free_plane_val,
       EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
-      Eigen::Ref<Eigen::VectorXd> distances) const;
+      Eigen::Ref<Eigen::VectorXd> distances, unsigned int max_points) const;
 
  protected:
   FloatingPoint block_size_;

@@ -65,9 +65,11 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         continue;
       }
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
-      if (!esdf_voxel.observed) {
+      // We can clear unobserved or hallucinated voxels.
+      if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
         esdf_voxel.distance = config_.default_distance_m;
         esdf_voxel.observed = true;
+        esdf_voxel.hallucinated = true;
         pushNeighborsToOpen(kv.first, voxel_index);
         updated_blocks_.insert(kv.first);
       }
@@ -91,6 +93,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
       if (!esdf_voxel.observed) {
         esdf_voxel.distance = -config_.default_distance_m;
         esdf_voxel.observed = true;
+        esdf_voxel.hallucinated = true;
         pushNeighborsToOpen(kv.first, voxel_index);
         updated_blocks_.insert(kv.first);
       }
@@ -264,6 +267,8 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       }
 
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
+      // This voxel definitely exists in the real map.
+      esdf_voxel.hallucinated = false;
       VoxelIndex voxel_index =
           esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
       // Check for frontier voxels.
@@ -872,8 +877,8 @@ void EsdfIntegrator::getNeighbor(const BlockIndex& block_index,
                                  const Eigen::Vector3i& direction,
                                  BlockIndex* neighbor_block_index,
                                  VoxelIndex* neighbor_voxel_index) const {
-  DCHECK_NOTNULL(neighbor_block_index);
-  DCHECK_NOTNULL(neighbor_voxel_index);
+  DCHECK(neighbor_block_index != NULL);
+  DCHECK(neighbor_voxel_index != NULL);
 
   *neighbor_block_index = block_index;
   *neighbor_voxel_index = voxel_index + direction;
@@ -882,7 +887,8 @@ void EsdfIntegrator::getNeighbor(const BlockIndex& block_index,
     if ((*neighbor_voxel_index)(i) < 0) {
       (*neighbor_block_index)(i)--;
       (*neighbor_voxel_index)(i) += esdf_voxels_per_side_;
-    } else if ((*neighbor_voxel_index)(i) >= esdf_voxels_per_side_) {
+    } else if ((*neighbor_voxel_index)(i) >=
+               static_cast<IndexElement>(esdf_voxels_per_side_)) {
       (*neighbor_block_index)(i)++;
       (*neighbor_voxel_index)(i) -= esdf_voxels_per_side_;
     }

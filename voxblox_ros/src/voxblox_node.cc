@@ -49,9 +49,7 @@ class VoxbloxNode {
   bool lookupTransformTf(const std::string& from_frame,
                          const std::string& to_frame,
                          const ros::Time& timestamp, Transformation* transform);
-  bool lookupTransformQueue(const std::string& from_frame,
-                            const std::string& to_frame,
-                            const ros::Time& timestamp,
+  bool lookupTransformQueue(const ros::Time& timestamp,
                             Transformation* transform);
 
   void publishAllUpdatedTsdfVoxels();
@@ -414,7 +412,7 @@ VoxbloxNode::VoxbloxNode(const ros::NodeHandle& nh,
     color_mode_ = ColorMode::kGray;
   }
 
-  MeshIntegrator<TsdfVoxel>::Config mesh_config;
+  MeshIntegratorConfig mesh_config;
   nh_private_.param("mesh_min_weight", mesh_config.min_weight,
                     mesh_config.min_weight);
 
@@ -694,7 +692,7 @@ bool VoxbloxNode::lookupTransform(const std::string& from_frame,
   if (use_tf_transforms_) {
     return lookupTransformTf(from_frame, to_frame, timestamp, transform);
   } else {
-    return lookupTransformQueue(from_frame, to_frame, timestamp, transform);
+    return lookupTransformQueue(timestamp, transform);
   }
 }
 
@@ -734,9 +732,7 @@ bool VoxbloxNode::lookupTransformTf(const std::string& from_frame,
   return true;
 }
 
-bool VoxbloxNode::lookupTransformQueue(const std::string& from_frame,
-                                       const std::string& to_frame,
-                                       const ros::Time& timestamp,
+bool VoxbloxNode::lookupTransformQueue(const ros::Time& timestamp,
                                        Transformation* transform) {
   // Try to match the transforms in the queue.
   bool match_found = false;
@@ -784,8 +780,8 @@ bool VoxbloxNode::lookupTransformQueue(const std::string& from_frame,
 }
 
 bool VoxbloxNode::generateMeshCallback(
-    std_srvs::Empty::Request& request,
-    std_srvs::Empty::Response& response) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
   timing::Timer generate_mesh_timer("mesh/generate");
   const bool clear_mesh = true;
   if (clear_mesh) {
@@ -817,7 +813,7 @@ bool VoxbloxNode::generateMeshCallback(
 
   if (output_mesh_as_pcl_mesh_) {
     pcl::PolygonMesh polygon_mesh;
-    toPCLPolygonMesh(*mesh_layer_, world_frame_, &polygon_mesh);
+    toConnectedPCLPolygonMesh(*mesh_layer_, world_frame_, &polygon_mesh);
     pcl_msgs::PolygonMesh mesh_msg;
     pcl_conversions::fromPCL(polygon_mesh, mesh_msg);
     mesh_msg.header.stamp = ros::Time::now();
@@ -840,8 +836,8 @@ bool VoxbloxNode::generateMeshCallback(
 }
 
 bool VoxbloxNode::generateEsdfCallback(
-    std_srvs::Empty::Request& request,
-    std_srvs::Empty::Response& response) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/,
+    std_srvs::Empty::Response& /*response*/) {  // NOLINT
   if (!generate_esdf_) {
     return false;
   }
@@ -859,21 +855,21 @@ bool VoxbloxNode::generateEsdfCallback(
 
 bool VoxbloxNode::saveMapCallback(
     voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& response) {  // NOLINT
+    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
   // Will only save TSDF layer for now.
   return io::SaveLayer(tsdf_map_->getTsdfLayer(), request.file_path);
 }
 
 bool VoxbloxNode::loadMapCallback(
     voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& response) {  // NOLINT
+    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
   // Will only load TSDF layer for now.
   return io::LoadBlocksFromFile(
       request.file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
       tsdf_map_->getTsdfLayerPtr());
 }
 
-void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& e) {
+void VoxbloxNode::updateMeshEvent(const ros::TimerEvent& /*event*/) {
   if (verbose_) {
     ROS_INFO("Updating mesh.");
   }
