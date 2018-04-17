@@ -15,9 +15,9 @@
 namespace voxblox {
 
 enum class MapDerializationAction : uint8_t {
-  kReset = 0u,
-  kUpdate = 1u,
-  kMerge = 2u
+  kUpdate = 0u,
+  kMerge = 1u,
+  kReset = 2u
 };
 
 inline void colorVoxbloxToMsg(const Color& color,
