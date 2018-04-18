@@ -1,9 +1,10 @@
 #ifndef VOXBLOX_CORE_BLOCK_INL_H_
 #define VOXBLOX_CORE_BLOCK_INL_H_
 
-#include "./Block.pb.h"
-
 #include <vector>
+
+#include "./Block.pb.h"
+#include "voxblox/utils/voxel_utils.h"
 
 namespace voxblox {
 
@@ -46,9 +47,23 @@ void Block<VoxelType>::getProto(BlockProto* proto) const {
 }
 
 template <typename VoxelType>
-bool Block<VoxelType>::mergeBlock(const Block<VoxelType>& /*other_block*/) {
-  LOG(FATAL) << "Not implemented for this voxel type!";
-  return false;
+void Block<VoxelType>::mergeBlock(const Block<VoxelType>& other_block) {
+  CHECK_EQ(other_block.voxel_size(), voxel_size());
+  CHECK_EQ(other_block.voxels_per_side(), voxels_per_side());
+
+  if (!other_block.has_data()) {
+    return;
+  } else {
+    has_data() = true;
+    updated() = true;
+
+    for (IndexElement voxel_idx = 0;
+         voxel_idx < static_cast<IndexElement>(num_voxels()); ++voxel_idx) {
+      mergeVoxelAIntoVoxelB<VoxelType>(
+          other_block.getVoxelByLinearIndex(voxel_idx),
+          &(getVoxelByLinearIndex(voxel_idx)));
+    }
+  }
 }
 
 template <typename VoxelType>
