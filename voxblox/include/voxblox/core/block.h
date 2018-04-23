@@ -57,7 +57,7 @@ class Block {
   // index that is within this block if you pass a coordinate outside the range
   // of this block. Try not to use this function if there is an alternative to
   // directly address the voxels via precise integer indexing math.
-  inline VoxelIndex computeVoxelIndexFromCoordinates(
+  inline VoxelIndex computeTruncatedVoxelIndexFromCoordinates(
       const Point& coords) const {
     const IndexElement max_value = voxels_per_side_ - 1;
     VoxelIndex voxel_index =
@@ -69,13 +69,26 @@ class Block {
                       std::max(std::min(voxel_index.z(), max_value), 0));
   }
 
+  // NOTE: This function is also dangerous, use in combination with
+  // Block::isValidVoxelIndex function.
+  // This function doesn't truncate the voxel index to the [0, voxels_per_side]
+  // range when the coordinate is outside the range of this block, unline the
+  // function above.
+  inline VoxelIndex computeVoxelIndexFromCoordinates(
+      const Point& coords) const {
+    const IndexElement max_value = voxels_per_side_ - 1;
+    VoxelIndex voxel_index =
+        getGridIndexFromPoint(coords - origin_, voxel_size_inv_);
+    return voxel_index;
+  }
+
   // NOTE: This function is dangerous, it will truncate the voxel index to an
   // index that is within this block if you pass a coordinate outside the range
   // of this block. Try not to use this function if there is an alternative to
   // directly address the voxels via precise integer indexing math.
   inline size_t computeLinearIndexFromCoordinates(const Point& coords) const {
     return computeLinearIndexFromVoxelIndex(
-        computeVoxelIndexFromCoordinates(coords));
+        computeTruncatedVoxelIndexFromCoordinates(coords));
   }
 
   // Returns CENTER point of voxel.
@@ -111,12 +124,21 @@ class Block {
     return voxels_[computeLinearIndexFromVoxelIndex(index)];
   }
 
-  // NOTE: This function is dangerous, it will truncate the voxel index to an
-  // index that is within this block if you pass a coordinate outside the range
-  // of this block. Try not to use this function if there is an alternative to
-  // directly address the voxels via precise integer indexing math.
+  // NOTE: The following three functions are dangerous, they will truncate the
+  // voxel index to an index that is within this block if you pass a coordinate
+  // outside the range of this block. Try not to use this function if there is
+  // an alternative to directly address the voxels via precise integer indexing
+  // math.
   inline const VoxelType& getVoxelByCoordinates(const Point& coords) const {
     return voxels_[computeLinearIndexFromCoordinates(coords)];
+  }
+
+  inline VoxelType& getVoxelByCoordinates(const Point& coords) {
+    return voxels_[computeLinearIndexFromCoordinates(coords)];
+  }
+
+  inline VoxelType* getVoxelPtrByCoordinates(const Point& coords) {
+    return &voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
   inline VoxelType& getVoxelByLinearIndex(size_t index) {
@@ -126,14 +148,6 @@ class Block {
 
   inline VoxelType& getVoxelByVoxelIndex(const VoxelIndex& index) {
     return voxels_[computeLinearIndexFromVoxelIndex(index)];
-  }
-
-  inline VoxelType& getVoxelByCoordinates(const Point& coords) {
-    return voxels_[computeLinearIndexFromCoordinates(coords)];
-  }
-
-  inline VoxelType* getVoxelPtrByCoordinates(const Point& coords) {
-    return &voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
   inline bool isValidVoxelIndex(const VoxelIndex& index) const {
