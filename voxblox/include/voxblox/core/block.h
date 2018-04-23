@@ -72,7 +72,7 @@ class Block {
   // NOTE: This function is also dangerous, use in combination with
   // Block::isValidVoxelIndex function.
   // This function doesn't truncate the voxel index to the [0, voxels_per_side]
-  // range when the coordinate is outside the range of this block, unline the
+  // range when the coordinate is outside the range of this block, unlike the
   // function above.
   inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Point& coords) const {
