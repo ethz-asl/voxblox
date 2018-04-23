@@ -228,7 +228,7 @@ TEST_F(TsdfMapTest, IndexLookups) {
             point_in_neg_1_1_1);
     EXPECT_EQ(linear_index, 0u);
     VoxelIndex voxel_index =
-        block_neg_1_neg_1_0->computeTruncatedVoxelIndexFromCoordinates(
+        block_negative_1_1_1->computeTruncatedVoxelIndexFromCoordinates(
             point_in_neg_1_1_1);
     EXPECT_TRUE(EIGEN_MATRIX_EQUAL(voxel_index, AnyIndex(0, 0, 0)));
 
@@ -304,7 +304,7 @@ TEST_F(TsdfMapTest, IndexLookups) {
             point_in_neg_1_1_0);
     EXPECT_EQ(linear_index, 371u);
     VoxelIndex voxel_index =
-        block_negative_1_1_1->computeTruncatedVoxelIndexFromCoordinates(
+        block_neg_1_neg_1_0->computeTruncatedVoxelIndexFromCoordinates(
             point_in_neg_1_1_0);
     EXPECT_TRUE(EIGEN_MATRIX_EQUAL(voxel_index, AnyIndex(3, 6, 5)));
 
