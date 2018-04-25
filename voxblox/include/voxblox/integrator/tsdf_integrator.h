@@ -96,8 +96,8 @@ class TsdfIntegratorBase {
                        const float weight, TsdfVoxel* tsdf_voxel);
 
   // Thread safe.
-  inline float computeDistance(const Point& origin, const Point& point_G,
-                               const Point& voxel_center) const;
+  float computeDistance(const Point& origin, const Point& point_G,
+                        const Point& voxel_center) const;
 
   // Thread safe.
   float getVoxelWeight(const Point& point_C) const;

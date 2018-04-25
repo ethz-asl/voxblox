@@ -121,10 +121,11 @@ void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
 }
 
 // Updates tsdf_voxel. Thread safe.
-void TsdfIntegratorBase::updateTsdfVoxel(
-    const Point& origin, const Point& point_G,
-    const VoxelIndex& global_voxel_idx, const Color& color, const float weight,
-    TsdfVoxel* tsdf_voxel) {
+void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
+                                         const Point& point_G,
+                                         const VoxelIndex& global_voxel_idx,
+                                         const Color& color, const float weight,
+                                         TsdfVoxel* tsdf_voxel) {
   DCHECK(tsdf_voxel != nullptr);
 
   const Point voxel_center =
@@ -187,9 +188,9 @@ void TsdfIntegratorBase::updateTsdfVoxel(
 // To do this, project the voxel_center onto the ray from origin to point G.
 // Then check if the the magnitude of the vector is smaller or greater than
 // the original distance...
-inline float TsdfIntegratorBase::computeDistance(
-    const Point& origin, const Point& point_G,
-    const Point& voxel_center) const {
+float TsdfIntegratorBase::computeDistance(const Point& origin,
+                                          const Point& point_G,
+                                          const Point& voxel_center) const {
   const Point v_voxel_origin = voxel_center - origin;
   const Point v_point_origin = point_G - origin;
 
@@ -218,7 +219,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Colors& colors,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
-
+  CHECK_EQ(points_C.size(), colors.size());
   ThreadSafeIndex index_getter(points_C.size());
 
   std::list<std::thread> integration_threads;
@@ -281,6 +282,7 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Colors& colors,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
+  CHECK_EQ(points_C.size(), colors.size());
 
   // Pre-compute a list of unique voxels to end on.
   // Create a hashmap: VOXEL INDEX -> index in original cloud.
@@ -334,9 +336,9 @@ void MergedTsdfIntegrator::bundleRays(
     }
   }
 
-  LOG(INFO) << "Went from " << points_C.size() << " points to "
-            << voxel_map->size() << " raycasts  and " << clear_map->size()
-            << " clear rays.";
+  VLOG(3) << "Went from " << points_C.size() << " points to "
+          << voxel_map->size() << " raycasts  and " << clear_map->size()
+          << " clear rays.";
 }
 
 void MergedTsdfIntegrator::integrateVoxel(
@@ -522,6 +524,7 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const Colors& colors,
                                              const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
+  CHECK_EQ(points_C.size(), colors.size());
 
   integration_start_time_ = std::chrono::steady_clock::now();
 

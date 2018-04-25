@@ -6,7 +6,6 @@
 
 #include "voxblox/core/layer.h"
 #include "voxblox/io/mesh_ply.h"
-#include "voxblox/io/ply_writer.h"
 #include "voxblox/mesh/mesh.h"
 #include "voxblox/mesh/mesh_integrator.h"
 #include "voxblox/mesh/mesh_layer.h"
@@ -19,126 +18,164 @@ enum PlyOutputTypes {
   // The full SDF colorized by the distance in each voxel.
   kSdfColoredDistanceField,
   // Output isosurface, i.e. the mesh for sdf voxel types.
-  kSdfIsosurface
+  kSdfIsosurface,
+  // Output isosurface, i.e. the mesh for sdf voxel types.
+  // Close vertices are connected and zero surface faces are removed.
+  kSdfIsosurfaceConnected
 };
 
+// Convert a voxel to a colored point. The sdf_color_range determines the range
+// that is covered by the rainbow colors. All absolute distance values that
+// exceed this range will receive tha max/min color of the rainbow range. The
+// sdf_max_value determines if a point is generated for this value or not. Only
+// SDF values within this max value result in a colored point.
 template <typename VoxelType>
-bool getColorFromVoxel(const VoxelType& voxel, const FloatingPoint max_distance,
-                       Color* color);
+bool getColorFromVoxel(const VoxelType& voxel, const float sdf_color_range,
+                       const float sdf_max_value, Color* color);
 
 template <>
-bool getColorFromVoxel(const TsdfVoxel& voxel, const FloatingPoint max_distance,
-                       Color* color) {
-  CHECK_NOTNULL(color);
-
-  static constexpr float kTolerance = 1e-6;
-  if (voxel.weight <= kTolerance) {
-    return false;
-  }
-
-  // Decide how to color this.
-  // Distance > 0 = blue, distance < 0 = red.
-  Color distance_color = Color::blendTwoColors(
-      Color(255, 0, 0, 0),
-      std::max<float>(1 - voxel.distance / max_distance, 0.0),
-      Color(0, 0, 255, 0),
-      std::max<float>(1 + voxel.distance / max_distance, 0.0));
-
-  *color = distance_color;
-  return true;
-}
+bool getColorFromVoxel(const TsdfVoxel& voxel, const float sdf_color_range,
+                       const float sdf_max_value, Color* color);
 
 template <>
-bool getColorFromVoxel(const EsdfVoxel& voxel, const FloatingPoint max_distance,
-                       Color* color) {
-  CHECK_NOTNULL(color);
-  if (!voxel.observed) {
-    return false;
-  }
+bool getColorFromVoxel(const EsdfVoxel& voxel, const float sdf_color_range,
+                       const float sdf_max_value, Color* color);
 
-  // Decide how to color this.
-  // Distance > 0 = blue, distance < 0 = red.
-  Color distance_color = Color::blendTwoColors(
-      Color(255, 0, 0, 0),
-      std::max<float>(1 - voxel.distance / max_distance, 0.0),
-      Color(0, 0, 255, 0),
-      std::max<float>(1 + voxel.distance / max_distance, 0.0));
-
-  *color = distance_color;
-  return true;
-}
-
+// This function converts all voxels with positive weight/observed into points
+// colored by a color map based on the SDF value. The parameter sdf_color_range
+// is used to determine the range of the rainbow color map which is used to
+// visualize the SDF values. If an SDF value is outside this range, it will be
+// truncated to the limits of the range. sdf_max_value determines if a point is
+// generated for this value or not. Only SDF values within this max value result
+// in a colored point. If this threshold is set to a negative value, all points
+// will be generated independent of the SDF value.
 template <typename VoxelType>
-bool outputLayerAsPly(const Layer<VoxelType>& layer,
-                      const std::string& filename, PlyOutputTypes type) {
-  // Create a PlyWriter.
-  PlyWriter writer(filename);
+bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
+                                  const float sdf_color_range,
+                                  const float sdf_max_value,
+                                  voxblox::Mesh* point_cloud) {
+  CHECK_NOTNULL(point_cloud);
+  CHECK_GT(sdf_color_range, 0.0f);
 
-  switch (type) {
-    case PlyOutputTypes::kSdfColoredDistanceField: {
-      // In this case, we get all the allocated voxels and color them based on
-      // distance value.
-      size_t num_blocks = layer.getNumberOfAllocatedBlocks();
-      // This function is block-specific:
-      size_t vps = layer.voxels_per_side();
-      size_t num_voxels_per_block = vps * vps * vps;
+  BlockIndexList blocks;
+  layer.getAllAllocatedBlocks(&blocks);
 
-      // Maybe this isn't strictly true, since actually we may have stuff with 0
-      // weight...
-      size_t total_voxels = num_blocks * num_voxels_per_block;
-      const bool has_color = true;
-      writer.addVerticesWithProperties(total_voxels, has_color);
-      if (!writer.writeHeader()) {
-        return false;
-      }
+  // Iterate over all blocks.
+  for (const BlockIndex& index : blocks) {
+    // Iterate over all voxels in said blocks.
+    const Block<VoxelType>& block = layer.getBlockByIndex(index);
 
-      BlockIndexList blocks;
-      layer.getAllAllocatedBlocks(&blocks);
+    const int vps = block.voxels_per_side();
 
-      int observed_voxels = 0;
+    VoxelIndex voxel_index = VoxelIndex::Zero();
+    for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
+      for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
+        for (voxel_index.z() = 0; voxel_index.z() < vps; ++voxel_index.z()) {
+          const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
 
-      // Iterate over all blocks.
-      const float max_distance = 20;
-      for (const BlockIndex& index : blocks) {
-        // Iterate over all voxels in said blocks.
-        const Block<VoxelType>& block = layer.getBlockByIndex(index);
+          // Get back the original coordinate of this voxel.
+          const Point coord =
+              block.computeCoordinatesFromVoxelIndex(voxel_index);
 
-        VoxelIndex voxel_index = VoxelIndex::Zero();
-        for (voxel_index.x() = 0; voxel_index.x() < vps; ++voxel_index.x()) {
-          for (voxel_index.y() = 0; voxel_index.y() < vps; ++voxel_index.y()) {
-            for (voxel_index.z() = 0; voxel_index.z() < vps;
-                 ++voxel_index.z()) {
-              const VoxelType& voxel = block.getVoxelByVoxelIndex(voxel_index);
-
-              // Get back the original coordinate of this voxel.
-              Point coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
-
-              Color color;
-              if (getColorFromVoxel(voxel, max_distance, &color)) {
-                ++observed_voxels;
-              }
-
-              writer.writeVertex(coord, color);
-            }
+          Color color;
+          if (getColorFromVoxel(voxel, sdf_color_range, sdf_max_value,
+                                &color)) {
+            point_cloud->vertices.push_back(coord);
+            point_cloud->colors.push_back(color);
           }
         }
       }
-      LOG(INFO) << "Number of observed voxels: " << observed_voxels;
-      writer.closeFile();
-      return true;
+    }
+  }
+  return point_cloud->size() > 0u;
+}
+
+template <typename VoxelType>
+bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
+                                  const float sdf_color_range,
+                                  voxblox::Mesh* point_cloud) {
+  constexpr float kInvalidSdfMaxValue = -1.0f;
+  return convertVoxelGridToPointCloud<VoxelType>(
+      layer, sdf_color_range, kInvalidSdfMaxValue, point_cloud);
+}
+
+// Converts the layer to a mesh by extracting its ISO surface using marching
+// cubes. This function returns false if the mesh is empty. The mesh can either
+// be extracted as a set of distinct triangles, or the function can try to
+// connect all identical vertices to create a connected mesh.
+template <typename VoxelType>
+bool convertLayerToMesh(
+    const Layer<VoxelType>& layer, const MeshIntegratorConfig& mesh_config,
+    voxblox::Mesh* mesh, const bool connected_mesh = true,
+    const FloatingPoint vertex_proximity_threshold = 1e-10) {
+  CHECK_NOTNULL(mesh);
+
+  MeshLayer mesh_layer(layer.block_size());
+  MeshIntegrator<VoxelType> mesh_integrator(mesh_config, layer, &mesh_layer);
+
+  // Generate mesh layer.
+  constexpr bool only_mesh_updated_blocks = false;
+  constexpr bool clear_updated_flag = false;
+  mesh_integrator.generateMesh(only_mesh_updated_blocks, clear_updated_flag);
+
+  // Extract mesh from mesh layer, either by simply concatenating all meshes
+  // (there is one per block) or by connecting them.
+  if (connected_mesh) {
+    mesh_layer.getConnectedMesh(mesh, vertex_proximity_threshold);
+  } else {
+    mesh_layer.getMesh(mesh);
+  }
+  return mesh->size() > 0u;
+}
+template <typename VoxelType>
+bool convertLayerToMesh(
+    const Layer<VoxelType>& layer, voxblox::Mesh* mesh,
+    const bool connected_mesh = true,
+    const FloatingPoint vertex_proximity_threshold = 1e-10) {
+  MeshIntegratorConfig mesh_config;
+  return convertLayerToMesh(layer, mesh_config, mesh, connected_mesh,
+                            vertex_proximity_threshold);
+}
+
+// Output the layer to ply file. Depending on the ply output type, this either
+// exports all voxel centers colored by th SDF values or extracts the ISO
+// surface as mesh. The parameter sdf_color_range is used to color the points
+// for modes that use an SDF-based point cloud coloring function.
+template <typename VoxelType>
+bool outputLayerAsPly(const Layer<VoxelType>& layer,
+                      const std::string& filename, PlyOutputTypes type,
+                      const float sdf_color_range = 0.3f,
+                      const float max_sdf_value_to_output = 0.3f) {
+  CHECK(!filename.empty());
+  switch (type) {
+    case PlyOutputTypes::kSdfColoredDistanceField: {
+      voxblox::Mesh point_cloud;
+      if (!convertVoxelGridToPointCloud(
+              layer, sdf_color_range, max_sdf_value_to_output, &point_cloud)) {
+        return false;
+      }
+
+      return outputMeshAsPly(filename, point_cloud);
     }
     case PlyOutputTypes::kSdfIsosurface: {
-      typename MeshIntegrator<VoxelType>::Config mesh_config;
-      MeshLayer::Ptr mesh(new MeshLayer(layer.block_size()));
-      MeshIntegrator<VoxelType> mesh_integrator(mesh_config, layer, mesh.get());
+      constexpr bool kConnectedMesh = false;
 
-      constexpr bool only_mesh_updated_blocks = false;
-      constexpr bool clear_updated_flag = false;
-      mesh_integrator.generateMesh(only_mesh_updated_blocks,
-                                   clear_updated_flag);
-
-      return outputMeshLayerAsPly(filename, *mesh);
+      voxblox::Mesh mesh;
+      if (!convertLayerToMesh(layer, &mesh, kConnectedMesh)) {
+        return false;
+      }
+      return outputMeshAsPly(filename, mesh);
     }
+    case PlyOutputTypes::kSdfIsosurfaceConnected: {
+      constexpr bool kConnectedMesh = true;
+
+      voxblox::Mesh mesh;
+      if (!convertLayerToMesh(layer, &mesh, kConnectedMesh)) {
+        return false;
+      }
+      return outputMeshAsPly(filename, mesh);
+    }
+
     default:
       LOG(FATAL) << "Unknown layer to ply output type: "
                  << static_cast<int>(type);
