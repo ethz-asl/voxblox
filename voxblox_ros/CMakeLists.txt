@@ -26,11 +26,6 @@ cs_add_executable(voxblox_eval
 )
 target_link_libraries(voxblox_eval ${PROJECT_NAME})
 
-cs_add_executable(voxblox_node
-  src/voxblox_node.cc
-)
-target_link_libraries(voxblox_node ${PROJECT_NAME})
-
 cs_add_executable(tsdf_server
   src/tsdf_server_node.cc
 )

@@ -51,21 +51,22 @@ void SimulationWorld::getPointcloudFromViewpoint(
     const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
     FloatingPoint max_dist, Pointcloud* ptcloud, Colors* colors) const {
   // Focal length based on fov.
-  FloatingPoint focal_length = camera_res.x() / (2 * tan(fov_h_rad / 2.0));
+  const FloatingPoint focal_length =
+      camera_res.x() / (2 * tan(fov_h_rad / 2.0));
 
   // Calculate transformation between nominal camera view direction and our
   // view direction. Nominal view is positive x direction.
-  Point nominal_view_direction(1.0, 0.0, 0.0);
-  Eigen::Quaternion<FloatingPoint> ray_rotation =
-      Eigen::Quaternion<FloatingPoint>::FromTwoVectors(nominal_view_direction,
-                                                       view_direction);
+  const Point nominal_view_direction(1.0, 0.0, 0.0);
+  const Rotation ray_rotation(Eigen::Quaternion<FloatingPoint>::FromTwoVectors(
+      nominal_view_direction, view_direction));
 
   // Now actually iterate over all pixels.
   for (int u = -camera_res.x() / 2; u < camera_res.x() / 2; ++u) {
     for (int v = -camera_res.y() / 2; v < camera_res.y() / 2; ++v) {
       Point ray_camera_direction =
           Point(1.0, u / focal_length, v / focal_length);
-      Point ray_direction = ray_rotation * (ray_camera_direction).normalized();
+      Point ray_direction =
+          ray_rotation.rotate((ray_camera_direction).normalized());
 
       // Cast this ray into every object.
       bool ray_valid = false;
@@ -101,21 +102,22 @@ void SimulationWorld::getNoisyPointcloudFromViewpoint(
     FloatingPoint max_dist, FloatingPoint noise_sigma, Pointcloud* ptcloud,
     Colors* colors) {
   // Focal length based on fov.
-  FloatingPoint focal_length = camera_res.x() / (2 * tan(fov_h_rad / 2.0));
+  const FloatingPoint focal_length =
+      camera_res.x() / (2 * tan(fov_h_rad / 2.0));
 
   // Calculate transformation between nominal camera view direction and our
   // view direction. Nominal view is positive x direction.
-  Point nominal_view_direction(1.0, 0.0, 0.0);
-  Eigen::Quaternion<FloatingPoint> ray_rotation =
-      Eigen::Quaternion<FloatingPoint>::FromTwoVectors(nominal_view_direction,
-                                                       view_direction);
+  const Point nominal_view_direction(1.0, 0.0, 0.0);
+  const Rotation ray_rotation(Eigen::Quaternion<FloatingPoint>::FromTwoVectors(
+      nominal_view_direction, view_direction));
 
   // Now actually iterate over all pixels.
   for (int u = -camera_res.x() / 2; u < camera_res.x() / 2; ++u) {
     for (int v = -camera_res.y() / 2; v < camera_res.y() / 2; ++v) {
       Point ray_camera_direction =
           Point(1.0, u / focal_length, v / focal_length);
-      Point ray_direction = ray_rotation * (ray_camera_direction).normalized();
+      Point ray_direction =
+          ray_rotation.rotate((ray_camera_direction).normalized());
 
       // Cast this ray into every object.
       bool ray_valid = false;

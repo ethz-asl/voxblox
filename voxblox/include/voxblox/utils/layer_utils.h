@@ -129,16 +129,21 @@ void centerBlocksOfLayer(Layer<VoxelType>* layer, Point* new_layer_origin) {
   BlockIndexList block_indices;
   layer->getAllAllocatedBlocks(&block_indices);
   for (const BlockIndex block_index : block_indices) {
-    centroid += block_index.cast<FloatingPoint>();
+    centroid += layer->getBlockByIndex(block_index).origin();
   }
   centroid /= static_cast<FloatingPoint>(block_indices.size());
 
   // Round to nearest block index to centroid.
+  centroid /= layer->block_size();
   const BlockIndex index_centroid =
       (centroid + 0.5 * Point::Ones()).cast<IndexElement>();
 
-  VLOG(1) << "The index centroid of all allocated blocks is: "
-          << index_centroid;
+  // Return the new origin expressed in the old origins coordinate frame.
+  const FloatingPoint block_size = layer->block_size();
+  *new_layer_origin = index_centroid.cast<FloatingPoint>() * block_size;
+
+  VLOG(3) << "The new origin of the coordinate frame (expressed in the old "
+          << "coordinate frame) is: " << new_layer_origin->transpose();
 
   // Loop over all blocks and change their spatial indices.
   // The only way to do this is to remove them all, store them in a temporary
@@ -148,11 +153,14 @@ void centerBlocksOfLayer(Layer<VoxelType>* layer, Point* new_layer_origin) {
   const size_t num_allocated_blocks_before =
       layer->getNumberOfAllocatedBlocks();
   typename Layer<VoxelType>::BlockHashMap temporary_map;
-  layer->getAllAllocatedBlocks(&block_indices);
   for (const BlockIndex& block_index : block_indices) {
+    typename Block<VoxelType>::Ptr block_ptr =
+        layer->getBlockPtrByIndex(block_index);
+    const Point new_origin = block_ptr->origin() - *new_layer_origin;
+    block_ptr->setOrigin(new_origin);
+
     // Extract block and shift block index.
-    temporary_map.emplace(block_index - index_centroid,
-                          layer->getBlockPtrByIndex(block_index));
+    temporary_map.emplace(block_index - index_centroid, block_ptr);
   }
 
   layer->removeAllBlocks();
@@ -164,10 +172,6 @@ void centerBlocksOfLayer(Layer<VoxelType>* layer, Point* new_layer_origin) {
     layer->insertBlock(idx_block_pair);
   }
   CHECK_EQ(layer->getNumberOfAllocatedBlocks(), num_allocated_blocks_before);
-
-  // Return the new origin expressed in the old origins coordinate frame.
-  const FloatingPoint block_size = layer->block_size();
-  *new_layer_origin = index_centroid.cast<FloatingPoint>() * block_size;
 }
 
 }  // namespace utils

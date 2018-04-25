@@ -2,6 +2,7 @@
 #define VOXBLOX_INTEGRATOR_MERGE_INTEGRATION_H_
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include <glog/logging.h>
@@ -15,39 +16,6 @@
 namespace voxblox {
 
 static const FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
-
-template <typename VoxelType>
-void mergeVoxelAIntoVoxelB(const VoxelType& voxel_A, VoxelType* voxel_B);
-
-template <>
-void mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A, TsdfVoxel* voxel_B);
-
-template <>
-void mergeVoxelAIntoVoxelB(const OccupancyVoxel& voxel_A,
-                           OccupancyVoxel* voxel_B);
-
-template <typename VoxelType>
-void mergeBlockAIntoBlockB(const Block<VoxelType>& block_A,
-                           Block<VoxelType>* block_B) {
-  CHECK_EQ(block_A.voxel_size(), block_B->voxel_size());
-  CHECK_EQ(block_A.voxels_per_side(), block_B->voxels_per_side());
-  CHECK_NOTNULL(block_B);
-
-  if (!block_A.has_data()) {
-    return;
-  } else {
-    block_B->has_data() = true;
-    block_B->updated() = true;
-
-    for (IndexElement voxel_idx = 0;
-         voxel_idx < static_cast<IndexElement>(block_B->num_voxels());
-         ++voxel_idx) {
-      mergeVoxelAIntoVoxelB<VoxelType>(
-          block_A.getVoxelByLinearIndex(voxel_idx),
-          &(block_B->getVoxelByLinearIndex(voxel_idx)));
-    }
-  }
-}
 
 // Merges layers, when the voxel or block size differs resampling occurs.
 template <typename VoxelType>
@@ -81,7 +49,7 @@ void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
     }
 
     if ((block_A_ptr != nullptr) && (block_B_ptr != nullptr)) {
-      mergeBlockAIntoBlockB(*block_A_ptr, block_B_ptr.get());
+      block_B_ptr->mergeBlock(*block_A_ptr);
     }
   }
 }
@@ -90,16 +58,16 @@ void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
 // transformLayer for details
 template <typename VoxelType>
 void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
-                           const Transformation& T_A_B,
+                           const Transformation& T_B_A,
                            Layer<VoxelType>* layer_B,
                            bool use_naive_method = false) {
   Layer<VoxelType> layer_A_transformed(layer_B->voxel_size(),
                                        layer_B->voxels_per_side());
 
   if (use_naive_method) {
-    naiveTransformLayer(layer_A, T_A_B, &layer_A_transformed);
+    naiveTransformLayer(layer_A, T_B_A, &layer_A_transformed);
   } else {
-    transformLayer(layer_A, T_A_B, &layer_A_transformed);
+    transformLayer(layer_A, T_B_A, &layer_A_transformed);
   }
 
   mergeLayerAintoLayerB(layer_A_transformed, layer_B);
@@ -120,7 +88,7 @@ void resampleLayer(const Layer<VoxelType>& layer_in,
 // several orders of magnitude faster.
 template <typename VoxelType>
 void naiveTransformLayer(const Layer<VoxelType>& layer_in,
-                         const Transformation& T_in_out,
+                         const Transformation& T_out_in,
                          Layer<VoxelType>* layer_out) {
   BlockIndexList block_idx_list_in;
   layer_in.getAllAllocatedBlocks(&block_idx_list_in);
@@ -134,12 +102,9 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
          input_linear_voxel_idx <
          static_cast<IndexElement>(input_block.num_voxels());
          ++input_linear_voxel_idx) {
-      const VoxelType& input_voxel =
-          input_block.getVoxelByLinearIndex(input_linear_voxel_idx);
-
       // find voxel centers location in the output
       const Point voxel_center =
-          T_in_out *
+          T_out_in *
           input_block.computeCoordinatesFromLinearIndex(input_linear_voxel_idx);
 
       const VoxelIndex global_output_voxel_idx =
@@ -171,7 +136,7 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
 // and block size of the input and output layer can differ.
 template <typename VoxelType>
 void transformLayer(const Layer<VoxelType>& layer_in,
-                    const Transformation& T_in_out,
+                    const Transformation& T_out_in,
                     Layer<VoxelType>* layer_out) {
   CHECK_NOTNULL(layer_out);
 
@@ -184,26 +149,26 @@ void transformLayer(const Layer<VoxelType>& layer_in,
   layer_in.getAllAllocatedBlocks(&block_idx_list_in);
 
   for (const BlockIndex& block_idx : block_idx_list_in) {
-    Point center =
+    const Point c_in =
         getCenterPointFromGridIndex(block_idx, layer_in.block_size());
 
     // forwards transform of center
-    center = T_in_out * center;
+    const Point c_out = T_out_in * c_in;
 
     // Furthest center point of neighboring blocks.
     FloatingPoint offset =
         kUnitCubeDiagonalLength * layer_in.block_size() * 0.5;
 
     // Add index of all blocks in range to set.
-    for (FloatingPoint x = center.x() - offset; x < center.x() + offset;
+    for (FloatingPoint x = c_out.x() - offset; x < c_out.x() + offset;
          x += layer_out->block_size()) {
-      for (FloatingPoint y = center.y() - offset; y < center.y() + offset;
+      for (FloatingPoint y = c_out.y() - offset; y < c_out.y() + offset;
            y += layer_out->block_size()) {
-        for (FloatingPoint z = center.z() - offset; z < center.z() + offset;
+        for (FloatingPoint z = c_out.z() - offset; z < c_out.z() + offset;
              z += layer_out->block_size()) {
-          Point current_center = Point(x, y, z);
+          const Point current_center_out = Point(x, y, z);
           BlockIndex current_idx = getGridIndexFromPoint(
-              current_center, 1.0f / layer_out->block_size());
+              current_center_out, 1.0f / layer_out->block_size());
           block_idx_set.insert(current_idx);
         }
       }
@@ -211,7 +176,7 @@ void transformLayer(const Layer<VoxelType>& layer_in,
   }
 
   // get inverse transform
-  Transformation T_out_in = T_in_out.inverse();
+  const Transformation T_in_out = T_out_in.inverse();
 
   Interpolator<VoxelType> interpolator(&layer_in);
 
@@ -228,7 +193,7 @@ void transformLayer(const Layer<VoxelType>& layer_in,
 
       // find voxel centers location in the input
       const Point voxel_center =
-          T_out_in * block->computeCoordinatesFromLinearIndex(voxel_idx);
+          T_in_out * block->computeCoordinatesFromLinearIndex(voxel_idx);
 
       // interpolate voxel
       if (interpolator.getVoxel(voxel_center, &voxel, true)) {
@@ -244,6 +209,91 @@ void transformLayer(const Layer<VoxelType>& layer_in,
       layer_out->removeBlock(block_idx);
     }
   }
+}
+
+typedef std::pair<voxblox::Layer<voxblox::TsdfVoxel>::Ptr,
+                  voxblox::Layer<voxblox::TsdfVoxel>::Ptr>
+    AlignedLayerAndErrorLayer;
+typedef std::vector<AlignedLayerAndErrorLayer> AlignedLayerAndErrorLayers;
+
+// This function will align layer B to layer A, transforming and interpolating
+// layer B into voxel grid A for every transformation in `transforms_A_B` and
+// evaluate them. If `aligned_layers_and_error_layers` is set, this function
+// returns a vector containing the aligned layer_B and an error layer for every
+// transformation. The error layer contains the absolute SDF error for every
+// voxel of the comparison between layer_A and aligned layer_B. This function
+// currently only supports SDF type layers, like TsdfVoxel and EsdfVoxel.
+template <typename VoxelType>
+void evaluateLayerRmseAtPoses(
+    const utils::VoxelEvaluationMode& voxel_evaluation_mode,
+    const Layer<VoxelType>& layer_A, const Layer<VoxelType>& layer_B,
+    const std::vector<Transformation>& transforms_A_B,
+    std::vector<utils::VoxelEvaluationDetails>* voxel_evaluation_details_vector,
+    std::vector<std::pair<typename voxblox::Layer<VoxelType>::Ptr,
+                          typename voxblox::Layer<VoxelType>::Ptr>>*
+        aligned_layers_and_error_layers = nullptr) {
+  CHECK_NOTNULL(voxel_evaluation_details_vector);
+
+  // Check if layers are compatible.
+  CHECK_NEAR(layer_A.voxel_size(), layer_B.voxel_size(), 1e-8);
+  CHECK_EQ(layer_A.voxels_per_side(), layer_B.voxels_per_side());
+
+  // Check if world TSDF layer agrees with merged object at all object poses.
+
+  for (size_t i = 0u; i < transforms_A_B.size(); ++i) {
+    const Transformation& transform_A_B = transforms_A_B[i];
+
+    // Layer B transformed to the coordinate frame A.
+    typename Layer<VoxelType>::Ptr aligned_layer_B(
+        new Layer<VoxelType>(layer_B.voxel_size(), layer_B.voxels_per_side()));
+
+    Layer<VoxelType>* error_layer = nullptr;
+    if (aligned_layers_and_error_layers != nullptr) {
+      if (aligned_layers_and_error_layers->size() != transforms_A_B.size()) {
+        aligned_layers_and_error_layers->clear();
+        aligned_layers_and_error_layers->resize(transforms_A_B.size());
+      }
+
+      // Initialize and get ptr to error layer to fill out later.
+      (*aligned_layers_and_error_layers)[i].second =
+          typename voxblox::Layer<VoxelType>::Ptr(new voxblox::Layer<VoxelType>(
+              layer_A.voxel_size(), layer_A.voxels_per_side()));
+      error_layer = (*aligned_layers_and_error_layers)[i].second.get();
+
+      // Store the aligned object as well.
+      (*aligned_layers_and_error_layers)[i].first = aligned_layer_B;
+    }
+
+    // Transform merged object into the world frame.
+    transformLayer<VoxelType>(layer_B, transform_A_B, aligned_layer_B.get());
+
+    utils::VoxelEvaluationDetails voxel_evaluation_details;
+    // Evaluate the RMSE of the merged object layer in the world layer.
+    utils::evaluateLayersRmse(layer_A, *aligned_layer_B, voxel_evaluation_mode,
+                              &voxel_evaluation_details, error_layer);
+    voxel_evaluation_details_vector->push_back(voxel_evaluation_details);
+  }
+}
+
+template <typename VoxelType>
+void evaluateLayerRmseAtPoses(
+    const utils::VoxelEvaluationMode& voxel_evaluation_mode,
+    const Layer<VoxelType>& layer_A, const Layer<VoxelType>& layer_B,
+    const std::vector<Eigen::Matrix<float, 4, 4>,
+                      Eigen::aligned_allocator<Eigen::Matrix<float, 4, 4>>>&
+        transforms_A_B,
+    std::vector<utils::VoxelEvaluationDetails>* voxel_evaluation_details_vector,
+    std::vector<std::pair<typename voxblox::Layer<VoxelType>::Ptr,
+                          typename voxblox::Layer<VoxelType>::Ptr>>*
+        aligned_layers_and_error_layers = nullptr) {
+  CHECK_NOTNULL(voxel_evaluation_details_vector);
+  std::vector<Transformation> kindr_transforms_A_B;
+  for (const Eigen::Matrix<float, 4, 4>& transform_A_B : transforms_A_B) {
+    kindr_transforms_A_B.emplace_back(transform_A_B);
+  }
+  evaluateLayerRmseAtPoses(
+      voxel_evaluation_mode, layer_A, layer_B, kindr_transforms_A_B,
+      voxel_evaluation_details_vector, aligned_layers_and_error_layers);
 }
 
 }  // namespace voxblox

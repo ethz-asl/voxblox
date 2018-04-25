@@ -135,18 +135,23 @@ void EsdfServer::updateMesh() {
 
 void EsdfServer::publishPointclouds() {
   publishAllUpdatedEsdfVoxels();
-  publishSlices();
+  if (publish_slices_) {
+    publishSlices();
+  }
 
   TsdfServer::publishPointclouds();
 }
 
-void EsdfServer::publishMap() {
+void EsdfServer::publishMap(const bool reset_remote_map) {
   if (this->esdf_map_pub_.getNumSubscribers() > 0) {
     const bool only_updated = false;
     timing::Timer publish_map_timer("map/publish_esdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<EsdfVoxel>(this->esdf_map_->getEsdfLayer(),
                                    only_updated, &layer_msg);
+    if (reset_remote_map) {
+      layer_msg.action = static_cast<uint8_t>(MapDerializationAction::kReset);
+    }
     this->esdf_map_pub_.publish(layer_msg);
     publish_map_timer.Stop();
   }
@@ -221,8 +226,13 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
 void EsdfServer::clear() {
   esdf_map_->getEsdfLayerPtr()->removeAllBlocks();
   esdf_integrator_->clear();
+  CHECK_EQ(esdf_map_->getEsdfLayerPtr()->getNumberOfAllocatedBlocks(), 0);
 
   TsdfServer::clear();
+
+  // Publish a message to reset the map to all subscribers.
+  constexpr bool kResetRemoteMap = true;
+  publishMap(kResetRemoteMap);
 }
 
 }  // namespace voxblox

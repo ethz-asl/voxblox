@@ -51,7 +51,9 @@ class EsdfIntegrator {
                  Layer<EsdfVoxel>* esdf_layer);
 
   // Used for planning - allocates sphere around as observed but occupied,
-  // and clears space in a sphere around current position.
+  // and clears space in a smaller sphere around current position.
+  // Points added this way are marked as "hallucinated," and can subsequently
+  // be cleared based on this.
   void addNewRobotPosition(const Point& position);
 
   // Update from a TSDF layer in batch, clearing the current ESDF layer in the

@@ -3,7 +3,6 @@
   <arg name="play_bag" value="true" />
   <arg name="bag_file" value="/Users/helen/data/kitti/2011_09_26/2011_09_26_drive_0035_sync/drive35.bag"/>
   <arg name="voxel_size" default="0.25"/>
-  <arg name="generate_esdf" default="true" />
 
   <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.1 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
 
@@ -19,7 +18,7 @@
     <rosparam file="$(find voxblox_ros)/cfg/stereo/kitti_stereo_jager.yaml"/>
   </node>
 
-  <node name="voxblox_node" pkg="voxblox_ros" type="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
+  <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="/stereo_gray/points2"/>
     <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
     <param name="tsdf_voxels_per_side" value="16" />
@@ -27,16 +26,14 @@
     <param name="color_mode" value="color" />
     <param name="use_tf_transforms" value="true" />
     <param name="verbose" value="true" />
-    <param name="generate_esdf" value="$(arg generate_esdf)" />
     <param name="update_mesh_every_n_sec" value="0.2" />
     <param name="max_ray_length_m" value="20.0" />
     <param name="esdf_max_distance_m" value="5.0" />
     <param name="esdf_default_distance_m" value="5.0" />
     <param name="min_time_between_msgs_sec" value="0.2" />
     <param name="slice_level" value="1.0" />
-    <param name="method" value="merged" />
-    <param name="anti_grazing" value="true"/>
-    <param name="use_const_weight" value="true" />
+    <param name="method" value="fast" />
+    <param name="use_const_weight" value="false" />
     <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon kitti).ply" />
   </node>
 

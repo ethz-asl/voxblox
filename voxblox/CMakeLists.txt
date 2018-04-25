@@ -51,9 +51,9 @@ set("${PROJECT_NAME}_SRCS"
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
   src/integrator/integrator_utils.cc
-  src/integrator/merge_integration.cc
   src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
+  src/io/sdf_ply.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
@@ -67,6 +67,7 @@ set("${PROJECT_NAME}_SRCS"
   src/utils/layer_utils.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
+  src/utils/voxel_utils.cc
 )
 
 #############
