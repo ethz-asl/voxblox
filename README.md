@@ -259,6 +259,8 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `color_mode` | The method that will be used for coloring the mesh. Options are "color", "height", "normals", "lambert" and "gray". | "color" |
 | `mesh_min_weight` | The minimum weighting needed for a point to be included in the mesh | 1e-4 |
 | `update_mesh_every_n_sec` | Rate at which the mesh topic will be published to, a value of 0 disables. Note, this will not trigger any other mesh operations, such as generating a ply file. | 0.0 |
+| `publish_tsdf_map` | Whether to publish the complete TSDF map periodically over ROS topics. | false |
+| `publish_esdf_map` | Whether to publish the complete ESDF map periodically over ROS topics. | false |
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
