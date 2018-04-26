@@ -20,7 +20,7 @@ class ThermalServer : public TsdfServer {
   virtual ~ThermalServer() {}
 
   virtual void updateMesh() {}
-  virtual void publishPointclouds() {}
+  virtual void publishPointclouds();
 
   void thermalImageCallback(const sensor_msgs::ImageConstPtr& image);
 
