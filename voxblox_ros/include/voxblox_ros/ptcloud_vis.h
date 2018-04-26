@@ -242,6 +242,16 @@ inline bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
   return false;
 }
 
+inline bool visualizeTemperatureIntensityThermalVoxels(
+    const ThermalVoxel& voxel, const Point& /*coord*/, double* intensity) {
+  CHECK_NOTNULL(intensity);
+  if (voxel.observations > 0) {
+    *intensity = voxel.temperature;
+    return true;
+  }
+  return false;
+}
+
 inline bool visualizeDistanceIntensityEsdfVoxelsSlice(
     const EsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
     FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
@@ -283,9 +293,8 @@ inline void createSurfacePointcloudFromTsdfLayer(
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
-                surface_distance, ph::_3),
+      layer, std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
+                       surface_distance, ph::_3),
       pointcloud);
 }
 
@@ -316,9 +325,8 @@ inline void createSurfaceDistancePointcloudFromTsdfLayer(
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
-                ph::_2, surface_distance, ph::_3),
+      layer, std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
+                       ph::_2, surface_distance, ph::_3),
       pointcloud);
 }
 
@@ -328,6 +336,14 @@ inline void createDistancePointcloudFromEsdfLayer(
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer, &visualizeDistanceIntensityEsdfVoxels, pointcloud);
+}
+
+inline void createTemperaturePointcloudFromThermalLayer(
+    const Layer<ThermalVoxel>& layer,
+    pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
+  createColorPointcloudFromLayer<ThermalVoxel>(
+      layer, &visualizeTemperatureIntensityThermalVoxels, pointcloud);
 }
 
 inline void createDistancePointcloudFromTsdfLayerSlice(

@@ -8,11 +8,28 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
   // Get ROS params:
   nh_private_.param("thermal_focal_length", focal_length_px_, focal_length_px_);
 
+  // Publishers for output.
+  thermal_pointcloud_pub_ =
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+          "thermal_pointcloud", 1, true);
+
   thermal_layer_.reset(
       new Layer<ThermalVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
                               tsdf_map_->getTsdfLayer().voxels_per_side()));
   thermal_integrator_.reset(
       new ThermalIntegrator(tsdf_map_->getTsdfLayer(), thermal_layer_.get()));
+}
+
+void ThermalServer::publishPointclouds() {
+  // Create a pointcloud with temperature = intensity.
+  pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+  createTemperaturePointcloudFromThermalLayer(*thermal_layer_, &pointcloud);
+
+  pointcloud.header.frame_id = world_frame_;
+  thermal_pointcloud_pub_.publish(pointcloud);
+
+  TsdfServer::publishPointclouds();
 }
 
 void ThermalServer::thermalImageCallback(
