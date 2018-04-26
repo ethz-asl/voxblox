@@ -60,13 +60,16 @@ class TsdfServer {
   void publishTsdfOccupiedNodes();
 
   virtual void publishSlices();
-  virtual void updateMesh();    // Incremental update.
-  virtual bool generateMesh();  // Batch update.
+  virtual void updateMesh();          // Incremental update.
+  virtual bool generateMesh();        // Batch update.
   virtual void publishPointclouds();  // Publishes all available pointclouds.
-  virtual void publishMap(); // Publishes the complete map
+  virtual void publishMap(
+      const bool reset_remote_map = false);  // Publishes the complete map
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
+  bool clearMapCallback(std_srvs::Empty::Request& request,           // NOLINT
+                        std_srvs::Empty::Response& response);        // NOLINT
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
   bool loadMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
@@ -74,11 +77,10 @@ class TsdfServer {
   bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
                             std_srvs::Empty::Response& response);    // NOLINT
   bool publishPointcloudsCallback(
-      std_srvs::Empty::Request& request,     // NOLINT
-      std_srvs::Empty::Response& response);  // NOLINT
-  bool publishTsdfMapCallback(
-          std_srvs::Empty::Request& request,     // NOLINT
-          std_srvs::Empty::Response& response);  // NOLINT
+      std_srvs::Empty::Request& request,                             // NOLINT
+      std_srvs::Empty::Response& response);                          // NOLINT
+  bool publishTsdfMapCallback(std_srvs::Empty::Request& request,     // NOLINT
+                              std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
 
@@ -146,6 +148,7 @@ class TsdfServer {
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
+  ros::ServiceServer clear_map_srv_;
   ros::ServiceServer save_map_srv_;
   ros::ServiceServer load_map_srv_;
   ros::ServiceServer publish_pointclouds_srv_;

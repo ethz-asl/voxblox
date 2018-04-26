@@ -1,4 +1,8 @@
-#include "voxblox/integrator/merge_integration.h"
+#include "voxblox/utils/voxel_utils.h"
+
+#include "voxblox/core/color.h"
+#include "voxblox/core/common.h"
+#include "voxblox/core/voxel.h"
 
 namespace voxblox {
 
@@ -15,6 +19,16 @@ void mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A, TsdfVoxel* voxel_B) {
 
     voxel_B->weight = combined_weight;
   }
+}
+
+template <>
+void mergeVoxelAIntoVoxelB(const EsdfVoxel& voxel_A, EsdfVoxel* voxel_B) {
+  if (voxel_A.observed && voxel_B->observed) {
+    voxel_B->distance = (voxel_A.distance + voxel_B->distance) / 2.f;
+  } else if (voxel_A.observed && !voxel_B->observed) {
+    voxel_B->distance = voxel_A.distance;
+  }
+  voxel_B->observed = voxel_B->observed || voxel_A.observed;
 }
 
 template <>
