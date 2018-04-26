@@ -15,16 +15,17 @@ template <typename VoxelType>
 bool getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
                                 const Point& ray_origin,
                                 const Point& bearing_vector,
-                                double max_distance, Point* triangulated_pose) {
+                                FloatingPoint max_distance,
+                                Point* triangulated_pose) {
   // Make sure bearing vector is normalized.
   Point ray_direction = bearing_vector.normalized();
 
   // Keep track of current distance along the ray.
-  double t = 0.0;
+  FloatingPoint t = 0.0;
   // General ray equations: p = o + d * t
 
   // Cache voxel sizes for faster moving.
-  double voxel_size = layer.voxel_size();
+  FloatingPoint voxel_size = layer.voxel_size();
 
   bool surface_found = false;
 
