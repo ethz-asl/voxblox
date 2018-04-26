@@ -54,7 +54,7 @@ void SkeletonizerNode::init() {
   esdf_server_.loadMap(input_filepath);
 
   // Rotate the layer.
-  bool should_rotate = true;
+  bool should_rotate = false;
   if (should_rotate) {
     // Copy the original layer.
     Eigen::Matrix4f transform_mat;
