@@ -1,18 +1,24 @@
 #ifndef VOXBLOX_ROS_CONVERSIONS_H_
 #define VOXBLOX_ROS_CONVERSIONS_H_
 
-#include <algorithm>
-#include <std_msgs/ColorRGBA.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
+#include <std_msgs/ColorRGBA.h>
+#include <algorithm>
 #include <vector>
 
-#include <voxblox_msgs/Layer.h>
 #include <voxblox/core/common.h>
-#include <voxblox/mesh/mesh.h>
 #include <voxblox/core/layer.h>
+#include <voxblox/mesh/mesh.h>
+#include <voxblox_msgs/Layer.h>
 
 namespace voxblox {
+
+enum class MapDerializationAction : uint8_t {
+  kUpdate = 0u,
+  kMerge = 1u,
+  kReset = 2u
+};
 
 inline void colorVoxbloxToMsg(const Color& color,
                               std_msgs::ColorRGBA* color_msg) {
@@ -67,13 +73,22 @@ inline void pointcloudToPclXYZ(const Pointcloud& ptcloud,
 
 // Declarations
 template <typename VoxelType>
-void serializeLayerAsMsg(const Layer<VoxelType>& layer, bool only_updated,
-                         voxblox_msgs::Layer* msg);
+void serializeLayerAsMsg(
+    const Layer<VoxelType>& layer, const bool only_updated,
+    voxblox_msgs::Layer* msg,
+    const MapDerializationAction& action = MapDerializationAction::kUpdate);
 
 // Returns true if could parse the data into the existing layer (all parameters
 // are compatible), false otherwise.
+// This function will use the deserialization action suggested by the layer
+// message.
 template <typename VoxelType>
 bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
+                           Layer<VoxelType>* layer);
+
+template <typename VoxelType>
+bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
+                           const MapDerializationAction& action,
                            Layer<VoxelType>* layer);
 
 }  // namespace voxblox
