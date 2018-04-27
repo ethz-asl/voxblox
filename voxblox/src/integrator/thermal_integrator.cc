@@ -16,7 +16,7 @@ void ThermalIntegrator::addThermalBearingVectors(
   constexpr FloatingPoint max_distance = 10.0;
   const FloatingPoint temperature_prop_distance =
       4 * tsdf_layer_.voxel_size();  // This equates to 2 * voxel_size
-                                      // truncation distance.
+                                     // truncation distance.
 
   for (size_t i = 0; i < bearing_vectors.size(); ++i) {
     Point surface_intersection = Point::Zero();
@@ -36,10 +36,18 @@ void ThermalIntegrator::addThermalBearingVectors(
         thermal_layer_->allocateBlockPtrByCoordinates(surface_intersection);
     ThermalVoxel& voxel =
         block_ptr->getVoxelByCoordinates(surface_intersection);
-    voxel.temperature =temperatures[i];
-    voxel.observations = 1;
-        /* (voxel.observations * voxel.temperature + temperatures[i]) /
-        (++voxel.observations); */
+    if (voxel.observations < 1) {
+      voxel.temperature = temperatures[i];
+      voxel.observations = 1;
+    } else {
+      voxel.temperature =
+          (voxel.observations * voxel.temperature + temperatures[i]) /
+          (voxel.observations + 1);
+      voxel.observations++;
+    }
+    if (observations > 100) {
+      observations = 100;
+    }
   }
 }
 
