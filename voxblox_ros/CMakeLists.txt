@@ -37,6 +37,10 @@ cs_add_executable(esdf_server
 )
 target_link_libraries(esdf_server ${PROJECT_NAME})
 
+cs_add_executable(thermal_server
+  src/thermal_server_node.cc
+)
+target_link_libraries(thermal_server ${PROJECT_NAME})
 
 cs_add_executable(simulation_eval
   src/simulation_eval.cc
