@@ -36,15 +36,15 @@ void ThermalIntegrator::addThermalBearingVectors(
         thermal_layer_->allocateBlockPtrByCoordinates(surface_intersection);
     ThermalVoxel& voxel =
         block_ptr->getVoxelByCoordinates(surface_intersection);
-    if (voxel.observations < 1) {
+    /*if (voxel.observations < 1) {
       voxel.temperature = temperatures[i];
       voxel.observations = 1;
-    } else {
+    } else { */
       voxel.temperature =
           (voxel.observations * voxel.temperature + temperatures[i]) /
           (voxel.observations + 1);
       voxel.observations++;
-    }
+    //}
     if (voxel.observations > 100) {
       voxel.observations = 100;
     }
