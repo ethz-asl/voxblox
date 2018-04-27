@@ -22,6 +22,7 @@ void TsdfServer::getServerConfigFromRosParam(
   nh_private.param("world_frame", world_frame_, world_frame_);
   nh_private.param("publish_tsdf_info", publish_tsdf_info_, publish_tsdf_info_);
   nh_private.param("publish_slices", publish_slices_, publish_slices_);
+  nh_private.param("publish_pointclouds", publish_pointclouds_, publish_pointclouds_);
 
   nh_private.param("use_freespace_pointcloud", use_freespace_pointcloud_,
                    use_freespace_pointcloud_);
@@ -62,6 +63,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       use_freespace_pointcloud_(false),
       publish_tsdf_info_(false),
       publish_slices_(false),
+      publish_pointclouds_(false),
       publish_tsdf_map_(false),
       pointcloud_queue_size_(1),
       transformer_(nh, nh_private) {
@@ -346,6 +348,10 @@ void TsdfServer::updateMesh() {
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   publish_mesh_timer.Stop();
+
+  if (publish_pointclouds_) {
+    publishPointclouds();
+  }
 
   if (publish_tsdf_map_ && tsdf_map_pub_.getNumSubscribers() > 0u) {
     constexpr bool only_publish_updated_blocks = false;

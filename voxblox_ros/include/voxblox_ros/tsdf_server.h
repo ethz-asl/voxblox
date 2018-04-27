@@ -124,6 +124,7 @@ class TsdfServer {
   // What output information to publish
   bool publish_tsdf_info_;
   bool publish_slices_;
+  bool publish_pointclouds_;
   bool publish_tsdf_map_;
 
   // Data subscribers.
