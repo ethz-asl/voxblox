@@ -4,7 +4,7 @@ namespace voxblox {
 
 ThermalServer::ThermalServer(const ros::NodeHandle& nh,
                              const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private), focal_length_px_(392.0f) {
+    : TsdfServer(nh, nh_private), focal_length_px_(391.5f) {
   // Get ROS params:
   nh_private_.param("thermal_focal_length", focal_length_px_, focal_length_px_);
 
