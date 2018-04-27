@@ -19,7 +19,7 @@ class ThermalServer : public TsdfServer {
   ThermalServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   virtual ~ThermalServer() {}
 
-  virtual void updateMesh() {}
+  // virtual void updateMesh() {}
   virtual void publishPointclouds();
 
   void thermalImageCallback(const sensor_msgs::ImageConstPtr& image);
