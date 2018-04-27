@@ -13,6 +13,10 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
           "thermal_pointcloud", 1, true);
 
+  // Set up subscriber.
+  thermal_image_sub_ = nh_private_.subscribe(
+      "thermal_image", 1, &ThermalServer::thermalImageCallback, this);
+
   thermal_layer_.reset(
       new Layer<ThermalVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
                               tsdf_map_->getTsdfLayer().voxels_per_side()));
