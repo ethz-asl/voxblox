@@ -45,8 +45,8 @@ void ThermalIntegrator::addThermalBearingVectors(
           (voxel.observations + 1);
       voxel.observations++;
     }
-    if (observations > 100) {
-      observations = 100;
+    if (voxel.observations > 100) {
+      voxel.observations = 100;
     }
   }
 }
