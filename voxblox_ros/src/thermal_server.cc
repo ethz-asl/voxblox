@@ -5,6 +5,7 @@ namespace voxblox {
 ThermalServer::ThermalServer(const ros::NodeHandle& nh,
                              const ros::NodeHandle& nh_private)
     : TsdfServer(nh, nh_private), focal_length_px_(391.5f) {
+  cache_mesh_ = true;
   // Get ROS params:
   nh_private_.param("thermal_focal_length", focal_length_px_, focal_length_px_);
 
@@ -35,11 +36,8 @@ void ThermalServer::updateMesh() {
 
   // Now recolor the mesh...
   timing::Timer publish_mesh_timer("thermal_mesh/publish");
-  voxblox_msgs::Mesh mesh_msg;
-  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
-  recolorVoxbloxMeshMsgByTemperature(*thermal_layer_, color_map_, &mesh_msg);
-  mesh_msg.header.frame_id = world_frame_;
-  thermal_mesh_pub_.publish(mesh_msg);
+  recolorVoxbloxMeshMsgByTemperature(*thermal_layer_, color_map_, &mesh_msg_);
+  thermal_mesh_pub_.publish(mesh_msg_);
   publish_mesh_timer.Stop();
 }
 

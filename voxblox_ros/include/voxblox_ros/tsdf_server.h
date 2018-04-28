@@ -127,6 +127,9 @@ class TsdfServer {
   bool publish_pointclouds_;
   bool publish_tsdf_map_;
 
+  // Whether to save the latest mesh message sent (for inheriting classes).
+  bool cache_mesh_;
+
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
   ros::Subscriber freespace_pointcloud_sub_;
@@ -165,6 +168,8 @@ class TsdfServer {
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;
   std::unique_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
+  // Optionally cached mesh message.
+  voxblox_msgs::Mesh mesh_msg_;
 
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.

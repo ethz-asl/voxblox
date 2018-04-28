@@ -65,6 +65,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       publish_slices_(false),
       publish_pointclouds_(false),
       publish_tsdf_map_(false),
+      cache_mesh_(false),
       pointcloud_queue_size_(1),
       transformer_(nh, nh_private) {
   getServerConfigFromRosParam(nh_private);
@@ -347,6 +348,9 @@ void TsdfServer::updateMesh() {
   generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
+  if (cache_mesh_) {
+    mesh_msg_ = mesh_msg;
+  }
   publish_mesh_timer.Stop();
 
   if (publish_pointclouds_) {
