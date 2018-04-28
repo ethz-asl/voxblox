@@ -93,8 +93,6 @@ void ThermalServer::thermalImageCallback(
     }
   }
 
-  ROS_INFO("[Thermal] Integrating %lu bearing vectors.");
-
   // Put this into the integrator.
   thermal_integrator_->addThermalBearingVectors(T_G_C.getPosition(),
                                                 bearing_vectors, temperatures);
