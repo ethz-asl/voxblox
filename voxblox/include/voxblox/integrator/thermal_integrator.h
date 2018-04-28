@@ -22,6 +22,11 @@ class ThermalIntegrator {
   ThermalIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
                     Layer<ThermalVoxel>* thermal_layer);
 
+  // Set the max distance for projecting into the TSDF layer.
+  void setMaxDistance(FloatingPoint max_distance) {
+    max_distance_ = max_distance;
+  }
+
   // Integrates temperatures into the thermal layer by projecting normalized
   // bearing vectors (in the WORLD coordinate frame) from the origin (also in
   // the world coordinate frame) into the TSDF layer, and then setting the
@@ -31,12 +36,12 @@ class ThermalIntegrator {
                                 const std::vector<float>& temperatures);
 
  private:
+  FloatingPoint max_distance_;
+  int max_observations_;
+
   const Layer<TsdfVoxel>& tsdf_layer_;
   Layer<ThermalVoxel>* thermal_layer_;
 };
-
-
-
 
 }  // namespace voxblox
 

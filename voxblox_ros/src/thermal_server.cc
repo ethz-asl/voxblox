@@ -4,10 +4,13 @@ namespace voxblox {
 
 ThermalServer::ThermalServer(const ros::NodeHandle& nh,
                              const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private), focal_length_px_(391.5f) {
+    : TsdfServer(nh, nh_private),
+      focal_length_px_(391.5f),
+      subsample_factor_(12) {
   cache_mesh_ = true;
   // Get ROS params:
   nh_private_.param("thermal_focal_length", focal_length_px_, focal_length_px_);
+  nh_private_.param("subsample_factor", subsample_factor_, subsample_factor_);
 
   // Publishers for output.
   thermal_pointcloud_pub_ =
@@ -62,7 +65,8 @@ void ThermalServer::thermalImageCallback(
 
   cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image);
 
-  size_t num_pixels = cv_ptr->image.rows * cv_ptr->image.cols;
+  size_t num_pixels =
+      cv_ptr->image.rows * cv_ptr->image.cols / subsample_factor_;
 
   float half_row = cv_ptr->image.rows / 2.0;
   float half_col = cv_ptr->image.cols / 2.0;
@@ -74,16 +78,22 @@ void ThermalServer::thermalImageCallback(
   temperatures.resize(num_pixels);
 
   size_t k = 0;
+  size_t m = 0;
   for (int i = 0; i < cv_ptr->image.rows; i++) {
     const float* image_row = cv_ptr->image.ptr<float>(i);
     for (int j = 0; j < cv_ptr->image.cols; j++) {
-      bearing_vectors[k] =
-          T_G_C.getRotation().toImplementation() *
-          Point(j - half_col, i - half_row, focal_length_px_).normalized();
-      temperatures[k] = image_row[j];
-      k++;
+      if (m % subsample_factor_ == 0) {
+        bearing_vectors[k] =
+            T_G_C.getRotation().toImplementation() *
+            Point(j - half_col, i - half_row, focal_length_px_).normalized();
+        temperatures[k] = image_row[j];
+        k++;
+      }
+      m++;
     }
   }
+
+  ROS_INFO("[Thermal] Integrating %lu bearing vectors.");
 
   // Put this into the integrator.
   thermal_integrator_->addThermalBearingVectors(T_G_C.getPosition(),

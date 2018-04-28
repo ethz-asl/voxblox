@@ -37,6 +37,10 @@ class ThermalServer : public TsdfServer {
   // Parameters of the incoming UNDISTORTED thermal images.
   double focal_length_px_;
 
+  // How much to subsample the image by (not proper downsampling, just
+  // subsampling).
+  int subsample_factor_;
+
   // Thermal layer, integrator, and color maps, all related to storing
   // and visualizing thermal data.
   std::shared_ptr<Layer<ThermalVoxel>> thermal_layer_;
