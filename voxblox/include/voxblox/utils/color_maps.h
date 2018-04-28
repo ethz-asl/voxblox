@@ -78,9 +78,9 @@ class IronbowColorMap : public ColorMap {
 
     size_t index = static_cast<size_t>(std::floor(value / increment_));
 
-    Color color = Color::blendTwoColors(
+    Color color = palette_colors_[index];/* = Color::blendTwoColors(
         palette_colors_[index], increment_ * (index + 1) - value,
-        palette_colors_[index + 1], value - increment_ * (index));
+        palette_colors_[index + 1], value - increment_ * (index)); */
 
     return color;
   }
