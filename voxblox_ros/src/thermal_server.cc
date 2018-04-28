@@ -12,6 +12,8 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
   thermal_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
           "thermal_pointcloud", 1, true);
+  thermal_mesh_pub_ =
+      nh_private_.advertise<voxblox_msgs::Mesh>("thermal_mesh", 1, true);
 
   // Set up subscriber.
   thermal_image_sub_ = nh_private_.subscribe(
@@ -26,6 +28,19 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
   color_map_.reset(new IronbowColorMap());
   color_map_->setMinValue(10.0);
   color_map_->setMaxValue(38.0);
+}
+
+void ThermalServer::updateMesh() {
+  TsdfServer::updateMesh();
+
+  // Now recolor the mesh...
+  timing::Timer publish_mesh_timer("thermal_mesh/publish");
+  voxblox_msgs::Mesh mesh_msg;
+  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
+  recolorVoxbloxMeshMsgByTemperature(*thermal_layer_, color_map_, &mesh_msg);
+  mesh_msg.header.frame_id = world_frame_;
+  thermal_mesh_pub_.publish(mesh_msg);
+  publish_mesh_timer.Stop();
 }
 
 void ThermalServer::publishPointclouds() {

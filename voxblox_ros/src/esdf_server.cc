@@ -120,7 +120,9 @@ void EsdfServer::updateMesh() {
     const bool clear_updated_flag_esdf = false;
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   }
-  publishAllUpdatedEsdfVoxels();
+  if (publish_pointclouds_) {
+    publishAllUpdatedEsdfVoxels();
+  }
 
   if (publish_esdf_map_ && esdf_map_pub_.getNumSubscribers() > 0) {
     const bool only_updated = false;
