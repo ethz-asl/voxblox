@@ -76,7 +76,7 @@ class IronbowColorMap : public ColorMap {
     float new_value = std::min(max_value_, std::max(min_value_, value));
     new_value = (new_value - min_value_) / (max_value_ - min_value_);
 
-    size_t index = static_cast<size_t>(std::floor(value / increment_));
+    size_t index = static_cast<size_t>(std::floor(new_value / increment_));
 
     Color color = palette_colors_[index];/* = Color::blendTwoColors(
         palette_colors_[index], increment_ * (index + 1) - value,
