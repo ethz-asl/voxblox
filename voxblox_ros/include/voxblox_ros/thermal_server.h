@@ -7,8 +7,10 @@
 
 #include <voxblox/core/voxel.h>
 #include <voxblox/integrator/thermal_integrator.h>
+#include <voxblox/utils/color_maps.h>
 
 #include "voxblox_ros/tsdf_server.h"
+#include "voxblox_ros/thermal_vis.h"
 
 namespace voxblox {
 
@@ -39,6 +41,9 @@ class ThermalServer : public TsdfServer {
   // and visualizing thermal data.
   std::shared_ptr<Layer<ThermalVoxel>> thermal_layer_;
   std::unique_ptr<ThermalIntegrator> thermal_integrator_;
+
+  // Visualization tools.
+  std::shared_ptr<ColorMap> color_map_;
 };
 
 }  // namespace voxblox

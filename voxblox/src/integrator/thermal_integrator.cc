@@ -11,6 +11,8 @@ ThermalIntegrator::ThermalIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
 void ThermalIntegrator::addThermalBearingVectors(
     const Point& origin, const Pointcloud& bearing_vectors,
     const std::vector<float>& temperatures) {
+  timing::Timer thermal_timer("thermal/integrate");
+
   CHECK_EQ(bearing_vectors.size(), temperatures.size())
       << "Temperature and bearing vector size does not match!";
   constexpr FloatingPoint max_distance = 10.0;
@@ -40,10 +42,10 @@ void ThermalIntegrator::addThermalBearingVectors(
       voxel.temperature = temperatures[i];
       voxel.observations = 1;
     } else { */
-      voxel.temperature =
-          (voxel.observations * voxel.temperature + temperatures[i]) /
-          (voxel.observations + 1);
-      voxel.observations++;
+    voxel.temperature =
+        (voxel.observations * voxel.temperature + temperatures[i]) /
+        (voxel.observations + 1);
+    voxel.observations++;
     //}
     if (voxel.observations > 100) {
       voxel.observations = 100;

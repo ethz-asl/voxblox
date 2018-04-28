@@ -136,6 +136,10 @@ class Block {
     return &voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
+  inline const VoxelType* getVoxelPtrByCoordinates(const Point& coords) const {
+    return &voxels_[computeLinearIndexFromCoordinates(coords)];
+  }
+
   inline bool isValidVoxelIndex(const VoxelIndex& index) const {
     if (index.x() < 0 ||
         index.x() >= static_cast<IndexElement>(voxels_per_side_)) {
