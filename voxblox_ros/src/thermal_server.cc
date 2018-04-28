@@ -26,7 +26,7 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
   thermal_integrator_.reset(
       new ThermalIntegrator(tsdf_map_->getTsdfLayer(), thermal_layer_.get()));
 
-  color_map_.reset(new IronbowColorMap());
+  color_map_.reset(new RainbowColorMap());
   color_map_->setMinValue(10.0);
   color_map_->setMaxValue(38.0);
 }
