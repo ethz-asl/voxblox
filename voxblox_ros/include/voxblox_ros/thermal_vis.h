@@ -24,7 +24,7 @@ inline void recolorVoxbloxMeshMsgByTemperature(
         const ThermalVoxel* voxel = thermal_layer.getVoxelPtrByCoordinates(
             Point(triangle.x[local_vert_idx], triangle.y[local_vert_idx],
                   triangle.z[local_vert_idx]));
-        if (voxel != nullptr) {
+        if (voxel != nullptr && voxel->observations > 0) {
           float temperature = voxel->temperature;
           Color new_color = color_map->colorLookup(temperature);
           triangle.r[local_vert_idx] = new_color.r;

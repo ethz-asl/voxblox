@@ -6,7 +6,10 @@ namespace voxblox {
 
 ThermalIntegrator::ThermalIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
                                      Layer<ThermalVoxel>* thermal_layer)
-    : tsdf_layer_(tsdf_layer), thermal_layer_(thermal_layer) {}
+    : max_distance_(5.0),
+      max_observations_(100),
+      tsdf_layer_(tsdf_layer),
+      thermal_layer_(thermal_layer) {}
 
 void ThermalIntegrator::addThermalBearingVectors(
     const Point& origin, const Pointcloud& bearing_vectors,
@@ -15,7 +18,6 @@ void ThermalIntegrator::addThermalBearingVectors(
 
   CHECK_EQ(bearing_vectors.size(), temperatures.size())
       << "Temperature and bearing vector size does not match!";
-  constexpr FloatingPoint max_distance = 10.0;
   const FloatingPoint temperature_prop_distance =
       4 * tsdf_layer_.voxel_size();  // This equates to 2 * voxel_size
                                      // truncation distance.
@@ -25,7 +27,7 @@ void ThermalIntegrator::addThermalBearingVectors(
     // Cast ray from the origin in the direction of the bearing vector until
     // finding an intersection with a surface.
     bool success = getSurfaceDistanceAlongRay<TsdfVoxel>(
-        tsdf_layer_, origin, bearing_vectors[i], max_distance,
+        tsdf_layer_, origin, bearing_vectors[i], max_distance_,
         &surface_intersection);
 
     if (!success) {
@@ -38,17 +40,12 @@ void ThermalIntegrator::addThermalBearingVectors(
         thermal_layer_->allocateBlockPtrByCoordinates(surface_intersection);
     ThermalVoxel& voxel =
         block_ptr->getVoxelByCoordinates(surface_intersection);
-    /*if (voxel.observations < 1) {
-      voxel.temperature = temperatures[i];
-      voxel.observations = 1;
-    } else { */
     voxel.temperature =
         (voxel.observations * voxel.temperature + temperatures[i]) /
         (voxel.observations + 1);
     voxel.observations++;
-    //}
-    if (voxel.observations > 100) {
-      voxel.observations = 100;
+    if (voxel.observations > max_observations_) {
+      voxel.observations = max_observations_;
     }
   }
 }
