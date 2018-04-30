@@ -26,6 +26,9 @@ class ThermalIntegrator {
   void setMaxDistance(FloatingPoint max_distance) {
     max_distance_ = max_distance;
   }
+  FloatingPoint getMaxDistance() const {
+    return max_distance_;
+  }
 
   // Integrates temperatures into the thermal layer by projecting normalized
   // bearing vectors (in the WORLD coordinate frame) from the origin (also in
