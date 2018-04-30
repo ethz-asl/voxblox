@@ -8,6 +8,13 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
       focal_length_px_(391.5f),
       subsample_factor_(12) {
   cache_mesh_ = true;
+
+  thermal_layer_.reset(
+      new Layer<ThermalVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
+                              tsdf_map_->getTsdfLayer().voxels_per_side()));
+  thermal_integrator_.reset(
+      new ThermalIntegrator(tsdf_map_->getTsdfLayer(), thermal_layer_.get()));
+
   // Get ROS params:
   nh_private_.param("thermal_focal_length", focal_length_px_, focal_length_px_);
   nh_private_.param("subsample_factor", subsample_factor_, subsample_factor_);
@@ -17,18 +24,17 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
   nh_private_.param("thermal_min_value", thermal_min_value, thermal_min_value);
   nh_private_.param("thermal_max_value", thermal_max_value, thermal_max_value);
 
+  FloatingPoint thermal_max_distance = thermal_integrator_->getMaxDistance();
+  nh_private_.param("thermal_max_distance", thermal_max_distance,
+                    thermal_max_distance);
+  thermal_integrator_->setMaxDistance(thermal_max_distance);
+
   // Publishers for output.
   thermal_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
           "thermal_pointcloud", 1, true);
   thermal_mesh_pub_ =
       nh_private_.advertise<voxblox_msgs::Mesh>("thermal_mesh", 1, true);
-
-  thermal_layer_.reset(
-      new Layer<ThermalVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
-                              tsdf_map_->getTsdfLayer().voxels_per_side()));
-  thermal_integrator_.reset(
-      new ThermalIntegrator(tsdf_map_->getTsdfLayer(), thermal_layer_.get()));
 
   color_map_.reset(new IronbowColorMap());
   color_map_->setMinValue(thermal_min_value);
