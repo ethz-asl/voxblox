@@ -24,10 +24,6 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
   thermal_mesh_pub_ =
       nh_private_.advertise<voxblox_msgs::Mesh>("thermal_mesh", 1, true);
 
-  // Set up subscriber.
-  thermal_image_sub_ = nh_private_.subscribe(
-      "thermal_image", 1, &ThermalServer::thermalImageCallback, this);
-
   thermal_layer_.reset(
       new Layer<ThermalVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
                               tsdf_map_->getTsdfLayer().voxels_per_side()));
@@ -37,6 +33,10 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
   color_map_.reset(new IronbowColorMap());
   color_map_->setMinValue(thermal_min_value);
   color_map_->setMaxValue(thermal_max_value);
+
+  // Set up subscriber.
+  thermal_image_sub_ = nh_private_.subscribe(
+      "thermal_image", 1, &ThermalServer::thermalImageCallback, this);
 }
 
 void ThermalServer::updateMesh() {
@@ -65,8 +65,11 @@ void ThermalServer::thermalImageCallback(
     const sensor_msgs::ImageConstPtr& image) {
   // Look up transform first...
   Transformation T_G_C;
-  transformer_.lookupTransform(image->header.frame_id, world_frame_,
-                               image->header.stamp, &T_G_C);
+  if (!transformer_.lookupTransform(image->header.frame_id, world_frame_,
+                                    image->header.stamp, &T_G_C)) {
+    ROS_WARN_THROTTLE(10, "Failed to look up thermal transform!");
+    return;
+  }
 
   cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image);
 
