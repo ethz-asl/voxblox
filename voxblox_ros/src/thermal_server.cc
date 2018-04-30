@@ -12,6 +12,11 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
   nh_private_.param("thermal_focal_length", focal_length_px_, focal_length_px_);
   nh_private_.param("subsample_factor", subsample_factor_, subsample_factor_);
 
+  float thermal_min_value = 10.0;
+  float thermal_max_value = 40.0;
+  nh_private_.param("thermal_min_value", thermal_min_value, thermal_min_value);
+  nh_private_.param("thermal_max_value", thermal_max_value, thermal_max_value);
+
   // Publishers for output.
   thermal_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
@@ -30,8 +35,8 @@ ThermalServer::ThermalServer(const ros::NodeHandle& nh,
       new ThermalIntegrator(tsdf_map_->getTsdfLayer(), thermal_layer_.get()));
 
   color_map_.reset(new IronbowColorMap());
-  color_map_->setMinValue(15.0);
-  color_map_->setMaxValue(38.0);
+  color_map_->setMinValue(thermal_min_value);
+  color_map_->setMaxValue(thermal_max_value);
 }
 
 void ThermalServer::updateMesh() {
