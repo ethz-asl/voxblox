@@ -63,6 +63,8 @@ void ThermalServer::publishPointclouds() {
 
 void ThermalServer::thermalImageCallback(
     const sensor_msgs::ImageConstPtr& image) {
+  CHECK(thermal_layer_);
+  CHECK(thermal_integrator_);
   // Look up transform first...
   Transformation T_G_C;
   if (!transformer_.lookupTransform(image->header.frame_id, world_frame_,
@@ -73,6 +75,8 @@ void ThermalServer::thermalImageCallback(
 
   cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image);
 
+  CHECK(cv_ptr);
+
   size_t num_pixels =
       cv_ptr->image.rows * cv_ptr->image.cols / subsample_factor_;
 
@@ -81,9 +85,9 @@ void ThermalServer::thermalImageCallback(
 
   // Pre-allocate the bearing vectors and temperatures.
   Pointcloud bearing_vectors;
-  bearing_vectors.resize(num_pixels);
+  bearing_vectors.reserve(num_pixels + 1);
   std::vector<float> temperatures;
-  temperatures.resize(num_pixels);
+  temperatures.reserve(num_pixels + 1);
 
   size_t k = 0;
   size_t m = 0;
@@ -91,10 +95,10 @@ void ThermalServer::thermalImageCallback(
     const float* image_row = cv_ptr->image.ptr<float>(i);
     for (int j = 0; j < cv_ptr->image.cols; j++) {
       if (m % subsample_factor_ == 0) {
-        bearing_vectors[k] =
+        bearing_vectors.push_back(
             T_G_C.getRotation().toImplementation() *
-            Point(j - half_col, i - half_row, focal_length_px_).normalized();
-        temperatures[k] = image_row[j];
+            Point(j - half_col, i - half_row, focal_length_px_).normalized());
+        temperatures.push_back(image_row[j]);
         k++;
       }
       m++;
