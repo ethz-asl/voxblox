@@ -357,7 +357,7 @@ void MergedTsdfIntegrator::integrateVoxel(
 
   for (const size_t pt_idx : kv.second) {
     const Point& point_C = points_C[pt_idx];
-    const Color& color = colors[pt_idx]
+    const Color& color = colors[pt_idx];
 
     const float point_weight = getVoxelWeight(point_C);
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
