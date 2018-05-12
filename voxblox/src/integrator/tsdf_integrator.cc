@@ -26,7 +26,7 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
     LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
     config_.integrator_threads = 1;
   }
-  // clearing rays have no utility if voxel_carving is disabled
+  // clearing  have no utility if voxel_carving is disabled
   if (config_.allow_clear && !config_.voxel_carving_enabled) {
     config_.allow_clear = false;
   }
@@ -280,6 +280,7 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
+                                               const Labels& labels,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
   CHECK_EQ(points_C.size(), colors.size());
@@ -296,12 +297,12 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   bundleRays(T_G_C, points_C, freespace_points, &index_getter, &voxel_map,
              &clear_map);
 
-  integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, false,
+  integrateRays(T_G_C, points_C, colors, labels, config_.enable_anti_grazing, false,
                 voxel_map, clear_map);
 
   timing::Timer clear_timer("integrate/clear");
 
-  integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, true,
+  integrateRays(T_G_C, points_C, colors, labels, config_.enable_anti_grazing, true,
                 voxel_map, clear_map);
 
   clear_timer.Stop();
@@ -343,7 +344,7 @@ void MergedTsdfIntegrator::bundleRays(
 
 void MergedTsdfIntegrator::integrateVoxel(
     const Transformation& T_G_C, const Pointcloud& points_C,
-    const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
+    const Colors& colors, const Labels& labels, bool enable_anti_grazing, bool clearing_ray,
     const std::pair<AnyIndex, AlignedVector<size_t>>& kv,
     const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map) {
   if (kv.second.empty()) {
@@ -358,13 +359,14 @@ void MergedTsdfIntegrator::integrateVoxel(
   for (const size_t pt_idx : kv.second) {
     const Point& point_C = points_C[pt_idx];
     const Color& color = colors[pt_idx];
+    const Labels& label = label[pt_idx];
 
     const float point_weight = getVoxelWeight(point_C);
-    merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
-                     (merged_weight + point_weight);
+    merged_point_C = (merged_point_C * merged_weight + point_C * point_weight * label) /
+                     (merged_weight + point_weight * label);
     merged_color =
         Color::blendTwoColors(merged_color, merged_weight, color, point_weight);
-    merged_weight += point_weight;
+    merged_weight += point_weight * label;
 
     // only take first point when clearing
     if (clearing_ray) {
@@ -401,7 +403,7 @@ void MergedTsdfIntegrator::integrateVoxel(
 
 void MergedTsdfIntegrator::integrateVoxels(
     const Transformation& T_G_C, const Pointcloud& points_C,
-    const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
+    const Colors& colors, const Labels& labels, bool enable_anti_grazing, bool clearing_ray,
     const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
     const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
     size_t thread_idx) {
@@ -417,7 +419,7 @@ void MergedTsdfIntegrator::integrateVoxels(
 
   for (size_t i = 0; i < map_size; ++i) {
     if (((i + thread_idx + 1) % config_.integrator_threads) == 0) {
-      integrateVoxel(T_G_C, points_C, colors, enable_anti_grazing, clearing_ray,
+      integrateVoxel(T_G_C, points_C, colors, labels enable_anti_grazing, clearing_ray,
                      *it, voxel_map);
     }
     ++it;
@@ -426,19 +428,19 @@ void MergedTsdfIntegrator::integrateVoxels(
 
 void MergedTsdfIntegrator::integrateRays(
     const Transformation& T_G_C, const Pointcloud& points_C,
-    const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
+    const Colors& colors, const Labels& labels, bool enable_anti_grazing, bool clearing_ray,
     const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
     const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map) {
   // if only 1 thread just do function call, otherwise spawn threads
   if (config_.integrator_threads == 1) {
     constexpr size_t thread_idx = 0;
-    integrateVoxels(T_G_C, points_C, colors, enable_anti_grazing, clearing_ray,
+    integrateVoxels(T_G_C, points_C, colors, labels, enable_anti_grazing, clearing_ray,
                     voxel_map, clear_map, thread_idx);
   } else {
     std::list<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(
-          &MergedTsdfIntegrator::integrateVoxels, this, T_G_C, points_C, colors,
+          &MergedTsdfIntegrator::integrateVoxels, this, T_G_C, points_C, colors, labels,
           enable_anti_grazing, clearing_ray, voxel_map, clear_map, i);
     }
 

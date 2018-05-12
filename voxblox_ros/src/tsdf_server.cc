@@ -173,7 +173,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
       }
     }
 
-    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+    pcl::PointCloud<pcl::PointXYZRGBL> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
 
@@ -181,8 +181,10 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
     Pointcloud points_C;
     Colors colors;
+    Labels labels;
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
+    labels.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
       if (!std::isfinite(pointcloud_pcl.points[i].x) ||
           !std::isfinite(pointcloud_pcl.points[i].y) ||
@@ -196,6 +198,8 @@ void TsdfServer::processPointCloudMessageAndInsert(
       colors.push_back(
           Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
                 pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+
+      labels.push_back(Label(pointcloud_pcl.points[i].label));
     }
 
     ptcloud_timer.Stop();
@@ -204,7 +208,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
       ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
     }
     ros::WallTime start = ros::WallTime::now();
-    integratePointcloud(T_G_C, points_C, colors, is_freespace_pointcloud);
+    integratePointcloud(T_G_C, points_C, colors, labels, is_freespace_pointcloud);
     ros::WallTime end = ros::WallTime::now();
     if (verbose_) {
       ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
@@ -261,8 +265,9 @@ void TsdfServer::insertFreespacePointcloud(
 void TsdfServer::integratePointcloud(const Transformation& T_G_C,
                                      const Pointcloud& ptcloud_C,
                                      const Colors& colors,
+                                     const Labels& labels,
                                      const bool is_freespace_pointcloud) {
-  tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors,
+  tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors, labels,
                                         is_freespace_pointcloud);
 }
 
@@ -278,7 +283,7 @@ void TsdfServer::publishAllUpdatedTsdfVoxels() {
 
 void TsdfServer::publishTsdfSurfacePoints() {
   // Create a pointcloud with distance = intensity.
-  pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+  pcl::PointCloud<pcl::PointXYZRGBL> pointcloud;
   const float surface_distance_thresh =
       tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
   createSurfacePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(),
