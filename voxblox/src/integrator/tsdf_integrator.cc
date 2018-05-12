@@ -345,8 +345,7 @@ void MergedTsdfIntegrator::integrateVoxel(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
     const std::pair<AnyIndex, AlignedVector<size_t>>& kv,
-    const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map
-    const Labels& labels_C) {
+    const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map) {
   if (kv.second.empty()) {
     return;
   }
@@ -359,14 +358,13 @@ void MergedTsdfIntegrator::integrateVoxel(
   for (const size_t pt_idx : kv.second) {
     const Point& point_C = points_C[pt_idx];
     const Color& color = colors[pt_idx]
-    const Label& label_C = labels_C[pt_idx] ;
 
     const float point_weight = getVoxelWeight(point_C);
-    merged_point_C = (merged_point_C * merged_weight + point_C * point_weight * label_C) /
-                     (merged_weight + point_weight * label_C);
+    merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
+                     (merged_weight + point_weight);
     merged_color =
         Color::blendTwoColors(merged_color, merged_weight, color, point_weight);
-    merged_weight += point_weight * label_C;
+    merged_weight += point_weight;
 
     // only take first point when clearing
     if (clearing_ray) {
