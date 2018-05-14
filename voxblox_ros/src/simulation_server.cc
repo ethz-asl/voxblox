@@ -139,7 +139,7 @@ SimulationServer::SimulationServer(
   tsdf_test_mesh_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
       "tsdf_test_mesh", 1, true);
 
-  view_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+  view_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGBL> >(
       "view_ptcloud_pub", 1, true);
 
   // Set random seed to a fixed value.
@@ -204,12 +204,13 @@ void SimulationServer::transformPointcloud(const Transformation& T_N_O,
 void SimulationServer::generateSDF() {
   Pointcloud ptcloud;
   Colors colors;
+  Labels labels;
 
   Point view_origin(0.0, 0.0, 2.0);
   Point view_direction(0.0, 1.0, 0.0);
   view_direction.normalize();
 
-  pcl::PointCloud<pcl::PointXYZRGB> ptcloud_pcl;
+  pcl::PointCloud<pcl::PointXYZRGBL> ptcloud_pcl;
 
   for (int i = 0; i < num_viewpoints_; ++i) {
     if (!generatePlausibleViewpoint(min_dist_, &view_origin, &view_direction)) {
@@ -221,10 +222,11 @@ void SimulationServer::generateSDF() {
 
     ptcloud.clear();
     colors.clear();
+    labels.clear();
 
     world_.getPointcloudFromViewpoint(view_origin, view_direction,
                                       depth_camera_resolution_, fov_h_rad_,
-                                      max_dist_, &ptcloud, &colors);
+                                      max_dist_, &ptcloud, &colors, &labels);
 
     // Get T_G_C from ray origin and ray direction.
     Transformation T_G_C(view_origin,
@@ -236,7 +238,7 @@ void SimulationServer::generateSDF() {
     transformPointcloud(T_G_C.inverse(), ptcloud, &ptcloud_C);
 
     // Put into the real map.
-    tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors);
+    tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors, labels);
 
     if (generate_occupancy_) {
       occ_integrator_->integratePointCloud(T_G_C, ptcloud_C);
@@ -247,10 +249,10 @@ void SimulationServer::generateSDF() {
       esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
     }
 
-    // Convert to a XYZRGB pointcloud.
+    // Convert to a XYZRGBL pointcloud.
     if (visualize_) {
       ptcloud_pcl.header.frame_id = world_frame_;
-      pcl::PointXYZRGB point;
+      pcl::PointXYZRGBL point;
       point.x = view_origin.x();
       point.y = view_origin.y();
       point.z = view_origin.z();

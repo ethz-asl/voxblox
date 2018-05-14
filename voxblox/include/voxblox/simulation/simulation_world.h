@@ -42,7 +42,7 @@ class SimulationWorld {
                                   const Eigen::Vector2i& camera_res,
                                   FloatingPoint fov_h_rad,
                                   FloatingPoint max_dist, Pointcloud* ptcloud,
-                                  Colors* colors) const;
+                                  Colors* colors, Labels* labels) const;
   // Same thing, but also adds a noise in the *distance* of the measurement,
   // given by noise_sigma (Gaussian noise). No noise in the bearing.
   void getNoisyPointcloudFromViewpoint(const Point& view_origin,
@@ -51,7 +51,7 @@ class SimulationWorld {
                                        FloatingPoint fov_h_rad,
                                        FloatingPoint max_dist,
                                        FloatingPoint noise_sigma,
-                                       Pointcloud* ptcloud, Colors* colors);
+                                       Pointcloud* ptcloud, Colors* colors, Labels* labels);
 
   // === Computing ground truth SDFs ===
   template <typename VoxelType>

@@ -217,6 +217,7 @@ float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
 void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
+                                               const Labels& labels,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
   CHECK_EQ(points_C.size(), colors.size());
@@ -277,7 +278,7 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
   }
 }
 
-void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
+  void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
                                                const Labels& labels,
@@ -359,7 +360,8 @@ void MergedTsdfIntegrator::integrateVoxel(
   for (const size_t pt_idx : kv.second) {
     const Point& point_C = points_C[pt_idx];
     const Color& color = colors[pt_idx];
-    const Labels& label = label[pt_idx];
+    //const Label& label = labels[pt_idx];
+    const Label& label = 1;
 
     const float point_weight = getVoxelWeight(point_C);
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight * label) /
@@ -419,7 +421,7 @@ void MergedTsdfIntegrator::integrateVoxels(
 
   for (size_t i = 0; i < map_size; ++i) {
     if (((i + thread_idx + 1) % config_.integrator_threads) == 0) {
-      integrateVoxel(T_G_C, points_C, colors, labels enable_anti_grazing, clearing_ray,
+      integrateVoxel(T_G_C, points_C, colors, labels, enable_anti_grazing, clearing_ray,
                      *it, voxel_map);
     }
     ++it;
@@ -524,6 +526,7 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
+                                             const Labels& labels,
                                              const bool freespace_points) {
   timing::Timer integrate_timer("integrate");
   CHECK_EQ(points_C.size(), colors.size());

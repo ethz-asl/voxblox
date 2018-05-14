@@ -142,7 +142,7 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
       : TsdfIntegratorBase(config, layer) {}
 
   void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors,
+                           const Pointcloud& points_C, const Colors& colors, const Labels& labels,
                            const bool freespace_points = false);
 
   void integrateFunction(const Transformation& T_G_C,
@@ -159,7 +159,7 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       : TsdfIntegratorBase(config, layer) {}
 
   void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors,
+                           const Pointcloud& points_C, const Colors& colors, const Labels& labels,
                            const bool freespace_points = false);
 
  protected:

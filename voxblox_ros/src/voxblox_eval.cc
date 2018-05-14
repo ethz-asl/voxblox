@@ -65,7 +65,7 @@ class VoxbloxEvaluator {
 
   // Core data to compare.
   std::shared_ptr<Layer<TsdfVoxel>> tsdf_layer_;
-  pcl::PointCloud<pcl::PointXYZRGB> gt_ptcloud_;
+  pcl::PointCloud<pcl::PointXYZRGBL> gt_ptcloud_;
 
   // Interpolator to get the distance at the exact point in the GT.
   Interpolator<TsdfVoxel>::Ptr interpolator_;
@@ -124,7 +124,7 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   if (visualize_) {
     mesh_pub_ =
         nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
-    gt_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
+    gt_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGBL>>(
         "gt_ptcloud", 1, true);
 
     std::string color_mode("color");
@@ -164,7 +164,7 @@ void VoxbloxEvaluator::evaluate() {
 
   double mse = 0.0;
 
-  for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it =
+  for (pcl::PointCloud<pcl::PointXYZRGBL>::const_iterator it =
            gt_ptcloud_.begin();
        it != gt_ptcloud_.end(); ++it) {
     Point point(it->x, it->y, it->z);

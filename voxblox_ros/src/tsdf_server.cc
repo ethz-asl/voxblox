@@ -70,7 +70,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   // Advertise topics.
   mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
   surface_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGBL> >(
           "surface_pointcloud", 1, true);
   tsdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
@@ -199,7 +199,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
           Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
                 pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
 
-      labels.push_back(Label(pointcloud_pcl.points[i].label));
+      labels.push_back(pointcloud_pcl.points[i].label);
     }
 
     ptcloud_timer.Stop();

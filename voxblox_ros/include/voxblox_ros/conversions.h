@@ -38,13 +38,13 @@ inline void colorMsgToVoxblox(const std_msgs::ColorRGBA& color_msg,
   color->a = static_cast<uint8_t>(color_msg.a * 255.0);
 }
 
-inline void pointcloudToPclXYZRGB(
+inline void pointcloudToPclXYZRGBL(
     const Pointcloud& ptcloud, const Colors& colors,
-    pcl::PointCloud<pcl::PointXYZRGB>* ptcloud_pcl) {
+    pcl::PointCloud<pcl::PointXYZRGBL>* ptcloud_pcl) {
   ptcloud_pcl->clear();
   ptcloud_pcl->reserve(ptcloud.size());
   for (size_t i = 0; i < ptcloud.size(); ++i) {
-    pcl::PointXYZRGB point;
+    pcl::PointXYZRGBL point;
     point.x = ptcloud[i].x();
     point.y = ptcloud[i].y();
     point.z = ptcloud[i].z();
