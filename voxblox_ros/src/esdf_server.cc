@@ -208,6 +208,11 @@ void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
   if (clear_sphere_for_planning_) {
     esdf_integrator_->addNewRobotPosition(T_G_C.getPosition());
   }
+
+  timing::Timer block_remove_timer("remove_distant_blocks");
+  esdf_map_->getEsdfLayerPtr()->removeDistantBlocks(
+      T_G_C.getPosition(), max_block_distance_from_body_);
+  block_remove_timer.Stop();
 }
 
 void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {

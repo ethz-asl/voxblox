@@ -31,6 +31,14 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
     const voxblox::AnyIndexHashMapType<
         Ogre::ManualObject*>::type::const_iterator it = object_map_.find(index);
     if (it != object_map_.end()) {
+
+      //delete empty mesh blocks
+      if(mesh_block.triangles.size() == 0){
+        scene_manager_->destroyManualObject(it->second);
+        object_map_.erase(it);
+        continue;
+      }
+
       ogre_object = it->second;
       ogre_object->clear();
     } else {
