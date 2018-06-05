@@ -76,7 +76,6 @@ class Block {
   // function above.
   inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Point& coords) const {
-    const IndexElement max_value = voxels_per_side_ - 1;
     VoxelIndex voxel_index =
         getGridIndexFromPoint(coords - origin_, voxel_size_inv_);
     return voxel_index;
