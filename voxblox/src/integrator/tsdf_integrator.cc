@@ -360,8 +360,8 @@ void MergedTsdfIntegrator::integrateVoxel(
   for (const size_t pt_idx : kv.second) {
     const Point& point_C = points_C[pt_idx];
     const Color& color = colors[pt_idx];
-    const Label& label = labels[pt_idx];
-    //const Label& label = 1.0;
+    //const Label& label = labels[pt_idx];
+    const Label& label = 1;
 
     // Just do it here
     const float label_weight = label == 1 ? 1.0 : config_.prediction_weight;
