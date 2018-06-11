@@ -1,9 +1,9 @@
 <launch>
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="/path/to/your/file"/>
-  <arg name="voxel_size" default="0.05"/>
+  <arg name="bag_file" default="/home/dieselkopf/data/tsdf/data.bag"/>
+  <arg name="voxel_size" default="0.20"/>
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args="-r 1.0 -s 0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args="-r 0.07 -s 0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
    <node name="voxblox_node" pkg="voxblox_ros" type="tsdf_server" output="screen" args="-alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="/camera/depth_registered/points"/>
@@ -14,10 +14,11 @@
     <param name="use_tf_transforms" value="false" />
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="min_time_between_msgs_sec" value="0.0" />
-    <param name="method" value="fast" />
+    <param name="method" value="merged" />
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="true" />
     <param name="verbose" value="true" />
+       <param name="pointcloud_queue_size" value="10" />
     <remap from="transform" to="/kinect/vrpn_client/estimated_transform" />
     <rosparam file="$(find voxblox_ros)/cfg/cow_and_lady.yaml"/>
     <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon cow).ply" />

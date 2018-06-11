@@ -43,7 +43,7 @@ class EsdfIntegrator {
 
     // For marking unknown space around a robot as free or occupied, these are
     // the radiuses used around each robot position.
-    FloatingPoint clear_sphere_radius = 1.5;
+    FloatingPoint clear_sphere_radius = 0.75;
     FloatingPoint occupied_sphere_radius = 5.0;
   };
 

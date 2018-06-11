@@ -3,12 +3,12 @@
 
   <arg name="play_bag" default="true" />
   <!-- <arg name="bag_file" default="/Users/helen/data/euroc_datasets/V2_01_easy.bag"/> -->
-  <arg name="bag_file" default="/Users/helen/data/euroc_datasets/euroc_v1_01_easy.bag"/>
+  <arg name="bag_file" default="/home/dieselkopf/data/tsdf/MH_01_easy.bag"/>
 
   <arg name="voxel_size" default="0.05"/>
   <arg name="generate_esdf" default="false" />
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.05 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
 
    <!-- Run stereo_dense_reconstruction_node-->

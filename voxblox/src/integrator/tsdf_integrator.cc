@@ -360,15 +360,15 @@ void MergedTsdfIntegrator::integrateVoxel(
   for (const size_t pt_idx : kv.second) {
     const Point& point_C = points_C[pt_idx];
     const Color& color = colors[pt_idx];
-    //const Label& label = labels[pt_idx];
-    const Label& label = 1;
+    const Label& label = labels[pt_idx];
+    //const Label& label = 1.0;
 
     const float point_weight = getVoxelWeight(point_C);
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight * label) /
                      (merged_weight + point_weight * label);
     merged_color =
         Color::blendTwoColors(merged_color, merged_weight, color, point_weight);
-    merged_weight += point_weight * label;
+    merged_weight += (point_weight * label);
 
     // only take first point when clearing
     if (clearing_ray) {
