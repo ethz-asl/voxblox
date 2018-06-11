@@ -48,7 +48,7 @@ template <typename VoxelType>
 void createColorPointcloudFromLayer(
     const Layer<VoxelType>& layer,
     const ShouldVisualizeVoxelColorFunctionType<VoxelType>& vis_function,
-    pcl::PointCloud<pcl::PointXYZRGBL>* pointcloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   pointcloud->clear();
   BlockIndexList blocks;
@@ -70,7 +70,7 @@ void createColorPointcloudFromLayer(
       Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
       if (vis_function(block.getVoxelByLinearIndex(linear_index), coord,
                        &color)) {
-        pcl::PointXYZRGBL point;
+        pcl::PointXYZRGB point;
         point.x = coord.x();
         point.y = coord.y();
         point.z = coord.z();
@@ -280,7 +280,7 @@ inline bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
 // The RGB color is determined by the color of the TSDF voxel.
 inline void createSurfacePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
-    pcl::PointCloud<pcl::PointXYZRGBL>* pointcloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer,
@@ -293,7 +293,7 @@ inline void createSurfacePointcloudFromTsdfLayer(
 // The RGB color is determined by the color of the TSDF voxel.
 inline void createPointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer,
-    pcl::PointCloud<pcl::PointXYZRGBL>* pointcloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(layer, &visualizeTsdfVoxels,
                                             pointcloud);

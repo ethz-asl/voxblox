@@ -139,7 +139,7 @@ SimulationServer::SimulationServer(
   tsdf_test_mesh_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
       "tsdf_test_mesh", 1, true);
 
-  view_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGBL> >(
+  view_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
       "view_ptcloud_pub", 1, true);
 
   // Set random seed to a fixed value.
@@ -210,7 +210,7 @@ void SimulationServer::generateSDF() {
   Point view_direction(0.0, 1.0, 0.0);
   view_direction.normalize();
 
-  pcl::PointCloud<pcl::PointXYZRGBL> ptcloud_pcl;
+  pcl::PointCloud<pcl::PointXYZRGB> ptcloud_pcl;
 
   for (int i = 0; i < num_viewpoints_; ++i) {
     if (!generatePlausibleViewpoint(min_dist_, &view_origin, &view_direction)) {
@@ -226,7 +226,7 @@ void SimulationServer::generateSDF() {
 
     world_.getPointcloudFromViewpoint(view_origin, view_direction,
                                       depth_camera_resolution_, fov_h_rad_,
-                                      max_dist_, &ptcloud, &colors, &labels);
+                                      max_dist_, &ptcloud, &colors);
 
     // Get T_G_C from ray origin and ray direction.
     Transformation T_G_C(view_origin,
@@ -237,7 +237,10 @@ void SimulationServer::generateSDF() {
     Pointcloud ptcloud_C;
     transformPointcloud(T_G_C.inverse(), ptcloud, &ptcloud_C);
 
-    // Put into the real map.
+    // Set all labels to 1
+    for (int i = 0; i < colors.size(); i++) {
+      labels.push_back(1);
+    }
     tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors, labels);
 
     if (generate_occupancy_) {
@@ -249,10 +252,10 @@ void SimulationServer::generateSDF() {
       esdf_integrator_->updateFromTsdfLayer(clear_updated_flag);
     }
 
-    // Convert to a XYZRGBL pointcloud.
+    // Convert to a XYZRGB pointcloud.
     if (visualize_) {
       ptcloud_pcl.header.frame_id = world_frame_;
-      pcl::PointXYZRGBL point;
+      pcl::PointXYZRGB point;
       point.x = view_origin.x();
       point.y = view_origin.y();
       point.z = view_origin.z();

@@ -106,6 +106,9 @@ class TsdfServer {
   // frame.
   std::string world_frame_;
 
+  // Delete blocks that are far from the system to help manage memory
+  double max_block_distance_from_body_;
+
   // Pointcloud visualization settings.
   double slice_level_;
 

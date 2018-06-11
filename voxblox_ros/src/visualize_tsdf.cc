@@ -32,7 +32,7 @@ class SimpleTsdfVisualizer {
     VLOG(1) << "\tSetting up ROS publishers...";
 
     surface_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGBL>>(
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
             "tsdf_voxels_near_surface", 1, true);
 
     tsdf_pointcloud_pub_ =
@@ -42,7 +42,7 @@ class SimpleTsdfVisualizer {
     mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
 
     mesh_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGBL>>(
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
             "mesh_as_pointcloud", 1, true);
 
     mesh_pcl_mesh_pub_ =
@@ -150,7 +150,7 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
     mesh_pub_.publish(mesh_msg);
 
     // Output as point cloud.
-    pcl::PointCloud<pcl::PointXYZRGBL> pointcloud;
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
     fillPointcloudWithMesh(mesh_layer, tsdf_mesh_color_mode_, &pointcloud);
     pointcloud.header.frame_id = tsdf_world_frame_;
     mesh_pointcloud_pub_.publish(pointcloud);
