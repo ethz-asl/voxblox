@@ -18,6 +18,9 @@ void TsdfServer::getServerConfigFromRosParam(
                    min_time_between_msgs_sec);
   min_time_between_msgs_.fromSec(min_time_between_msgs_sec);
 
+  nh_private.param("max_block_distance_from_body",
+                   max_block_distance_from_body_,
+                   max_block_distance_from_body_);
   nh_private.param("slice_level", slice_level_, slice_level_);
   nh_private.param("world_frame", world_frame_, world_frame_);
   nh_private.param("publish_tsdf_info", publish_tsdf_info_, publish_tsdf_info_);
@@ -58,6 +61,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       verbose_(true),
       world_frame_("world"),
+      max_block_distance_from_body_(std::numeric_limits<FloatingPoint>::max()),
       slice_level_(0.5),
       use_freespace_pointcloud_(false),
       publish_tsdf_info_(false),
@@ -215,6 +219,13 @@ void TsdfServer::processPointCloudMessageAndInsert(
                (end - start).toSec(),
                tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
     }
+
+    timing::Timer block_remove_timer("remove_distant_blocks");
+    tsdf_map_->getTsdfLayerPtr()->removeDistantBlocks(
+        T_G_C.getPosition(), max_block_distance_from_body_);
+    mesh_layer_->clearDistantMesh(T_G_C.getPosition(),
+                                 max_block_distance_from_body_);
+    block_remove_timer.Stop();
 
     // Callback for inheriting classes.
     newPoseCallback(T_G_C);

@@ -125,8 +125,8 @@ class Layer {
                    voxels_per_side_, voxel_size_,
                    getOriginPointFromGridIndex(index, block_size_)));
 
-    DCHECK(insert_status.second) << "Block already exists when allocating at "
-                                 << index.transpose();
+    DCHECK(insert_status.second)
+        << "Block already exists when allocating at " << index.transpose();
 
     DCHECK(insert_status.first->second);
     DCHECK_EQ(insert_status.first->first, index);
@@ -154,6 +154,21 @@ class Layer {
 
   void removeBlockByCoordinates(const Point& coords) {
     block_map_.erase(computeBlockIndexFromCoordinates(coords));
+  }
+
+  void removeDistantBlocks(const Point& center,
+                           const double max_distance) {
+    AlignedVector<BlockIndex> needs_erasing;
+    for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
+         block_map_) {
+      if ((kv.second->origin() - center).squaredNorm() >
+          max_distance * max_distance) {
+        needs_erasing.push_back(kv.first);
+      }
+    }
+    for (const BlockIndex& index : needs_erasing) {
+      block_map_.erase(index);
+    }
   }
 
   void getAllAllocatedBlocks(BlockIndexList* blocks) const {

@@ -197,6 +197,7 @@ A summary of the user setable tsdf_server and esdf_server parameters:
 | `min_time_between_msgs_sec` |  Minimum time to wait after integrating a message before accepting a new one. | 0.0 |
 | `pointcloud_queue_size` | The size of the queue used to subscribe to pointclouds. | 1 |
 | `verbose` | Prints additional debug and timing information. | true |
+| `max_block_distance_from_body` | Blocks that are more than this distance from the latest robot pose are deleted, saving memory | 3.40282e+38 |
 
 
 ### TSDF Integrator Parameters
