@@ -223,7 +223,7 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
 
 inline void fillPointcloudWithMesh(
     const MeshLayer::ConstPtr& mesh_layer, ColorMode color_mode,
-    pcl::PointCloud<pcl::PointXYZRGBL>* pointcloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   pointcloud->clear();
 
@@ -246,7 +246,7 @@ inline void fillPointcloudWithMesh(
     }
 
     for (size_t i = 0u; i < mesh->vertices.size(); i++) {
-      pcl::PointXYZRGBL point;
+      pcl::PointXYZRGB point;
       point.x = mesh->vertices[i].x();
       point.y = mesh->vertices[i].y();
       point.z = mesh->vertices[i].z();

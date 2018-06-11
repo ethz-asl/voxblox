@@ -49,7 +49,7 @@ FloatingPoint SimulationWorld::getDistanceToPoint(
 void SimulationWorld::getPointcloudFromViewpoint(
     const Point& view_origin, const Point& view_direction,
     const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
-    FloatingPoint max_dist, Pointcloud* ptcloud, Colors* colors, Labels* labels) const {
+    FloatingPoint max_dist, Pointcloud* ptcloud, Colors* colors) const {
   // Focal length based on fov.
   const FloatingPoint focal_length =
       camera_res.x() / (2 * tan(fov_h_rad / 2.0));
@@ -100,7 +100,7 @@ void SimulationWorld::getNoisyPointcloudFromViewpoint(
     const Point& view_origin, const Point& view_direction,
     const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
     FloatingPoint max_dist, FloatingPoint noise_sigma, Pointcloud* ptcloud,
-    Colors* colors, Labels* labels) {
+    Colors* colors) {
   // Focal length based on fov.
   const FloatingPoint focal_length =
       camera_res.x() / (2 * tan(fov_h_rad / 2.0));

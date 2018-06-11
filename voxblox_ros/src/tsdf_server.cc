@@ -74,7 +74,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   // Advertise topics.
   mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
   surface_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGBL> >(
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
           "surface_pointcloud", 1, true);
   tsdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
@@ -294,7 +294,7 @@ void TsdfServer::publishAllUpdatedTsdfVoxels() {
 
 void TsdfServer::publishTsdfSurfacePoints() {
   // Create a pointcloud with distance = intensity.
-  pcl::PointCloud<pcl::PointXYZRGBL> pointcloud;
+  pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
   const float surface_distance_thresh =
       tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
   createSurfacePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(),
