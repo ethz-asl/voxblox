@@ -56,6 +56,8 @@ class TsdfIntegratorBase {
     int max_consecutive_ray_collisions = 2;
     int clear_checks_every_n_frames = 1;
     float max_integration_time_s = std::numeric_limits<float>::max();
+
+    float prediction_weight = 0.1f;
   };
 
   TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer);

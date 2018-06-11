@@ -26,7 +26,7 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
     LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
     config_.integrator_threads = 1;
   }
-  // clearing  have no utility if voxel_carving is disabled
+  // clearing has no utility if voxel_carving is disabled
   if (config_.allow_clear && !config_.voxel_carving_enabled) {
     config_.allow_clear = false;
   }
@@ -363,12 +363,14 @@ void MergedTsdfIntegrator::integrateVoxel(
     const Label& label = labels[pt_idx];
     //const Label& label = 1.0;
 
-    const float point_weight = getVoxelWeight(point_C);
-    merged_point_C = (merged_point_C * merged_weight + point_C * point_weight * label) /
-                     (merged_weight + point_weight * label);
+    // Just do it here
+    const float label_weight = label == 1 ? 1.0 : config_.prediction_weight;
+    const float point_weight = getVoxelWeight(point_C) * label_weight;
+    merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
+                     (merged_weight + point_weight);
     merged_color =
         Color::blendTwoColors(merged_color, merged_weight, color, point_weight);
-    merged_weight += (point_weight * label);
+    merged_weight += point_weight;
 
     // only take first point when clearing
     if (clearing_ray) {
