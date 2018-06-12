@@ -99,13 +99,14 @@ class SimpleTsdfVisualizer {
 };
 
 void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
-  ROS_INFO_STREAM(<< "\nTSDF Layer info:\n"
-            << "\tVoxel size:\t\t " << tsdf_layer.voxel_size() << "\n"
-            << "\t# Voxels per side:\t " << tsdf_layer.voxels_per_side() << "\n"
-            << "\tMemory size:\t\t " << tsdf_layer.getMemorySize() / 1024 / 1024
-            << "MB\n"
-            << "\t# Allocated blocks:\t "
-            << tsdf_layer.getNumberOfAllocatedBlocks() << "\n");
+  ROS_INFO_STREAM("\nTSDF Layer info:\n"
+                  << "\tVoxel size:\t\t " << tsdf_layer.voxel_size() << "\n"
+                  << "\t# Voxels per side:\t " << tsdf_layer.voxels_per_side()
+                  << "\n"
+                  << "\tMemory size:\t\t "
+                  << tsdf_layer.getMemorySize() / 1024 / 1024 << "MB\n"
+                  << "\t# Allocated blocks:\t "
+                  << tsdf_layer.getNumberOfAllocatedBlocks() << "\n");
 
   ROS_DEBUG_STREAM("\tVisualize voxels near surface...");
   {
