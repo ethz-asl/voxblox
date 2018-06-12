@@ -29,7 +29,7 @@ class SimpleTsdfVisualizer {
         tsdf_world_frame_("world"),
         tsdf_mesh_color_mode_(ColorMode::kColor),
         tsdf_voxel_ply_output_path_("") {
-    VLOG(1) << "\tSetting up ROS publishers...";
+    ROS_DEBUG_STREAM("\tSetting up ROS publishers...");
 
     surface_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
@@ -48,7 +48,7 @@ class SimpleTsdfVisualizer {
     mesh_pcl_mesh_pub_ =
         nh_private_.advertise<pcl_msgs::PolygonMesh>("mesh_pcl", 1, true);
 
-    VLOG(1) << "\tRetreiving ROS parameters...";
+    ROS_DEBUG_STREAM("\tRetreiving ROS parameters...");
 
     nh_private_.param("tsdf_surface_distance_threshold_factor",
                       tsdf_surface_distance_threshold_factor_,
@@ -72,7 +72,8 @@ class SimpleTsdfVisualizer {
     } else if (color_mode == "gray") {
       tsdf_mesh_color_mode_ = ColorMode::kGray;
     } else {
-      LOG(FATAL) << "Undefined mesh coloring mode: " << color_mode;
+      ROS_FATAL_STREAM("Undefined mesh coloring mode: " << color_mode);
+      ros::shutdown();
     }
 
     ros::spinOnce();
@@ -98,15 +99,15 @@ class SimpleTsdfVisualizer {
 };
 
 void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
-  LOG(INFO) << "\nTSDF Layer info:\n"
+  ROS_INFO_STREAM(<< "\nTSDF Layer info:\n"
             << "\tVoxel size:\t\t " << tsdf_layer.voxel_size() << "\n"
             << "\t# Voxels per side:\t " << tsdf_layer.voxels_per_side() << "\n"
             << "\tMemory size:\t\t " << tsdf_layer.getMemorySize() / 1024 / 1024
             << "MB\n"
             << "\t# Allocated blocks:\t "
-            << tsdf_layer.getNumberOfAllocatedBlocks() << "\n";
+            << tsdf_layer.getNumberOfAllocatedBlocks() << "\n");
 
-  VLOG(1) << "\tVisualize voxels near surface...";
+  ROS_DEBUG_STREAM("\tVisualize voxels near surface...");
   {
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
     const FloatingPoint surface_distance_thresh_m =
@@ -118,7 +119,7 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
     surface_pointcloud_pub_.publish(pointcloud);
   }
 
-  VLOG(1) << "\tVisualize all voxels...";
+  ROS_DEBUG_STREAM("\tVisualize all voxels...");
   {
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
     voxblox::createDistancePointcloudFromTsdfLayer(tsdf_layer, &pointcloud);
@@ -133,7 +134,7 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
     }
   }
 
-  VLOG(1) << "\tVisualize mesh...";
+  ROS_DEBUG_STREAM("\tVisualize mesh...");
   {
     std::shared_ptr<MeshLayer> mesh_layer;
     mesh_layer.reset(new MeshLayer(tsdf_layer.block_size()));
@@ -167,8 +168,9 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
     mesh_pcl_mesh_pub_.publish(mesh_msg);
 
     if (!tsdf_mesh_output_path_.empty()) {
-      voxblox::outputMeshLayerAsPly(tsdf_mesh_output_path_, *mesh_layer);
-      LOG(INFO) << "Output mesh PLY file to " << tsdf_mesh_output_path_;
+      if (voxblox::outputMeshLayerAsPly(tsdf_mesh_output_path_, *mesh_layer)) {
+        ROS_INFO_STREAM("Output mesh PLY file to " << tsdf_mesh_output_path_);
+      }
     }
   }
 }
@@ -186,24 +188,29 @@ int main(int argc, char** argv) {
   std::string tsdf_proto_path = "";
   nh_private.param("tsdf_proto_path", tsdf_proto_path, tsdf_proto_path);
   if (tsdf_proto_path.empty()) {
-    LOG(FATAL) << "Please provide a TSDF proto file to visualize using the ros "
-               << "parameter: tsdf_proto_path";
+    ROS_FATAL_STREAM(
+        "Please provide a TSDF proto file to visualize using the ros "
+        << "parameter: tsdf_proto_path");
+    ros::shutdown();
+    return 1;
   }
-  LOG(INFO) << "Visualize TSDF grid from " << tsdf_proto_path;
+  ROS_INFO_STREAM("Visualize TSDF grid from " << tsdf_proto_path);
 
-  VLOG(1) << "Loading...";
+  ROS_INFO_STREAM("Loading...");
   voxblox::Layer<voxblox::TsdfVoxel>::Ptr tsdf_layer;
   if (!voxblox::io::LoadLayer<voxblox::TsdfVoxel>(tsdf_proto_path,
                                                   &tsdf_layer)) {
-    LOG(FATAL) << "Unable to load a TSDF grid from: " << tsdf_proto_path;
+    ROS_FATAL_STREAM("Unable to load a TSDF grid from: " << tsdf_proto_path);
+    ros::shutdown();
+    return 1;
   }
   CHECK(tsdf_layer);
-  VLOG(1) << "Done.";
+  ROS_INFO_STREAM("Done.");
 
-  VLOG(1) << "Visualizing...";
+  ROS_INFO_STREAM("Visualizing...");
   voxblox::SimpleTsdfVisualizer visualizer(nh_private);
   visualizer.run(*tsdf_layer);
-  VLOG(1) << "Done.";
+  ROS_INFO_STREAM("Done.");
 
   ros::spin();
 
