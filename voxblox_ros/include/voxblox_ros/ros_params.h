@@ -69,6 +69,9 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
                    integrator_config.max_integration_time_s);
   nh_private.param("anti_grazing", integrator_config.enable_anti_grazing,
                    integrator_config.enable_anti_grazing);
+  nh_private.param("prediction_weight",
+                   integrator_config.prediction_weight,
+                   integrator_config.prediction_weight);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
