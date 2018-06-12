@@ -29,16 +29,36 @@ struct VoxelEvaluationDetails {
   size_t num_overlapping_voxels = 0u;
   size_t num_non_overlapping_voxels = 0u;
 
+  size_t num_observed_voxels_layer_gt = 0u;
+  size_t num_observed_voxels_layer_test = 0u;
+
+  // These values rely on the threshold below. Voxels that have a distance to
+  // the surface that is larger than this factor x voxel size are counted as
+  // free space.
+  static constexpr float kFreeSpaceFactor = 1.0;
+
+  size_t num_erroneous_occupied_voxels = 0u;
+  size_t num_erroneous_free_voxels = 0u;
+
   std::string toString() const {
     std::stringstream ss;
     ss << "\n\n======= Layer Evaluation Results =======\n"
-       << " num evaluated voxels:       " << num_evaluated_voxels << "\n"
-       << " num overlapping voxels:     " << num_overlapping_voxels << "\n"
-       << " num non-overlapping voxels: " << num_non_overlapping_voxels << "\n"
-       << " num ignored voxels:         " << num_ignored_voxels << "\n"
-       << " min error:                  " << min_error << "\n"
-       << " max error:                  " << max_error << "\n"
-       << " RMSE:                       " << rmse << "\n"
+       << " num evaluated voxels:           " << num_evaluated_voxels << "\n"
+       << " num overlapping voxels:         " << num_overlapping_voxels << "\n"
+       << " num non-overlapping voxels:     " << num_non_overlapping_voxels
+       << "\n"
+       << " num ignored voxels:             " << num_ignored_voxels << "\n"
+       << " num observed voxels layer gt:   " << num_observed_voxels_layer_gt
+       << "\n"
+       << " num observed voxels layer test: " << num_observed_voxels_layer_test
+       << "\n"
+       << " num erroneous occupied voxels:  " << num_erroneous_occupied_voxels
+       << "\n"
+       << " num erroneous free voxels:      " << num_erroneous_free_voxels
+       << "\n"
+       << " min error:                      " << min_error << "\n"
+       << " max error:                      " << max_error << "\n"
+       << " RMSE:                           " << rmse << "\n"
        << "========================================\n";
     return ss.str();
   }
