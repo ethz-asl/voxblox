@@ -56,6 +56,8 @@ class SimpleTsdfVisualizer {
     nh_private_.param("tsdf_world_frame", tsdf_world_frame_, tsdf_world_frame_);
     nh_private_.param("tsdf_voxel_ply_output_path", tsdf_voxel_ply_output_path_,
                       tsdf_voxel_ply_output_path_);
+    nh_private_.param("tsdf_mesh_output_path", tsdf_mesh_output_path_,
+                      tsdf_mesh_output_path_);
 
     std::string color_mode = "color";
     nh_private_.param("tsdf_mesh_color_mode", color_mode, color_mode);
@@ -92,6 +94,7 @@ class SimpleTsdfVisualizer {
   std::string tsdf_world_frame_;
   ColorMode tsdf_mesh_color_mode_;
   std::string tsdf_voxel_ply_output_path_;
+  std::string tsdf_mesh_output_path_;
 };
 
 void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
@@ -162,6 +165,11 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
     pcl_conversions::fromPCL(polygon_mesh, pcl_mesh_msg);
     mesh_msg.header.stamp = ros::Time::now();
     mesh_pcl_mesh_pub_.publish(mesh_msg);
+
+    if (!tsdf_mesh_output_path_.empty()) {
+      voxblox::outputMeshLayerAsPly(tsdf_mesh_output_path_, *mesh_layer);
+      LOG(INFO) << "Output mesh PLY file to " << tsdf_mesh_output_path_;
+    }
   }
 }
 
