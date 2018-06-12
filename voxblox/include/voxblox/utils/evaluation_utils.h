@@ -10,8 +10,6 @@
 namespace voxblox {
 namespace utils {
 
-enum class VoxelEvaluationResult { kNoOverlap, kIgnored, kEvaluated };
-
 enum class VoxelEvaluationMode {
   kEvaluateAllVoxels,
   kIgnoreErrorBehindTestSurface,
@@ -29,25 +27,47 @@ struct VoxelEvaluationDetails {
   size_t num_overlapping_voxels = 0u;
   size_t num_non_overlapping_voxels = 0u;
 
+  size_t num_observed_voxels_layer_gt = 0u;
+  size_t num_observed_voxels_layer_test = 0u;
+
+  // These values rely on the threshold below. Voxels that have a distance to
+  // the surface that is larger than this factor x voxel size are counted as
+  // free space.
+  static constexpr float kFreeSpaceThresholdFactor = 1.0;
+  float free_space_threshold = 0.0;
+
+  size_t num_erroneous_occupied_voxels = 0u;
+  size_t num_erroneous_free_voxels = 0u;
+
   std::string toString() const {
     std::stringstream ss;
     ss << "\n\n======= Layer Evaluation Results =======\n"
-       << " num evaluated voxels:       " << num_evaluated_voxels << "\n"
-       << " num overlapping voxels:     " << num_overlapping_voxels << "\n"
-       << " num non-overlapping voxels: " << num_non_overlapping_voxels << "\n"
-       << " num ignored voxels:         " << num_ignored_voxels << "\n"
-       << " min error:                  " << min_error << "\n"
-       << " max error:                  " << max_error << "\n"
-       << " RMSE:                       " << rmse << "\n"
+       << " num evaluated voxels:           " << num_evaluated_voxels << "\n"
+       << " num overlapping voxels:         " << num_overlapping_voxels << "\n"
+       << " num non-overlapping voxels:     " << num_non_overlapping_voxels
+       << "\n"
+       << " num ignored voxels:             " << num_ignored_voxels << "\n"
+       << " num observed voxels layer gt:   " << num_observed_voxels_layer_gt
+       << "\n"
+       << " num observed voxels layer test: " << num_observed_voxels_layer_test
+       << "\n"
+       << " num erroneous occupied voxels:  " << num_erroneous_occupied_voxels
+       << "\n"
+       << " num erroneous free voxels:      " << num_erroneous_free_voxels
+       << "\n"
+       << " min error:                      " << min_error << "\n"
+       << " max error:                      " << max_error << "\n"
+       << " RMSE:                           " << rmse << "\n"
        << "========================================\n";
     return ss.str();
   }
 };
 
 template <typename VoxelType>
-VoxelEvaluationResult computeVoxelError(
-    const VoxelType& voxel_gt, const VoxelType& voxel_test,
-    const VoxelEvaluationMode evaluation_mode, FloatingPoint* error);
+bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
+                       const VoxelEvaluationMode evaluation_mode,
+                       VoxelEvaluationDetails* eval_details,
+                       FloatingPoint* error);
 
 // Returns true if the voxel has been observed.
 template <typename VoxelType>
@@ -82,6 +102,10 @@ FloatingPoint evaluateLayersRmse(
 
   VoxelEvaluationDetails evaluation_details;
 
+  // Initialize free space threshold based on voxel size.
+  evaluation_details.free_space_threshold =
+      VoxelEvaluationDetails::kFreeSpaceThresholdFactor * layer_gt.voxel_size();
+
   double total_squared_error = 0.0;
 
   for (const BlockIndex& block_index : block_list) {
@@ -108,39 +132,18 @@ FloatingPoint evaluateLayersRmse(
     for (size_t linear_index = 0u; linear_index < num_voxels_per_block;
          ++linear_index) {
       FloatingPoint error = 0.0;
-      const VoxelEvaluationResult result =
-          computeVoxelError(gt_block.getVoxelByLinearIndex(linear_index),
+      if (computeVoxelError(gt_block.getVoxelByLinearIndex(linear_index),
                             test_block.getVoxelByLinearIndex(linear_index),
-                            voxel_evaluation_mode, &error);
+                            voxel_evaluation_mode, &evaluation_details,
+                            &error)) {
+        if (error_block) {
+          VoxelType& error_voxel =
+              error_block->getVoxelByLinearIndex(linear_index);
+          setVoxelSdf<VoxelType>(std::abs(error), &error_voxel);
+          setVoxelWeight<VoxelType>(1.0, &error_voxel);
+        }
 
-      switch (result) {
-        case VoxelEvaluationResult::kEvaluated:
-          total_squared_error += error * error;
-          evaluation_details.min_error =
-              std::min(evaluation_details.min_error, std::abs(error));
-          evaluation_details.max_error =
-              std::max(evaluation_details.max_error, std::abs(error));
-          ++evaluation_details.num_evaluated_voxels;
-          ++evaluation_details.num_overlapping_voxels;
-
-          if (error_block) {
-            VoxelType& error_voxel =
-                error_block->getVoxelByLinearIndex(linear_index);
-            setVoxelSdf<VoxelType>(std::abs(error), &error_voxel);
-            setVoxelWeight<VoxelType>(1.0, &error_voxel);
-          }
-
-          break;
-        case VoxelEvaluationResult::kIgnored:
-          ++evaluation_details.num_ignored_voxels;
-          ++evaluation_details.num_overlapping_voxels;
-          break;
-        case VoxelEvaluationResult::kNoOverlap:
-          ++evaluation_details.num_non_overlapping_voxels;
-          break;
-        default:
-          LOG(FATAL) << "Unkown voxel evaluation result: "
-                     << static_cast<int>(result);
+        total_squared_error += error * error;
       }
     }
   }
@@ -191,15 +194,52 @@ FloatingPoint evaluateLayersRmse(const Layer<VoxelType>& layer_gt,
 }
 
 template <typename VoxelType>
-VoxelEvaluationResult computeVoxelError(
-    const VoxelType& voxel_gt, const VoxelType& voxel_test,
-    const VoxelEvaluationMode evaluation_mode, FloatingPoint* error) {
+bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
+                       const VoxelEvaluationMode evaluation_mode,
+                       VoxelEvaluationDetails* eval_details,
+                       FloatingPoint* error) {
+  CHECK_NOTNULL(eval_details);
   CHECK_NOTNULL(error);
+
+  // Init error.
   *error = 0.0;
 
+  // TODO(yang, tim): Here is a first draft of the error metrics, please check
+  // if they make sense, they are certainly not efficient as some of the things
+  // are checked again below, but since this is only for evaluation, don't
+  // bother.
+
+  if (isObservedVoxel(voxel_gt)) {
+    ++(eval_details->num_observed_voxels_layer_gt);
+  }
+  if (isObservedVoxel(voxel_test)) {
+    ++(eval_details->num_observed_voxels_layer_test);
+  }
+
+  const bool both_voxels_observed =
+      isObservedVoxel(voxel_gt) && isObservedVoxel(voxel_test);
+  const bool test_voxel_is_free =
+      getVoxelSdf(voxel_test) > eval_details->free_space_threshold;
+  const bool gt_voxel_is_free =
+      getVoxelSdf(voxel_gt) > eval_details->free_space_threshold;
+
+  const bool is_erroneous_free_voxel =
+      both_voxels_observed && (test_voxel_is_free && !gt_voxel_is_free);
+  if (is_erroneous_free_voxel) {
+    ++(eval_details->num_erroneous_free_voxels);
+  }
+
+  const bool is_erroneous_occupied_voxel =
+      both_voxels_observed && (!test_voxel_is_free && gt_voxel_is_free);
+  if (is_erroneous_occupied_voxel) {
+    ++(eval_details->num_erroneous_occupied_voxels);
+  }
+
   // Ignore voxels that are not observed in both layers.
-  if (!isObservedVoxel(voxel_gt) || !isObservedVoxel(voxel_test)) {
-    return VoxelEvaluationResult::kNoOverlap;
+  if (!both_voxels_observed) {
+    ++(eval_details->num_non_overlapping_voxels);
+    // There is no overlap.
+    return false;
   }
 
   const bool ignore_behind_test_surface =
@@ -212,12 +252,21 @@ VoxelEvaluationResult computeVoxelError(
 
   if ((ignore_behind_test_surface && (voxel_test.distance) < 0.0) ||
       (ignore_behind_gt_surface && (voxel_gt.distance) < 0.0)) {
-    return VoxelEvaluationResult::kIgnored;
+    ++(eval_details->num_ignored_voxels);
+    ++(eval_details->num_overlapping_voxels);
+
+    // Voxel is ignored.
+    return false;
   }
 
   *error = getVoxelSdf(voxel_test) - getVoxelSdf(voxel_gt);
 
-  return VoxelEvaluationResult::kEvaluated;
+  eval_details->min_error = std::min(eval_details->min_error, std::abs(*error));
+  eval_details->max_error = std::max(eval_details->max_error, std::abs(*error));
+  ++(eval_details->num_evaluated_voxels);
+  ++(eval_details->num_overlapping_voxels);
+
+  return true;
 }
 
 template <>
