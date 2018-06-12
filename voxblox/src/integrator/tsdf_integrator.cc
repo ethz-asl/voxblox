@@ -365,7 +365,6 @@ void MergedTsdfIntegrator::integrateVoxel(
 
     // Just do it here
     const float label_weight = label == 1 ? 1.0 : config_.prediction_weight;
-    LOG(INFO) << "Label weight: " << label_weight;
     const float point_weight = getVoxelWeight(point_C) * label_weight;
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
                      (merged_weight + point_weight);
