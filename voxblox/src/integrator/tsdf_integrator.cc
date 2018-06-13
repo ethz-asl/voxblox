@@ -278,7 +278,7 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
   }
 }
 
-  void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
+void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
                                                const Labels& labels,
@@ -363,7 +363,7 @@ void MergedTsdfIntegrator::integrateVoxel(
     const Label& label = labels[pt_idx];
 
     // Just do it here
-    const float label_weight = label == 1 ? 1.0 : config_.prediction_weight;
+    const float label_weight = label == 0 ? 1.0 : config_.prediction_weight;
     const float point_weight = getVoxelWeight(point_C) * label_weight;
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
                      (merged_weight + point_weight);
