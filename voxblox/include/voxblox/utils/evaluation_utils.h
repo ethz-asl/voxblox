@@ -26,18 +26,15 @@ struct VoxelEvaluationDetails {
   size_t num_ignored_voxels = 0u;
   size_t num_overlapping_voxels = 0u;
   size_t num_non_overlapping_voxels = 0u;
-    size_t num_gt_un_test_un = 0u;
-    size_t num_gt_un_test_occ = 0u;
-    size_t num_gt_un_test_free = 0u;
-    size_t num_gt_occ_test_un = 0u;
-    size_t num_gt_occ_test_occ = 0u;
-    size_t num_gt_occ_test_free = 0u;
-    size_t num_gt_free_test_un = 0u;
-    size_t num_gt_free_test_occ = 0u;
-    size_t num_gt_free_test_free = 0u;
-
-
-
+  size_t num_gt_un_test_un = 0u;
+  size_t num_gt_un_test_occ = 0u;
+  size_t num_gt_un_test_free = 0u;
+  size_t num_gt_occ_test_un = 0u;
+  size_t num_gt_occ_test_occ = 0u;
+  size_t num_gt_occ_test_free = 0u;
+  size_t num_gt_free_test_un = 0u;
+  size_t num_gt_free_test_occ = 0u;
+  size_t num_gt_free_test_free = 0u;
 
   size_t num_observed_voxels_layer_gt = 0u;
   size_t num_observed_voxels_layer_test = 0u;
@@ -45,7 +42,7 @@ struct VoxelEvaluationDetails {
   // These values rely on the threshold below. Voxels that have a distance to
   // the surface that is larger than this factor x voxel size are counted as
   // free space.
-  static constexpr float kFreeSpaceThresholdFactor = 1.0;
+  static constexpr float kFreeSpaceThresholdFactor = 2.0;
   float free_space_threshold = 0.0;
 
   size_t num_erroneous_occupied_voxels = 0u;
@@ -67,21 +64,19 @@ struct VoxelEvaluationDetails {
        << "\n"
        << " num erroneous free voxels:      " << num_erroneous_free_voxels
        << "\n"
-       << " min error:                      " << min_error << "\n"
-       << " max error:                      " << max_error << "\n"
-       << " RMSE:                           " << rmse << "\n"
-       << " num_gt_un_test_un:         " << num_gt_un_test_un << "\n"
-       << " num_gt_un_test_occ:         " << num_gt_un_test_occ << "\n"
-       << " num_gt_un_test_free:         " << num_gt_un_test_free << "\n"
-       << " num_gt_occ_test_un:         " << num_gt_occ_test_un << "\n"
-       << " num_gt_occ_test_occ:         " << num_gt_occ_test_occ << "\n"
-       << " num_gt_occ_test_free:         " << num_gt_occ_test_free << "\n"
-       << " num_gt_free_test_un:         " << num_gt_free_test_un << "\n"
-       << " num_gt_free_test_occ:         " << num_gt_free_test_occ << "\n"
-       << " num_gt_free_test_free:         " << num_gt_free_test_free << "\n"
-       << "========================================\n";
-
-
+       << "\n min error:             " << min_error
+       << "\n max error:             " << max_error
+       << "\n RMSE:                  " << rmse
+       << "\n num_gt_un_test_un:     " << num_gt_un_test_un
+       << "\n num_gt_un_test_occ:    " << num_gt_un_test_occ
+       << "\n num_gt_un_test_free:   " << num_gt_un_test_free
+       << "\n num_gt_occ_test_un:    " << num_gt_occ_test_un
+       << "\n num_gt_occ_test_occ:   " << num_gt_occ_test_occ
+       << "\n num_gt_occ_test_free:  " << num_gt_occ_test_free
+       << "\n num_gt_free_test_un:   " << num_gt_free_test_un
+       << "\n num_gt_free_test_occ:  " << num_gt_free_test_occ
+       << "\n num_gt_free_test_free: " << num_gt_free_test_free
+       << "\n========================================\n";
 
     return ss.str();
   }
@@ -139,23 +134,21 @@ FloatingPoint evaluateLayersRmse(
     if (!layer_gt.hasBlock(block_index)) {
       for (size_t linear_index = 0u; linear_index < num_voxels_per_block;
            ++linear_index) {
-        const VoxelType& voxel = test_block.getVoxelByLinearIndex(linear_index);
-        if (isObservedVoxel(voxel)) {
+        const VoxelType& test_voxel = test_block.getVoxelByLinearIndex(linear_index);
+        if (isObservedVoxel(test_voxel)) {
           ++evaluation_details.num_non_overlapping_voxels;
         }
-        //Three numbers with gt_un
-        if(isObservedVoxel(voxel))
-        {
-          const bool test_voxel_is_free =
-                  getVoxelSdf(voxel) > evaluation_details.free_space_threshold;
-          if(test_voxel_is_free)
-          {++(evaluation_details.num_gt_un_test_free);}
-          else
-          {++(evaluation_details.num_gt_un_test_occ);}
+        // The ground truth layer does not have that block, i.e. voxel is unknown
+        if(isObservedVoxel(test_voxel)) {
+          const bool test_voxel_is_free = getVoxelSdf(test_voxel) > evaluation_details.free_space_threshold;
+          if(test_voxel_is_free) {
+            ++evaluation_details.num_gt_un_test_free;
+          } else {
+            ++evaluation_details.num_gt_un_test_occ;
+          }
+        } else {
+          ++evaluation_details.num_gt_un_test_un;
         }
-        else
-        {++(evaluation_details.num_gt_un_test_un);}
-        //End Three numbers
       }
       continue;
     }
@@ -200,19 +193,17 @@ FloatingPoint evaluateLayersRmse(
           ++evaluation_details.num_non_overlapping_voxels;
         }
 
-        //Three numbers with test_un
-        if(isObservedVoxel(voxel))
-        {
-          const bool gt_voxel_is_free =
-                  getVoxelSdf(voxel) > evaluation_details.free_space_threshold;
-          if(gt_voxel_is_free)
-          {++(evaluation_details.num_gt_free_test_un);}
-          else
-          {++(evaluation_details.num_gt_occ_test_un);}
+        // Block does not exist in test (i.e. voxel unoccupied)
+        if(isObservedVoxel(voxel)) {
+          const bool gt_voxel_is_free = getVoxelSdf(voxel) > evaluation_details.free_space_threshold;
+          if(gt_voxel_is_free) {
+            ++evaluation_details.num_gt_free_test_un;
+          } else {
+            ++evaluation_details.num_gt_occ_test_un;
+          }
+        } else {
+          ++evaluation_details.num_gt_un_test_un;
         }
-        else
-        {++(evaluation_details.num_gt_un_test_un);}
-        //End Three numbers
       }
     }
   }
@@ -287,47 +278,23 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
   }
 
   // Nine Numbers, a lot ifs, any way to do it smartly?
-  if (isObservedVoxel(voxel_gt))
-  {
-    if (gt_voxel_is_free)
-    {
-      if(isObservedVoxel(voxel_test))
-      {
-        if(test_voxel_is_free)
-        {++(eval_details->num_gt_free_test_free);}
-        else
-        {++(eval_details->num_gt_free_test_occ);}
-      }
-      else
-      {++(eval_details->num_gt_free_test_un);}
+  if (isObservedVoxel(voxel_gt)) {
+    if (gt_voxel_is_free) {
+      if (isObservedVoxel(voxel_test)) {
+        if (test_voxel_is_free) { ++eval_details->num_gt_free_test_free; }
+        else { ++eval_details->num_gt_free_test_occ; }
+      } else { ++eval_details->num_gt_free_test_un; }
+    } else {
+      if (isObservedVoxel(voxel_test)) {
+        if (test_voxel_is_free) { ++eval_details->num_gt_occ_test_free; }
+        else { ++eval_details->num_gt_occ_test_occ; }
+      } else { ++eval_details->num_gt_occ_test_un; }
     }
-    else
-    {
-      if(isObservedVoxel(voxel_test))
-      {
-        if(test_voxel_is_free)
-        {++(eval_details->num_gt_occ_test_free);}
-        else
-        {++(eval_details->num_gt_occ_test_occ);}
-      }
-      else
-      {++(eval_details->num_gt_occ_test_un);}
-    }
-  }
-  else
-  {
-    if(isObservedVoxel(voxel_test))
-    {
-      if(test_voxel_is_free)
-      {++(eval_details->num_gt_un_test_free);}
-      else
-      {++(eval_details->num_gt_un_test_occ);}
-    }
-    else
-    {++(eval_details->num_gt_un_test_un);}
-  }
+  } else if (isObservedVoxel(voxel_test)) {
+    if (test_voxel_is_free) { ++eval_details->num_gt_un_test_free; }
+    else { ++eval_details->num_gt_un_test_occ; }
+  } else { ++eval_details->num_gt_un_test_un; }
   // End Nine Numbers
-
 
   // Ignore voxels that are not observed in both layers.
   if (!both_voxels_observed) {

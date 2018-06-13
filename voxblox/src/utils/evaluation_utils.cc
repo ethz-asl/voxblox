@@ -8,7 +8,7 @@ namespace utils {
 
 template <>
 bool isObservedVoxel(const TsdfVoxel& voxel) {
-  return voxel.weight > 1e-6;
+  return voxel.weight > 0.0;
 }
 
 template <>
