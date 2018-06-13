@@ -26,6 +26,18 @@ struct VoxelEvaluationDetails {
   size_t num_ignored_voxels = 0u;
   size_t num_overlapping_voxels = 0u;
   size_t num_non_overlapping_voxels = 0u;
+    size_t num_gt_un_test_un = 0u;
+    size_t num_gt_un_test_occ = 0u;
+    size_t num_gt_un_test_free = 0u;
+    size_t num_gt_occ_test_un = 0u;
+    size_t num_gt_occ_test_occ = 0u;
+    size_t num_gt_occ_test_free = 0u;
+    size_t num_gt_free_test_un = 0u;
+    size_t num_gt_free_test_occ = 0u;
+    size_t num_gt_free_test_free = 0u;
+
+
+
 
   size_t num_observed_voxels_layer_gt = 0u;
   size_t num_observed_voxels_layer_test = 0u;
@@ -58,7 +70,19 @@ struct VoxelEvaluationDetails {
        << " min error:                      " << min_error << "\n"
        << " max error:                      " << max_error << "\n"
        << " RMSE:                           " << rmse << "\n"
+       << " num_gt_un_test_un:         " << num_gt_un_test_un << "\n"
+       << " num_gt_un_test_occ:         " << num_gt_un_test_occ << "\n"
+       << " num_gt_un_test_free:         " << num_gt_un_test_free << "\n"
+       << " num_gt_occ_test_un:         " << num_gt_occ_test_un << "\n"
+       << " num_gt_occ_test_occ:         " << num_gt_occ_test_occ << "\n"
+       << " num_gt_occ_test_free:         " << num_gt_occ_test_free << "\n"
+       << " num_gt_free_test_un:         " << num_gt_free_test_un << "\n"
+       << " num_gt_free_test_occ:         " << num_gt_free_test_occ << "\n"
+       << " num_gt_free_test_free:         " << num_gt_free_test_free << "\n"
        << "========================================\n";
+
+
+
     return ss.str();
   }
 };
@@ -119,6 +143,19 @@ FloatingPoint evaluateLayersRmse(
         if (isObservedVoxel(voxel)) {
           ++evaluation_details.num_non_overlapping_voxels;
         }
+        //Three numbers with gt_un
+        if(isObservedVoxel(voxel))
+        {
+          const bool test_voxel_is_free =
+                  getVoxelSdf(voxel) > evaluation_details.free_space_threshold;
+          if(test_voxel_is_free)
+          {++(evaluation_details.num_gt_un_test_free);}
+          else
+          {++(evaluation_details.num_gt_un_test_occ);}
+        }
+        else
+        {++(evaluation_details.num_gt_un_test_un);}
+        //End Three numbers
       }
       continue;
     }
@@ -162,6 +199,20 @@ FloatingPoint evaluateLayersRmse(
         if (isObservedVoxel(voxel)) {
           ++evaluation_details.num_non_overlapping_voxels;
         }
+
+        //Three numbers with test_un
+        if(isObservedVoxel(voxel))
+        {
+          const bool gt_voxel_is_free =
+                  getVoxelSdf(voxel) > evaluation_details.free_space_threshold;
+          if(gt_voxel_is_free)
+          {++(evaluation_details.num_gt_free_test_un);}
+          else
+          {++(evaluation_details.num_gt_occ_test_un);}
+        }
+        else
+        {++(evaluation_details.num_gt_un_test_un);}
+        //End Three numbers
       }
     }
   }
@@ -234,6 +285,49 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
   if (is_erroneous_occupied_voxel) {
     ++(eval_details->num_erroneous_occupied_voxels);
   }
+
+  // Nine Numbers, a lot ifs, any way to do it smartly?
+  if (isObservedVoxel(voxel_gt))
+  {
+    if (gt_voxel_is_free)
+    {
+      if(isObservedVoxel(voxel_test))
+      {
+        if(test_voxel_is_free)
+        {++(eval_details->num_gt_free_test_free);}
+        else
+        {++(eval_details->num_gt_free_test_occ);}
+      }
+      else
+      {++(eval_details->num_gt_free_test_un);}
+    }
+    else
+    {
+      if(isObservedVoxel(voxel_test))
+      {
+        if(test_voxel_is_free)
+        {++(eval_details->num_gt_occ_test_free);}
+        else
+        {++(eval_details->num_gt_occ_test_occ);}
+      }
+      else
+      {++(eval_details->num_gt_occ_test_un);}
+    }
+  }
+  else
+  {
+    if(isObservedVoxel(voxel_test))
+    {
+      if(test_voxel_is_free)
+      {++(eval_details->num_gt_un_test_free);}
+      else
+      {++(eval_details->num_gt_un_test_occ);}
+    }
+    else
+    {++(eval_details->num_gt_un_test_un);}
+  }
+  // End Nine Numbers
+
 
   // Ignore voxels that are not observed in both layers.
   if (!both_voxels_observed) {
