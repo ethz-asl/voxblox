@@ -46,7 +46,7 @@ class TsdfIntegratorBase {
     bool use_weight_dropoff = true;
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
-    size_t integrator_threads = std::thread::hardware_concurrency();
+    size_t integrator_threads = 1; // use one to make sure timing stays same std::thread::hardware_concurrency();
 
     // merge integrator specific
     bool enable_anti_grazing = false;

@@ -49,33 +49,35 @@ struct VoxelEvaluationDetails {
   size_t num_erroneous_free_voxels = 0u;
 
   std::string toString() const {
+    size_t num_gt_occ = num_gt_occ_test_occ + num_gt_occ_test_free + num_gt_occ_test_un;
+    size_t num_gt_free = num_gt_free_test_occ + num_gt_free_test_free + num_gt_free_test_un;
+    double false_pos = 1.0 * (num_gt_free_test_occ + num_gt_free_test_un) / num_gt_free;
+    double false_neg = 1.0 * num_gt_occ_test_free / num_gt_occ;
+
     std::stringstream ss;
     ss << "\n\n======= Layer Evaluation Results =======\n"
-       << " num evaluated voxels:           " << num_evaluated_voxels << "\n"
-       << " num overlapping voxels:         " << num_overlapping_voxels << "\n"
-       << " num non-overlapping voxels:     " << num_non_overlapping_voxels
-       << "\n"
-       << " num ignored voxels:             " << num_ignored_voxels << "\n"
-       << " num observed voxels layer gt:   " << num_observed_voxels_layer_gt
-       << "\n"
-       << " num observed voxels layer test: " << num_observed_voxels_layer_test
-       << "\n"
-       << " num erroneous occupied voxels:  " << num_erroneous_occupied_voxels
-       << "\n"
-       << " num erroneous free voxels:      " << num_erroneous_free_voxels
-       << "\n"
-       << "\n min error:             " << min_error
-       << "\n max error:             " << max_error
-       << "\n RMSE:                  " << rmse
-       << "\n num_gt_un_test_un:     " << num_gt_un_test_un
-       << "\n num_gt_un_test_occ:    " << num_gt_un_test_occ
-       << "\n num_gt_un_test_free:   " << num_gt_un_test_free
-       << "\n num_gt_occ_test_un:    " << num_gt_occ_test_un
-       << "\n num_gt_occ_test_occ:   " << num_gt_occ_test_occ
-       << "\n num_gt_occ_test_free:  " << num_gt_occ_test_free
-       << "\n num_gt_free_test_un:   " << num_gt_free_test_un
-       << "\n num_gt_free_test_occ:  " << num_gt_free_test_occ
-       << "\n num_gt_free_test_free: " << num_gt_free_test_free
+       << "\n num evaluated voxels:           " << num_evaluated_voxels
+       << "\n num overlapping voxels:         " << num_overlapping_voxels
+       << "\n num non-overlapping voxels:     " << num_non_overlapping_voxels
+       << "\n num ignored voxels:             " << num_ignored_voxels
+       << "\n num observed voxels layer gt:   " << num_observed_voxels_layer_gt
+       << "\n num observed voxels layer test: " << num_observed_voxels_layer_test
+       << "\n num erroneous occupied voxels:  " << num_erroneous_occupied_voxels
+       << "\n num erroneous free voxels:      " << num_erroneous_free_voxels
+       << "\n min error:                      " << min_error
+       << "\n max error:                      " << max_error
+       << "\n RMSE:                           " << rmse
+       << "\n num_gt_un_test_un:              " << num_gt_un_test_un
+       << "\n num_gt_un_test_occ:             " << num_gt_un_test_occ
+       << "\n num_gt_un_test_free:            " << num_gt_un_test_free
+       << "\n num_gt_occ_test_un:             " << num_gt_occ_test_un
+       << "\n num_gt_occ_test_occ:            " << num_gt_occ_test_occ
+       << "\n num_gt_occ_test_free:           " << num_gt_occ_test_free
+       << "\n num_gt_free_test_un:            " << num_gt_free_test_un
+       << "\n num_gt_free_test_occ:           " << num_gt_free_test_occ
+       << "\n num_gt_free_test_free:          " << num_gt_free_test_free
+       << "\n False Postive:                  " << false_pos
+       << "\n False Negative:                 " << false_neg
        << "\n========================================\n";
 
     return ss.str();
