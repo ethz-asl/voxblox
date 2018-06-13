@@ -1,6 +1,7 @@
 #include "voxblox_ros/tsdf_server.h"
 
 #include "voxblox_ros/ros_params.h"
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 namespace voxblox {
 
@@ -181,6 +182,8 @@ void TsdfServer::processPointCloudMessageAndInsert(
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
 
+    sensor_msgs::PointCloud2Iterator<int32_t> iter_label(*pointcloud_msg, "label");
+
     timing::Timer ptcloud_timer("ptcloud_preprocess");
 
     Pointcloud points_C;
@@ -189,7 +192,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     labels.reserve(pointcloud_pcl.size());
-    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i, ++iter_label) {
       if (!std::isfinite(pointcloud_pcl.points[i].x) ||
           !std::isfinite(pointcloud_pcl.points[i].y) ||
           !std::isfinite(pointcloud_pcl.points[i].z)) {
@@ -203,7 +206,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
           Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
                 pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
 
-      labels.push_back(pointcloud_pcl.points[i].label);
+      labels.push_back(*iter_label);
     }
 
     ptcloud_timer.Stop();
