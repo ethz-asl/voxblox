@@ -172,17 +172,19 @@ void TsdfServer::processPointCloudMessageAndInsert(
     // Convert the PCL pointcloud into our awesome format.
     // TODO(helenol): improve...
     // Horrible hack fix to fix color parsing colors in PCL.
+    bool has_labels = false;
     for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
       if (pointcloud_msg->fields[d].name == std::string("rgb")) {
         pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
+      }
+      if (pointcloud_msg->fields[d].name == std::string("label")) {
+        has_labels = true;
       }
     }
 
     pcl::PointCloud<pcl::PointXYZRGBL> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-
-    sensor_msgs::PointCloud2Iterator<int32_t> iter_label(*pointcloud_msg, "label");
 
     timing::Timer ptcloud_timer("ptcloud_preprocess");
 
@@ -192,7 +194,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     labels.reserve(pointcloud_pcl.size());
-    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i, ++iter_label) {
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
       if (!std::isfinite(pointcloud_pcl.points[i].x) ||
           !std::isfinite(pointcloud_pcl.points[i].y) ||
           !std::isfinite(pointcloud_pcl.points[i].z)) {
@@ -205,8 +207,16 @@ void TsdfServer::processPointCloudMessageAndInsert(
       colors.push_back(
           Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
                 pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+    }
 
-      labels.push_back(*iter_label);
+    if (has_labels) {
+      sensor_msgs::PointCloud2Iterator<int32_t> iter_label(*pointcloud_msg, "label");
+      for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+        labels.push_back(*iter_label);
+        ++iter_label;
+      }
+    } else {
+      ROS_WARN("Warning, no labels in pointcloud message!");
     }
 
     ptcloud_timer.Stop();
