@@ -216,6 +216,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
         ++iter_label;
       }
     } else {
+      labels.resize(pointcloud_pcl.size());
       ROS_WARN("Warning, no labels in pointcloud message!");
     }
 
