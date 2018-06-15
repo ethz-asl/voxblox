@@ -223,7 +223,7 @@ inline bool visualizeDistanceIntensityTsdfVoxelsSlice(
   CHECK_NOTNULL(intensity);
   if (std::abs(coord(free_plane_index) - free_plane_val) <=
       (voxel_size / 2.0 + kFloatEpsilon)) {
-    if (voxel.weight > 1e-3) {
+    if (voxel.weight > 0) {
       *intensity = voxel.distance;
       return true;
     }

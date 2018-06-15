@@ -42,7 +42,7 @@ struct VoxelEvaluationDetails {
   // These values rely on the threshold below. Voxels that have a distance to
   // the surface that is larger than this factor x voxel size are counted as
   // free space.
-  static constexpr float kFreeSpaceThresholdFactor = 2.0;
+  static constexpr float kFreeSpaceThresholdFactor = 1.0;
   float free_space_threshold = 0.0;
 
   size_t num_erroneous_occupied_voxels = 0u;
@@ -51,9 +51,9 @@ struct VoxelEvaluationDetails {
   std::string toString() const {
     size_t num_gt_occ = num_gt_occ_test_occ + num_gt_occ_test_free + num_gt_occ_test_un;
     size_t num_gt_free = num_gt_free_test_occ + num_gt_free_test_free + num_gt_free_test_un;
-    double false_pos = 1.0 * (num_gt_free_test_occ + num_gt_free_test_un) / num_gt_free;
-    double false_neg = 1.0 * num_gt_occ_test_free / num_gt_occ;
-
+    double false_pos = 100.0 * (num_gt_free_test_occ + num_gt_free_test_un) / num_gt_free;
+    double false_neg = 100.0 * num_gt_occ_test_free / num_gt_occ;
+    double coverage = 100.0 * num_observed_voxels_layer_test / num_observed_voxels_layer_gt;
     std::stringstream ss;
     ss << "\n\n======= Layer Evaluation Results =======\n"
        << "\n num evaluated voxels:           " << num_evaluated_voxels
@@ -66,7 +66,6 @@ struct VoxelEvaluationDetails {
        << "\n num erroneous free voxels:      " << num_erroneous_free_voxels
        << "\n min error:                      " << min_error
        << "\n max error:                      " << max_error
-       << "\n RMSE:                           " << rmse
        << "\n num_gt_un_test_un:              " << num_gt_un_test_un
        << "\n num_gt_un_test_occ:             " << num_gt_un_test_occ
        << "\n num_gt_un_test_free:            " << num_gt_un_test_free
@@ -76,9 +75,11 @@ struct VoxelEvaluationDetails {
        << "\n num_gt_free_test_un:            " << num_gt_free_test_un
        << "\n num_gt_free_test_occ:           " << num_gt_free_test_occ
        << "\n num_gt_free_test_free:          " << num_gt_free_test_free
-       << "\n False Postive:                  " << false_pos
-       << "\n False Negative:                 " << false_neg
-       << "\n========================================\n";
+       << "\n False Postive  [%]:             " << false_pos
+       << "\n False Negative [%]:             " << false_neg
+       << "\n RMSE           [m]:             " << rmse
+       << "\n Coverage       [%]:             " << coverage
+        << "\n========================================\n";
 
     return ss.str();
   }
@@ -124,8 +125,7 @@ FloatingPoint evaluateLayersRmse(
   VoxelEvaluationDetails evaluation_details;
 
   // Initialize free space threshold based on voxel size.
-  evaluation_details.free_space_threshold =
-      VoxelEvaluationDetails::kFreeSpaceThresholdFactor * layer_gt.voxel_size();
+  evaluation_details.free_space_threshold = VoxelEvaluationDetails::kFreeSpaceThresholdFactor * layer_gt.voxel_size();
 
   double total_squared_error = 0.0;
 
@@ -193,6 +193,7 @@ FloatingPoint evaluateLayersRmse(
         const VoxelType& voxel = gt_block.getVoxelByLinearIndex(linear_index);
         if (isObservedVoxel(voxel)) {
           ++evaluation_details.num_non_overlapping_voxels;
+          ++evaluation_details.num_observed_voxels_layer_gt;
         }
 
         // Block does not exist in test (i.e. voxel unoccupied)
@@ -256,7 +257,7 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
   if (isObservedVoxel(voxel_gt)) {
     ++(eval_details->num_observed_voxels_layer_gt);
   }
-  if (isObservedVoxel(voxel_test)) {
+  if (isObservedVoxel(voxel_test) && isObservedVoxel(voxel_gt)) {
     ++(eval_details->num_observed_voxels_layer_test);
   }
 

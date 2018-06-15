@@ -35,6 +35,10 @@ class SimpleTsdfVisualizer {
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
             "tsdf_voxels_near_surface", 1, true);
 
+    tsdf_slice_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+            "slice", 1, true);
+
     tsdf_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
             "all_tsdf_voxels", 1, true);
@@ -82,6 +86,7 @@ class SimpleTsdfVisualizer {
   ros::NodeHandle nh_private_;
 
   ros::Publisher surface_pointcloud_pub_;
+  ros::Publisher tsdf_slice_pub_;
   ros::Publisher tsdf_pointcloud_pub_;
   ros::Publisher mesh_pub_;
   ros::Publisher mesh_pointcloud_pub_;
@@ -113,6 +118,17 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
 
     pointcloud.header.frame_id = tsdf_world_frame_;
     surface_pointcloud_pub_.publish(pointcloud);
+  }
+
+  VLOG(1) << "\tVisualize voxels slice...";
+  {
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+    voxblox::createDistancePointcloudFromTsdfLayerSlice(
+        tsdf_layer, 2, 1.5, &pointcloud);
+
+    pointcloud.header.frame_id = tsdf_world_frame_;
+    tsdf_slice_pub_.publish(pointcloud);
   }
 
   VLOG(1) << "\tVisualize all voxels...";
@@ -181,9 +197,9 @@ int main(int argc, char** argv) {
     LOG(FATAL) << "Please provide a TSDF proto file to visualize using the ros "
                << "parameter: tsdf_proto_path";
   }
-  LOG(INFO) << "Visualize TSDF grid from " << tsdf_proto_path;
+  std::cout << "Visualize TSDF grid from " << tsdf_proto_path;
 
-  VLOG(1) << "Loading...";
+  std::cout << "Loading...";
   voxblox::Layer<voxblox::TsdfVoxel>::Ptr tsdf_layer;
   if (!voxblox::io::LoadLayer<voxblox::TsdfVoxel>(tsdf_proto_path,
                                                   &tsdf_layer)) {

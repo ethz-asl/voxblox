@@ -362,11 +362,21 @@ void MergedTsdfIntegrator::integrateVoxel(
     const Color& color = colors[pt_idx];
     const Label& label = labels[pt_idx];
 
+//    if (label != 0) //&& point_C[2] >= 0.0001f)
+//    {LOG(INFO) << "Predicted point" << pt_idx << " at " << point_C[2];}
+//    else
+//    {LOG(INFO) << "Estimated point" << pt_idx << " at " << point_C[2];}
+
+    //if (label == 0)
+    //{LOG(INFO) << "Estimated point" << pt_idx;}
     // Just do it here
-    const float label_weight = label == 0 ? 1.0 : config_.prediction_weight;
-    const float point_weight = getVoxelWeight(point_C) * label_weight;
-    merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
-                     (merged_weight + point_weight);
+    float point_weight = getVoxelWeight(point_C);
+    if (label == 1) {
+      point_weight *= config_.prediction_weight;
+    } else if (label != 0) {
+      LOG(ERROR) << "label must be 0 or 1";
+    }
+    merged_point_C += point_C * point_weight;
     merged_color =
         Color::blendTwoColors(merged_color, merged_weight, color, point_weight);
     merged_weight += point_weight;
@@ -376,6 +386,8 @@ void MergedTsdfIntegrator::integrateVoxel(
       break;
     }
   }
+
+  merged_point_C /= merged_weight;
 
   const Point merged_point_G = T_G_C * merged_point_C;
 
