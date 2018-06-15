@@ -207,15 +207,15 @@ FloatingPoint evaluateLayersRmse(
     if (!layer_test.hasBlock(gt_block_index)) {
       for (size_t linear_index = 0u; linear_index < num_voxels_per_block;
            ++linear_index) {
-        const VoxelType& voxel = gt_block.getVoxelByLinearIndex(linear_index);
+        const VoxelType& gt_voxel = gt_block.getVoxelByLinearIndex(linear_index);
         // Block does not exist in test (i.e. voxel unoccupied)
-        if (isIgnoredVoxel(voxel, ignore_behind_gt_surface)) {
+        if (isIgnoredVoxel(gt_voxel, ignore_behind_gt_surface)) {
           ++evaluation_details.num_ignored_voxels;
           ++evaluation_details.num_gt_un_test_un;
-        } else if(isObservedVoxel(voxel)) {
+        } else if(isObservedVoxel(gt_voxel)) {
           ++evaluation_details.num_non_overlapping_voxels;
           ++evaluation_details.num_observed_voxels_layer_gt;
-          const bool gt_voxel_is_free = getVoxelSdf(voxel) > evaluation_details.free_space_threshold;
+          const bool gt_voxel_is_free = getVoxelSdf(gt_voxel) > evaluation_details.free_space_threshold;
           if(gt_voxel_is_free) {
             ++evaluation_details.num_gt_free_test_un;
           } else {
@@ -266,11 +266,6 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
   // Init error.
   *error = 0.0;
 
-  // TODO(yang, tim): Here is a first draft of the error metrics, please check
-  // if they make sense, they are certainly not efficient as some of the things
-  // are checked again below, but since this is only for evaluation, don't
-  // bother.
-
   const bool ignore_behind_test_surface =
       (evaluation_mode == VoxelEvaluationMode::kIgnoreErrorBehindTestSurface) ||
       (evaluation_mode == VoxelEvaluationMode::kIgnoreErrorBehindAllSurfaces);
@@ -280,15 +275,15 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
       (evaluation_mode == VoxelEvaluationMode::kIgnoreErrorBehindAllSurfaces);
 
   const bool gt_observed = !isIgnoredVoxel(voxel_gt, ignore_behind_gt_surface) && isObservedVoxel(voxel_gt);
-  const bool test_observed = !isIgnoredVoxel(voxel_test, ignore_behind_test_surface) && isObservedVoxel(voxel_gt);
+  const bool test_observed = !isIgnoredVoxel(voxel_test, ignore_behind_test_surface) && isObservedVoxel(voxel_test);
 
   if (isIgnoredVoxel(voxel_gt, ignore_behind_gt_surface)) {
-    ++(eval_details->num_ignored_voxels);
+    ++eval_details->num_ignored_voxels;
   } else if (isObservedVoxel(voxel_gt)) {
-    ++(eval_details->num_observed_voxels_layer_gt);
+    ++eval_details->num_observed_voxels_layer_gt;
   }
   if (isIgnoredVoxel(voxel_test, ignore_behind_test_surface)) {
-    ++(eval_details->num_ignored_voxels);
+    ++eval_details->num_ignored_voxels;
   }
 
   const bool both_voxels_observed = gt_observed && test_observed;
@@ -311,7 +306,7 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
 
   if (gt_observed) {
     if (gt_voxel_is_free) {
-      if (isObservedVoxel(voxel_test)) {
+      if (test_observed) {
         if (test_voxel_is_free) { ++eval_details->num_gt_free_test_free; }
         else { ++eval_details->num_gt_free_test_occ; }
       } else { ++eval_details->num_gt_free_test_un; }
@@ -325,7 +320,6 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
     if (test_voxel_is_free) { ++eval_details->num_gt_un_test_free; }
     else { ++eval_details->num_gt_un_test_occ; }
   } else { ++eval_details->num_gt_un_test_un; }
-  // End Nine Numbers
 
   // Ignore voxels that are not observed in both layers.
   if (!both_voxels_observed) {
