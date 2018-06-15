@@ -123,9 +123,13 @@ FloatingPoint evaluateLayersRmse(
 
   VoxelEvaluationDetails evaluation_details;
 
-  // Initialize free space threshold based on voxel size.
+  // Initialize free space threshold based on voxel size if not evaluated yet
   evaluation_details.free_space_threshold =
-      VoxelEvaluationDetails::kFreeSpaceThresholdFactor * layer_gt.voxel_size();
+    VoxelEvaluationDetails::kFreeSpaceThresholdFactor * layer_gt.voxel_size();
+  // Kinda hacky way to specifiy free_space_threshold
+  if(evaluation_result && evaluation_result->free_space_threshold > 0.0) {
+    evaluation_details.free_space_threshold = evaluation_result->free_space_threshold;
+  }
 
   double total_squared_error = 0.0;
 
