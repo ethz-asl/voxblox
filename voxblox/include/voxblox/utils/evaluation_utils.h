@@ -37,7 +37,6 @@ struct VoxelEvaluationDetails {
   size_t num_gt_free_test_free = 0u;
 
   size_t num_observed_voxels_layer_gt = 0u;
-  size_t num_observed_voxels_layer_test = 0u;
 
   // These values rely on the threshold below. Voxels that have a distance to
   // the surface that is larger than this factor x voxel size are counted as
@@ -53,7 +52,7 @@ struct VoxelEvaluationDetails {
     size_t num_gt_free = num_gt_free_test_occ + num_gt_free_test_free + num_gt_free_test_un;
     double false_pos = 100.0 * (num_gt_free_test_occ + num_gt_free_test_un) / num_gt_free;
     double false_neg = 100.0 * num_gt_occ_test_free / num_gt_occ;
-    double coverage = 100.0 * num_observed_voxels_layer_test / num_observed_voxels_layer_gt;
+    double coverage = 100.0 * num_overlapping_voxels / num_observed_voxels_layer_gt;
     std::stringstream ss;
     ss << "\n\n======= Layer Evaluation Results =======\n"
        << "\n num evaluated voxels:           " << num_evaluated_voxels
@@ -61,7 +60,6 @@ struct VoxelEvaluationDetails {
        << "\n num non-overlapping voxels:     " << num_non_overlapping_voxels
        << "\n num ignored voxels:             " << num_ignored_voxels
        << "\n num observed voxels layer gt:   " << num_observed_voxels_layer_gt
-       << "\n num observed voxels layer test: " << num_observed_voxels_layer_test
        << "\n num erroneous occupied voxels:  " << num_erroneous_occupied_voxels
        << "\n num erroneous free voxels:      " << num_erroneous_free_voxels
        << "\n min error:                      " << min_error
@@ -291,8 +289,6 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
   }
   if (isIgnoredVoxel(voxel_test, ignore_behind_test_surface)) {
     ++(eval_details->num_ignored_voxels);
-  } else if (isObservedVoxel(voxel_test)) {
-    ++(eval_details->num_observed_voxels_layer_test);
   }
 
   const bool both_voxels_observed = gt_observed && test_observed;
