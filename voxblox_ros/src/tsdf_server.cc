@@ -182,18 +182,16 @@ void TsdfServer::processPointCloudMessageAndInsert(
       }
     }
 
-    pcl::PointCloud<pcl::PointXYZRGBL> pointcloud_pcl;
-    // pointcloud_pcl is modified below:
-    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-
     timing::Timer ptcloud_timer("ptcloud_preprocess");
+
+    size_t size = pointcloud_msg->width * pointcloud_msg->height;
 
     Pointcloud points_C;
     Colors colors;
     Labels labels;
-    points_C.reserve(pointcloud_pcl.size());
-    colors.reserve(pointcloud_pcl.size());
-    labels.reserve(pointcloud_pcl.size());
+    points_C.reserve(size);
+    colors.reserve(size);
+    labels.reserve(size);
 
     sensor_msgs::PointCloud2Iterator<float> iter_x(*pointcloud_msg, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(*pointcloud_msg, "y");
@@ -203,8 +201,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(*pointcloud_msg, "b");
     sensor_msgs::PointCloud2Iterator<uint8_t> iter_a(*pointcloud_msg, "a");
 
-    for (size_t i = 0;
-         i < pointcloud_pcl.size();
+    for (size_t i = 0; i < size;
          ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b, ++iter_a) {
       if (!std::isfinite(*iter_x) || !std::isfinite(*iter_y) || !std::isfinite(*iter_z)) {
         continue;
@@ -219,7 +216,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
       sensor_msgs::PointCloud2Iterator<float> iter_y(*pointcloud_msg, "y");
       sensor_msgs::PointCloud2Iterator<float> iter_z(*pointcloud_msg, "z");
       sensor_msgs::PointCloud2Iterator<int32_t> iter_label(*pointcloud_msg, "label");
-      for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_label) {
+      for (size_t i = 0; i < size; ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_label) {
         if (!std::isfinite(*iter_x) || !std::isfinite(*iter_y) || !std::isfinite(*iter_z)) {
           continue;
         }
