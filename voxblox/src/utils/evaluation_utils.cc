@@ -16,6 +16,10 @@ bool isObservedVoxel(const EsdfVoxel& voxel) {
   return voxel.observed;
 }
 
+/*template <typename VoxelType>
+bool isIgnoredVoxel(const VoxelType& voxel, bool ignore_behind_surface) {
+}*/
+
 template <>
 FloatingPoint getVoxelSdf(const TsdfVoxel& voxel) {
   return voxel.distance;
