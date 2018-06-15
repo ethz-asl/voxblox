@@ -44,9 +44,6 @@ struct VoxelEvaluationDetails {
   static constexpr float kFreeSpaceThresholdFactor = 1.0;
   float free_space_threshold = 0.0;
 
-  size_t num_erroneous_occupied_voxels = 0u;
-  size_t num_erroneous_free_voxels = 0u;
-
   std::string toString() const {
     size_t num_gt_occ = num_gt_occ_test_occ + num_gt_occ_test_free + num_gt_occ_test_un;
     size_t num_gt_free = num_gt_free_test_occ + num_gt_free_test_free + num_gt_free_test_un;
@@ -60,8 +57,6 @@ struct VoxelEvaluationDetails {
        << "\n num non-overlapping voxels:     " << num_non_overlapping_voxels
        << "\n num ignored voxels:             " << num_ignored_voxels
        << "\n num observed voxels layer gt:   " << num_observed_voxels_layer_gt
-       << "\n num erroneous occupied voxels:  " << num_erroneous_occupied_voxels
-       << "\n num erroneous free voxels:      " << num_erroneous_free_voxels
        << "\n min error:                      " << min_error
        << "\n max error:                      " << max_error
        << "\n num_gt_un_test_un:              " << num_gt_un_test_un
@@ -152,7 +147,7 @@ FloatingPoint evaluateLayersRmse(
     // The ground truth layer does not have that block, i.e. voxel is unknown
     if (!layer_gt.hasBlock(block_index)) {
       for (size_t linear_index = 0u; linear_index < num_voxels_per_block; ++linear_index) {
-        const VoxelType& test_voxel = test_block.getVoxelByLinearIndex(linear_index);
+        const VoxelType &test_voxel = test_block.getVoxelByLinearIndex(linear_index);
         if (isObservedVoxel(test_voxel)) {
           if (isIgnoredVoxel(test_voxel, ignore_behind_test_surface)) {
             ++evaluation_details.num_ignored_voxels;
@@ -160,7 +155,7 @@ FloatingPoint evaluateLayersRmse(
           } else {
             ++evaluation_details.num_non_overlapping_voxels;
             const bool test_voxel_is_free = getVoxelSdf(test_voxel) > evaluation_details.free_space_threshold;
-            if(test_voxel_is_free) {
+            if (test_voxel_is_free) {
               ++evaluation_details.num_gt_un_test_free;
             } else {
               ++evaluation_details.num_gt_un_test_occ;
@@ -169,8 +164,9 @@ FloatingPoint evaluateLayersRmse(
         } else {
           ++evaluation_details.num_gt_un_test_un;
         }
-        continue;
       }
+      continue;
+    }
     const Block<VoxelType>& gt_block = layer_gt.getBlockByIndex(block_index);
 
     typename Block<VoxelType>::Ptr error_block;
