@@ -210,8 +210,14 @@ void TsdfServer::processPointCloudMessageAndInsert(
     }
 
     if (has_labels) {
+      sensor_msgs::PointCloud2Iterator<float> iter_x(*cloud_msg, "x");
+      sensor_msgs::PointCloud2Iterator<float> iter_y(*cloud_msg, "y");
+      sensor_msgs::PointCloud2Iterator<float> iter_z(*cloud_msg, "z");
       sensor_msgs::PointCloud2Iterator<int32_t> iter_label(*pointcloud_msg, "label");
       for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+        if (!std::isfinite(*iter_x) || !std::isfinite(*iter_y) || !std::isfinite(*iter_z)) {
+          continue;
+        }
         labels.push_back(*iter_label);
         ++iter_label;
       }
