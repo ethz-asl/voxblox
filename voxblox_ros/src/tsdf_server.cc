@@ -194,37 +194,43 @@ void TsdfServer::processPointCloudMessageAndInsert(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     labels.reserve(pointcloud_pcl.size());
-    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
-          !std::isfinite(pointcloud_pcl.points[i].y) ||
-          !std::isfinite(pointcloud_pcl.points[i].z)) {
+
+    sensor_msgs::PointCloud2Iterator<float> iter_x(*pointcloud_msg, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(*pointcloud_msg, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(*pointcloud_msg, "z");
+    sensor_msgs::PointCloud2Iterator<uint8_t> iter_r(*pointcloud_msg, "r");
+    sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(*pointcloud_msg, "g");
+    sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(*pointcloud_msg, "b");
+    sensor_msgs::PointCloud2Iterator<uint8_t> iter_a(*pointcloud_msg, "a");
+
+    for (size_t i = 0;
+         i < pointcloud_pcl.size();
+         ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b, ++iter_a) {
+      if (!std::isfinite(*iter_x) || !std::isfinite(*iter_y) || !std::isfinite(*iter_z)) {
         continue;
       }
 
-      points_C.push_back(Point(pointcloud_pcl.points[i].x,
-                               pointcloud_pcl.points[i].y,
-                               pointcloud_pcl.points[i].z));
-      colors.push_back(
-          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
-                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+      points_C.push_back(Point(*iter_x, *iter_y, *iter_z));
+      colors.push_back(Color(*iter_r, *iter_g, *iter_b, *iter_a));
     }
 
     if (has_labels) {
-      sensor_msgs::PointCloud2Iterator<float> iter_x(*cloud_msg, "x");
-      sensor_msgs::PointCloud2Iterator<float> iter_y(*cloud_msg, "y");
-      sensor_msgs::PointCloud2Iterator<float> iter_z(*cloud_msg, "z");
+      sensor_msgs::PointCloud2Iterator<float> iter_x(*pointcloud_msg, "x");
+      sensor_msgs::PointCloud2Iterator<float> iter_y(*pointcloud_msg, "y");
+      sensor_msgs::PointCloud2Iterator<float> iter_z(*pointcloud_msg, "z");
       sensor_msgs::PointCloud2Iterator<int32_t> iter_label(*pointcloud_msg, "label");
-      for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_label) {
         if (!std::isfinite(*iter_x) || !std::isfinite(*iter_y) || !std::isfinite(*iter_z)) {
           continue;
         }
         labels.push_back(*iter_label);
-        ++iter_label;
       }
     } else {
-      labels.resize(pointcloud_pcl.size());
       ROS_WARN("Warning, no labels in pointcloud message!");
+      // Set all to zero
+      labels.resize(points_C.size());
     }
+    // Here we should check if len(labels) == len(points_C)
 
     ptcloud_timer.Stop();
 
