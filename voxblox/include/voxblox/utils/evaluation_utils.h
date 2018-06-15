@@ -93,6 +93,7 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
 template <typename VoxelType>
 bool isObservedVoxel(const VoxelType& voxel);
 
+// First check if voxel is observed, if it's not initialized, the distance might not be initialized aswell.
 template <typename VoxelType>
 bool isIgnoredVoxel(const VoxelType& voxel, bool ignore_behind_surface) {
   return ignore_behind_surface && voxel.distance < 0.0;
@@ -148,27 +149,28 @@ FloatingPoint evaluateLayersRmse(
   for (const BlockIndex& block_index : test_block_list) {
     const Block<VoxelType>& test_block = layer_test.getBlockByIndex(block_index);
 
+    // The ground truth layer does not have that block, i.e. voxel is unknown
     if (!layer_gt.hasBlock(block_index)) {
       for (size_t linear_index = 0u; linear_index < num_voxels_per_block; ++linear_index) {
         const VoxelType& test_voxel = test_block.getVoxelByLinearIndex(linear_index);
-        // The ground truth layer does not have that block, i.e. voxel is unknown
-        if (isIgnoredVoxel(test_voxel, ignore_behind_test_surface)) {
-          ++evaluation_details.num_ignored_voxels;
-          ++evaluation_details.num_gt_un_test_un;
-        } else if (isObservedVoxel(test_voxel)) {
-          ++evaluation_details.num_non_overlapping_voxels;
-          const bool test_voxel_is_free = getVoxelSdf(test_voxel) > evaluation_details.free_space_threshold;
-          if(test_voxel_is_free) {
-            ++evaluation_details.num_gt_un_test_free;
+        if (isObservedVoxel(test_voxel)) {
+          if (isIgnoredVoxel(test_voxel, ignore_behind_test_surface)) {
+            ++evaluation_details.num_ignored_voxels;
+            ++evaluation_details.num_gt_un_test_un;
           } else {
-            ++evaluation_details.num_gt_un_test_occ;
+            ++evaluation_details.num_non_overlapping_voxels;
+            const bool test_voxel_is_free = getVoxelSdf(test_voxel) > evaluation_details.free_space_threshold;
+            if(test_voxel_is_free) {
+              ++evaluation_details.num_gt_un_test_free;
+            } else {
+              ++evaluation_details.num_gt_un_test_occ;
+            }
           }
         } else {
           ++evaluation_details.num_gt_un_test_un;
         }
+        continue;
       }
-      continue;
-    }
     const Block<VoxelType>& gt_block = layer_gt.getBlockByIndex(block_index);
 
     typename Block<VoxelType>::Ptr error_block;
@@ -183,8 +185,7 @@ FloatingPoint evaluateLayersRmse(
                             voxel_evaluation_mode, &evaluation_details,
                             &error)) {
         if (error_block) {
-          VoxelType& error_voxel =
-              error_block->getVoxelByLinearIndex(linear_index);
+          VoxelType& error_voxel = error_block->getVoxelByLinearIndex(linear_index);
           setVoxelSdf<VoxelType>(std::abs(error), &error_voxel);
           setVoxelWeight<VoxelType>(1.0, &error_voxel);
         }
@@ -206,17 +207,19 @@ FloatingPoint evaluateLayersRmse(
            ++linear_index) {
         const VoxelType& gt_voxel = gt_block.getVoxelByLinearIndex(linear_index);
         // Block does not exist in test (i.e. voxel unoccupied)
-        if (isIgnoredVoxel(gt_voxel, ignore_behind_gt_surface)) {
-          ++evaluation_details.num_ignored_voxels;
-          ++evaluation_details.num_gt_un_test_un;
-        } else if(isObservedVoxel(gt_voxel)) {
-          ++evaluation_details.num_non_overlapping_voxels;
-          ++evaluation_details.num_observed_voxels_layer_gt;
-          const bool gt_voxel_is_free = getVoxelSdf(gt_voxel) > evaluation_details.free_space_threshold;
-          if(gt_voxel_is_free) {
-            ++evaluation_details.num_gt_free_test_un;
+        if(isObservedVoxel(gt_voxel)) {
+          if (isIgnoredVoxel(gt_voxel, ignore_behind_gt_surface)) {
+            ++evaluation_details.num_ignored_voxels;
+            ++evaluation_details.num_gt_un_test_un;
           } else {
-            ++evaluation_details.num_gt_occ_test_un;
+            ++evaluation_details.num_non_overlapping_voxels;
+            ++evaluation_details.num_observed_voxels_layer_gt;
+            const bool gt_voxel_is_free = getVoxelSdf(gt_voxel) > evaluation_details.free_space_threshold;
+            if (gt_voxel_is_free) {
+              ++evaluation_details.num_gt_free_test_un;
+            } else {
+              ++evaluation_details.num_gt_occ_test_un;
+            }
           }
         } else {
           ++evaluation_details.num_gt_un_test_un;
@@ -271,12 +274,13 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
       (evaluation_mode == VoxelEvaluationMode::kIgnoreErrorBehindGtSurface) ||
       (evaluation_mode == VoxelEvaluationMode::kIgnoreErrorBehindAllSurfaces);
 
-  const bool gt_observed = !isIgnoredVoxel(voxel_gt, ignore_behind_gt_surface) && isObservedVoxel(voxel_gt);
-  const bool test_observed = !isIgnoredVoxel(voxel_test, ignore_behind_test_surface) && isObservedVoxel(voxel_test);
+  const bool gt_observed = isObservedVoxel(voxel_gt) && !isIgnoredVoxel(voxel_gt, ignore_behind_gt_surface);
+  const bool test_observed = isObservedVoxel(voxel_test) && !isIgnoredVoxel(voxel_test, ignore_behind_test_surface);
 
   if (isIgnoredVoxel(voxel_gt, ignore_behind_gt_surface)) {
     ++eval_details->num_ignored_voxels;
-  } else if (isObservedVoxel(voxel_gt)) {
+  }
+  if (gt_observed) {
     ++eval_details->num_observed_voxels_layer_gt;
   }
   if (isIgnoredVoxel(voxel_test, ignore_behind_test_surface)) {
@@ -288,18 +292,6 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
       getVoxelSdf(voxel_test) > eval_details->free_space_threshold;
   const bool gt_voxel_is_free =
       getVoxelSdf(voxel_gt) > eval_details->free_space_threshold;
-
-  const bool is_erroneous_free_voxel =
-      both_voxels_observed && (test_voxel_is_free && !gt_voxel_is_free);
-  if (is_erroneous_free_voxel) {
-    ++(eval_details->num_erroneous_free_voxels);
-  }
-
-  const bool is_erroneous_occupied_voxel =
-      both_voxels_observed && (!test_voxel_is_free && gt_voxel_is_free);
-  if (is_erroneous_occupied_voxel) {
-    ++(eval_details->num_erroneous_occupied_voxels);
-  }
 
   if (gt_observed) {
     if (gt_voxel_is_free) {
