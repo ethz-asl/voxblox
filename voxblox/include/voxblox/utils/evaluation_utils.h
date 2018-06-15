@@ -152,25 +152,23 @@ FloatingPoint evaluateLayersRmse(
     // The ground truth layer does not have that block, i.e. voxel is unknown
     if (!layer_gt.hasBlock(block_index)) {
       for (size_t linear_index = 0u; linear_index < num_voxels_per_block; ++linear_index) {
-        const VoxelType& test_voxel = test_block.getVoxelByLinearIndex(linear_index);
+        const VoxelType &test_voxel = test_block.getVoxelByLinearIndex(linear_index);
         if (isObservedVoxel(test_voxel)) {
           if (isIgnoredVoxel(test_voxel, ignore_behind_test_surface)) {
             ++evaluation_details.num_ignored_voxels;
-            ++evaluation_details.num_gt_un_test_un;
           } else {
             ++evaluation_details.num_non_overlapping_voxels;
             const bool test_voxel_is_free = getVoxelSdf(test_voxel) > evaluation_details.free_space_threshold;
-            if(test_voxel_is_free) {
+            if (test_voxel_is_free) {
               ++evaluation_details.num_gt_un_test_free;
             } else {
               ++evaluation_details.num_gt_un_test_occ;
             }
           }
-        } else {
-          ++evaluation_details.num_gt_un_test_un;
         }
-        continue;
       }
+      continue;
+    }
     const Block<VoxelType>& gt_block = layer_gt.getBlockByIndex(block_index);
 
     typename Block<VoxelType>::Ptr error_block;
@@ -210,7 +208,6 @@ FloatingPoint evaluateLayersRmse(
         if(isObservedVoxel(gt_voxel)) {
           if (isIgnoredVoxel(gt_voxel, ignore_behind_gt_surface)) {
             ++evaluation_details.num_ignored_voxels;
-            ++evaluation_details.num_gt_un_test_un;
           } else {
             ++evaluation_details.num_non_overlapping_voxels;
             ++evaluation_details.num_observed_voxels_layer_gt;
@@ -221,8 +218,6 @@ FloatingPoint evaluateLayersRmse(
               ++evaluation_details.num_gt_occ_test_un;
             }
           }
-        } else {
-          ++evaluation_details.num_gt_un_test_un;
         }
       }
     }
@@ -280,11 +275,15 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
   if (isIgnoredVoxel(voxel_gt, ignore_behind_gt_surface)) {
     ++eval_details->num_ignored_voxels;
   }
-  if (gt_observed) {
-    ++eval_details->num_observed_voxels_layer_gt;
-  }
   if (isIgnoredVoxel(voxel_test, ignore_behind_test_surface)) {
     ++eval_details->num_ignored_voxels;
+  }
+  // If both voxels are unobserved, we simply return
+  if (!gt_observed && !test_observed) {
+    return false;
+  }
+  if (gt_observed) {
+    ++eval_details->num_observed_voxels_layer_gt;
   }
 
   const bool both_voxels_observed = gt_observed && test_observed;
