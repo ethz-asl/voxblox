@@ -120,8 +120,6 @@ FloatingPoint evaluateLayersRmse(
     Layer<VoxelType>* error_layer = nullptr) {
   // Iterate over all voxels in the test layer and look them up in the ground
   // truth layer. Then compute RMSE.
-  BlockIndexList block_list;
-  layer_test.getAllAllocatedBlocks(&block_list);
   size_t vps = layer_test.voxels_per_side();
   size_t num_voxels_per_block = vps * vps * vps;
 
@@ -145,13 +143,13 @@ FloatingPoint evaluateLayersRmse(
 
   double total_squared_error = 0.0;
 
-  for (const BlockIndex& block_index : block_list) {
-    const Block<VoxelType>& test_block =
-        layer_test.getBlockByIndex(block_index);
+  BlockIndexList test_block_list;
+  layer_test.getAllAllocatedBlocks(&test_block_list);
+  for (const BlockIndex& block_index : test_block_list) {
+    const Block<VoxelType>& test_block = layer_test.getBlockByIndex(block_index);
 
     if (!layer_gt.hasBlock(block_index)) {
-      for (size_t linear_index = 0u; linear_index < num_voxels_per_block;
-           ++linear_index) {
+      for (size_t linear_index = 0u; linear_index < num_voxels_per_block; ++linear_index) {
         const VoxelType& test_voxel = test_block.getVoxelByLinearIndex(linear_index);
         // The ground truth layer does not have that block, i.e. voxel is unknown
         if (isIgnoredVoxel(test_voxel, ignore_behind_test_surface)) {
@@ -178,8 +176,7 @@ FloatingPoint evaluateLayersRmse(
       error_block = error_layer->allocateBlockPtrByIndex(block_index);
     }
 
-    for (size_t linear_index = 0u; linear_index < num_voxels_per_block;
-         ++linear_index) {
+    for (size_t linear_index = 0u; linear_index < num_voxels_per_block; ++linear_index) {
       FloatingPoint error = 0.0;
       if (computeVoxelError(gt_block.getVoxelByLinearIndex(linear_index),
                             test_block.getVoxelByLinearIndex(linear_index),
@@ -316,14 +313,14 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
         else { ++eval_details->num_gt_occ_test_occ; }
       } else { ++eval_details->num_gt_occ_test_un; }
     }
-  } else if (test_observed) {
+  } else if (test_observed) { // test_observed, !gt_observed
     if (test_voxel_is_free) { ++eval_details->num_gt_un_test_free; }
     else { ++eval_details->num_gt_un_test_occ; }
-  } else { ++eval_details->num_gt_un_test_un; }
+  } else { ++eval_details->num_gt_un_test_un; } // neither observed
 
   // Ignore voxels that are not observed in both layers.
   if (!both_voxels_observed) {
-    ++(eval_details->num_non_overlapping_voxels);
+    ++eval_details->num_non_overlapping_voxels;
     // There is no overlap.
     return false;
   }
@@ -332,8 +329,8 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
 
   eval_details->min_error = std::min(eval_details->min_error, std::abs(*error));
   eval_details->max_error = std::max(eval_details->max_error, std::abs(*error));
-  ++(eval_details->num_evaluated_voxels);
-  ++(eval_details->num_overlapping_voxels);
+  ++eval_details->num_evaluated_voxels;
+  ++eval_details->num_overlapping_voxels;
 
   return true;
 }
