@@ -96,7 +96,7 @@ These instructions are for Ubuntu, Voxblox will also run on OS X, but you're mor
 
 First install additional system dependencies (swap kinetic for indigo as necessary):
 ```
-sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler
+sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler autoconf
 ```
 
 Next, add a few other dependencies.
