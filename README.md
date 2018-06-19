@@ -262,6 +262,7 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `update_mesh_every_n_sec` | Rate at which the mesh topic will be published to, a value of 0 disables. Note, this will not trigger any other mesh operations, such as generating a ply file. | 0.0 |
 | `publish_tsdf_map` | Whether to publish the complete TSDF map periodically over ROS topics. | false |
 | `publish_esdf_map` | Whether to publish the complete ESDF map periodically over ROS topics. | false |
+| `publish_tsdf_info` | Enables publishing of `tsdf_pointcloud`, `surface_pointcloud` and `occupied_nodes`. | false |
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
