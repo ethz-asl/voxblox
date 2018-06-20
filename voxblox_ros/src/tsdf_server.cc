@@ -162,70 +162,64 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
 void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
-    const bool is_freespace_pointcloud) {
-  // Look up transform from sensor frame to world frame.
-  Transformation T_G_C;
-  if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
-                                   world_frame_, pointcloud_msg->header.stamp,
-                                   &T_G_C)) {
-    // Convert the PCL pointcloud into our awesome format.
-    // TODO(helenol): improve...
-    // Horrible hack fix to fix color parsing colors in PCL.
-    for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
-      if (pointcloud_msg->fields[d].name == std::string("rgb")) {
-        pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
-      }
+    const Transformation& T_G_C, const bool is_freespace_pointcloud) {
+  // Convert the PCL pointcloud into our awesome format.
+  // TODO(helenol): improve...
+  // Horrible hack fix to fix color parsing colors in PCL.
+  for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
+    if (pointcloud_msg->fields[d].name == std::string("rgb")) {
+      pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
     }
-
-    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
-    // pointcloud_pcl is modified below:
-    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-
-    timing::Timer ptcloud_timer("ptcloud_preprocess");
-
-    Pointcloud points_C;
-    Colors colors;
-    points_C.reserve(pointcloud_pcl.size());
-    colors.reserve(pointcloud_pcl.size());
-    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
-          !std::isfinite(pointcloud_pcl.points[i].y) ||
-          !std::isfinite(pointcloud_pcl.points[i].z)) {
-        continue;
-      }
-
-      points_C.push_back(Point(pointcloud_pcl.points[i].x,
-                               pointcloud_pcl.points[i].y,
-                               pointcloud_pcl.points[i].z));
-      colors.push_back(
-          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
-                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
-    }
-
-    ptcloud_timer.Stop();
-
-    if (verbose_) {
-      ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
-    }
-    ros::WallTime start = ros::WallTime::now();
-    integratePointcloud(T_G_C, points_C, colors, is_freespace_pointcloud);
-    ros::WallTime end = ros::WallTime::now();
-    if (verbose_) {
-      ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
-               (end - start).toSec(),
-               tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
-    }
-
-    timing::Timer block_remove_timer("remove_distant_blocks");
-    tsdf_map_->getTsdfLayerPtr()->removeDistantBlocks(
-        T_G_C.getPosition(), max_block_distance_from_body_);
-    mesh_layer_->clearDistantMesh(T_G_C.getPosition(),
-                                 max_block_distance_from_body_);
-    block_remove_timer.Stop();
-
-    // Callback for inheriting classes.
-    newPoseCallback(T_G_C);
   }
+
+  pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+  // pointcloud_pcl is modified below:
+  pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+
+  timing::Timer ptcloud_timer("ptcloud_preprocess");
+
+  Pointcloud points_C;
+  Colors colors;
+  points_C.reserve(pointcloud_pcl.size());
+  colors.reserve(pointcloud_pcl.size());
+  for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+    if (!std::isfinite(pointcloud_pcl.points[i].x) ||
+        !std::isfinite(pointcloud_pcl.points[i].y) ||
+        !std::isfinite(pointcloud_pcl.points[i].z)) {
+      continue;
+    }
+
+    points_C.push_back(Point(pointcloud_pcl.points[i].x,
+                             pointcloud_pcl.points[i].y,
+                             pointcloud_pcl.points[i].z));
+    colors.push_back(
+        Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
+              pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+  }
+
+  ptcloud_timer.Stop();
+
+  if (verbose_) {
+    ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
+  }
+  ros::WallTime start = ros::WallTime::now();
+  integratePointcloud(T_G_C, points_C, colors, is_freespace_pointcloud);
+  ros::WallTime end = ros::WallTime::now();
+  if (verbose_) {
+    ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
+             (end - start).toSec(),
+             tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
+  }
+
+  timing::Timer block_remove_timer("remove_distant_blocks");
+  tsdf_map_->getTsdfLayerPtr()->removeDistantBlocks(
+      T_G_C.getPosition(), max_block_distance_from_body_);
+  mesh_layer_->clearDistantMesh(T_G_C.getPosition(),
+                                max_block_distance_from_body_);
+  block_remove_timer.Stop();
+
+  // Callback for inheriting classes.
+  newPoseCallback(T_G_C);
 }
 
 void TsdfServer::insertPointcloud(
@@ -238,7 +232,16 @@ void TsdfServer::insertPointcloud(
   last_msg_time = pointcloud_msg->header.stamp;
 
   constexpr bool is_freespace_pointcloud = false;
-  processPointCloudMessageAndInsert(pointcloud_msg, is_freespace_pointcloud);
+  Transformation T_G_C;
+  if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
+                                   world_frame_, pointcloud_msg->header.stamp,
+                                   &T_G_C))) {
+      processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
+                                        is_freespace_pointcloud);
+    }
+  else {
+    ROS_WARN_THROTTLE(60, "Couldn't look up pose for incoming pointcloud.");
+  }
 
   if (publish_tsdf_info_) {
     publishAllUpdatedTsdfVoxels();
@@ -266,7 +269,16 @@ void TsdfServer::insertFreespacePointcloud(
   last_msg_time = pointcloud_msg->header.stamp;
 
   constexpr bool is_freespace_pointcloud = true;
-  processPointCloudMessageAndInsert(pointcloud_msg, is_freespace_pointcloud);
+  Transformation T_G_C;
+  if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
+                                   world_frame_, pointcloud_msg->header.stamp,
+                                   &T_G_C))) {
+      processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
+                                        is_freespace_pointcloud);
+    }
+  else {
+    ROS_WARN_THROTTLE(60, "Couldn't look up pose for incoming pointcloud.");
+  }
 }
 
 void TsdfServer::integratePointcloud(const Transformation& T_G_C,
