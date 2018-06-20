@@ -46,6 +46,7 @@ class TsdfServer {
 
   virtual void processPointCloudMessageAndInsert(
       const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
+      const Transformation& T_G_C,
       const bool is_freespace_pointcloud);
 
   void integratePointcloud(const Transformation& T_G_C,
