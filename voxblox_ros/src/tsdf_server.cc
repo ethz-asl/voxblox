@@ -235,11 +235,10 @@ void TsdfServer::insertPointcloud(
   Transformation T_G_C;
   if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
                                    world_frame_, pointcloud_msg->header.stamp,
-                                   &T_G_C))) {
-      processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
-                                        is_freespace_pointcloud);
-    }
-  else {
+                                   &T_G_C)) {
+    processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
+                                      is_freespace_pointcloud);
+  } else {
     ROS_WARN_THROTTLE(60, "Couldn't look up pose for incoming pointcloud.");
   }
 
@@ -272,11 +271,10 @@ void TsdfServer::insertFreespacePointcloud(
   Transformation T_G_C;
   if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
                                    world_frame_, pointcloud_msg->header.stamp,
-                                   &T_G_C))) {
-      processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
-                                        is_freespace_pointcloud);
-    }
-  else {
+                                   &T_G_C)) {
+    processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
+                                      is_freespace_pointcloud);
+  } else {
     ROS_WARN_THROTTLE(60, "Couldn't look up pose for incoming pointcloud.");
   }
 }
