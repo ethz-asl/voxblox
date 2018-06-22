@@ -96,7 +96,7 @@ These instructions are for Ubuntu, Voxblox will also run on OS X, but you're mor
 
 First install additional system dependencies (swap kinetic for indigo as necessary):
 ```
-sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler
+sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler autoconf
 ```
 
 Next, add a few other dependencies.
@@ -197,6 +197,7 @@ A summary of the user setable tsdf_server and esdf_server parameters:
 | `min_time_between_msgs_sec` |  Minimum time to wait after integrating a message before accepting a new one. | 0.0 |
 | `pointcloud_queue_size` | The size of the queue used to subscribe to pointclouds. | 1 |
 | `verbose` | Prints additional debug and timing information. | true |
+| `max_block_distance_from_body` | Blocks that are more than this distance from the latest robot pose are deleted, saving memory | 3.40282e+38 |
 
 
 ### TSDF Integrator Parameters
@@ -259,6 +260,9 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `color_mode` | The method that will be used for coloring the mesh. Options are "color", "height", "normals", "lambert" and "gray". | "color" |
 | `mesh_min_weight` | The minimum weighting needed for a point to be included in the mesh | 1e-4 |
 | `update_mesh_every_n_sec` | Rate at which the mesh topic will be published to, a value of 0 disables. Note, this will not trigger any other mesh operations, such as generating a ply file. | 0.0 |
+| `publish_tsdf_map` | Whether to publish the complete TSDF map periodically over ROS topics. | false |
+| `publish_esdf_map` | Whether to publish the complete ESDF map periodically over ROS topics. | false |
+| `publish_tsdf_info` | Enables publishing of `tsdf_pointcloud`, `surface_pointcloud` and `occupied_nodes`. | false |
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...

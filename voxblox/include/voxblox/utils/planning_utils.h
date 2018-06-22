@@ -41,7 +41,7 @@ inline void fillSphereAroundPoint(Layer<EsdfVoxel>* layer,
          const Block<EsdfVoxel>::Ptr block_ptr =
              layer->allocateBlockPtrByCoordinates(point);
          const VoxelIndex voxel_index =
-             block_ptr->computeVoxelIndexFromCoordinates(point);
+             block_ptr->computeTruncatedVoxelIndexFromCoordinates(point);
          EsdfVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
          const Point voxel_center =
              block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
@@ -88,7 +88,7 @@ inline void clearSphereAroundPoint(Layer<EsdfVoxel>* layer,
           const typename Block<EsdfVoxel>::Ptr block_ptr =
               layer->allocateBlockPtrByCoordinates(point);
           const VoxelIndex voxel_index =
-              block_ptr->computeVoxelIndexFromCoordinates(point);
+              block_ptr->computeTruncatedVoxelIndexFromCoordinates(point);
           EsdfVoxel& voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
           const Point voxel_center =
               block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);

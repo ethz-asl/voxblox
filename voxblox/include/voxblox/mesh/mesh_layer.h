@@ -122,6 +122,18 @@ class MeshLayer {
     mesh_map_.erase(computeBlockIndexFromCoordinates(coords));
   }
 
+  void clearDistantMesh(const Point& center, const double max_distance) {
+    // we clear the mesh, but do not delete it from the map as the empty mesh
+    // must be sent to rviz so it is also cleared there
+    for (std::pair<const BlockIndex, typename Mesh::Ptr>& kv : mesh_map_) {
+      if ((kv.second->origin - center).squaredNorm() >
+          max_distance * max_distance) {
+        kv.second->clear();
+        kv.second->updated = true;
+      }
+    }
+  }
+
   void getAllAllocatedMeshes(BlockIndexList* meshes) const {
     meshes->clear();
     meshes->reserve(mesh_map_.size());
