@@ -39,7 +39,7 @@ void EsdfIntegrator::getSphereAroundPoint(
 
           (*block_voxel_list)[block_index].push_back(
               esdf_layer_->allocateBlockPtrByIndex(block_index)
-                  ->computeVoxelIndexFromCoordinates(point));
+                  ->computeTruncatedVoxelIndexFromCoordinates(point));
         }
       }
     }

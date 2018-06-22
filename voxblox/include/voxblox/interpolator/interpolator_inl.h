@@ -131,7 +131,7 @@ bool Interpolator<VoxelType>::getAdaptiveDistanceAndGradient(
   // If we weren't able to get the original interpolated distance value, then
   // use the computed gradient to estimate what the value should be.
   if (!has_interpolated_distance) {
-    VoxelIndex voxel_index = block_ptr->computeVoxelIndexFromCoordinates(pos);
+    VoxelIndex voxel_index = block_ptr->computeTruncatedVoxelIndexFromCoordinates(pos);
     Point voxel_pos = block_ptr->computeCoordinatesFromVoxelIndex(voxel_index);
 
     Point voxel_offset = pos - voxel_pos;
@@ -153,7 +153,7 @@ bool Interpolator<VoxelType>::setIndexes(const Point& pos,
   if (block_ptr == nullptr) {
     return false;
   }
-  VoxelIndex voxel_index = block_ptr->computeVoxelIndexFromCoordinates(pos);
+  VoxelIndex voxel_index = block_ptr->computeTruncatedVoxelIndexFromCoordinates(pos);
 
   // shift index to bottom left corner voxel (makes math easier)
   Point center_offset =
