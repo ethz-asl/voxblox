@@ -42,15 +42,6 @@ class EsdfMap {
   // Creates a new EsdfMap that contains this layer.
   explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer)
       : esdf_layer_(layer), interpolator_(CHECK_NOTNULL(esdf_layer_.get())) {
-    if (!layer) {
-      /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
-       * This is idiomatic when wrapping C++ code for Python, especially with
-       * pybind11
-       */
-      throw std::runtime_error(std::string("Null Layer<EsdfVoxel>::Ptr") +
-                               " in EsdfMap constructor");
-    }
-
     block_size_ = layer->block_size();
   }
 

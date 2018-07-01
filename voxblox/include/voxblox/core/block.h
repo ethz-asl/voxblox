@@ -140,6 +140,10 @@ class Block {
     return &voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
+  inline const VoxelType* getVoxelPtrByCoordinates(const Point& coords) const {
+    return &voxels_[computeLinearIndexFromCoordinates(coords)];
+  }
+
   inline VoxelType& getVoxelByLinearIndex(size_t index) {
     DCHECK_LT(index, num_voxels_);
     return voxels_[index];
