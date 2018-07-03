@@ -256,7 +256,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
         esdf_voxel.in_queue = true;
         open_.push(std::make_pair(block_index, voxel_index),
                    esdf_voxel.distance);
-        // pushNeighborsToOpen(block_index, voxel_index);
+        pushNeighborsToOpen(block_index, voxel_index);
       }
     }
   }
