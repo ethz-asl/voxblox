@@ -275,6 +275,15 @@ inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
   return false;
 }
 
+inline bool visualizeFreeEsdfVoxels(const EsdfVoxel& voxel,
+                                        const Point& /*coord*/, float min_distance, double* intensity) {
+  if (voxel.observed && voxel.distance >= min_distance) {
+    *intensity = voxel.distance;
+    return true;
+  }
+  return false;
+}
+
 inline bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
                                              const Point& /*coord*/) {
   const float kThresholdLogOccupancy = logOddsFromProbability(0.7);
@@ -336,6 +345,16 @@ inline void createDistancePointcloudFromEsdfLayer(
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer, &visualizeDistanceIntensityEsdfVoxels, pointcloud);
+}
+
+
+inline void createFreePointcloudFromEsdfLayer(
+    const Layer<EsdfVoxel>& layer, float min_distance,
+    pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
+  createColorPointcloudFromLayer<EsdfVoxel>(
+      layer, std::bind(&visualizeFreeEsdfVoxels, ph::_1,
+                       ph::_2, min_distance, ph::_3), pointcloud);
 }
 
 inline void createTemperaturePointcloudFromThermalLayer(
