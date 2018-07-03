@@ -20,24 +20,7 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                                             tsdf_map_->getTsdfLayerPtr(),
                                             esdf_map_->getEsdfLayerPtr()));
 
-  // Set up publisher.
-  esdf_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
-                                                              1, true);
-  esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-      "esdf_slice", 1, true);
-  esdf_map_pub_ =
-      nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
-
-  // Set up subscriber.
-  esdf_map_sub_ = nh_private_.subscribe("esdf_map_in", 1,
-                                        &EsdfServer::esdfMapCallback, this);
-
-  // Whether to clear each new pose as it comes in, and then set a sphere
-  // around it to occupied.
-  nh_private_.param("clear_sphere_for_planning", clear_sphere_for_planning_,
-                    clear_sphere_for_planning_);
-  nh_private_.param("publish_esdf_map", publish_esdf_map_, publish_esdf_map_);
+  setupRos();
 }
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
@@ -56,12 +39,19 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                                             tsdf_map_->getTsdfLayerPtr(),
                                             esdf_map_->getEsdfLayerPtr()));
 
+  setupRos();
+}
+
+void EsdfServer::setupRos() {
   // Set up publisher.
   esdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_pointcloud",
                                                               1, true);
   esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "esdf_slice", 1, true);
+  traversible_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "traversible", 1, true);
+
   esdf_map_pub_ =
       nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
 
@@ -74,6 +64,13 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   nh_private_.param("clear_sphere_for_planning", clear_sphere_for_planning_,
                     clear_sphere_for_planning_);
   nh_private_.param("publish_esdf_map", publish_esdf_map_, publish_esdf_map_);
+
+  // Special output for traversible voxels. Publishes all voxels with distance
+  // at least traversibility radius.
+  nh_private_.param("publish_traversible", publish_traversible_,
+                    publish_traversible_);
+  nh_private_.param("traversibility_radius", traversibility_radius_,
+                    traversibility_radius_);
 }
 
 void EsdfServer::publishAllUpdatedEsdfVoxels() {
@@ -122,6 +119,8 @@ void EsdfServer::updateMesh() {
   }
   if (publish_pointclouds_) {
     publishAllUpdatedEsdfVoxels();
+  } else if (publish_traversible_) {
+    publishTraversible();
   }
 
   if (publish_esdf_map_ && esdf_map_pub_.getNumSubscribers() > 0) {
@@ -141,7 +140,19 @@ void EsdfServer::publishPointclouds() {
     publishSlices();
   }
 
+  if (publish_traversible_) {
+    publishTraversible();
+  }
+
   TsdfServer::publishPointclouds();
+}
+
+void EsdfServer::publishTraversible() {
+  pcl::PointCloud<pcl::PointXYZI> pointcloud;
+  createFreePointcloudFromEsdfLayer(esdf_map_->getEsdfLayer(),
+                                    traversibility_radius_, &pointcloud);
+  pointcloud.header.frame_id = world_frame_;
+  traversible_pub_.publish(pointcloud);
 }
 
 void EsdfServer::publishMap(const bool reset_remote_map) {
