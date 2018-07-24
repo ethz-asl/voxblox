@@ -160,6 +160,7 @@ void Block<SkeletonVoxel>::deserializeFromIntegers(
 
     voxel.vertex_id = static_cast<int64_t>(bytes_3);
   }
+}
 
 // Serialization functions:
 template <>
