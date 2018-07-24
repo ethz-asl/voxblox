@@ -134,8 +134,7 @@ bool SkeletonAStar::getPathInVoxels(
   IndexToParentMap parent_map;
 
   // Make the 2 sets we need.
-  IndexSet open_set;  // This should be a priority queue... But then harder
-  // to check for belonging. Ehhh. Just sort it each time.
+  IndexSet open_set;
   IndexSet closed_set;
 
   Eigen::Vector3i current_voxel_offset = Eigen::Vector3i::Zero();
@@ -154,12 +153,6 @@ bool SkeletonAStar::getPathInVoxels(
 
   while (!open_set.empty()) {
     num_iterations++;
-    if (num_iterations % 1000 == 0) {
-      /* LOG(INFO) << "Iterations: " << num_iterations
-                << " Closed set size: " << closed_set.size()
-                << " Open set size: " << open_set.size()
-                << " Current offset: " << current_voxel_offset.transpose(); */
-    }
     if (max_iterations_ > 0 && num_iterations > max_iterations_) {
       break;
     }

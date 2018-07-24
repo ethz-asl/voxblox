@@ -74,12 +74,6 @@ bool getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
   return surface_found;
 }
 
-/*template <>
-inline bool getSurfaceDistanceAlongRay(const Layer<TsdfVoxel>& layer,
-                                const Point& ray_origin,
-                                const Point& bearing_vector,
-                                double max_distance, Point* triangulated_pose);
-*/
 }  // namespace voxblox
 
 #endif  // VOXBLOX_UTILS_DISTANCE_UTILS_H_
