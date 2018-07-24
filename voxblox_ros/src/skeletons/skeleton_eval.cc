@@ -26,8 +26,7 @@ class SkeletonEvalNode {
   void generateSkeleton();
 
   void generateMapFromGroundTruth();
-  void generateMapFromRobotPoses(int num_poses, int seed,
-                                 FloatingPoint noise_level);
+  void generateMapFromRobotPoses(int num_poses, int seed);
 
   // Utility functions.
   double randMToN(double m, double n) const;
@@ -55,7 +54,6 @@ class SkeletonEvalNode {
 
   Eigen::Vector2i camera_resolution_;
   double camera_fov_h_rad_;
-  double camera_min_dist_;
   double camera_max_dist_;
 
   bool apply_noise_;
@@ -76,7 +74,6 @@ SkeletonEvalNode::SkeletonEvalNode(const ros::NodeHandle& nh,
       tsdf_max_distance_(0.4),
       camera_resolution_(320, 240),
       camera_fov_h_rad_(1.5708),  // 90 deg
-      camera_min_dist_(0.5),
       camera_max_dist_(10.0),
       apply_noise_(false),
       noise_sigma_(0.0),
@@ -137,10 +134,6 @@ void SkeletonEvalNode::generateWorld() {
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Cube(
       Point(13.75, 8.5, 1.25), Point(2.5, 2.0, 2.5), voxblox::Color::Green())));
 
-  // ..."Fun" object...
-  /* world_.addObject(std::unique_ptr<voxblox::Object>(
-      new voxblox::Cube(Point(12.5, 3.125, 1.25), Point(1.0, 3.75, 2.5),
-                        voxblox::Color::Pink()))); */
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Cylinder(
       Point(12.5, 5.0, 1.25), 0.5, 2.5, voxblox::Color::Pink())));
   world_.addObject(std::unique_ptr<voxblox::Object>(new voxblox::Sphere(
@@ -151,8 +144,6 @@ void SkeletonEvalNode::generateWorld() {
 
 void SkeletonEvalNode::generateMapFromGroundTruth() {
   voxblox_server_.setSliceLevel(1.5);
-  // world_.generateSdfFromWorld<voxblox::EsdfVoxel>(
-  //    esdf_max_distance_, voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
   world_.generateSdfFromWorld<voxblox::TsdfVoxel>(
       tsdf_max_distance_, voxblox_server_.getTsdfMapPtr()->getTsdfLayerPtr());
   voxblox_server_.setEsdfMaxDistance(esdf_max_distance_);
@@ -199,8 +190,7 @@ void SkeletonEvalNode::transformPointcloud(
   }
 }
 
-void SkeletonEvalNode::generateMapFromRobotPoses(int num_poses, int seed,
-                                                 FloatingPoint noise_level) {
+void SkeletonEvalNode::generateMapFromRobotPoses(int num_poses, int seed) {
   voxblox_server_.setSliceLevel(1.5);
   voxblox_server_.setClearSphere(true);
   voxblox_server_.setEsdfMaxDistance(esdf_max_distance_);
@@ -240,11 +230,6 @@ void SkeletonEvalNode::generateMapFromRobotPoses(int num_poses, int seed,
     // Transform back into camera frame.
     transformPointcloud(T_G_C.inverse(), ptcloud, &ptcloud_C);
     voxblox_server_.integratePointcloud(T_G_C, ptcloud_C, colors);
-
-    // Step 4: update mesh and ESDF. NewPoseCallback will mark unknown as
-    // occupied and clear space otherwise.
-    // voxblox_server_.newPoseCallback(T_G_C);
-    // voxblox_server_.updateEsdf();
   }
 
   voxblox_server_.updateEsdfBatch(full_euclidean_distance_);
@@ -335,9 +320,13 @@ int main(int argc, char** argv) {
   voxblox::SkeletonEvalNode node(nh, nh_private);
 
   node.generateWorld();
-  // node.generateMapFromRobotPoses(200, 1, 0.0);
 
-  node.generateMapFromGroundTruth();
+  bool generate_from_robot_poses = false;
+  if (generate_from_robot_poses) {
+    node.generateMapFromRobotPoses(200, 1);
+  } else {
+    node.generateMapFromGroundTruth();
+  }
   node.generateSkeleton();
 
   ros::spin();
