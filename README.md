@@ -156,7 +156,7 @@ Note: the voxblox_node has been replaced with tsdf_server (if you want a TSDF) o
 The tsdf_server and esdf_server publish and subscribe to the following topics:
 
 - Published topics:
-  - **`mesh`** of type `visualization_msgs::MarkerArray`. A visualization topic showing the mesh produced from the tsdf in a form that can be seen in RViz. Set `update_mesh_every_n_sec` to control its update rate.
+  - **`mesh`** of type `voxblox_msgs::MeshBlock`. A visualization topic showing the mesh produced from the tsdf in a form that can be seen in RViz. Set `update_mesh_every_n_sec` to control its update rate.
   - **`surface_pointcloud`** of type `pcl::PointCloud<pcl::PointXYZRGB>`. A colored pointcloud of the voxels that are close to a surface.
   - **`tsdf_pointcloud`** of type `pcl::PointCloud<pcl::PointXYZI>`. A pointcloud showing all allocated voxels.
   - **`mesh_pointcloud`** of type `pcl::PointCloud<pcl::PointXYZRGB>`. Only appears if `output_mesh_as_pointcloud` is true, outputs a pointcloud containing the verticies of the generated mesh.
