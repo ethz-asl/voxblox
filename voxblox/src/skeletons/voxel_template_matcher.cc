@@ -75,25 +75,6 @@ void VoxelTemplateMatcher::setDeletionTemplates() {
   addIntegerTemplate(38339730, 128);
   addIntegerTemplate(38339730, 524288);
   addIntegerTemplate(38339730, 33554432);
-
-  // Template from Ma "Connectivity Preservation of 3D 6-Subiteration
-  // Thinning Algorithms"
-  /* addIntegerTemplate(134209535, 23096);
-addIntegerTemplate(134209535, 104066);
-addIntegerTemplate(134209535, 184376);
-addIntegerTemplate(134209535, 216194);
-addIntegerTemplate(134209535, 6816794);
-addIntegerTemplate(134209535, 6819866);
-addIntegerTemplate(134209535, 13108274);
-addIntegerTemplate(134209535, 13123634);
-addIntegerTemplate(134209535, 14703104);
-addIntegerTemplate(134209535, 14864384);
-addIntegerTemplate(134209535, 34182656);
-addIntegerTemplate(134209535, 34294784);
-addIntegerTemplate(134209535, 39850136);
-addIntegerTemplate(134209535, 39911576);
-addIntegerTemplate(134209535, 46153904);
-addIntegerTemplate(134209535, 46203056); */
 }
 
 void VoxelTemplateMatcher::setConnectivityTemplates() {
@@ -112,54 +93,9 @@ void VoxelTemplateMatcher::setConnectivityTemplates() {
   addIntegerTemplate(12799024, 16384);
   addIntegerTemplate(37998736, 65536);
   addIntegerTemplate(48845824, 4194304);
-
-  // Template E
-  /* addIntegerTemplate(1042, 1040);
- addIntegerTemplate(4120, 4112);
- addIntegerTemplate(5632, 5120);
- addIntegerTemplate(16432, 16400);
- addIntegerTemplate(19456, 17408);
- addIntegerTemplate(65680, 65552);
- addIntegerTemplate(102400, 69632);
- addIntegerTemplate(212992, 81920);
- addIntegerTemplate(4719616, 4195328);
- addIntegerTemplate(6295552, 4198400);
- addIntegerTemplate(12599296, 4210688);
- addIntegerTemplate(37814272, 4259840);
-
-   // Template F
-   addIntegerTemplate(4281360, 1040);
-   addIntegerTemplate(4281360, 4112);
-   addIntegerTemplate(4281360, 5120);
-   addIntegerTemplate(4281360, 16400);
-   addIntegerTemplate(4281360, 17408);
-   addIntegerTemplate(4281360, 65552);
-   addIntegerTemplate(4281360, 69632);
-   addIntegerTemplate(4281360, 81920);
-   addIntegerTemplate(4281360, 4195328);
-   addIntegerTemplate(4281360, 4198400);
-   addIntegerTemplate(4281360, 4210688);
-   addIntegerTemplate(4281360, 4259840); */
 }
 
 void VoxelTemplateMatcher::setCornerTemplates() {
-  /* addIntegerTemplate(1904639, 65536);
-  addIntegerTemplate(19190783, 16384);
-  addIntegerTemplate(20766287, 16384);
-  addIntegerTemplate(23368703, 4194304);
-  addIntegerTemplate(76700159, 4096);
-  addIntegerTemplate(77487911, 4096);
-  addIntegerTemplate(80890367, 4194304);
-  addIntegerTemplate(117671423, 1024);
-  addIntegerTemplate(120050633, 16384);
-  addIntegerTemplate(127130084, 4096);
-  addIntegerTemplate(133993049, 16);
-  addIntegerTemplate(134009417, 16384);
-  addIntegerTemplate(134024711, 65536);
-  addIntegerTemplate(134105396, 16);
-  addIntegerTemplate(134109476, 4096);
-  addIntegerTemplate(134186432, 1024); */
-
   // New templates:
   addIntegerTemplate(20766719, 16384);
   addIntegerTemplate(20815871, 65536);
