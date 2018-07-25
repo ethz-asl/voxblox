@@ -135,7 +135,6 @@ void Block<EsdfVoxel>::deserializeFromIntegers(
   }
 }
 
-
 template <>
 void Block<SkeletonVoxel>::deserializeFromIntegers(
     const std::vector<uint32_t>& data) {
@@ -147,13 +146,13 @@ void Block<SkeletonVoxel>::deserializeFromIntegers(
        ++voxel_idx, data_idx += kNumDataPacketsPerVoxel) {
     const uint32_t bytes_1 = data[data_idx];
     const uint32_t bytes_2 = data[data_idx + 1u];
-    const uint32_t bytes_3 = data[data_idx + 2u];
+    const int32_t bytes_3 = data[data_idx + 2u];
 
     SkeletonVoxel& voxel = voxels_[voxel_idx];
 
     memcpy(&(voxel.distance), &bytes_1, sizeof(bytes_1));
 
-    voxel.num_basis_points = static_cast<bool>(bytes_2 & 0x000000FF);
+    voxel.num_basis_points = static_cast<uint8_t>(bytes_2 & 0x000000FF);
     voxel.is_face = static_cast<bool>(bytes_2 & 0x0000FF00);
     voxel.is_edge = static_cast<bool>(bytes_2 & 0x00FF0000);
     voxel.is_vertex = static_cast<bool>(bytes_2 & 0xFF000000);
@@ -264,7 +263,7 @@ void Block<SkeletonVoxel>::serializeToIntegers(
                     (static_cast<uint32_t>(byte4) << 24));
     // ...Just compress vertexID down to a 32-bit integer. Sure this will
     // never cause any problems down the line.
-    uint32_t bytes_3 = 0;
+    int32_t bytes_3 = -1;
     if (voxel.vertex_id > 0) {
       bytes_3 = static_cast<int32_t>(voxel.vertex_id);
     }
@@ -272,6 +271,5 @@ void Block<SkeletonVoxel>::serializeToIntegers(
   }
   CHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, data->size());
 }
-
 
 }  // namespace voxblox
