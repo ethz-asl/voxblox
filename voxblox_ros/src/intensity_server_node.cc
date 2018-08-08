@@ -1,4 +1,4 @@
-#include "voxblox_ros/thermal_server.h"
+#include "voxblox_ros/intensity_server.h"
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "voxblox");
@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
 
-  voxblox::ThermalServer node(nh, nh_private);
+  voxblox::IntensityServer node(nh, nh_private);
 
   ros::spin();
   return 0;
