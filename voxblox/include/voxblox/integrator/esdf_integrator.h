@@ -40,6 +40,11 @@ class EsdfIntegrator {
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
+    // Whether to add an outside layer of occupied voxels. Basically just sets
+    // all unknown voxels in the allocated blocks to occupied.
+    // Only implemented in Batch Full Euclidean updating. If using incremental
+    // updates, prefer to use occupied spheres below.
+    bool add_occupied_crust = true;
 
     // For marking unknown space around a robot as free or occupied, these are
     // the radiuses used around each robot position.

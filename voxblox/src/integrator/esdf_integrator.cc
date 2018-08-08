@@ -221,8 +221,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
   VLOG(3) << "[ESDF update]: Lower: " << num_lower << " Raise: " << num_raise
           << " New: " << num_new;
 
-  bool add_occupied_crust = true;
-  if (add_occupied_crust) {
+  if (config_.add_occupied_crust) {
     timing::Timer crust_timer("esdf/crust");
 
     // This just sets all the unknown voxels in the whole space to occupied.
