@@ -242,11 +242,11 @@ inline bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
   return false;
 }
 
-inline bool visualizeTemperatureIntensityThermalVoxels(
-    const ThermalVoxel& voxel, const Point& /*coord*/, double* intensity) {
+inline bool visualizeIntensityVoxels(
+    const IntensityVoxel& voxel, const Point& /*coord*/, double* intensity) {
   CHECK_NOTNULL(intensity);
-  if (voxel.observations > 0) {
-    *intensity = voxel.temperature;
+  if (voxel.weight > 0.0) {
+    *intensity = voxel.intensity;
     return true;
   }
   return false;
@@ -357,12 +357,12 @@ inline void createFreePointcloudFromEsdfLayer(
                        ph::_2, min_distance, ph::_3), pointcloud);
 }
 
-inline void createTemperaturePointcloudFromThermalLayer(
-    const Layer<ThermalVoxel>& layer,
+inline void createIntensityPointcloudFromIntensityLayer(
+    const Layer<IntensityVoxel>& layer,
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
-  createColorPointcloudFromLayer<ThermalVoxel>(
-      layer, &visualizeTemperatureIntensityThermalVoxels, pointcloud);
+  createColorPointcloudFromLayer<IntensityVoxel>(
+      layer, &visualizeIntensityVoxels, pointcloud);
 }
 
 inline void createDistancePointcloudFromTsdfLayerSlice(
