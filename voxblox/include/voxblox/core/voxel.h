@@ -37,9 +37,9 @@ struct OccupancyVoxel {
   bool observed = false;
 };
 
-struct ThermalVoxel {
-  float temperature = 0.0f;
-  uint8_t observations = 0u;
+struct IntensityVoxel {
+  float intensity = 0.0f;
+  float weight = 0.0f;
 };
 
 // Used for serialization only.
@@ -48,7 +48,7 @@ const std::string kNotSerializable = "not_serializable";
 const std::string kTsdf = "tsdf";
 const std::string kEsdf = "esdf";
 const std::string kOccupancy = "occupancy";
-const std::string kThermal = "thermal";
+const std::string kIntensity = "intensity";
 }  // namespace voxel_types
 
 template <typename Type>
@@ -72,8 +72,8 @@ inline std::string getVoxelType<OccupancyVoxel>() {
 }
 
 template <>
-inline std::string getVoxelType<ThermalVoxel>() {
-  return voxel_types::kThermal;
+inline std::string getVoxelType<IntensityVoxel>() {
+  return voxel_types::kIntensity;
 }
 
 }  // namespace voxblox

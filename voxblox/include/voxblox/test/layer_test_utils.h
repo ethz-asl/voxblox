@@ -123,15 +123,10 @@ void LayerTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
 }
 
 template <>
-void LayerTest<SkeletonVoxel>::CompareVoxel(
-    const SkeletonVoxel& voxel_A, const SkeletonVoxel& voxel_B) const {
-  EXPECT_EQ(1, 1);
-  EXPECT_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
-  EXPECT_EQ(voxel_A.num_basis_points, voxel_B.num_basis_points);
-  EXPECT_EQ(voxel_A.is_face, voxel_B.is_face);
-  EXPECT_EQ(voxel_A.is_edge, voxel_B.is_edge);
-  EXPECT_EQ(voxel_A.is_vertex, voxel_B.is_vertex);
-  EXPECT_EQ(voxel_A.vertex_id, voxel_B.vertex_id);
+void LayerTest<IntensityVoxel>::CompareVoxel(
+    const IntensityVoxel& voxel_A, const IntensityVoxel& voxel_B) const {
+  EXPECT_NEAR(voxel_A.intensity, voxel_B.intensity, kTolerance);
+  EXPECT_NEAR(voxel_A.weight, voxel_B.weight, kTolerance);
 }
 
 template <typename VoxelType>
@@ -212,16 +207,10 @@ inline void fillVoxelWithTestData(size_t x, size_t y, size_t z,
 
 template <>
 inline void fillVoxelWithTestData(size_t x, size_t y, size_t z,
-                                  SkeletonVoxel* voxel) {
+                                  IntensityVoxel* voxel) {
   CHECK_NOTNULL(voxel);
-  voxel->distance = x * y * 0.66 + z;
-  voxel->num_basis_points = static_cast<uint8_t>(x % 255);
-  voxel->is_face = static_cast<bool>(x % 2);
-  voxel->is_edge = voxel->is_face && static_cast<bool>(y % 2);
-  voxel->is_vertex = voxel->is_vertex && static_cast<bool>(z % 2);
-  if (voxel->is_vertex) {
-    voxel->vertex_id = static_cast<int64_t>(z);
-  }
+  voxel->intensity = x * y * 0.66 + z;
+  voxel->weight = y * z * 0.33 + x;
 }
 
 }  // namespace test
