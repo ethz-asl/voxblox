@@ -37,15 +37,6 @@ struct OccupancyVoxel {
   bool observed = false;
 };
 
-struct SkeletonVoxel {
-  float distance = 0.0f;
-  uint8_t num_basis_points = 0u;
-  bool is_face = false;
-  bool is_edge = false;
-  bool is_vertex = false;
-  int64_t vertex_id = -1;
-};
-
 struct ThermalVoxel {
   float temperature = 0.0f;
   uint8_t observations = 0u;
@@ -57,7 +48,6 @@ const std::string kNotSerializable = "not_serializable";
 const std::string kTsdf = "tsdf";
 const std::string kEsdf = "esdf";
 const std::string kOccupancy = "occupancy";
-const std::string kSkeleton = "skeleton";
 const std::string kThermal = "thermal";
 }  // namespace voxel_types
 
@@ -79,11 +69,6 @@ inline std::string getVoxelType<EsdfVoxel>() {
 template <>
 inline std::string getVoxelType<OccupancyVoxel>() {
   return voxel_types::kOccupancy;
-}
-
-template <>
-inline std::string getVoxelType<SkeletonVoxel>() {
-  return voxel_types::kSkeleton;
 }
 
 template <>

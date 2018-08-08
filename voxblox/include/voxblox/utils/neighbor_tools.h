@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_SKELETONS_NEIGHBOR_TOOLS_H_
-#define VOXBLOX_SKELETONS_NEIGHBOR_TOOLS_H_
+#ifndef VOXBLOX_UTILS_NEIGHBOR_TOOLS_H_
+#define VOXBLOX_UTILS_NEIGHBOR_TOOLS_H_
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
@@ -178,4 +178,4 @@ SignedIndex NeighborTools<VoxelType>::getOffsetBetweenVoxels(
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_SKELETONS_NEIGHBOR_TOOLS_H_
+#endif  // VOXBLOX_UTILS_NEIGHBOR_TOOLS_H_

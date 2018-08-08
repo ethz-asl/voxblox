@@ -52,16 +52,6 @@ cs_add_executable(visualize_tsdf
 )
 target_link_libraries(visualize_tsdf ${PROJECT_NAME})
 
-cs_add_executable(skeletonizer
-  src/skeletons/skeletonizer.cc
-)
-target_link_libraries(skeletonizer ${PROJECT_NAME})
-
-cs_add_executable(skeleton_eval
-  src/skeletons/skeleton_eval.cc
-)
-target_link_libraries(skeleton_eval ${PROJECT_NAME})
-
 ##########
 # EXPORT #
 ##########
