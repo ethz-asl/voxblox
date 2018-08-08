@@ -66,13 +66,13 @@ class RayCaster {
   RayCaster(const Point& start_scaled, const Point& end_scaled);
 
   // returns false if ray terminates at ray_index, true otherwise
-  bool nextRayIndex(AnyIndex* ray_index);
+  bool nextRayIndex(GlobalIndex* ray_index);
 
  private:
   void setupRayCaster(const Point& start_scaled, const Point& end_scaled);
 
   Ray t_to_next_boundary_;
-  AnyIndex curr_index_;
+  GlobalIndex curr_index_;
   AnyIndex ray_step_signs_;
   Ray t_step_size_;
 
@@ -84,12 +84,12 @@ class RayCaster {
 // size. The indices are also returned in this scales coordinate system, which
 // should map to voxel indices.
 inline void castRay(const Point& start_scaled, const Point& end_scaled,
-                    AlignedVector<AnyIndex>* indices) {
+                    AlignedVector<GlobalIndex>* indices) {
   CHECK_NOTNULL(indices);
 
   RayCaster ray_caster(start_scaled, end_scaled);
 
-  AnyIndex ray_index;
+  GlobalIndex ray_index;
   while (ray_caster.nextRayIndex(&ray_index)) {
     indices->push_back(ray_index);
   }
@@ -115,13 +115,13 @@ inline void getHierarchicalIndexAlongRay(
   const Point start_scaled = ray_start * voxel_size_inv;
   const Point end_scaled = ray_end * voxel_size_inv;
 
-  IndexVector global_voxel_index;
+  AlignedVector<GlobalIndex> global_voxel_index;
   timing::Timer cast_ray_timer("integrate/cast_ray");
   castRay(start_scaled, end_scaled, &global_voxel_index);
   cast_ray_timer.Stop();
 
   timing::Timer create_index_timer("integrate/create_hi_index");
-  for (const AnyIndex& global_voxel_idx : global_voxel_index) {
+  for (const GlobalIndex& global_voxel_idx : global_voxel_index) {
     BlockIndex block_idx = getBlockIndexFromGlobalVoxelIndex(
         global_voxel_idx, voxels_per_side_inv);
     VoxelIndex local_voxel_idx =

@@ -128,8 +128,9 @@ void SkeletonGenerator::generateSkeleton() {
       AlignedVector<VoxelKey> neighbors;
       AlignedVector<float> distances;
       AlignedVector<Eigen::Vector3i> directions;
-      neighbor_tools_.getNeighborsAndDistances(
-          block_index, voxel_index, 6, &neighbors, &distances, &directions);
+      neighbor_tools_.getNeighborsAndDistances(block_index, voxel_index,
+                                               Connectivity::kSix, &neighbors,
+                                               &distances, &directions);
 
       // Just go though the 6-connectivity set of this to start.
       SkeletonPoint skeleton_point;
@@ -255,7 +256,8 @@ void SkeletonGenerator::generateEdgesByLayerNeighbors() {
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
     neighbor_tools_.getNeighborsAndDistances(
-        block_index, voxel_index, 26, &neighbors, &distances, &directions);
+        block_index, voxel_index, Connectivity::kTwentySix, &neighbors,
+        &distances, &directions);
 
     int num_neighbors_on_medial_axis = 0;
     for (size_t i = 0; i < neighbors.size(); ++i) {
@@ -316,7 +318,8 @@ size_t SkeletonGenerator::pruneDiagramEdges() {
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
     neighbor_tools_.getNeighborsAndDistances(
-        block_index, voxel_index, 26, &neighbors, &distances, &directions);
+        block_index, voxel_index, Connectivity::kTwentySix, &neighbors,
+        &distances, &directions);
 
     std::bitset<27> neighbor_bitset;
     for (size_t i = 0; i < neighbors.size(); ++i) {
@@ -453,7 +456,8 @@ void SkeletonGenerator::generateVerticesByLayerNeighbors() {
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
     neighbor_tools_.getNeighborsAndDistances(
-        block_index, voxel_index, 26, &neighbors, &distances, &directions);
+        block_index, voxel_index, Connectivity::kTwentySix, &neighbors,
+        &distances, &directions);
 
     int num_neighbors_on_edges = 0;
     // Just go though the 6-connectivity set of this to start.
@@ -534,7 +538,8 @@ void SkeletonGenerator::generateSparseGraph() {
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
     neighbor_tools_.getNeighborsAndDistances(
-        block_index, voxel_index, 26, &neighbors, &distances, &directions);
+        block_index, voxel_index, Connectivity::kTwentySix, &neighbors,
+        &distances, &directions);
 
     for (size_t i = 0; i < neighbors.size(); ++i) {
       // Get this voxel with way too many checks.
@@ -650,7 +655,8 @@ bool SkeletonGenerator::followEdge(const BlockIndex& start_block_index,
     AlignedVector<Eigen::Vector3i> directions;
 
     neighbor_tools_.getNeighborsAndDistances(
-        block_index, voxel_index, 26, &neighbors, &distances, &directions);
+        block_index, voxel_index, Connectivity::kTwentySix, &neighbors,
+        &distances, &directions);
     still_got_neighbors = false;
 
     // Choose the best candidate neighbor with the biggest dot product to the
