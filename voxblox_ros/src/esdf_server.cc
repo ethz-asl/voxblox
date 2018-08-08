@@ -49,8 +49,8 @@ void EsdfServer::setupRos() {
                                                               1, true);
   esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "esdf_slice", 1, true);
-  traversible_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-      "traversible", 1, true);
+  traversable_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "traversable", 1, true);
 
   esdf_map_pub_ =
       nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
@@ -67,10 +67,10 @@ void EsdfServer::setupRos() {
 
   // Special output for traversible voxels. Publishes all voxels with distance
   // at least traversibility radius.
-  nh_private_.param("publish_traversible", publish_traversible_,
-                    publish_traversible_);
-  nh_private_.param("traversibility_radius", traversibility_radius_,
-                    traversibility_radius_);
+  nh_private_.param("publish_traversable", publish_traversable_,
+                    publish_traversable_);
+  nh_private_.param("traversability_radius", traversability_radius_,
+                    traversability_radius_);
 }
 
 void EsdfServer::publishAllUpdatedEsdfVoxels() {
@@ -119,8 +119,8 @@ void EsdfServer::updateMesh() {
   }
   if (publish_pointclouds_) {
     publishAllUpdatedEsdfVoxels();
-  } else if (publish_traversible_) {
-    publishTraversible();
+  } else if (publish_traversable_) {
+    publishTraversable();
   }
 
   if (publish_esdf_map_ && esdf_map_pub_.getNumSubscribers() > 0) {
@@ -140,19 +140,19 @@ void EsdfServer::publishPointclouds() {
     publishSlices();
   }
 
-  if (publish_traversible_) {
-    publishTraversible();
+  if (publish_traversable_) {
+    publishTraversable();
   }
 
   TsdfServer::publishPointclouds();
 }
 
-void EsdfServer::publishTraversible() {
+void EsdfServer::publishTraversable() {
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
   createFreePointcloudFromEsdfLayer(esdf_map_->getEsdfLayer(),
-                                    traversibility_radius_, &pointcloud);
+                                    traversability_radius_, &pointcloud);
   pointcloud.header.frame_id = world_frame_;
-  traversible_pub_.publish(pointcloud);
+  traversable_pub_.publish(pointcloud);
 }
 
 void EsdfServer::publishMap(const bool reset_remote_map) {
@@ -215,6 +215,14 @@ float EsdfServer::getEsdfMaxDistance() const {
 
 void EsdfServer::setEsdfMaxDistance(float max_distance) {
   esdf_integrator_->setEsdfMaxDistance(max_distance);
+}
+
+float EsdfServer::getTraversabilityRadius() const {
+  return traversability_radius_;
+}
+
+void EsdfServer::setTraversabilityRadius(float traversability_radius) {
+  traversability_radius_ = traversability_radius;
 }
 
 void EsdfServer::newPoseCallback(const Transformation& T_G_C) {

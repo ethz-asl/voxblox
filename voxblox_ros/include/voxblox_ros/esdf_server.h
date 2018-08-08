@@ -28,7 +28,7 @@ class EsdfServer : public TsdfServer {
 
   void publishAllUpdatedEsdfVoxels();
   virtual void publishSlices();
-  void publishTraversible();
+  void publishTraversable();
 
   virtual void updateMesh();
   virtual void publishPointclouds();
@@ -57,6 +57,8 @@ class EsdfServer : public TsdfServer {
   }
   float getEsdfMaxDistance() const;
   void setEsdfMaxDistance(float max_distance);
+  float getTraversabilityRadius() const;
+  void setTraversabilityRadius(float traversability_radius);
 
   virtual void clear();
 
@@ -67,7 +69,7 @@ class EsdfServer : public TsdfServer {
   // Publish markers for visualization.
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher esdf_slice_pub_;
-  ros::Publisher traversible_pub_;
+  ros::Publisher traversable_pub_;
 
   // Publish the complete map for other nodes to consume.
   ros::Publisher esdf_map_pub_;
@@ -80,8 +82,8 @@ class EsdfServer : public TsdfServer {
 
   bool clear_sphere_for_planning_;
   bool publish_esdf_map_;
-  bool publish_traversible_;
-  float traversibility_radius_;
+  bool publish_traversable_;
+  float traversability_radius_;
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
