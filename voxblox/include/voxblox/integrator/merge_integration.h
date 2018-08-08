@@ -107,8 +107,9 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
           T_out_in *
           input_block.computeCoordinatesFromLinearIndex(input_linear_voxel_idx);
 
-      const VoxelIndex global_output_voxel_idx =
-          getGridIndexFromPoint(voxel_center, layer_out->voxel_size_inv());
+      const GlobalIndex global_output_voxel_idx =
+          getGridIndexFromPoint<GlobalIndex>(voxel_center,
+                                             layer_out->voxel_size_inv());
 
       // allocate it in the output
       typename Block<VoxelType>::Ptr output_block =
