@@ -384,7 +384,8 @@ bool SkeletonAStar::getPathToNearestDiagramPt(
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
     neighbor_tools_.getNeighborsAndDistances(
-        block_index, voxel_index, 26, &neighbors, &distances, &directions);
+        block_index, voxel_index, Connectivity::kTwentySix, &neighbors,
+        &distances, &directions);
     for (size_t i = 0; i < neighbors.size(); ++i) {
       BlockIndex neighbor_block_index = neighbors[i].first;
       VoxelIndex neighbor_voxel_index = neighbors[i].second;

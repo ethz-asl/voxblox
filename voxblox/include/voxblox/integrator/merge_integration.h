@@ -167,7 +167,7 @@ void transformLayer(const Layer<VoxelType>& layer_in,
         for (FloatingPoint z = c_out.z() - offset; z < c_out.z() + offset;
              z += layer_out->block_size()) {
           const Point current_center_out = Point(x, y, z);
-          BlockIndex current_idx = getGridIndexFromPoint(
+          BlockIndex current_idx = getGridIndexFromPoint<BlockIndex>(
               current_center_out, 1.0f / layer_out->block_size());
           block_idx_set.insert(current_idx);
         }
