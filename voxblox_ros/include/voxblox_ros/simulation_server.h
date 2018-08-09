@@ -56,10 +56,6 @@ class SimulationServer {
   bool generatePlausibleViewpoint(FloatingPoint min_distance, Point* ray_origin,
                                   Point* ray_direction) const;
 
-  void transformPointcloud(const Transformation& T_N_O,
-                           const Pointcloud& ptcloud,
-                           Pointcloud* ptcloud_out) const;
-
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 

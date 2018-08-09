@@ -218,7 +218,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
                                                const bool freespace_points) {
-  timing::Timer integrate_timer("integrate");
+  timing::Timer integrate_timer("integrate/simple");
   CHECK_EQ(points_C.size(), colors.size());
   ThreadSafeIndex index_getter(points_C.size());
 
@@ -281,7 +281,7 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
                                                const bool freespace_points) {
-  timing::Timer integrate_timer("integrate");
+  timing::Timer integrate_timer("integrate/merged");
   CHECK_EQ(points_C.size(), colors.size());
 
   // Pre-compute a list of unique voxels to end on.
@@ -361,6 +361,9 @@ void MergedTsdfIntegrator::integrateVoxel(
     const Color& color = colors[pt_idx];
 
     const float point_weight = getVoxelWeight(point_C);
+    if (point_weight < kEpsilon) {
+      continue;
+    }
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
                      (merged_weight + point_weight);
     merged_color =
@@ -525,7 +528,7 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
                                              const bool freespace_points) {
-  timing::Timer integrate_timer("integrate");
+  timing::Timer integrate_timer("integrate/fast");
   CHECK_EQ(points_C.size(), colors.size());
 
   integration_start_time_ = std::chrono::steady_clock::now();
