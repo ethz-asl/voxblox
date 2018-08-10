@@ -467,7 +467,6 @@ bool TsdfServer::loadMapCallback(
     voxblox_msgs::FilePath::Request& request,
     voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
   bool success = loadMap(request.file_path);
-  generateMesh();
   return success;
 }
 
