@@ -845,13 +845,6 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
                   .norm() *
               esdf_voxel_size_;
 
-      if (neighbor_distance < 0) {
-        std::cout << "ESDF distance: " << esdf_voxel.distance
-                  << " ESDF parent distance: " << parent_distance
-                  << " Distance to neighbor: " << distances[i]
-                  << " Neighbor distance: " << neighbor_distance << std::endl;
-      }
-
       // Everything outside the surface.
       if (neighbor_distance >= 0.0 && neighbor_voxel.distance >= 0.0 &&
           neighbor_distance < neighbor_voxel.distance) {
@@ -870,11 +863,11 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
       // Everything inside the surface.
       if (neighbor_distance < 0.0 && neighbor_voxel.distance < 0.0 &&
           neighbor_distance > neighbor_voxel.distance) {
-        std::cout << "Inside surface. Neighbor voxel dist: "
+        /* std::cout << "Inside surface. Neighbor voxel dist: "
                   << neighbor_voxel.distance
                   << " neighbor distance: " << neighbor_distance
                   << " esdf voxel distance: " << esdf_voxel.distance
-                  << " parent distance: " << parent_distance << std::endl;
+                  << " parent distance: " << parent_distance << std::endl; */
         neighbor_voxel.distance = neighbor_distance;
         // Also update parent.
         neighbor_voxel.parent = esdf_voxel.parent - directions[i];
