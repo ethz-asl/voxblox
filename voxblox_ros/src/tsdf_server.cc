@@ -4,11 +4,6 @@
 
 namespace voxblox {
 
-TsdfServer::TsdfServer(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
-                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
-
 void TsdfServer::getServerConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   // Before subscribing, determine minimum time between messages.
@@ -54,6 +49,11 @@ void TsdfServer::getServerConfigFromRosParam(
     color_mode_ = ColorMode::kGray;
   }
 }
+
+TsdfServer::TsdfServer(const ros::NodeHandle& nh,
+                       const ros::NodeHandle& nh_private)
+    : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
+                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
 
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private,
