@@ -15,7 +15,7 @@ DECLARE_bool(alsologtostderr);
 DECLARE_bool(logtostderr);
 DECLARE_int32(v);
 
-class SdfIntegratorsTest : public ::testing::Test {
+class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
  public:
   SdfIntegratorsTest()
       : depth_camera_resolution_(Eigen::Vector2i(320, 240)),
@@ -26,6 +26,8 @@ class SdfIntegratorsTest : public ::testing::Test {
         voxels_per_side_(16) {}
 
   virtual void SetUp() {
+    voxel_size_ = GetParam();
+
     // Create a test environment.
     // It consists of a 10x10x7 m environment with an object in the middle.
     Point min_bound(-5.0, -5.0, -1.0);
@@ -41,7 +43,7 @@ class SdfIntegratorsTest : public ::testing::Test {
     // Next, generate poses evenly spaced in a circle around the object.
     FloatingPoint radius = 4.0;
     FloatingPoint height = 2.0;
-    int num_poses = 10;
+    int num_poses = 50;  // static_cast<int>(200 * voxel_size_);
     poses_.reserve(num_poses);
 
     FloatingPoint max_angle = 2 * M_PI;
@@ -102,7 +104,7 @@ class SdfIntegratorsTest : public ::testing::Test {
   std::unique_ptr<Layer<EsdfVoxel> > esdf_gt_;
 };
 
-TEST_F(SdfIntegratorsTest, TsdfIntegrators) {
+TEST_P(SdfIntegratorsTest, TsdfIntegrators) {
   TsdfIntegratorBase::Config config;
   config.default_truncation_distance = truncation_distance_;
   config.integrator_threads = 1;
@@ -126,7 +128,6 @@ TEST_F(SdfIntegratorsTest, TsdfIntegrators) {
     world_.getPointcloudFromTransform(poses_[i], depth_camera_resolution_,
                                       fov_h_rad_, max_dist_, &ptcloud, &colors);
     transformPointcloud(poses_[i].inverse(), ptcloud, &ptcloud_C);
-    // std::cout << "Pose: " << poses_[i] << std::endl;
     simple_integrator.integratePointCloud(poses_[i], ptcloud_C, colors);
     merged_integrator.integratePointCloud(poses_[i], ptcloud_C, colors);
     fast_integrator.integratePointCloud(poses_[i], ptcloud_C, colors);
@@ -147,6 +148,94 @@ TEST_F(SdfIntegratorsTest, TsdfIntegrators) {
   std::cout << "Fast Integrator: " << fast_result.toString();
   std::cout << "Truncation distance: " << truncation_distance_ << std::endl;
 
+  // Figure out some metrics to compare against, based on voxel size.
+  constexpr FloatingPoint kFloatingPointToleranceHigh = 1e-4;
+
+  size_t total_voxels = simple_result.num_overlapping_voxels +
+                        simple_result.num_non_overlapping_voxels;
+  size_t one_percent_of_voxels = static_cast<size_t>(total_voxels * 0.01);
+
+  // Make sure they're all similar.
+  EXPECT_NEAR(simple_result.num_overlapping_voxels,
+              merged_result.num_overlapping_voxels, one_percent_of_voxels);
+  EXPECT_NEAR(simple_result.num_overlapping_voxels,
+              fast_result.num_overlapping_voxels, one_percent_of_voxels);
+
+  // Make sure they're all reasonable.
+  EXPECT_NEAR(simple_result.min_error, 0.0, kFloatingPointToleranceHigh);
+  EXPECT_NEAR(merged_result.min_error, 0.0, kFloatingPointToleranceHigh);
+  EXPECT_NEAR(fast_result.min_error, 0.0, kFloatingPointToleranceHigh);
+
+  EXPECT_LT(simple_result.max_error, truncation_distance_ * 2);
+  EXPECT_LT(merged_result.max_error, truncation_distance_ * 2);
+  EXPECT_LT(fast_result.max_error, truncation_distance_ * 2);
+
+  EXPECT_LT(simple_result.rmse, voxel_size_ / 1.5);
+  EXPECT_LT(merged_result.rmse, voxel_size_ / 1.5);
+  EXPECT_LT(fast_result.rmse, voxel_size_ / 1.5);
+
+  io::SaveLayer(merged_layer, "tsdf_fast_test.voxblox", true);
+}
+
+TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
+  // TSDF layer + integrator
+  TsdfIntegratorBase::Config config;
+  config.default_truncation_distance = truncation_distance_;
+  config.integrator_threads = 1;
+  Layer<TsdfVoxel> tsdf_layer(voxel_size_, voxels_per_side_);
+  MergedTsdfIntegrator tsdf_integrator(config, &tsdf_layer);
+
+  // ESDF layers
+  Layer<EsdfVoxel> incremental_layer(voxel_size_, voxels_per_side_);
+  Layer<EsdfVoxel> batch_layer(voxel_size_, voxels_per_side_);
+  Layer<EsdfVoxel> batch_full_euclidean_layer(voxel_size_, voxels_per_side_);
+
+  EsdfIntegrator::Config esdf_config;
+  esdf_config.max_distance_m = esdf_max_distance_;
+  esdf_config.default_distance_m = esdf_max_distance_;
+  esdf_config.min_distance_m = truncation_distance_ / 2.0;
+  esdf_config.add_occupied_crust = false;
+  EsdfIntegrator incremental_integrator(esdf_config, &tsdf_layer,
+                                        &incremental_layer);
+  EsdfIntegrator batch_integrator(esdf_config, &tsdf_layer, &batch_layer);
+  EsdfIntegrator batch_full_euclidean_integrator(esdf_config, &tsdf_layer,
+                                                 &batch_full_euclidean_layer);
+
+  for (size_t i = 0; i < poses_.size(); i++) {
+    Pointcloud ptcloud, ptcloud_C;
+    Colors colors;
+
+    world_.getPointcloudFromTransform(poses_[i], depth_camera_resolution_,
+                                      fov_h_rad_, max_dist_, &ptcloud, &colors);
+    transformPointcloud(poses_[i].inverse(), ptcloud, &ptcloud_C);
+    tsdf_integrator.integratePointCloud(poses_[i], ptcloud_C, colors);
+
+    // Update the incremental integrator.
+    constexpr bool clear_updated_flag = true;
+    incremental_integrator.updateFromTsdfLayer(clear_updated_flag);
+  }
+
+  // Do batch updates.
+  batch_integrator.updateFromTsdfLayerBatch();
+  batch_full_euclidean_integrator.updateFromTsdfLayerBatchFullEuclidean();
+
+  utils::VoxelEvaluationDetails incremental_result, batch_result,
+      batch_full_euclidean_result;
+  utils::evaluateLayersRmse(*esdf_gt_, incremental_layer,
+                            utils::VoxelEvaluationMode::kEvaluateAllVoxels,
+                            &incremental_result);
+  utils::evaluateLayersRmse(*esdf_gt_, batch_layer,
+                            utils::VoxelEvaluationMode::kEvaluateAllVoxels,
+                            &batch_result);
+  utils::evaluateLayersRmse(*esdf_gt_, batch_full_euclidean_layer,
+                            utils::VoxelEvaluationMode::kEvaluateAllVoxels,
+                            &batch_full_euclidean_result);
+  std::cout << "Incremental Integrator: " << incremental_result.toString();
+  std::cout << "Batch Integrator: " << batch_result.toString();
+  std::cout << "Batch Full Euclidean Integrator: "
+            << batch_full_euclidean_result.toString();
+  std::cout << "Max distance: " << esdf_max_distance_ << std::endl;
+  /*
   // Figure out some metrics to compare against, based on voxel size.
   constexpr FloatingPoint kFloatingPointToleranceLow = 1e-6;
   constexpr FloatingPoint kFloatingPointToleranceHigh = 1e-4;
@@ -171,10 +260,23 @@ TEST_F(SdfIntegratorsTest, TsdfIntegrators) {
   EXPECT_LT(merged_result.max_error, truncation_distance_ * 2);
   EXPECT_LT(fast_result.max_error, truncation_distance_ * 2);
 
-  EXPECT_LT(simple_result.rmse, voxel_size_ / 2.0);
-  EXPECT_LT(merged_result.rmse, voxel_size_ / 2.0);
-  EXPECT_LT(fast_result.rmse, voxel_size_ / 2.0);
+  EXPECT_LT(simple_result.rmse, voxel_size_ / 1.5);
+  EXPECT_LT(merged_result.rmse, voxel_size_ / 1.5);
+  EXPECT_LT(fast_result.rmse, voxel_size_ / 1.5);
+
+  io::SaveLayer(merged_layer, "tsdf_fast_test.voxblox", true); */
+
+  io::SaveLayer(tsdf_layer, "esdf_euclidean_test.voxblox", true);
+  io::SaveLayer(batch_layer, "esdf_euclidean_test.voxblox", false);
+  io::SaveLayer(tsdf_layer, "esdf_batch_test.voxblox", true);
+  io::SaveLayer(batch_full_euclidean_layer, "esdf_batch_test.voxblox", false);
+
+  io::SaveLayer(tsdf_layer, "esdf_incremental_test.voxblox", true);
+  io::SaveLayer(batch_full_euclidean_layer, "esdf_incremental_test.voxblox", false);
 }
+
+INSTANTIATE_TEST_CASE_P(VoxelSizes, SdfIntegratorsTest,
+                        ::testing::Values(0.1, 0.2));
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

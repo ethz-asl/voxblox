@@ -184,12 +184,15 @@ bool EsdfServer::saveMap(const std::string& file_path) {
 bool EsdfServer::loadMap(const std::string& file_path) {
   // Load in the same order: TSDF first, then ESDF.
   bool success = TsdfServer::loadMap(file_path);
-
   constexpr bool kMulitpleLayerSupport = true;
-  return success &&
-         io::LoadBlocksFromFile(
-             file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
-             kMulitpleLayerSupport, esdf_map_->getEsdfLayerPtr());
+  success = success &&
+            io::LoadBlocksFromFile(
+                file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
+                kMulitpleLayerSupport, esdf_map_->getEsdfLayerPtr());
+  if (success) {
+    LOG(INFO) << "Successfully loaded ESDF layer.";
+  }
+  return success;
 }
 
 void EsdfServer::updateEsdf() {

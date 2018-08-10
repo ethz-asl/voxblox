@@ -25,7 +25,8 @@ void TsdfServer::getServerConfigFromRosParam(
   nh_private.param("world_frame", world_frame_, world_frame_);
   nh_private.param("publish_tsdf_info", publish_tsdf_info_, publish_tsdf_info_);
   nh_private.param("publish_slices", publish_slices_, publish_slices_);
-  nh_private.param("publish_pointclouds", publish_pointclouds_, publish_pointclouds_);
+  nh_private.param("publish_pointclouds", publish_pointclouds_,
+                   publish_pointclouds_);
 
   nh_private.param("use_freespace_pointcloud", use_freespace_pointcloud_,
                    use_freespace_pointcloud_);
@@ -434,9 +435,13 @@ bool TsdfServer::loadMap(const std::string& file_path) {
   // Inheriting classes should add other layers to load, as this will only load
   // the TSDF layer.
   constexpr bool kMulitpleLayerSupport = true;
-  return io::LoadBlocksFromFile(
+  bool success = io::LoadBlocksFromFile(
       file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
       kMulitpleLayerSupport, tsdf_map_->getTsdfLayerPtr());
+  if (success) {
+    LOG(INFO) << "Successfully loaded TSDF layer.";
+  }
+  return success;
 }
 
 bool TsdfServer::clearMapCallback(
@@ -461,7 +466,9 @@ bool TsdfServer::saveMapCallback(
 bool TsdfServer::loadMapCallback(
     voxblox_msgs::FilePath::Request& request,
     voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
-  return loadMap(request.file_path);
+  bool success = loadMap(request.file_path);
+  generateMesh();
+  return success;
 }
 
 bool TsdfServer::publishPointcloudsCallback(
