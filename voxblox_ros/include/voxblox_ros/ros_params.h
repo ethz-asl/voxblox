@@ -83,13 +83,19 @@ inline EsdfMap::Config getEsdfMapConfigFromRosParam(
   const TsdfMap::Config tsdf_config = getTsdfMapConfigFromRosParam(nh_private);
   esdf_config.esdf_voxel_size = tsdf_config.tsdf_voxel_size;
   esdf_config.esdf_voxels_per_side = tsdf_config.tsdf_voxels_per_side;
-  esdf_config.min_distance_m = tsdf_config.truncation_distance;
+
   return esdf_config;
 }
 
 inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   EsdfIntegrator::Config esdf_integrator_config;
+
+  TsdfIntegratorBase::Config tsdf_integrator_config =
+      getTsdfIntegratorConfigFromRosParam(nh_private);
+
+  esdf_integrator_config.min_distance_m =
+      tsdf_integrator_config.default_truncation_distance;
 
   nh_private.param("esdf_max_distance_m", esdf_integrator_config.max_distance_m,
                    esdf_integrator_config.max_distance_m);
