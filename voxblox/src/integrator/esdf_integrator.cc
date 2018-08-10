@@ -18,6 +18,12 @@ EsdfIntegrator::EsdfIntegrator(const Config& config,
   CHECK_NEAR(esdf_layer_->voxel_size(), tsdf_layer_->voxel_size(), 1e-6);
 
   open_.setNumBuckets(config_.num_buckets, config_.max_distance_m);
+
+  neighbor_tools_.setLayer(esdf_layer);
+
+  std::cout << "ESDF integrator settings: min_dist: " << config_.min_distance_m
+            << " max dist: " << config_.max_distance_m
+            << " default dist: " << config_.default_distance_m << std::endl;
 }
 
 void EsdfIntegrator::getSphereAroundPoint(
@@ -280,7 +286,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
 
 void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
                                           bool push_neighbors) {
-  DCHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
+  CHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
   timing::Timer esdf_timer("esdf");
 
   // Get a specific list of voxels in the TSDF layer, and propagate out from
@@ -341,12 +347,13 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           open_.push(std::make_pair(block_index, voxel_index),
                      esdf_voxel.distance);
           num_lower++;
-        } else if ((tsdf_voxel.distance >= 0.0 &&
-                    esdf_voxel.distance <
-                        (tsdf_voxel.distance - config_.min_diff_m)) ||
-                   (tsdf_voxel.distance < 0.0 &&
-                    esdf_voxel.distance >
-                        (tsdf_voxel.distance + config_.min_diff_m))) {
+        } else if (esdf_voxel.observed &&
+                   ((tsdf_voxel.distance >= 0.0 &&
+                     esdf_voxel.distance <
+                         (tsdf_voxel.distance - config_.min_diff_m)) ||
+                    (tsdf_voxel.distance < 0.0 &&
+                     esdf_voxel.distance >
+                         (tsdf_voxel.distance + config_.min_diff_m)))) {
           // In case the fixed voxel has a HIGHER distance than the esdf
           // voxel. Need to raise it, and burn its children.
           esdf_voxel.distance = tsdf_voxel.distance;
@@ -503,8 +510,9 @@ void EsdfIntegrator::pushNeighborsToOpen(const BlockIndex& block_index,
   AlignedVector<VoxelKey> neighbors;
   AlignedVector<float> distances;
   AlignedVector<Eigen::Vector3i> directions;
-  getNeighborsAndDistances(block_index, voxel_index, &neighbors, &distances,
-                           &directions);
+  neighbor_tools_.getNeighborsAndDistances(block_index, voxel_index,
+                                           Connectivity::kTwentySix, &neighbors,
+                                           &distances, &directions);
 
   for (const VoxelKey& neighbor : neighbors) {
     BlockIndex neighbor_block_index = neighbor.first;
@@ -549,8 +557,9 @@ void EsdfIntegrator::processRaiseSet() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
-                             &directions);
+    neighbor_tools_.getNeighborsAndDistances(
+        kv.first, kv.second, Connectivity::kTwentySix, &neighbors, &distances,
+        &directions);
 
     CHECK_EQ(neighbors.size(), distances.size());
     for (size_t i = 0u; i < neighbors.size(); ++i) {
@@ -629,8 +638,9 @@ void EsdfIntegrator::processOpenSet() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
-                             &directions);
+    neighbor_tools_.getNeighborsAndDistances(
+        kv.first, kv.second, Connectivity::kTwentySix, &neighbors, &distances,
+        &directions);
 
     // Do NOT update unobserved distances.
     CHECK_EQ(neighbors.size(), distances.size());
@@ -730,8 +740,9 @@ void EsdfIntegrator::processOpenSet() {
           // ESDF voxel not in fixed band, and is outside an obstacle, while the
           // neighbor voxel is inside an obstacle.
         } else if (neighbor_voxel.distance < 0.0) {
-          //neighbor_voxel.distance = -distance_to_neighbor;
-          neighbor_voxel.distance = esdf_voxel.distance -
+          // neighbor_voxel.distance = -distance_to_neighbor;
+          neighbor_voxel.distance =
+              esdf_voxel.distance -
               signum(esdf_voxel.distance) * distance_to_neighbor;
           neighbor_voxel.parent = -directions[i];
           if (!neighbor_voxel.in_queue) {
@@ -741,8 +752,9 @@ void EsdfIntegrator::processOpenSet() {
           // ESDF voxel isn't in the fixed band, neighbor is outside an
           // obstacle, and ESDF voxel is inside.
         } else if (neighbor_voxel.distance >= 0.0) {
-          //neighbor_voxel.distance = distance_to_neighbor;
-          neighbor_voxel.distance = esdf_voxel.distance -
+          // neighbor_voxel.distance = distance_to_neighbor;
+          neighbor_voxel.distance =
+              esdf_voxel.distance -
               signum(esdf_voxel.distance) * distance_to_neighbor;
           neighbor_voxel.parent = -directions[i];
           if (!neighbor_voxel.in_queue) {
@@ -794,8 +806,9 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    getNeighborsAndDistances(kv.first, kv.second, &neighbors, &distances,
-                             &directions);
+    neighbor_tools_.getNeighborsAndDistances(
+        kv.first, kv.second, Connectivity::kTwentySix, &neighbors, &distances,
+        &directions);
 
     // Do NOT update unobserved distances.
     CHECK_EQ(neighbors.size(), distances.size());
@@ -826,13 +839,21 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
 
       // + or - direction?? Maybe minus...
       const FloatingPoint neighbor_distance =
-          parent_distance +
+          parent_distance + signum(esdf_voxel.distance) *
           (-esdf_voxel.parent.cast<FloatingPoint>() +
            directions[i].cast<FloatingPoint>())
                   .norm() *
               esdf_voxel_size_;
 
-      if (neighbor_distance >= 0.0 &&
+      if (neighbor_distance < 0) {
+        std::cout << "ESDF distance: " << esdf_voxel.distance
+                  << " ESDF parent distance: " << parent_distance
+                  << " Distance to neighbor: " << distances[i]
+                  << " Neighbor distance: " << neighbor_distance << std::endl;
+      }
+
+      // Everything outside the surface.
+      if (neighbor_distance >= 0.0 && neighbor_voxel.distance >= 0.0 &&
           neighbor_distance < neighbor_voxel.distance) {
         neighbor_voxel.distance = neighbor_distance;
         // Also update parent.
@@ -846,8 +867,14 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
         }
       }
 
-      if (neighbor_distance < 0.0 &&
+      // Everything inside the surface.
+      if (neighbor_distance < 0.0 && neighbor_voxel.distance < 0.0 &&
           neighbor_distance > neighbor_voxel.distance) {
+        std::cout << "Inside surface. Neighbor voxel dist: "
+                  << neighbor_voxel.distance
+                  << " neighbor distance: " << neighbor_distance
+                  << " esdf voxel distance: " << esdf_voxel.distance
+                  << " parent distance: " << parent_distance << std::endl;
         neighbor_voxel.distance = neighbor_distance;
         // Also update parent.
         neighbor_voxel.parent = esdf_voxel.parent - directions[i];
@@ -855,6 +882,17 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
           open_.push(neighbors[i], neighbor_voxel.distance);
           neighbor_voxel.in_queue = true;
         }
+      }
+
+      if (signum(neighbor_distance) != signum(neighbor_voxel.distance) &&
+          std::abs(neighbor_voxel.distance + esdf_voxel.distance) >
+              distances[i] * esdf_voxel_size_) {
+        std::cout << "DISCONTINUITY! Neighbor distance: " << neighbor_distance
+                  << " Neighbor voxel distasnce: " << neighbor_voxel.distance
+                  << " Actual diff: "
+                  << std::abs(neighbor_voxel.distance + esdf_voxel.distance)
+                  << " Distance bound: " << distances[i] * esdf_voxel_size_
+                  << std::endl;
       }
     }
 
@@ -864,102 +902,6 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
 
   VLOG(3) << "[ESDF update]: [Euclidean] made " << num_updates
           << " voxel updates.";
-}
-
-// Uses 26-connectivity and quasi-Euclidean distances.
-// Directions is the direction that the neighbor voxel lives in. If you
-// need the direction FROM the neighbor voxel TO the current voxel, take
-// negative of the given direction.
-void EsdfIntegrator::getNeighborsAndDistances(
-    const BlockIndex& block_index, const VoxelIndex& voxel_index,
-    AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
-    AlignedVector<Eigen::Vector3i>* directions) const {
-  CHECK_NOTNULL(neighbors);
-  CHECK_NOTNULL(distances);
-  CHECK_NOTNULL(directions);
-
-  static const double kSqrt2 = std::sqrt(2);
-  static const double kSqrt3 = std::sqrt(3);
-  static const size_t kNumNeighbors = 26;
-
-  neighbors->reserve(kNumNeighbors);
-  distances->reserve(kNumNeighbors);
-  directions->reserve(kNumNeighbors);
-
-  VoxelKey neighbor;
-  Eigen::Vector3i direction;
-  direction.setZero();
-  // Distance 1 set.
-  for (unsigned int i = 0; i < 3; ++i) {
-    for (int j = -1; j <= 1; j += 2) {
-      direction(i) = j;
-      getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                  &neighbor.second);
-      neighbors->emplace_back(neighbor);
-      distances->emplace_back(1.0);
-      directions->emplace_back(direction);
-    }
-    direction(i) = 0;
-  }
-
-  // Distance sqrt(2) set.
-  for (unsigned int i = 0; i < 3; ++i) {
-    unsigned int next_i = (i + 1) % 3;
-    for (int j = -1; j <= 1; j += 2) {
-      direction(i) = j;
-      for (int k = -1; k <= 1; k += 2) {
-        direction(next_i) = k;
-        getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                    &neighbor.second);
-        neighbors->emplace_back(neighbor);
-        distances->emplace_back(kSqrt2);
-        directions->emplace_back(direction);
-      }
-      direction(i) = 0;
-      direction(next_i) = 0;
-    }
-  }
-
-  // Distance sqrt(3) set.
-  for (int i = -1; i <= 1; i += 2) {
-    direction(0) = i;
-    for (int j = -1; j <= 1; j += 2) {
-      direction(1) = j;
-      for (int k = -1; k <= 1; k += 2) {
-        direction(2) = k;
-        getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                    &neighbor.second);
-        neighbors->emplace_back(neighbor);
-        distances->emplace_back(kSqrt3);
-        directions->emplace_back(direction);
-      }
-    }
-  }
-
-  CHECK_EQ(neighbors->size(), kNumNeighbors);
-}
-
-void EsdfIntegrator::getNeighbor(const BlockIndex& block_index,
-                                 const VoxelIndex& voxel_index,
-                                 const Eigen::Vector3i& direction,
-                                 BlockIndex* neighbor_block_index,
-                                 VoxelIndex* neighbor_voxel_index) const {
-  DCHECK(neighbor_block_index != NULL);
-  DCHECK(neighbor_voxel_index != NULL);
-
-  *neighbor_block_index = block_index;
-  *neighbor_voxel_index = voxel_index + direction;
-
-  for (unsigned int i = 0; i < 3; ++i) {
-    if ((*neighbor_voxel_index)(i) < 0) {
-      (*neighbor_block_index)(i)--;
-      (*neighbor_voxel_index)(i) += esdf_voxels_per_side_;
-    } else if ((*neighbor_voxel_index)(i) >=
-               static_cast<IndexElement>(esdf_voxels_per_side_)) {
-      (*neighbor_block_index)(i)++;
-      (*neighbor_voxel_index)(i) -= esdf_voxels_per_side_;
-    }
-  }
 }
 
 }  // namespace voxblox
