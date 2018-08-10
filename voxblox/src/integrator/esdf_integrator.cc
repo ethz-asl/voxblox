@@ -354,7 +354,6 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         // If the tsdf voxel isn't fixed...
         // If it used to be, then this is a raise.
         // Or sign is flipped...
-
         if (esdf_voxel.observed &&
             (esdf_voxel.fixed ||
              signum(esdf_voxel.distance) != signum(tsdf_voxel.distance))) {
