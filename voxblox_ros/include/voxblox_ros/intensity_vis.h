@@ -1,5 +1,7 @@
-#ifndef VOXBLOX_ROS_THERMAL_VIS_H_
-#define VOXBLOX_ROS_THERMAL_VIS_H_
+#ifndef VOXBLOX_ROS_INTENSITY_VIS_H_
+#define VOXBLOX_ROS_INTENSITY_VIS_H_
+
+#include <memory>
 
 #include <voxblox/utils/color_maps.h>
 #include <voxblox_msgs/Mesh.h>
@@ -39,4 +41,4 @@ inline void recolorVoxbloxMeshMsgByIntensity(
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_ROS_THERMAL_VIS_H_
+#endif  // VOXBLOX_ROS_INTENSITY_VIS_H_

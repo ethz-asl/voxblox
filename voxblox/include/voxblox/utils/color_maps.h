@@ -1,6 +1,9 @@
 #ifndef VOXBLOX_UTILS_COLOR_MAPS_H_
 #define VOXBLOX_UTILS_COLOR_MAPS_H_
 
+#include <algorithm>
+#include <vector>
+
 #include "voxblox/core/common.h"
 #include "voxblox/core/color.h"
 
@@ -78,11 +81,9 @@ class IronbowColorMap : public ColorMap {
 
     size_t index = static_cast<size_t>(std::floor(new_value / increment_));
 
-    Color color = Color::blendTwoColors(
+    return Color::blendTwoColors(
         palette_colors_[index], increment_ * (index + 1) - new_value,
         palette_colors_[index + 1], new_value - increment_ * (index));
-
-    return color;
   }
 
  protected:

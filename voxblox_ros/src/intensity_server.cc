@@ -5,7 +5,7 @@ namespace voxblox {
 IntensityServer::IntensityServer(const ros::NodeHandle& nh,
                                  const ros::NodeHandle& nh_private)
     : TsdfServer(nh, nh_private),
-      focal_length_px_(391.5f),
+      focal_length_px_(400.0f),
       subsample_factor_(12) {
   cache_mesh_ = true;
 
@@ -20,8 +20,8 @@ IntensityServer::IntensityServer(const ros::NodeHandle& nh,
                     focal_length_px_);
   nh_private_.param("subsample_factor", subsample_factor_, subsample_factor_);
 
-  float intensity_min_value = 10.0;
-  float intensity_max_value = 40.0;
+  float intensity_min_value = 10.0f;
+  float intensity_max_value = 40.0f;
   nh_private_.param("intensity_min_value", intensity_min_value,
                     intensity_min_value);
   nh_private_.param("intensity_max_value", intensity_max_value,
@@ -54,8 +54,9 @@ void IntensityServer::updateMesh() {
 
   // Now recolor the mesh...
   timing::Timer publish_mesh_timer("intensity_mesh/publish");
-  recolorVoxbloxMeshMsgByIntensity(*intensity_layer_, color_map_, &mesh_msg_);
-  intensity_mesh_pub_.publish(mesh_msg_);
+  recolorVoxbloxMeshMsgByIntensity(*intensity_layer_, color_map_,
+                                   &cached_mesh_msg_);
+  intensity_mesh_pub_.publish(cached_mesh_msg_);
   publish_mesh_timer.Stop();
 }
 
@@ -75,6 +76,7 @@ void IntensityServer::intensityImageCallback(
     const sensor_msgs::ImageConstPtr& image) {
   CHECK(intensity_layer_);
   CHECK(intensity_integrator_);
+  CHECK(image);
   // Look up transform first...
   Transformation T_G_C;
   if (!transformer_.lookupTransform(image->header.frame_id, world_frame_,
@@ -87,17 +89,17 @@ void IntensityServer::intensityImageCallback(
 
   CHECK(cv_ptr);
 
-  size_t num_pixels =
+  const size_t num_pixels =
       cv_ptr->image.rows * cv_ptr->image.cols / subsample_factor_;
 
   float half_row = cv_ptr->image.rows / 2.0;
   float half_col = cv_ptr->image.cols / 2.0;
 
-  // Pre-allocate the bearing vectors and temperatures.
+  // Pre-allocate the bearing vectors and intensities.
   Pointcloud bearing_vectors;
   bearing_vectors.reserve(num_pixels + 1);
-  std::vector<float> temperatures;
-  temperatures.reserve(num_pixels + 1);
+  std::vector<float> intensities;
+  intensities.reserve(num_pixels + 1);
 
   size_t k = 0;
   size_t m = 0;
@@ -105,10 +107,12 @@ void IntensityServer::intensityImageCallback(
     const float* image_row = cv_ptr->image.ptr<float>(i);
     for (int j = 0; j < cv_ptr->image.cols; j++) {
       if (m % subsample_factor_ == 0) {
+        // Rotates the vector pointing from the camera center to the pixel
+        // into the global frame, and normalizes it.
         bearing_vectors.push_back(
             T_G_C.getRotation().toImplementation() *
             Point(j - half_col, i - half_row, focal_length_px_).normalized());
-        temperatures.push_back(image_row[j]);
+        intensities.push_back(image_row[j]);
         k++;
       }
       m++;
@@ -117,7 +121,7 @@ void IntensityServer::intensityImageCallback(
 
   // Put this into the integrator.
   intensity_integrator_->addIntensityBearingVectors(
-      T_G_C.getPosition(), bearing_vectors, temperatures);
+      T_G_C.getPosition(), bearing_vectors, intensities);
 }
 
 }  // namespace voxblox
