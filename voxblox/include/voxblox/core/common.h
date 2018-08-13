@@ -195,14 +195,11 @@ inline Point getOriginPointFromGridIndex(const IndexType& idx,
 // Conversions between Block + Voxel index and GlobalVoxelIndex.
 // Note that this takes int VOXELS_PER_SIDE, and the individual block conversion
 // takes voxels per side inverse.
-
 inline GlobalIndex getGlobalVoxelIndexFromBlockAndVoxelIndex(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
     int voxels_per_side) {
-  GlobalIndex global_voxel_idx =
-      block_index.cast<LongIndexElement>() * voxels_per_side +
-      voxel_index.cast<LongIndexElement>();
-  return global_voxel_idx;
+  return GlobalIndex(block_index.cast<LongIndexElement>() * voxels_per_side +
+                     voxel_index.cast<LongIndexElement>());
 }
 
 inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
@@ -219,7 +216,7 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
 inline bool isPowerOfTwo(int x) { return (x & (x - 1)) == 0; }
 
 inline VoxelIndex getLocalFromGlobalVoxelIndex(
-    const GlobalIndex& global_voxel_idx, int voxels_per_side) {
+    const GlobalIndex& global_voxel_idx, const int voxels_per_side) {
   // add a big number to the index to make it positive
   constexpr int offset = 1 << (8 * sizeof(IndexElement) - 1);
 
@@ -233,8 +230,10 @@ inline VoxelIndex getLocalFromGlobalVoxelIndex(
 }
 
 inline void getBlockAndVoxelIndexFromGlobalVoxelIndex(
-    const GlobalIndex& global_voxel_idx, int voxels_per_side,
+    const GlobalIndex& global_voxel_idx, const int voxels_per_side,
     BlockIndex* block_index, VoxelIndex* voxel_index) {
+  CHECK_NOTNULL(block_index);
+  CHECK_NOTNULL(voxel_index);
   const FloatingPoint voxels_per_side_inv = 1.0 / voxels_per_side;
   *block_index =
       getBlockIndexFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_inv);

@@ -119,7 +119,8 @@ void EsdfServer::updateMesh() {
   }
   if (publish_pointclouds_) {
     publishAllUpdatedEsdfVoxels();
-  } else if (publish_traversable_) {
+  }
+  if (publish_traversable_) {
     publishTraversable();
   }
 

@@ -25,7 +25,8 @@ void TsdfServer::getServerConfigFromRosParam(
   nh_private.param("world_frame", world_frame_, world_frame_);
   nh_private.param("publish_tsdf_info", publish_tsdf_info_, publish_tsdf_info_);
   nh_private.param("publish_slices", publish_slices_, publish_slices_);
-  nh_private.param("publish_pointclouds", publish_pointclouds_, publish_pointclouds_);
+  nh_private.param("publish_pointclouds", publish_pointclouds_,
+                   publish_pointclouds_);
 
   nh_private.param("use_freespace_pointcloud", use_freespace_pointcloud_,
                    use_freespace_pointcloud_);
@@ -370,7 +371,7 @@ void TsdfServer::updateMesh() {
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   if (cache_mesh_) {
-    mesh_msg_ = mesh_msg;
+    cached_mesh_msg_ = mesh_msg;
   }
   publish_mesh_timer.Stop();
 
