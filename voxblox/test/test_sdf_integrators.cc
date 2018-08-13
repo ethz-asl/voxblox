@@ -193,7 +193,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   EsdfIntegrator::Config esdf_config;
   esdf_config.max_distance_m = esdf_max_distance_;
   esdf_config.default_distance_m = esdf_max_distance_;
-  esdf_config.min_distance_m = truncation_distance_/2.0;
+  esdf_config.min_distance_m = truncation_distance_;
   esdf_config.add_occupied_crust = false;
   EsdfIntegrator incremental_integrator(esdf_config, &tsdf_layer,
                                         &incremental_layer);
@@ -237,7 +237,6 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   std::cout << "Max distance: " << esdf_max_distance_ << std::endl;
 
   // Figure out some metrics to compare against, based on voxel size.
-  constexpr FloatingPoint kFloatingPointToleranceLow = 1e-6;
   constexpr FloatingPoint kFloatingPointToleranceHigh = 1e-4;
   constexpr FloatingPoint kKindaSimilar = 1e-2;
 
@@ -247,34 +246,38 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   EXPECT_NEAR(batch_full_euclidean_result.min_error, 0.0,
               kFloatingPointToleranceHigh);
 
-  EXPECT_LT(incremental_result.max_error, esdf_max_distance_ / 4.0);
-  EXPECT_LT(batch_result.max_error, esdf_max_distance_ / 4.0);
-  EXPECT_LT(batch_full_euclidean_result.max_error, esdf_max_distance_ / 4.0);
+  EXPECT_LT(incremental_result.max_error, esdf_max_distance_);
+  EXPECT_LT(batch_result.max_error, esdf_max_distance_);
+  EXPECT_LT(batch_full_euclidean_result.max_error, esdf_max_distance_);
 
-  EXPECT_LT(incremental_result.rmse, esdf_max_distance_ * 0.15);
-  EXPECT_LT(batch_result.rmse, esdf_max_distance_ * 0.15);
-  EXPECT_LT(batch_full_euclidean_result.rmse, esdf_max_distance_ * 0.15);
+  EXPECT_LT(incremental_result.rmse, esdf_max_distance_ * voxel_size_);
+  EXPECT_LT(batch_result.rmse, esdf_max_distance_ * voxel_size_);
+  EXPECT_LT(batch_full_euclidean_result.rmse, esdf_max_distance_ * voxel_size_);
 
   // Make sure they're all similar.
   EXPECT_EQ(incremental_result.num_overlapping_voxels,
             batch_result.num_overlapping_voxels);
   EXPECT_EQ(incremental_result.num_overlapping_voxels,
             batch_full_euclidean_result.num_overlapping_voxels);
+  EXPECT_NEAR(incremental_result.rmse, batch_result.rmse,
+              kKindaSimilar);
+  EXPECT_NEAR(incremental_result.max_error, batch_result.max_error,
+              kKindaSimilar);
 
   // Output for debugging.
   io::SaveLayer(tsdf_layer, "esdf_euclidean_test.voxblox", true);
-  io::SaveLayer(batch_full_euclidean_layer, "esdf_euclidean_test.voxblox", false);
+  io::SaveLayer(batch_full_euclidean_layer, "esdf_euclidean_test.voxblox",
+                false);
   io::SaveLayer(tsdf_layer, "esdf_batch_test.voxblox", true);
   io::SaveLayer(batch_layer, "esdf_batch_test.voxblox", false);
   io::SaveLayer(tsdf_layer, "esdf_incremental_test.voxblox", true);
-  io::SaveLayer(incremental_layer, "esdf_incremental_test.voxblox",
-                false);
+  io::SaveLayer(incremental_layer, "esdf_incremental_test.voxblox", false);
   io::SaveLayer(*tsdf_gt_, "esdf_gt.voxblox", true);
   io::SaveLayer(*esdf_gt_, "esdf_gt.voxblox", false);
 }
 
 INSTANTIATE_TEST_CASE_P(VoxelSizes, SdfIntegratorsTest,
-                        ::testing::Values(0.1f /*, 0.2f, 0.3f, 0.4f, 0.5f*/));
+                        ::testing::Values(0.1f, 0.2f, 0.3f, 0.4f, 0.5f));
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
