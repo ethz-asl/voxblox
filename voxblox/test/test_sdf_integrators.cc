@@ -104,7 +104,7 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
   std::unique_ptr<Layer<EsdfVoxel> > esdf_gt_;
 };
 
-TEST_P(SdfIntegratorsTest, DISABLED_TsdfIntegrators) {
+TEST_P(SdfIntegratorsTest, TsdfIntegrators) {
   TsdfIntegratorBase::Config config;
   config.default_truncation_distance = truncation_distance_;
   config.integrator_threads = 1;
@@ -170,9 +170,9 @@ TEST_P(SdfIntegratorsTest, DISABLED_TsdfIntegrators) {
   EXPECT_LT(merged_result.max_error, truncation_distance_ * 2);
   EXPECT_LT(fast_result.max_error, truncation_distance_ * 2);
 
-  EXPECT_LT(simple_result.rmse, voxel_size_ / 1.5);
-  EXPECT_LT(merged_result.rmse, voxel_size_ / 1.5);
-  EXPECT_LT(fast_result.rmse, voxel_size_ / 1.5);
+  EXPECT_LT(simple_result.rmse, voxel_size_ * 2);
+  EXPECT_LT(merged_result.rmse, voxel_size_ * 2);
+  EXPECT_LT(fast_result.rmse, voxel_size_ * 2);
 
   io::SaveLayer(merged_layer, "tsdf_fast_test.voxblox", true);
 }
@@ -259,8 +259,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
             batch_result.num_overlapping_voxels);
   EXPECT_EQ(incremental_result.num_overlapping_voxels,
             batch_full_euclidean_result.num_overlapping_voxels);
-  EXPECT_NEAR(incremental_result.rmse, batch_result.rmse,
-              kKindaSimilar);
+  EXPECT_NEAR(incremental_result.rmse, batch_result.rmse, kKindaSimilar);
   EXPECT_NEAR(incremental_result.max_error, batch_result.max_error,
               kKindaSimilar);
 
