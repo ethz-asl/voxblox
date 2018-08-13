@@ -510,9 +510,9 @@ void EsdfIntegrator::pushNeighborsToOpen(const BlockIndex& block_index,
   AlignedVector<VoxelKey> neighbors;
   AlignedVector<float> distances;
   AlignedVector<Eigen::Vector3i> directions;
-  neighbor_tools_.getNeighborsAndDistances(block_index, voxel_index,
-                                           Connectivity::kTwentySix, &neighbors,
-                                           &distances, &directions);
+  neighbor_tools_.getNeighborIndicesAndDistances(
+      block_index, voxel_index, Connectivity::kTwentySix, &neighbors,
+      &distances, &directions);
 
   for (const VoxelKey& neighbor : neighbors) {
     BlockIndex neighbor_block_index = neighbor.first;
@@ -557,7 +557,7 @@ void EsdfIntegrator::processRaiseSet() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    neighbor_tools_.getNeighborsAndDistances(
+    neighbor_tools_.getNeighborIndicesAndDistances(
         kv.first, kv.second, Connectivity::kTwentySix, &neighbors, &distances,
         &directions);
 
@@ -638,7 +638,7 @@ void EsdfIntegrator::processOpenSet() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    neighbor_tools_.getNeighborsAndDistances(
+    neighbor_tools_.getNeighborIndicesAndDistances(
         kv.first, kv.second, Connectivity::kTwentySix, &neighbors, &distances,
         &directions);
 
@@ -806,7 +806,7 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
     AlignedVector<VoxelKey> neighbors;
     AlignedVector<float> distances;
     AlignedVector<Eigen::Vector3i> directions;
-    neighbor_tools_.getNeighborsAndDistances(
+    neighbor_tools_.getNeighborIndicesAndDistances(
         kv.first, kv.second, Connectivity::kTwentySix, &neighbors, &distances,
         &directions);
 
