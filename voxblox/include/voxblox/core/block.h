@@ -61,7 +61,7 @@ class Block {
       const Point& coords) const {
     const IndexElement max_value = voxels_per_side_ - 1;
     VoxelIndex voxel_index =
-        getGridIndexFromPoint(coords - origin_, voxel_size_inv_);
+        getGridIndexFromPoint<VoxelIndex>(coords - origin_, voxel_size_inv_);
     // check is needed as getGridIndexFromPoint gives results that have a tiny
     // chance of being outside the valid voxel range.
     return VoxelIndex(std::max(std::min(voxel_index.x(), max_value), 0),
@@ -77,7 +77,7 @@ class Block {
   inline VoxelIndex computeVoxelIndexFromCoordinates(
       const Point& coords) const {
     VoxelIndex voxel_index =
-        getGridIndexFromPoint(coords - origin_, voxel_size_inv_);
+        getGridIndexFromPoint<VoxelIndex>(coords - origin_, voxel_size_inv_);
     return voxel_index;
   }
 
@@ -140,6 +140,10 @@ class Block {
     return &voxels_[computeLinearIndexFromCoordinates(coords)];
   }
 
+  inline const VoxelType* getVoxelPtrByCoordinates(const Point& coords) const {
+    return &voxels_[computeLinearIndexFromCoordinates(coords)];
+  }
+
   inline VoxelType& getVoxelByLinearIndex(size_t index) {
     DCHECK_LT(index, num_voxels_);
     return voxels_[index];
@@ -173,7 +177,7 @@ class Block {
   }
 
   BlockIndex block_index() const {
-    return getGridIndexFromOriginPoint(origin_, block_size_inv_);
+    return getGridIndexFromOriginPoint<BlockIndex>(origin_, block_size_inv_);
   }
 
   // Basic function accessors.

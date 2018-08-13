@@ -221,6 +221,45 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
   VLOG(3) << "[ESDF update]: Lower: " << num_lower << " Raise: " << num_raise
           << " New: " << num_new;
 
+  if (config_.add_occupied_crust) {
+    timing::Timer crust_timer("esdf/crust");
+
+    // This just sets all the unknown voxels in the whole space to occupied.
+    BlockIndexList esdf_blocks;
+    esdf_layer_->getAllAllocatedBlocks(&esdf_blocks);
+
+    for (const BlockIndex& block_index : esdf_blocks) {
+      if (!esdf_layer_->hasBlock(block_index)) {
+        continue;
+      }
+      // Allocate the same block in the ESDF layer.
+      // Block indices are the same across all layers.
+      Block<EsdfVoxel>::Ptr esdf_block =
+          esdf_layer_->getBlockPtrByIndex(block_index);
+
+      const size_t num_voxels_per_block = esdf_block->num_voxels();
+
+      for (size_t lin_index = 0u; lin_index < num_voxels_per_block;
+           ++lin_index) {
+        EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
+        VoxelIndex voxel_index =
+            esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
+        if (esdf_voxel.observed) {
+          continue;
+        }
+        esdf_voxel.distance = config_.min_distance_m;
+        esdf_voxel.fixed = true;
+        esdf_voxel.parent.setZero();
+
+        esdf_voxel.observed = true;
+        esdf_voxel.in_queue = true;
+        open_.push(std::make_pair(block_index, voxel_index),
+                   esdf_voxel.distance);
+        pushNeighborsToOpen(block_index, voxel_index);
+      }
+    }
+  }
+
   timing::Timer update_timer("esdf/update_esdf");
   // Process the open set now.
   processOpenSetFullEuclidean();
