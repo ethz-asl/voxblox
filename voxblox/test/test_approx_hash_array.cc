@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <random>
+#include <limits>
 
 #include "voxblox/core/block_hash.h"
 #include "voxblox/core/common.h"
@@ -14,7 +15,7 @@ class ApproxHashArrayTest : public ::testing::Test {
 
 TEST_F(ApproxHashArrayTest, InsertValues) {
   // storing 256 ints
-  ApproxHashArray<8, int> approx_hash_array;
+  ApproxHashArray<8, int, AnyIndex, AnyIndexHash> approx_hash_array;
 
   // write 512 values, first 256 should be overwritten
   for (int i = 0; i < 512; ++i) {
@@ -28,12 +29,12 @@ TEST_F(ApproxHashArrayTest, InsertValues) {
 
 TEST_F(ApproxHashArrayTest, ArrayRandomWriteRead) {
   // storing 65536 size_ts
-  ApproxHashArray<16, size_t> approx_hash_array;
+  ApproxHashArray<16, size_t, AnyIndex, AnyIndexHash> approx_hash_array;
 
   // generate 1000 random elements
   AlignedVector<AnyIndex> rand_indexes;
   std::mt19937 gen(1);
-  std::uniform_int_distribution<> dis(1, 1000000);
+  std::uniform_int_distribution<> dis(1, std::numeric_limits<int>::max());
   for (int i = 0; i < 1000; ++i) {
     rand_indexes.push_back(AnyIndex(dis(gen), dis(gen), dis(gen)));
   }
@@ -60,12 +61,12 @@ TEST_F(ApproxHashArrayTest, ArrayRandomWriteRead) {
 
 TEST_F(ApproxHashArrayTest, SetRandomWriteRead) {
   // storing 65536 size_ts
-  ApproxHashSet<16, 10> approx_hash_set;
+  ApproxHashSet<16, 10, AnyIndex, AnyIndexHash> approx_hash_set;
 
   // generate 1000 random elements
   AlignedVector<AnyIndex> rand_indexes;
   std::mt19937 gen(1);
-  std::uniform_int_distribution<> dis(1, 1000000);
+  std::uniform_int_distribution<> dis(1, std::numeric_limits<int>::max());
   for (int i = 0; i < 1000; ++i) {
     rand_indexes.push_back(AnyIndex(dis(gen), dis(gen), dis(gen)));
   }
@@ -107,6 +108,58 @@ TEST_F(ApproxHashArrayTest, SetRandomWriteRead) {
 
   // require at least a 95% success rate
   EXPECT_GT(recovered, 950);
+}
+
+TEST_F(ApproxHashArrayTest, SetRandomWriteReadLongIndex) {
+  // storing 65536 size_ts
+  ApproxHashSet<16, 10, LongIndex, LongIndexHash> approx_hash_set;
+
+  // generate 1000 random elements
+  AlignedVector<LongIndex> rand_indexes;
+  std::mt19937 gen(1);
+  std::uniform_int_distribution<int64_t> dis(
+      1, std::numeric_limits<int64_t>::max());
+  for (int i = 0; i < 1000; ++i) {
+    rand_indexes.push_back(LongIndex(dis(gen), dis(gen), dis(gen)));
+  }
+
+  // test insert and clearing
+  for (size_t i = 0; i < 50u; ++i) {
+    approx_hash_set.resetApproxSet();
+
+    // insert their values
+    unsigned int inserted = 0;
+    for (const LongIndex& rand_index : rand_indexes) {
+      if (approx_hash_set.replaceHash(rand_index)) {
+        ++inserted;
+      }
+    }
+    // require at least a 95% success rate
+    EXPECT_GT(inserted, 950u);
+
+    // insert a second time
+    inserted = 0;
+    for (const LongIndex& rand_index : rand_indexes) {
+      if (approx_hash_set.replaceHash(rand_index)) {
+        ++inserted;
+      }
+    }
+    // require at least a 95% failure rate
+    EXPECT_LT(inserted, 50u);
+  }
+
+  // find out how many we can recover
+  unsigned int recovered = 0;
+  for (const LongIndex& rand_index : rand_indexes) {
+    LongIndexHash hasher;
+    size_t hash = hasher(rand_index);
+    if (approx_hash_set.isHashCurrentlyPresent(hash)) {
+      ++recovered;
+    }
+  }
+
+  // require at least a 95% success rate
+  EXPECT_GT(recovered, 950u);
 }
 
 int main(int argc, char** argv) {

@@ -116,7 +116,7 @@ class Layer {
   // near the block boundaries.
   inline BlockIndex computeBlockIndexFromCoordinates(
       const Point& coords) const {
-    return getGridIndexFromPoint(coords, block_size_inv_);
+    return getGridIndexFromPoint<BlockIndex>(coords, block_size_inv_);
   }
 
   typename BlockType::Ptr allocateNewBlock(const BlockIndex& index) {
@@ -201,7 +201,7 @@ class Layer {
   // Get a pointer to the voxel if its corresponding block is allocated and a
   // nullptr otherwise.
   inline const VoxelType* getVoxelPtrByGlobalIndex(
-      const VoxelIndex& global_voxel_index) const {
+      const GlobalIndex& global_voxel_index) const {
     const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_inv_);
     if (!hasBlock(block_index)) {
@@ -214,7 +214,7 @@ class Layer {
   }
 
   inline VoxelType* getVoxelPtrByGlobalIndex(
-      const VoxelIndex& global_voxel_index) {
+      const GlobalIndex& global_voxel_index) {
     const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
         global_voxel_index, voxels_per_side_inv_);
     if (!hasBlock(block_index)) {
@@ -224,6 +224,24 @@ class Layer {
         getLocalFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_);
     Block<VoxelType>& block = getBlockByIndex(block_index);
     return &block.getVoxelByVoxelIndex(local_voxel_index);
+  }
+
+  inline const VoxelType* getVoxelPtrByCoordinates(const Point& coords) const {
+    typename Block<VoxelType>::ConstPtr block_ptr =
+        getBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
+    if (!block_ptr) {
+      return nullptr;
+    }
+    return block_ptr->getVoxelPtrByCoordinates(coords);
+  }
+
+  inline VoxelType* getVoxelPtrByCoordinates(const Point& coords) {
+    typename Block<VoxelType>::Ptr block_ptr =
+        getBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
+    if (!block_ptr) {
+      return nullptr;
+    }
+    return block_ptr->getVoxelPtrByCoordinates(coords);
   }
 
   FloatingPoint block_size() const { return block_size_; }

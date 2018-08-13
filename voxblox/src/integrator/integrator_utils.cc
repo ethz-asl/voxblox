@@ -42,6 +42,7 @@ size_t ThreadSafeIndex::getMixedIndex(size_t base_idx) {
 // Lookup table for the order points in a group should be read in. This is
 // simply a list from 0 to 1023 where each number has had the order of its
 // bits reversed.
+// clang-format off
 const std::array<size_t, ThreadSafeIndex::step_size_>
     ThreadSafeIndex::offset_lookup_ = {
         {0,   512, 256, 768,  128, 640, 384, 896,  64,  576, 320, 832,
@@ -130,6 +131,7 @@ const std::array<size_t, ThreadSafeIndex::step_size_>
          159, 671, 415, 927,  95,  607, 351, 863,  223, 735, 479, 991,
          63,  575, 319, 831,  191, 703, 447, 959,  127, 639, 383, 895,
          255, 767, 511, 1023}};
+// clang-format on
 
 // This class assumes PRE-SCALED coordinates, where one unit = one voxel size.
 // The indices are also returned in this scales coordinate system, which should
@@ -173,7 +175,7 @@ RayCaster::RayCaster(const Point& start_scaled, const Point& end_scaled) {
 }
 
 // returns false if ray terminates at ray_index, true otherwise
-bool RayCaster::nextRayIndex(AnyIndex* ray_index) {
+bool RayCaster::nextRayIndex(GlobalIndex* ray_index) {
   if (current_step_++ > ray_length_in_steps_) {
     return false;
   }
@@ -191,9 +193,9 @@ bool RayCaster::nextRayIndex(AnyIndex* ray_index) {
 
 void RayCaster::setupRayCaster(const Point& start_scaled,
                                const Point& end_scaled) {
-  curr_index_ = getGridIndexFromPoint(start_scaled);
-  const AnyIndex end_index = getGridIndexFromPoint(end_scaled);
-  const AnyIndex diff_index = end_index - curr_index_;
+  curr_index_ = getGridIndexFromPoint<GlobalIndex>(start_scaled);
+  const GlobalIndex end_index = getGridIndexFromPoint<GlobalIndex>(end_scaled);
+  const GlobalIndex diff_index = end_index - curr_index_;
 
   current_step_ = 0;
 
