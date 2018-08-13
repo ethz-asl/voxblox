@@ -179,7 +179,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
   size_t num_lower = 0u;
   size_t num_raise = 0u;
   size_t num_new = 0u;
-  timing::Timer propagate_timer("esdf/propagate_tsdf");
+  timing::Timer propagate_timer("esdf/euclidean/propagate_tsdf");
   VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
           << " updated blocks from the TSDF.";
   for (const BlockIndex& block_index : tsdf_blocks) {
@@ -238,7 +238,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
           << " New: " << num_new;
 
   if (config_.add_occupied_crust) {
-    timing::Timer crust_timer("esdf/crust");
+    timing::Timer crust_timer("esdf/euclidean/crust");
 
     // This just sets all the unknown voxels in the whole space to occupied.
     BlockIndexList esdf_blocks;
@@ -276,7 +276,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
     }
   }
 
-  timing::Timer update_timer("esdf/update_esdf");
+  timing::Timer update_timer("esdf/euclidean/update_esdf");
   // Process the open set now.
   processOpenSetFullEuclidean();
   update_timer.Stop();
@@ -839,9 +839,10 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
 
       // + or - direction?? Maybe minus...
       const FloatingPoint neighbor_distance =
-          parent_distance + signum(esdf_voxel.distance) *
-          (-esdf_voxel.parent.cast<FloatingPoint>() +
-           directions[i].cast<FloatingPoint>())
+          parent_distance +
+          signum(esdf_voxel.distance) *
+              (-esdf_voxel.parent.cast<FloatingPoint>() +
+               directions[i].cast<FloatingPoint>())
                   .norm() *
               esdf_voxel_size_;
 
@@ -863,11 +864,6 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
       // Everything inside the surface.
       if (neighbor_distance < 0.0 && neighbor_voxel.distance < 0.0 &&
           neighbor_distance > neighbor_voxel.distance) {
-        /* std::cout << "Inside surface. Neighbor voxel dist: "
-                  << neighbor_voxel.distance
-                  << " neighbor distance: " << neighbor_distance
-                  << " esdf voxel distance: " << esdf_voxel.distance
-                  << " parent distance: " << parent_distance << std::endl; */
         neighbor_voxel.distance = neighbor_distance;
         // Also update parent.
         neighbor_voxel.parent = esdf_voxel.parent - directions[i];
@@ -880,12 +876,42 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
       if (signum(neighbor_distance) != signum(neighbor_voxel.distance) &&
           std::abs(neighbor_voxel.distance + esdf_voxel.distance) >
               distances[i] * esdf_voxel_size_) {
-        std::cout << "DISCONTINUITY! Neighbor distance: " << neighbor_distance
-                  << " Neighbor voxel distasnce: " << neighbor_voxel.distance
-                  << " Actual diff: "
-                  << std::abs(neighbor_voxel.distance + esdf_voxel.distance)
-                  << " Distance bound: " << distances[i] * esdf_voxel_size_
-                  << std::endl;
+        // The ESDF voxel is in the fixed band, and the distance between the
+        // two is greater than the actual distance (i.e., a discontinuity):
+        if (esdf_voxel.fixed) {
+          neighbor_voxel.distance =
+              esdf_voxel.distance -
+              signum(esdf_voxel.distance) * distances[i] * esdf_voxel_size_;
+          neighbor_voxel.parent = esdf_voxel.parent - directions[i];
+          if (!neighbor_voxel.in_queue) {
+            open_.push(neighbors[i], neighbor_voxel.distance);
+            neighbor_voxel.in_queue = true;
+          }
+          // ESDF voxel not in fixed band, and is outside an obstacle, while the
+          // neighbor voxel is inside an obstacle.
+        } else if (neighbor_voxel.distance < 0.0) {
+          // neighbor_voxel.distance = -distance_to_neighbor;
+          neighbor_voxel.distance =
+              esdf_voxel.distance -
+              signum(esdf_voxel.distance) * distances[i] * esdf_voxel_size_;
+          neighbor_voxel.parent = esdf_voxel.parent - directions[i];
+          if (!neighbor_voxel.in_queue) {
+            open_.push(neighbors[i], neighbor_voxel.distance);
+            neighbor_voxel.in_queue = true;
+          }
+          // ESDF voxel isn't in the fixed band, neighbor is outside an
+          // obstacle, and ESDF voxel is inside.
+        } else if (neighbor_voxel.distance >= 0.0) {
+          // neighbor_voxel.distance = distance_to_neighbor;
+          neighbor_voxel.distance =
+              esdf_voxel.distance -
+              signum(esdf_voxel.distance) * distances[i] * esdf_voxel_size_;
+          neighbor_voxel.parent = esdf_voxel.parent - directions[i];
+          if (!neighbor_voxel.in_queue) {
+            open_.push(neighbors[i], neighbor_voxel.distance);
+            neighbor_voxel.in_queue = true;
+          }
+        }
       }
     }
 
