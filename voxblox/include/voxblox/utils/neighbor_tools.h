@@ -7,13 +7,17 @@
 namespace voxblox {
 
 // Define what connectivity you want to have in the voxels.
-enum Connectivity { kSix = 0, kEighteen, kTwentySix };
+enum Connectivity : unsigned int {
+  kSix = 6u,
+  kEighteen = 18u,
+  kTwentySix = 26u
+};
 
 template <typename VoxelType>
 class NeighborTools {
  public:
   NeighborTools() : voxels_per_side_(0) {}
-  NeighborTools(const Layer<VoxelType>* layer) : layer_(layer) {
+  explicit NeighborTools(const Layer<VoxelType>* layer) : layer_(layer) {
     CHECK_NOTNULL(layer);
     voxels_per_side_ = layer_->voxels_per_side();
     CHECK_NE(voxels_per_side_, 0u);
@@ -32,10 +36,11 @@ class NeighborTools {
       AlignedVector<float>* distances,
       AlignedVector<Eigen::Vector3i>* directions) const;
 
-  void getNeighbor(const BlockIndex& block_index, const VoxelIndex& voxel_index,
-                   const SignedIndex& direction,
-                   BlockIndex* neighbor_block_index,
-                   VoxelIndex* neighbor_voxel_index) const;
+  void getNeighborIndex(const BlockIndex& block_index,
+                        const VoxelIndex& voxel_index,
+                        const SignedIndex& direction,
+                        BlockIndex* neighbor_block_index,
+                        VoxelIndex* neighbor_voxel_index) const;
 
   SignedIndex getOffsetBetweenVoxels(const BlockIndex& start_block_index,
                                      const VoxelIndex& start_voxel_index,
@@ -48,12 +53,12 @@ class NeighborTools {
   size_t voxels_per_side_;
 };
 
-// Uses 26-connectivity and quasi-Euclidean distances.
+// Uses specified connectivity and quasi-Euclidean distances.
 // Directions is the direction that the neighbor voxel lives in. If you
 // need the direction FROM the neighbor voxel TO the current voxel, take
 // negative of the given direction.
 template <typename VoxelType>
-void NeighborTools<VoxelType>::getNeighborsAndDistances(
+void NeighborTools<VoxelType>::getNeighborIndicesAndDistances(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
     Connectivity connectivity, AlignedVector<VoxelKey>* neighbors,
     AlignedVector<float>* distances,
@@ -74,7 +79,7 @@ void NeighborTools<VoxelType>::getNeighborsAndDistances(
   Eigen::Vector3i direction;
   direction.setZero();
   // Distance 1 set.
-  for (unsigned int i = 0; i < 3; ++i) {
+  for (unsigned int i = 0u; i < 3u; ++i) {
     for (int j = -1; j <= 1; j += 2) {
       direction(i) = j;
       getNeighbor(block_index, voxel_index, direction, &neighbor.first,
@@ -85,54 +90,63 @@ void NeighborTools<VoxelType>::getNeighborsAndDistances(
     }
     direction(i) = 0;
   }
-  if (connectivity == Connectivity::kEighteen ||
-      connectivity == Connectivity::kTwentySix) {
-    // Distance sqrt(2) set.
-    for (unsigned int i = 0; i < 3; ++i) {
-      unsigned int next_i = (i + 1) % 3;
-      for (int j = -1; j <= 1; j += 2) {
-        direction(i) = j;
-        for (int k = -1; k <= 1; k += 2) {
-          direction(next_i) = k;
-          getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                      &neighbor.second);
-          neighbors->emplace_back(neighbor);
-          distances->emplace_back(kSqrt2);
-          directions->emplace_back(direction);
-        }
-        direction(i) = 0;
-        direction(next_i) = 0;
+
+  if (connectivity == Connectivity::kSix) {
+    return;
+  }
+
+  // Distance sqrt(2) set.
+  for (unsigned int i = 0u; i < 3u; ++i) {
+    unsigned int next_i = (i + 1) % 3;
+    for (int j = -1; j <= 1; j += 2) {
+      direction(i) = j;
+      for (int k = -1; k <= 1; k += 2) {
+        direction(next_i) = k;
+        getNeighbor(block_index, voxel_index, direction, &neighbor.first,
+                    &neighbor.second);
+        neighbors->emplace_back(neighbor);
+        distances->emplace_back(kSqrt2);
+        directions->emplace_back(direction);
+      }
+      direction(i) = 0;
+      direction(next_i) = 0;
+    }
+  }
+
+  if (connectivity == Connectivity::kEighteen) {
+    return;
+  }
+
+  // Distance sqrt(3) set.
+  for (int i = -1; i <= 1; i += 2) {
+    direction(0) = i;
+    for (int j = -1; j <= 1; j += 2) {
+      direction(1) = j;
+      for (int k = -1; k <= 1; k += 2) {
+        direction(2) = k;
+        getNeighbor(block_index, voxel_index, direction, &neighbor.first,
+                    &neighbor.second);
+        neighbors->emplace_back(neighbor);
+        distances->emplace_back(kSqrt3);
+        directions->emplace_back(direction);
       }
     }
   }
 
-  if (connectivity == Connectivity::kTwentySix) {
-    // Distance sqrt(3) set.
-    for (int i = -1; i <= 1; i += 2) {
-      direction(0) = i;
-      for (int j = -1; j <= 1; j += 2) {
-        direction(1) = j;
-        for (int k = -1; k <= 1; k += 2) {
-          direction(2) = k;
-          getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                      &neighbor.second);
-          neighbors->emplace_back(neighbor);
-          distances->emplace_back(kSqrt3);
-          directions->emplace_back(direction);
-        }
-      }
-    }
+  if (connectivity != Connectivity::kTwentySix) {
+    LOG(FATAL) << "Unknown neighborhood connectivity: "
+               << static_cast<int>(connectivity);
   }
 }
 
 template <typename VoxelType>
-void NeighborTools<VoxelType>::getNeighbor(
+void NeighborTools<VoxelType>::getNeighborIndex(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
     const SignedIndex& direction, BlockIndex* neighbor_block_index,
     VoxelIndex* neighbor_voxel_index) const {
-  CHECK_NOTNULL(layer_);
-  DCHECK(neighbor_block_index != NULL);
-  DCHECK(neighbor_voxel_index != NULL);
+  CHECK_NE(voxels_per_side_, 0);
+  CHECK_NOTNULL(neighbor_block_index);
+  CHECK_NOTNULL(neighbor_voxel_index);
 
   *neighbor_block_index = block_index;
   *neighbor_voxel_index = voxel_index + direction;
@@ -155,11 +169,12 @@ SignedIndex NeighborTools<VoxelType>::getOffsetBetweenVoxels(
     const BlockIndex& start_block_index, const VoxelIndex& start_voxel_index,
     const BlockIndex& end_block_index,
     const VoxelIndex& end_voxel_index) const {
+  CHECK_NE(voxels_per_side_, 0);
   BlockIndex current_block_index = end_block_index;
   SignedIndex voxel_offset = SignedIndex::Zero();
 
   // Line up the voxels so that they're in the same block.
-  for (unsigned int i = 0; i < 3; ++i) {
+  for (unsigned int i = 0u; i < 3u; ++i) {
     while (start_block_index(i) > current_block_index(i)) {
       current_block_index(i)++;
       voxel_offset(i) -= voxels_per_side_;
