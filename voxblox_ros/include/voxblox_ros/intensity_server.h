@@ -1,16 +1,16 @@
-#ifndef VOXBLOX_ROS_intensity_SERVER_H_
-#define VOXBLOX_ROS_intensity_SERVER_H_
+#ifndef VOXBLOX_ROS_INTENSITY_SERVER_H_
+#define VOXBLOX_ROS_INTENSITY_SERVER_H_
 
-#include <memory>
 #include <cv_bridge/cv_bridge.h>
+#include <memory>
 #include <sensor_msgs/Image.h>
 
 #include <voxblox/core/voxel.h>
 #include <voxblox/integrator/intensity_integrator.h>
 #include <voxblox/utils/color_maps.h>
 
-#include "voxblox_ros/tsdf_server.h"
 #include "voxblox_ros/intensity_vis.h"
+#include "voxblox_ros/tsdf_server.h"
 
 namespace voxblox {
 
@@ -52,4 +52,4 @@ class IntensityServer : public TsdfServer {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_ROS_intensity_SERVER_H_
+#endif  // VOXBLOX_ROS_INTENSITY_SERVER_H_

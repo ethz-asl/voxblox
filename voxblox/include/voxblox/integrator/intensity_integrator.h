@@ -1,9 +1,9 @@
 #ifndef VOXBLOX_INTEGRATOR_INTENSITY_INTEGRATOR_H_
 #define VOXBLOX_INTEGRATOR_INTENSITY_INTEGRATOR_H_
 
-#include <glog/logging.h>
-#include <Eigen/Core>
 #include <algorithm>
+#include <Eigen/Core>
+#include <glog/logging.h>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -26,7 +26,7 @@ class IntensityIntegrator {
                       Layer<IntensityVoxel>* intensity_layer);
 
   // Set the max distance for projecting into the TSDF layer.
-  void setMaxDistance(FloatingPoint max_distance) {
+  void setMaxDistance(const FloatingPoint max_distance) {
     max_distance_ = max_distance;
   }
   FloatingPoint getMaxDistance() const { return max_distance_; }
@@ -42,6 +42,8 @@ class IntensityIntegrator {
  private:
   FloatingPoint max_distance_;
   float max_weight_;
+  // Number of voxels to propagate from the surface along the bearing vector.
+  int intensity_prop_voxel_radius_;
 
   const Layer<TsdfVoxel>& tsdf_layer_;
   Layer<IntensityVoxel>* intensity_layer_;

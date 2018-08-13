@@ -17,20 +17,21 @@ bool getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
                                 const Point& bearing_vector,
                                 FloatingPoint max_distance,
                                 Point* triangulated_pose) {
+  CHECK_NOTNULL(triangulated_pose);
   // Make sure bearing vector is normalized.
-  Point ray_direction = bearing_vector.normalized();
+  const Point ray_direction = bearing_vector.normalized();
 
   // Keep track of current distance along the ray.
   FloatingPoint t = 0.0;
   // General ray equations: p = o + d * t
 
   // Cache voxel sizes for faster moving.
-  FloatingPoint voxel_size = layer.voxel_size();
+  const FloatingPoint voxel_size = layer.voxel_size();
 
   bool surface_found = false;
 
   while (t < max_distance) {
-    const Point& current_pos = ray_origin + t * ray_direction;
+    const Point current_pos = ray_origin + t * ray_direction;
     typename Block<VoxelType>::ConstPtr block_ptr =
         layer.getBlockPtrByCoordinates(current_pos);
     if (!block_ptr) {

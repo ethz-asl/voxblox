@@ -172,7 +172,7 @@ class TsdfServer {
   std::shared_ptr<MeshLayer> mesh_layer_;
   std::unique_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
   // Optionally cached mesh message.
-  voxblox_msgs::Mesh mesh_msg_;
+  voxblox_msgs::Mesh cached_mesh_msg_;
 
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.

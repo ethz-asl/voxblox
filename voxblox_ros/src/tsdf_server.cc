@@ -371,7 +371,7 @@ void TsdfServer::updateMesh() {
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
   if (cache_mesh_) {
-    mesh_msg_ = mesh_msg;
+    cached_mesh_msg_ = mesh_msg;
   }
   publish_mesh_timer.Stop();
 
