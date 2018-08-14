@@ -1,6 +1,8 @@
-#include "voxblox/integrator/esdf_integrator.h"
-
 #include <iostream>
+
+#include <voxblox/utils/planning_utils.h>
+
+#include "voxblox/integrator/esdf_integrator.h"
 
 namespace voxblox {
 
@@ -20,41 +22,15 @@ EsdfIntegrator::EsdfIntegrator(const Config& config,
   open_.setNumBuckets(config_.num_buckets, config_.max_distance_m);
 }
 
-void EsdfIntegrator::getSphereAroundPoint(
-    const Point& center, FloatingPoint radius,
-    BlockVoxelListMap* block_voxel_list) const {
-  // search a cube with side length 2*radius
-  for (FloatingPoint x = -radius; x <= radius; x += esdf_voxel_size_) {
-    for (FloatingPoint y = -radius; y <= radius; y += esdf_voxel_size_) {
-      for (FloatingPoint z = -radius; z <= radius; z += esdf_voxel_size_) {
-        Point point(x, y, z);
-
-        // check if point is inside the spheres radius
-        if (point.squaredNorm() <= radius * radius) {
-          // convert to global coordinate
-          point += center;
-
-          BlockIndex block_index =
-              esdf_layer_->computeBlockIndexFromCoordinates(point);
-
-          (*block_voxel_list)[block_index].push_back(
-              esdf_layer_->allocateBlockPtrByIndex(block_index)
-                  ->computeTruncatedVoxelIndexFromCoordinates(point));
-        }
-      }
-    }
-  }
-}
-
 // Used for planning - allocates sphere around as observed but occupied,
 // and clears space in a sphere around current position.
 void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   timing::Timer clear_timer("esdf/clear_radius");
 
   // First set all in inner sphere to free.
-  BlockVoxelListMap block_voxel_list;
-  getSphereAroundPoint(position, config_.clear_sphere_radius,
-                       &block_voxel_list);
+  HierarchicalIndexMap block_voxel_list;
+  utils::getAndAllocateSphereAroundPoint(position, config_.clear_sphere_radius,
+                                         esdf_layer_, &block_voxel_list);
   for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr =
@@ -78,8 +54,8 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
 
   // Second set all remaining unknown to occupied.
   block_voxel_list.clear();
-  getSphereAroundPoint(position, config_.occupied_sphere_radius,
-                       &block_voxel_list);
+  utils::getAndAllocateSphereAroundPoint(
+      position, config_.occupied_sphere_radius, esdf_layer_, &block_voxel_list);
   for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr =
