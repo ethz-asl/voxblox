@@ -78,7 +78,8 @@ typedef AlignedVector<Triangle> TriangleVector;
 typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
     Transformation;
 typedef kindr::minimal::RotationQuaternionTemplate<FloatingPoint> Rotation;
-typedef Eigen::Quaternion<FloatingPoint> Quaternion;
+typedef kindr::minimal::RotationQuaternionTemplate<
+    FloatingPoint>::Implementation Quaternion;
 
 // For alignment of layers / point clouds
 typedef Eigen::Matrix<FloatingPoint, 3, Eigen::Dynamic> PointsMatrix;
