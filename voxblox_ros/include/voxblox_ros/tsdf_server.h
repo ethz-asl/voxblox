@@ -129,6 +129,8 @@ class TsdfServer {
   bool publish_slices_;
   bool publish_pointclouds_;
   bool publish_tsdf_map_;
+  // Only applies to full layer/map output:
+  bool publish_only_updated_blocks_;
 
   // Whether to save the latest mesh message sent (for inheriting classes).
   bool cache_mesh_;
