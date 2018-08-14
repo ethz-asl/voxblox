@@ -220,7 +220,6 @@ The most important parameter here is the selection of the method:
 | `use_const_weight` | If true all points along a ray have equal weighting | false |
 | `allow_clear` | If true points beyond the `max_ray_length_m` will be integrated up to this distance | true |
 | `use_freespace_pointcloud` | If true a second subscription topic `freespace_pointcloud` appears. Clearing rays are cast from beyond this topic's points' truncation distance to assist in clearing freespace voxels | false |
-| `publish_pointclouds` | If true the tsdf and esdf (if generated) is published as a pointcloud when updated | false |
 
 ### Fast TSDF Integrator Specific Parameters
 These parameters are only used if the integrator `method` is set to "fast".
@@ -264,6 +263,8 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `publish_tsdf_map` | Whether to publish the complete TSDF map periodically over ROS topics. | false |
 | `publish_esdf_map` | Whether to publish the complete ESDF map periodically over ROS topics. | false |
 | `publish_tsdf_info` | Enables publishing of `tsdf_pointcloud`, `surface_pointcloud` and `occupied_nodes`. | false |
+| `publish_pointclouds` | If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated | false |
+
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
