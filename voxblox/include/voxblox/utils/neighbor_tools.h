@@ -30,7 +30,7 @@ class NeighborTools {
     CHECK_NE(voxels_per_side_, 0u);
   }
 
-  void getNeighborIndicesAndDistances(
+  void getNeighborIndexesAndDistances(
       const BlockIndex& block_index, const VoxelIndex& voxel_index,
       Connectivity connectivity, AlignedVector<VoxelKey>* neighbors,
       AlignedVector<float>* distances,
@@ -58,7 +58,7 @@ class NeighborTools {
 // need the direction FROM the neighbor voxel TO the current voxel, take
 // negative of the given direction.
 template <typename VoxelType>
-void NeighborTools<VoxelType>::getNeighborIndicesAndDistances(
+void NeighborTools<VoxelType>::getNeighborIndexesAndDistances(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
     Connectivity connectivity, AlignedVector<VoxelKey>* neighbors,
     AlignedVector<float>* distances,

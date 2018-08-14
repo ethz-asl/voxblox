@@ -79,8 +79,8 @@ class LayerTest {
 };
 
 template <typename VoxelType>
-void LayerTest<VoxelType>::CompareVoxel(const VoxelType& voxel_A,
-                                        const VoxelType& voxel_B) const {
+void LayerTest<VoxelType>::CompareVoxel(const VoxelType& /* voxel_A */,
+                                        const VoxelType& /* voxel_B */) const {
   LOG(FATAL) << "Not implemented for this voxel type!";
 }
 
