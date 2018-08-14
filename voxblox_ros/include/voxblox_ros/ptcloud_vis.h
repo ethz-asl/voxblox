@@ -369,6 +369,14 @@ inline void createDistancePointcloudFromTsdfLayerSlice(
     const Layer<TsdfVoxel>& layer, unsigned int free_plane_index,
     FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
+  // Make sure that the free_plane_val doesn't fall evenly between 2 slices.
+  // Prefer to push it up.
+  // Using std::remainder rather than std::fmod as the latter has huge crippling
+  // issues with floating-point division.
+  if (std::remainder(free_plane_val, layer.voxel_size()) < kFloatEpsilon) {
+    free_plane_val += layer.voxel_size() / 2.0;
+  }
+
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityTsdfVoxelsSlice, ph::_1, ph::_2,
@@ -380,6 +388,14 @@ inline void createDistancePointcloudFromEsdfLayerSlice(
     const Layer<EsdfVoxel>& layer, unsigned int free_plane_index,
     FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
+  // Make sure that the free_plane_val doesn't fall evenly between 2 slices.
+  // Prefer to push it up.
+  // Using std::remainder rather than std::fmod as the latter has huge crippling
+  // issues with floating-point division.
+  if (std::remainder(free_plane_val, layer.voxel_size()) < kFloatEpsilon) {
+    free_plane_val += layer.voxel_size() / 2.0;
+  }
+
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityEsdfVoxelsSlice, ph::_1, ph::_2,

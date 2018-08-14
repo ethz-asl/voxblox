@@ -25,22 +25,10 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private),
-      clear_sphere_for_planning_(false),
-      publish_esdf_map_(false) {
-  // Get config from ros params.
-  EsdfIntegrator::Config esdf_integrator_config =
-      getEsdfIntegratorConfigFromRosParam(nh_private_);
-  EsdfMap::Config esdf_config = getEsdfMapConfigFromRosParam(nh_private_);
-
-  // Set up map and integrator.
-  esdf_map_.reset(new EsdfMap(esdf_config));
-  esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
-                                            tsdf_map_->getTsdfLayerPtr(),
-                                            esdf_map_->getEsdfLayerPtr()));
-
-  setupRos();
-}
+    : EsdfServer(nh, nh_private, getEsdfMapConfigFromRosParam(nh_private),
+                 getEsdfIntegratorConfigFromRosParam(nh_private),
+                 getTsdfMapConfigFromRosParam(nh_private),
+                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
 
 void EsdfServer::setupRos() {
   // Set up publisher.
@@ -185,12 +173,17 @@ bool EsdfServer::saveMap(const std::string& file_path) {
 bool EsdfServer::loadMap(const std::string& file_path) {
   // Load in the same order: TSDF first, then ESDF.
   bool success = TsdfServer::loadMap(file_path);
-
   constexpr bool kMulitpleLayerSupport = true;
-  return success &&
-         io::LoadBlocksFromFile(
-             file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
-             kMulitpleLayerSupport, esdf_map_->getEsdfLayerPtr());
+  success = success &&
+            io::LoadBlocksFromFile(
+                file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
+                kMulitpleLayerSupport, esdf_map_->getEsdfLayerPtr());
+  if (success) {
+    LOG(INFO) << "Successfully loaded ESDF layer.";
+  }
+
+  publishPointclouds();
+  return success;
 }
 
 void EsdfServer::updateEsdf() {
