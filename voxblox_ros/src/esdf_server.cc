@@ -6,6 +6,13 @@
 namespace voxblox {
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
+                       const ros::NodeHandle& nh_private)
+    : EsdfServer(nh, nh_private, getEsdfMapConfigFromRosParam(nh_private),
+                 getEsdfIntegratorConfigFromRosParam(nh_private),
+                 getTsdfMapConfigFromRosParam(nh_private),
+                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
+
+EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private,
                        const EsdfMap::Config& esdf_config,
                        const EsdfIntegrator::Config& esdf_integrator_config,
@@ -14,25 +21,6 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
     : TsdfServer(nh, nh_private, tsdf_config, tsdf_integrator_config),
       clear_sphere_for_planning_(false),
       publish_esdf_map_(false) {
-  // Set up map and integrator.
-  esdf_map_.reset(new EsdfMap(esdf_config));
-  esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
-                                            tsdf_map_->getTsdfLayerPtr(),
-                                            esdf_map_->getEsdfLayerPtr()));
-
-  setupRos();
-}
-
-EsdfServer::EsdfServer(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private),
-      clear_sphere_for_planning_(false),
-      publish_esdf_map_(false) {
-  // Get config from ros params.
-  EsdfIntegrator::Config esdf_integrator_config =
-      getEsdfIntegratorConfigFromRosParam(nh_private_);
-  EsdfMap::Config esdf_config = getEsdfMapConfigFromRosParam(nh_private_);
-
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
@@ -124,12 +112,10 @@ void EsdfServer::updateMesh() {
     publishTraversable();
   }
 
-  if (publish_esdf_map_ && esdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = false;
-    voxblox_msgs::Layer layer_msg;
-    serializeLayerAsMsg<EsdfVoxel>(esdf_map_->getEsdfLayer(), only_updated,
-                                   &layer_msg);
-    esdf_map_pub_.publish(layer_msg);
+  // VERY important to call this before calling the mesh update, as this clears
+  // the updated flag in the blocks!
+  if (publish_esdf_map_) {
+    publishMap();
   }
 
   TsdfServer::updateMesh();
@@ -158,7 +144,7 @@ void EsdfServer::publishTraversable() {
 
 void EsdfServer::publishMap(const bool reset_remote_map) {
   if (this->esdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = false;
+    const bool only_updated = publish_only_updated_blocks_;
     timing::Timer publish_map_timer("map/publish_esdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<EsdfVoxel>(this->esdf_map_->getEsdfLayer(),
