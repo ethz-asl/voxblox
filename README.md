@@ -132,6 +132,33 @@ cd ~/catkin_ws/src/
 catkin build voxblox_ros
 ```
 
+# Contributing to voxblox
+These steps are only necessary if you plan on contributing to voxblox.
+
+### Code style
+
+We follow the style and best practices listed in the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+
+### Setting up the linter
+This setups a linter which checks if the code conforms to our style guide during commits.
+
+First, install the dependencies listed [here](https://github.com/ethz-asl/linter#dependencies).
+
+```bash
+cd ~/catkin_ws/src/
+git clone git@github.com:ethz-asl/linter.git
+cd linter
+echo ". $(realpath setup_linter.sh)" >> ~/.bashrc  # Or the matching file for
+                                                   # your shell.
+bash
+
+# Initialize linter in voxblox repo
+cd ~/catkin_ws/src/voxblox
+init_linter_git_hooks
+```
+For more information about the linter visit  [ethz/linter](https://github.com/ethz-asl/linter)
+
+
 # Running Voxblox
 The easiest way to test out voxblox is to try it out on a dataset.
 We have launch files for our [own dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), the [Euroc Vicon Room datasets](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets), and the [KITTI raw datasets](http://www.cvlibs.net/datasets/kitti/) processed through [kitti_to_rosbag](https://github.com/ethz-asl/kitti_to_rosbag).
@@ -332,4 +359,3 @@ void Block<YOUR_FANCY_VOXEL>::SerializeVoxelData(const YOUR_FANCY_VOXEL* voxels,
 # Transformations in Voxblox
 
 Voxblox uses active transforms and Hamilton quaternions. For futher details on the notation used throughout the code see [the minkindr wiki](https://github.com/ethz-asl/minkindr/wiki/Common-Transformation-Conventions)
-
