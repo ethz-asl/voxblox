@@ -20,7 +20,9 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const TsdfIntegratorBase::Config& tsdf_integrator_config)
     : TsdfServer(nh, nh_private, tsdf_config, tsdf_integrator_config),
       clear_sphere_for_planning_(false),
-      publish_esdf_map_(false) {
+      publish_esdf_map_(false),
+      publish_traversable_(false),
+      traversability_radius_(1.0) {
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
@@ -239,7 +241,7 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
 void EsdfServer::clear() {
   esdf_map_->getEsdfLayerPtr()->removeAllBlocks();
   esdf_integrator_->clear();
-  CHECK_EQ(esdf_map_->getEsdfLayerPtr()->getNumberOfAllocatedBlocks(), 0);
+  CHECK_EQ(esdf_map_->getEsdfLayerPtr()->getNumberOfAllocatedBlocks(), 0u);
 
   TsdfServer::clear();
 
