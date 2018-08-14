@@ -46,6 +46,18 @@ FloatingPoint SimulationWorld::getDistanceToPoint(
   return min_dist;
 }
 
+void SimulationWorld::getPointcloudFromTransform(
+    const Transformation& pose, const Eigen::Vector2i& camera_res,
+    FloatingPoint fov_h_rad, FloatingPoint max_dist, Pointcloud* ptcloud,
+    Colors* colors) const {
+  const Point nominal_view_direction(1.0, 0.0, 0.0);
+  Point view_direction = pose.getRotation().rotate(nominal_view_direction);
+  Point view_origin = pose.getPosition();
+
+  getPointcloudFromViewpoint(view_origin, view_direction, camera_res, fov_h_rad,
+                             max_dist, ptcloud, colors);
+}
+
 void SimulationWorld::getPointcloudFromViewpoint(
     const Point& view_origin, const Point& view_direction,
     const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
@@ -94,6 +106,19 @@ void SimulationWorld::getPointcloudFromViewpoint(
       }
     }
   }
+}
+
+void SimulationWorld::getNoisyPointcloudFromTransform(
+    const Transformation& pose, const Eigen::Vector2i& camera_res,
+    FloatingPoint fov_h_rad, FloatingPoint max_dist, FloatingPoint noise_sigma,
+    Pointcloud* ptcloud, Colors* colors) {
+  const Point nominal_view_direction(0.0, 0.0, 1.0);
+  Point view_direction = pose.getRotation().rotate(nominal_view_direction);
+  Point view_origin = pose.getPosition();
+
+  getNoisyPointcloudFromViewpoint(view_origin, view_direction, camera_res,
+                                  fov_h_rad, max_dist, noise_sigma, ptcloud,
+                                  colors);
 }
 
 void SimulationWorld::getNoisyPointcloudFromViewpoint(
