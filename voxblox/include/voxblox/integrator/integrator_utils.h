@@ -142,6 +142,105 @@ inline void getHierarchicalIndexAlongRay(
   create_index_timer.Stop();
 }
 
+class TriangleIntersector {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  // assumes triangle was viewed along its normal and the normal points towards
+  // the observer
+  void IntegratorTriangle(const FloatingPoint voxel_size_inv,
+                          const Triangle& triangle)
+      : triangle_(voxel_size_inv * triangle) {
+    // Compute edge vectors for triangle
+    const Ray ray_a = triangle_.row(1) - triangle_.row(0);
+    const Ray ray_b = triangle_.row(2) - triangle_.row(1);
+    const Ray ray_c = triangle_.row(0) - triangle_.row(2);
+
+    normal_ = ray_a.cross(ray_b).normalized();
+
+    axes_vector_ = {Ray(0.0, -ray_a.z, ray_a.y), Ray(0.0, -ray_b.z, ray_b.y),
+                    Ray(0.0, -ray_b.z, ray_b.y), Ray(ray_a.z, 0.0, -ray_a.x),
+                    Ray(ray_b.z, 0.0, -ray_b.x), Ray(ray_b.z, 0.0, -ray_b.x),
+                    Ray(-ray_a.y, ray_a.x, 0.0), Ray(-ray_b.y, ray_b.x, 0.0),
+                    Ray(-ray_b.y, ray_b.x, 0.0)};
+  }
+
+  void getIntersectingVoxels(IndexSet* voxel_indexes) {
+    IndexSet to_check;
+    IndexSet to_check_after;
+
+    raycastEdge(triangle_.row(0), triangle_.row(1), &to_check);
+    raycastEdge(triangle_.row(1), triangle_.row(2), &to_check);
+    raycastEdge(triangle_.row(0), triangle_.row(2), &to_check);
+
+    // edges that have just been raycast will always be valid
+    bool skip_check = true;
+
+    while (!to_check.empty()) {
+      for (const VoxelIndex& index : to_check) {
+        // check if valid and add neighbors
+        if (skip_check ||
+            (!voxel_indexes->count(index) && isValidIndex(index))) {
+          voxel_indexes.insert(index);
+
+          // 6 conectivity should always works, though there could be cases
+          // where we hit issues due to floating point precision TODO check
+          // this.
+          to_check_after.insert(index + VoxelIndex(0, 0, 1));
+          to_check_after.insert(index + VoxelIndex(0, 0, -1));
+          to_check_after.insert(index + VoxelIndex(0, 1, 0));
+          to_check_after.insert(index + VoxelIndex(0, -1, 0));
+          to_check_after.insert(index + VoxelIndex(1, 0, 0));
+          to_check_after.insert(index + VoxelIndex(-1, 0, 0));
+        }
+      }
+      skip_check = false;
+      to_check.clear();
+      to_check.swap(to_check_after);
+    }
+  }
+
+ private:
+  // loosely based on https://gist.github.com/yomotsu/d845f21e2e1eb49f647f
+  bool isValidIndex(const VoxelIndex& index) {
+    // Translate triangle as conceptually moving AABB to origin
+    Triangle triangle_centered = triangle.rowwise() - index.transpose();
+
+    // Test axes a00..a22 (category 3)
+    for (const Ray& axis : axes_vector_) {
+      const Point test_point = triangle_centered * axis.transpose();
+
+      if (std::max(-test_point.max(), test_point.min()) >
+          axis.cwiseAbs().sum()) {
+        return false;  // Axis is a separating axis
+      }
+    }
+
+    // Test the three axes corresponding to the face normals of AABB b (category
+    // 1).
+    if ((triangle_centered.colwise().max() < -1.0).any() ||
+        (triangle_centered.colwise().min() > 1.0).any()) {
+      return false;
+    }
+
+    // Test separating axis corresponding to triangle face normal (category 2)
+    return std::abs(plane.normal.dot(triangle_centered.row(0))) <=
+           normal_.cwiseAbs().sum();
+  }
+
+  void raycastEdge(const Point& a, const Point& b, IndexSet* voxel_indexes) {
+    RayCaster ray_caster(a, b);
+    AnyIndex ray_index;
+    while (ray_caster.nextRayIndex(&ray_index)) {
+      voxel_indexes->insert(ray_index);
+    }
+  }
+
+  const Triangle triangle_;
+  Ray normal_;
+  Pointcloud axes_vector_;
+};
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_INTEGRATOR_INTEGRATOR_UTILS_H_

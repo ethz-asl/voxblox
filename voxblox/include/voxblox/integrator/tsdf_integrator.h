@@ -66,6 +66,13 @@ class TsdfIntegratorBase {
                                    const Colors& colors,
                                    const bool freespace_points = false) = 0;
 
+  void integrateMesh(const Mesh& mesh) {}
+
+  // assumes triangle was viewed along its normal and the normal points towards
+  // the observer
+  void integrateTriangle(const Point& a, const Point& b, const Point& c,
+                         const Ray& normal) {}
+
   // Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
 
