@@ -46,7 +46,7 @@ class TsdfServer {
 
   virtual void processPointCloudMessageAndInsert(
       const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
-      const bool is_freespace_pointcloud);
+      const Transformation& T_G_C, const bool is_freespace_pointcloud);
 
   void integratePointcloud(const Transformation& T_G_C,
                            const Pointcloud& ptcloud_C, const Colors& colors,
@@ -60,13 +60,16 @@ class TsdfServer {
   void publishTsdfOccupiedNodes();
 
   virtual void publishSlices();
-  virtual void updateMesh();    // Incremental update.
-  virtual bool generateMesh();  // Batch update.
+  virtual void updateMesh();          // Incremental update.
+  virtual bool generateMesh();        // Batch update.
   virtual void publishPointclouds();  // Publishes all available pointclouds.
-  virtual void publishMap(); // Publishes the complete map
+  virtual void publishMap(
+      const bool reset_remote_map = false);  // Publishes the complete map
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
+  bool clearMapCallback(std_srvs::Empty::Request& request,           // NOLINT
+                        std_srvs::Empty::Response& response);        // NOLINT
   bool saveMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
                        voxblox_msgs::FilePath::Response& response);  // NOLINT
   bool loadMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
@@ -74,11 +77,10 @@ class TsdfServer {
   bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
                             std_srvs::Empty::Response& response);    // NOLINT
   bool publishPointcloudsCallback(
-      std_srvs::Empty::Request& request,     // NOLINT
-      std_srvs::Empty::Response& response);  // NOLINT
-  bool publishTsdfMapCallback(
-          std_srvs::Empty::Request& request,     // NOLINT
-          std_srvs::Empty::Response& response);  // NOLINT
+      std_srvs::Empty::Request& request,                             // NOLINT
+      std_srvs::Empty::Response& response);                          // NOLINT
+  bool publishTsdfMapCallback(std_srvs::Empty::Request& request,     // NOLINT
+                              std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
 
@@ -104,6 +106,9 @@ class TsdfServer {
   // frame.
   std::string world_frame_;
 
+  // Delete blocks that are far from the system to help manage memory
+  double max_block_distance_from_body_;
+
   // Pointcloud visualization settings.
   double slice_level_;
 
@@ -122,7 +127,11 @@ class TsdfServer {
   // What output information to publish
   bool publish_tsdf_info_;
   bool publish_slices_;
+  bool publish_pointclouds_;
   bool publish_tsdf_map_;
+
+  // Whether to save the latest mesh message sent (for inheriting classes).
+  bool cache_mesh_;
 
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
@@ -146,6 +155,7 @@ class TsdfServer {
 
   // Services.
   ros::ServiceServer generate_mesh_srv_;
+  ros::ServiceServer clear_map_srv_;
   ros::ServiceServer save_map_srv_;
   ros::ServiceServer load_map_srv_;
   ros::ServiceServer publish_pointclouds_srv_;
@@ -161,6 +171,8 @@ class TsdfServer {
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;
   std::unique_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
+  // Optionally cached mesh message.
+  voxblox_msgs::Mesh cached_mesh_msg_;
 
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.

@@ -38,8 +38,8 @@ inline bool TangoLayerInterface::addBlockFromProto(
     TangoBlockInterface::Ptr block_ptr(new TangoBlockInterface(
         block_proto, max_ntsdf_voxel_weight_, meters_to_ntsdf_, audit));
 
-    const BlockIndex block_index =
-        getGridIndexFromOriginPoint(block_ptr->origin(), block_size_inv_);
+    const BlockIndex block_index = getGridIndexFromOriginPoint<BlockIndex>(
+        block_ptr->origin(), block_size_inv_);
     switch (strategy) {
       case TangoLayerInterface::BlockMergingStrategy::kProhibit:
         CHECK_EQ(block_map_.count(block_index), 0u)
@@ -78,12 +78,12 @@ inline bool TangoLayerInterface::addBlockFromProto(
 inline bool TangoLayerInterface::isCompatible(
     const tsdf2::MapHeaderProto& layer_proto) const {
   bool compatible = true;
-  compatible &= (fabs(layer_proto.voxel_size() - voxel_size_)
-                 <= VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
+  compatible &= (fabs(layer_proto.voxel_size() - voxel_size_) <=
+                 VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
   // NOTE(mereweth@jpl.nasa.gov) - MapHeader voxels_per_volume_side is a double
-  compatible &= (fabs(layer_proto.voxels_per_volume_side()
-                 - static_cast<double>(voxels_per_side_))
-                 <= VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
+  compatible &= (fabs(layer_proto.voxels_per_volume_side() -
+                      static_cast<double>(voxels_per_side_)) <=
+                 VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
 
   if (!compatible) {
     LOG(INFO) << std::setprecision(10)
@@ -101,8 +101,8 @@ inline bool TangoLayerInterface::isCompatible(
 inline bool TangoLayerInterface::isCompatible(
     const tsdf2::VolumeProto& block_proto) const {
   bool compatible = true;
-  compatible &= (fabs(block_proto.voxel_size() - voxel_size_)
-                 <= VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
+  compatible &= (fabs(block_proto.voxel_size() - voxel_size_) <=
+                 VOXBLOX_TANGO_LAYER_INTERFACE_VOXEL_EPS);
   // NOTE(mereweth@jpl.nasa.gov) - Volume voxels_per_side is an int32
   compatible &=
       (block_proto.voxels_per_side() == static_cast<int>(voxels_per_side_));
@@ -113,8 +113,7 @@ inline bool TangoLayerInterface::isCompatible(
               << ", voxels_per_side: " << voxels_per_side_;
     LOG(INFO) << std::setprecision(10)
               << "VolumeProto voxel_size: " << block_proto.voxel_size()
-              << ", voxels_per_side: "
-              << block_proto.voxels_per_side();
+              << ", voxels_per_side: " << block_proto.voxels_per_side();
   }
 
   return compatible;

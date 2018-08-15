@@ -30,19 +30,16 @@ enum PlyOutputTypes {
 // sdf_max_value determines if a point is generated for this value or not. Only
 // SDF values within this max value result in a colored point.
 template <typename VoxelType>
-bool getColorFromVoxel(const VoxelType& voxel,
-                       const FloatingPoint sdf_color_range,
-                       const FloatingPoint sdf_max_value, Color* color);
+bool getColorFromVoxel(const VoxelType& voxel, const float sdf_color_range,
+                       const float sdf_max_value, Color* color);
 
 template <>
-bool getColorFromVoxel(const TsdfVoxel& voxel,
-                       const FloatingPoint sdf_color_range,
-                       const FloatingPoint sdf_max_value, Color* color);
+bool getColorFromVoxel(const TsdfVoxel& voxel, const float sdf_color_range,
+                       const float sdf_max_value, Color* color);
 
 template <>
-bool getColorFromVoxel(const EsdfVoxel& voxel,
-                       const FloatingPoint sdf_color_range,
-                       const FloatingPoint sdf_max_value, Color* color);
+bool getColorFromVoxel(const EsdfVoxel& voxel, const float sdf_color_range,
+                       const float sdf_max_value, Color* color);
 
 // This function converts all voxels with positive weight/observed into points
 // colored by a color map based on the SDF value. The parameter sdf_color_range
@@ -54,11 +51,11 @@ bool getColorFromVoxel(const EsdfVoxel& voxel,
 // will be generated independent of the SDF value.
 template <typename VoxelType>
 bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
-                                  const FloatingPoint sdf_color_range,
-                                  const FloatingPoint sdf_max_value,
+                                  const float sdf_color_range,
+                                  const float sdf_max_value,
                                   voxblox::Mesh* point_cloud) {
   CHECK_NOTNULL(point_cloud);
-  CHECK_GT(sdf_color_range, 0.0);
+  CHECK_GT(sdf_color_range, 0.0f);
 
   BlockIndexList blocks;
   layer.getAllAllocatedBlocks(&blocks);
@@ -95,11 +92,11 @@ bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
 
 template <typename VoxelType>
 bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
-                                  const FloatingPoint sdf_color_range,
+                                  const float sdf_color_range,
                                   voxblox::Mesh* point_cloud) {
-  constexpr FloatingPoint kInvalidSdfThreshold = -1.0;
+  constexpr float kInvalidSdfMaxValue = -1.0f;
   return convertVoxelGridToPointCloud<VoxelType>(
-      layer, sdf_color_range, kInvalidSdfThreshold, point_cloud);
+      layer, sdf_color_range, kInvalidSdfMaxValue, point_cloud);
 }
 
 // Converts the layer to a mesh by extracting its ISO surface using marching
@@ -142,19 +139,19 @@ bool convertLayerToMesh(
 
 // Output the layer to ply file. Depending on the ply output type, this either
 // exports all voxel centers colored by th SDF values or extracts the ISO
-// surface as mesh. The parameter max_sdf_range is used to color the points for
-// modes that use an SDF-based point cloud coloring function.
+// surface as mesh. The parameter sdf_color_range is used to color the points
+// for modes that use an SDF-based point cloud coloring function.
 template <typename VoxelType>
 bool outputLayerAsPly(const Layer<VoxelType>& layer,
                       const std::string& filename, PlyOutputTypes type,
-                      const FloatingPoint max_sdf_range = 0.3,
-                      const FloatingPoint max_sdf_value_to_output = 0.3) {
+                      const float sdf_color_range = 0.3f,
+                      const float max_sdf_value_to_output = 0.3f) {
   CHECK(!filename.empty());
   switch (type) {
     case PlyOutputTypes::kSdfColoredDistanceField: {
       voxblox::Mesh point_cloud;
       if (!convertVoxelGridToPointCloud(
-              layer, max_sdf_range, max_sdf_value_to_output, &point_cloud)) {
+              layer, sdf_color_range, max_sdf_value_to_output, &point_cloud)) {
         return false;
       }
 

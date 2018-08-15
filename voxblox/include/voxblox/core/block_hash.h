@@ -69,6 +69,12 @@ struct LongIndexHashMapType {
       type;
 };
 
+
+typedef std::unordered_set<LongIndex, LongIndexHash, std::equal_to<LongIndex>,
+                           Eigen::aligned_allocator<LongIndex> >
+    LongIndexSet;
+
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_BLOCK_HASH_H_

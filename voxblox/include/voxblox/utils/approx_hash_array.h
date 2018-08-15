@@ -26,7 +26,8 @@ namespace voxblox {
 // There are 2^unmasked_bits elements in the container, which element is
 // returned depends on your hashing function.
 // Uses at least 2^unmasked_bits * sizeof(StoreElement) bytes of ram
-template <size_t unmasked_bits, typename StoredElement>
+template <size_t unmasked_bits, typename StoredElement, typename IndexType,
+          typename IndexTypeHasher>
 class ApproxHashArray {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -35,13 +36,13 @@ class ApproxHashArray {
     return pseudo_map_[hash & bit_mask_];
   }
 
-  StoredElement& get(const AnyIndex& index, size_t* hash) {
+  StoredElement& get(const IndexType& index, size_t* hash) {
     DCHECK(hash);
     *hash = hasher_(index);
     return get(*hash);
   }
 
-  StoredElement& get(const AnyIndex& index) {
+  StoredElement& get(const IndexType& index) {
     size_t hash = hasher_(index);
     return get(hash);
   }
@@ -51,7 +52,7 @@ class ApproxHashArray {
   static constexpr size_t bit_mask_ = (1 << unmasked_bits) - 1;
 
   std::array<StoredElement, pseudo_map_size_> pseudo_map_;
-  AnyIndexHash hasher_;
+  IndexTypeHasher hasher_;
 };
 
 // Acts as a fast and thread safe set, with the serious limitation of both
@@ -64,7 +65,8 @@ class ApproxHashArray {
 // Uses at least (2^unmasked_bits + full_reset_threshold) * sizeof(StoreElement)
 // bytes of ram.
 // Note that the reset function is not thread safe.
-template <size_t unmasked_bits, size_t full_reset_threshold>
+template <size_t unmasked_bits, size_t full_reset_threshold, typename IndexType,
+          typename IndexTypeHasher>
 class ApproxHashSet {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -91,13 +93,13 @@ class ApproxHashSet {
     return (pseudo_set_[array_index].load(std::memory_order_relaxed) == hash);
   }
 
-  inline bool isHashCurrentlyPresent(const AnyIndex& index, size_t* hash) {
+  inline bool isHashCurrentlyPresent(const IndexType& index, size_t* hash) {
     DCHECK(hash);
     *hash = hasher_(index);
     return isHashCurrentlyPresent(*hash);
   }
 
-  inline bool isHashCurrentlyPresent(const AnyIndex& index) {
+  inline bool isHashCurrentlyPresent(const IndexType& index) {
     size_t hash = hasher_(index);
     return isHashCurrentlyPresent(hash);
   }
@@ -120,13 +122,13 @@ class ApproxHashSet {
     }
   }
 
-  inline bool replaceHash(const AnyIndex& index, size_t* hash) {
+  inline bool replaceHash(const IndexType& index, size_t* hash) {
     DCHECK(hash);
     *hash = hasher_(index);
     return replaceHash(*hash);
   }
 
-  inline bool replaceHash(const AnyIndex& index) {
+  inline bool replaceHash(const IndexType& index) {
     const size_t hash = hasher_(index);
     return replaceHash(hash);
   }
@@ -160,7 +162,7 @@ class ApproxHashSet {
   size_t offset_;
   std::vector<std::atomic<size_t>> pseudo_set_;
 
-  AnyIndexHash hasher_;
+  IndexTypeHasher hasher_;
 };
 }  // namespace voxblox
 
