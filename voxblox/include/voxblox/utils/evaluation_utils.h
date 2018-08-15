@@ -36,8 +36,8 @@ struct VoxelEvaluationDetails {
        << " num overlapping voxels:     " << num_overlapping_voxels << "\n"
        << " num non-overlapping voxels: " << num_non_overlapping_voxels << "\n"
        << " num ignored voxels:         " << num_ignored_voxels << "\n"
-       << " min error:                  " << min_error << "\n"
-       << " max error:                  " << max_error << "\n"
+       << " error min:                  " << min_error << "\n"
+       << " error max:                  " << max_error << "\n"
        << " RMSE:                       " << rmse << "\n"
        << "========================================\n";
     return ss.str();
