@@ -146,10 +146,8 @@ class TriangleIntersector {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  // assumes triangle was viewed along its normal and the normal points towards
-  // the observer
-  void IntegratorTriangle(const FloatingPoint voxel_size_inv,
-                          const Triangle& triangle)
+  TriangleIntersector(const FloatingPoint voxel_size_inv,
+                      const Triangle& triangle)
       : triangle_(voxel_size_inv * triangle) {
     // Compute edge vectors for triangle
     const Ray ray_a = triangle_.row(1) - triangle_.row(0);
@@ -158,11 +156,12 @@ class TriangleIntersector {
 
     normal_ = ray_a.cross(ray_b).normalized();
 
-    axes_vector_ = {Ray(0.0, -ray_a.z, ray_a.y), Ray(0.0, -ray_b.z, ray_b.y),
-                    Ray(0.0, -ray_b.z, ray_b.y), Ray(ray_a.z, 0.0, -ray_a.x),
-                    Ray(ray_b.z, 0.0, -ray_b.x), Ray(ray_b.z, 0.0, -ray_b.x),
-                    Ray(-ray_a.y, ray_a.x, 0.0), Ray(-ray_b.y, ray_b.x, 0.0),
-                    Ray(-ray_b.y, ray_b.x, 0.0)};
+    axes_vector_ = {
+        Ray(0.0, -ray_a.z(), ray_a.y()), Ray(0.0, -ray_b.z(), ray_b.y()),
+        Ray(0.0, -ray_b.z(), ray_b.y()), Ray(ray_a.z(), 0.0, -ray_a.x()),
+        Ray(ray_b.z(), 0.0, -ray_b.x()), Ray(ray_b.z(), 0.0, -ray_b.x()),
+        Ray(-ray_a.y(), ray_a.x(), 0.0), Ray(-ray_b.y(), ray_b.x(), 0.0),
+        Ray(-ray_b.y(), ray_b.x(), 0.0)};
   }
 
   void getIntersectingVoxels(IndexSet* voxel_indexes) {
@@ -181,7 +180,7 @@ class TriangleIntersector {
         // check if valid and add neighbors
         if (skip_check ||
             (!voxel_indexes->count(index) && isValidIndex(index))) {
-          voxel_indexes.insert(index);
+          voxel_indexes->insert(index);
 
           // 6 conectivity should always works, though there could be cases
           // where we hit issues due to floating point precision TODO check
@@ -204,13 +203,14 @@ class TriangleIntersector {
   // loosely based on https://gist.github.com/yomotsu/d845f21e2e1eb49f647f
   bool isValidIndex(const VoxelIndex& index) {
     // Translate triangle as conceptually moving AABB to origin
-    Triangle triangle_centered = triangle.rowwise() - index.transpose();
+    Triangle triangle_centered =
+        triangle_.rowwise() - index.cast<FloatingPoint>().transpose();
 
     // Test axes a00..a22 (category 3)
     for (const Ray& axis : axes_vector_) {
       const Point test_point = triangle_centered * axis.transpose();
 
-      if (std::max(-test_point.max(), test_point.min()) >
+      if (std::max(-test_point.maxCoeff(), test_point.minCoeff()) >
           axis.cwiseAbs().sum()) {
         return false;  // Axis is a separating axis
       }
@@ -218,13 +218,13 @@ class TriangleIntersector {
 
     // Test the three axes corresponding to the face normals of AABB b (category
     // 1).
-    if ((triangle_centered.colwise().max() < -1.0).any() ||
-        (triangle_centered.colwise().min() > 1.0).any()) {
+    if ((triangle_centered.array().colwise().maxCoeff() < -1.0).any() ||
+        (triangle_centered.array().colwise().minCoeff() > 1.0).any()) {
       return false;
     }
 
     // Test separating axis corresponding to triangle face normal (category 2)
-    return std::abs(plane.normal.dot(triangle_centered.row(0))) <=
+    return std::abs(normal_.dot(triangle_centered.row(0))) <=
            normal_.cwiseAbs().sum();
   }
 
