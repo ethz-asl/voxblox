@@ -153,6 +153,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
     // Block indices are the same across all layers.
     Block<EsdfVoxel>::Ptr esdf_block =
         esdf_layer_->allocateBlockPtrByIndex(block_index);
+    esdf_block->set_updated(true);
 
     // TODO(helenol): assumes that TSDF and ESDF layer are the same size.
     // This will not always be true...
@@ -269,6 +270,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
     // Block indices are the same across all layers.
     Block<EsdfVoxel>::Ptr esdf_block =
         esdf_layer_->allocateBlockPtrByIndex(block_index);
+    esdf_block->set_updated(true);
 
     // TODO(helenol): assumes that TSDF and ESDF layer are the same size.
     // This will not always be true...

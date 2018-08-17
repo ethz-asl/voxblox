@@ -155,6 +155,10 @@ void EsdfServer::publishMap(const bool reset_remote_map) {
       layer_msg.action = static_cast<uint8_t>(MapDerializationAction::kReset);
     }
     this->esdf_map_pub_.publish(layer_msg);
+    if (publish_only_updated_blocks_) {
+
+
+    }
     publish_map_timer.Stop();
   }
 

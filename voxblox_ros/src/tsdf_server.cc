@@ -70,7 +70,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       publish_slices_(false),
       publish_pointclouds_(false),
       publish_tsdf_map_(false),
-      publish_only_updated_blocks_(true),
+      publish_only_updated_blocks_(false),
       cache_mesh_(false),
       pointcloud_queue_size_(1),
       transformer_(nh, nh_private) {
@@ -361,6 +361,9 @@ void TsdfServer::updateMesh() {
   if (verbose_) {
     ROS_INFO("Updating mesh.");
   }
+  if (publish_tsdf_map_) {
+    publishMap(false);
+  }
 
   timing::Timer generate_mesh_timer("mesh/update");
   constexpr bool only_mesh_updated_blocks = true;
@@ -380,14 +383,6 @@ void TsdfServer::updateMesh() {
 
   if (publish_pointclouds_) {
     publishPointclouds();
-  }
-
-  if (publish_tsdf_map_ && tsdf_map_pub_.getNumSubscribers() > 0u) {
-    constexpr bool only_publish_updated_blocks = false;
-    voxblox_msgs::Layer layer_msg;
-    serializeLayerAsMsg<TsdfVoxel>(tsdf_map_->getTsdfLayer(),
-                                   only_publish_updated_blocks, &layer_msg);
-    tsdf_map_pub_.publish(layer_msg);
   }
 }
 
