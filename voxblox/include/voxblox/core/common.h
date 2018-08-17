@@ -78,6 +78,8 @@ typedef AlignedVector<Triangle> TriangleVector;
 typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
     Transformation;
 typedef kindr::minimal::RotationQuaternionTemplate<FloatingPoint> Rotation;
+typedef kindr::minimal::RotationQuaternionTemplate<
+    FloatingPoint>::Implementation Quaternion;
 
 // For alignment of layers / point clouds
 typedef Eigen::Matrix<FloatingPoint, 3, Eigen::Dynamic> PointsMatrix;
@@ -252,6 +254,17 @@ inline float logOddsFromProbability(float probability) {
 
 inline float probabilityFromLogOdds(float log_odds) {
   return 1.0 - (1.0 / (1.0 + exp(log_odds)));
+}
+
+inline void transformPointcloud(const Transformation& T_N_O,
+                                const Pointcloud& ptcloud,
+                                Pointcloud* ptcloud_out) {
+  ptcloud_out->clear();
+  ptcloud_out->resize(ptcloud.size());
+
+  for (size_t i = 0; i < ptcloud.size(); ++i) {
+    (*ptcloud_out)[i] = T_N_O * ptcloud[i];
+  }
 }
 
 }  // namespace voxblox
