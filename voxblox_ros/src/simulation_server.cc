@@ -190,17 +190,6 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
   return true;
 }
 
-void SimulationServer::transformPointcloud(const Transformation& T_N_O,
-                                           const Pointcloud& ptcloud,
-                                           Pointcloud* ptcloud_out) const {
-  ptcloud_out->clear();
-  ptcloud_out->resize(ptcloud.size());
-
-  for (size_t i = 0; i < ptcloud.size(); ++i) {
-    (*ptcloud_out)[i] = T_N_O * ptcloud[i];
-  }
-}
-
 void SimulationServer::generateSDF() {
   Pointcloud ptcloud;
   Colors colors;

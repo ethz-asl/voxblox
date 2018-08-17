@@ -13,7 +13,8 @@ namespace voxblox {
 namespace utils {
 
 template <typename VoxelType>
-bool isSameVoxel(const VoxelType& voxel_A, const VoxelType& voxel_B) {
+bool isSameVoxel(const VoxelType& /* voxel_A */,
+                 const VoxelType& /* voxel_B */) {
   LOG(FATAL) << "Not implemented for this voxel type!";
   return false;
 }

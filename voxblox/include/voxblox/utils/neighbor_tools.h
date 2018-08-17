@@ -30,7 +30,7 @@ class NeighborTools {
     CHECK_NE(voxels_per_side_, 0u);
   }
 
-  void getNeighborsAndDistances(
+  void getNeighborIndexesAndDistances(
       const BlockIndex& block_index, const VoxelIndex& voxel_index,
       Connectivity connectivity, AlignedVector<VoxelKey>* neighbors,
       AlignedVector<float>* distances,
@@ -58,7 +58,7 @@ class NeighborTools {
 // need the direction FROM the neighbor voxel TO the current voxel, take
 // negative of the given direction.
 template <typename VoxelType>
-void NeighborTools<VoxelType>::getNeighborIndicesAndDistances(
+void NeighborTools<VoxelType>::getNeighborIndexesAndDistances(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
     Connectivity connectivity, AlignedVector<VoxelKey>* neighbors,
     AlignedVector<float>* distances,
@@ -82,8 +82,8 @@ void NeighborTools<VoxelType>::getNeighborIndicesAndDistances(
   for (unsigned int i = 0u; i < 3u; ++i) {
     for (int j = -1; j <= 1; j += 2) {
       direction(i) = j;
-      getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                  &neighbor.second);
+      getNeighborIndex(block_index, voxel_index, direction, &neighbor.first,
+                       &neighbor.second);
       neighbors->emplace_back(neighbor);
       distances->emplace_back(1.0);
       directions->emplace_back(direction);
@@ -102,8 +102,8 @@ void NeighborTools<VoxelType>::getNeighborIndicesAndDistances(
       direction(i) = j;
       for (int k = -1; k <= 1; k += 2) {
         direction(next_i) = k;
-        getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                    &neighbor.second);
+        getNeighborIndex(block_index, voxel_index, direction, &neighbor.first,
+                         &neighbor.second);
         neighbors->emplace_back(neighbor);
         distances->emplace_back(kSqrt2);
         directions->emplace_back(direction);
@@ -124,8 +124,8 @@ void NeighborTools<VoxelType>::getNeighborIndicesAndDistances(
       direction(1) = j;
       for (int k = -1; k <= 1; k += 2) {
         direction(2) = k;
-        getNeighbor(block_index, voxel_index, direction, &neighbor.first,
-                    &neighbor.second);
+        getNeighborIndex(block_index, voxel_index, direction, &neighbor.first,
+                         &neighbor.second);
         neighbors->emplace_back(neighbor);
         distances->emplace_back(kSqrt3);
         directions->emplace_back(direction);

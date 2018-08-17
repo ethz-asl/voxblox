@@ -37,21 +37,30 @@ class SimulationWorld {
   // === Generating synthetic data from environment ===
   // Generates a synthetic view
   // Assumes square pixels for ease... Takes in FoV in radians.
+
   void getPointcloudFromViewpoint(const Point& view_origin,
                                   const Point& view_direction,
                                   const Eigen::Vector2i& camera_res,
                                   FloatingPoint fov_h_rad,
                                   FloatingPoint max_dist, Pointcloud* ptcloud,
                                   Colors* colors) const;
+  void getPointcloudFromTransform(const Transformation& pose,
+                                  const Eigen::Vector2i& camera_res,
+                                  FloatingPoint fov_h_rad,
+                                  FloatingPoint max_dist, Pointcloud* ptcloud,
+                                  Colors* colors) const;
+
   // Same thing, but also adds a noise in the *distance* of the measurement,
   // given by noise_sigma (Gaussian noise). No noise in the bearing.
-  void getNoisyPointcloudFromViewpoint(const Point& view_origin,
-                                       const Point& view_direction,
-                                       const Eigen::Vector2i& camera_res,
-                                       FloatingPoint fov_h_rad,
-                                       FloatingPoint max_dist,
-                                       FloatingPoint noise_sigma,
-                                       Pointcloud* ptcloud, Colors* colors);
+  void getNoisyPointcloudFromViewpoint(
+      const Point& view_origin, const Point& view_direction,
+      const Eigen::Vector2i& camera_res, FloatingPoint fov_h_rad,
+      FloatingPoint max_dist, FloatingPoint noise_sigma, Pointcloud* ptcloud,
+      Colors* colors);
+  void getNoisyPointcloudFromTransform(
+      const Transformation& pose, const Eigen::Vector2i& camera_res,
+      FloatingPoint fov_h_rad, FloatingPoint max_dist,
+      FloatingPoint noise_sigma, Pointcloud* ptcloud, Colors* colors);
 
   // === Computing ground truth SDFs ===
   template <typename VoxelType>

@@ -4,11 +4,6 @@
 
 namespace voxblox {
 
-TsdfServer::TsdfServer(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
-                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
-
 void TsdfServer::getServerConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   // Before subscribing, determine minimum time between messages.
@@ -54,6 +49,11 @@ void TsdfServer::getServerConfigFromRosParam(
     color_mode_ = ColorMode::kGray;
   }
 }
+
+TsdfServer::TsdfServer(const ros::NodeHandle& nh,
+                       const ros::NodeHandle& nh_private)
+    : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
+                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
 
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private,
@@ -430,9 +430,13 @@ bool TsdfServer::loadMap(const std::string& file_path) {
   // Inheriting classes should add other layers to load, as this will only load
   // the TSDF layer.
   constexpr bool kMulitpleLayerSupport = true;
-  return io::LoadBlocksFromFile(
+  bool success = io::LoadBlocksFromFile(
       file_path, Layer<TsdfVoxel>::BlockMergingStrategy::kReplace,
       kMulitpleLayerSupport, tsdf_map_->getTsdfLayerPtr());
+  if (success) {
+    LOG(INFO) << "Successfully loaded TSDF layer.";
+  }
+  return success;
 }
 
 bool TsdfServer::clearMapCallback(
@@ -457,7 +461,8 @@ bool TsdfServer::saveMapCallback(
 bool TsdfServer::loadMapCallback(
     voxblox_msgs::FilePath::Request& request,
     voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
-  return loadMap(request.file_path);
+  bool success = loadMap(request.file_path);
+  return success;
 }
 
 bool TsdfServer::publishPointcloudsCallback(
