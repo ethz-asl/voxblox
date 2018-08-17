@@ -54,10 +54,11 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   }
 
   // Second set all remaining unknown to occupied.
-  block_voxel_list.clear();
-  utils::getAndAllocateSphereAroundPoint(
-      position, config_.occupied_sphere_radius, esdf_layer_, &block_voxel_list);
-  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
+  HierarchicalIndexMap block_voxel_list_occ;
+  utils::getAndAllocateSphereAroundPoint(position,
+                                         config_.occupied_sphere_radius,
+                                         esdf_layer_, &block_voxel_list_occ);
+  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_occ) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr =
         esdf_layer_->allocateBlockPtrByIndex(kv.first);
