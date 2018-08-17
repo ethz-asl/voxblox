@@ -146,7 +146,7 @@ void EsdfServer::publishTraversable() {
 
 void EsdfServer::publishMap(const bool reset_remote_map) {
   if (this->esdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = publish_only_updated_blocks_;
+    const bool only_updated = false;
     timing::Timer publish_map_timer("map/publish_esdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<EsdfVoxel>(this->esdf_map_->getEsdfLayer(),
@@ -155,10 +155,6 @@ void EsdfServer::publishMap(const bool reset_remote_map) {
       layer_msg.action = static_cast<uint8_t>(MapDerializationAction::kReset);
     }
     this->esdf_map_pub_.publish(layer_msg);
-    if (publish_only_updated_blocks_) {
-
-
-    }
     publish_map_timer.Stop();
   }
 

@@ -70,7 +70,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       publish_slices_(false),
       publish_pointclouds_(false),
       publish_tsdf_map_(false),
-      publish_only_updated_blocks_(false),
       cache_mesh_(false),
       pointcloud_queue_size_(1),
       transformer_(nh, nh_private) {
@@ -102,8 +101,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_map_sub_ = nh_private_.subscribe("tsdf_map_in", 1,
                                         &TsdfServer::tsdfMapCallback, this);
   nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
-  nh_private_.param("publish_only_updated_blocks", publish_only_updated_blocks_,
-                    publish_only_updated_blocks_);
 
   if (use_freespace_pointcloud_) {
     // points that are not inside an object, but may also not be on a surface.
@@ -336,7 +333,7 @@ void TsdfServer::publishSlices() {
 
 void TsdfServer::publishMap(const bool reset_remote_map) {
   if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = publish_only_updated_blocks_;
+    const bool only_updated = false;
     timing::Timer publish_map_timer("map/publish_tsdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
