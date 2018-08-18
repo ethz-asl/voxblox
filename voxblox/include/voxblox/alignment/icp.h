@@ -54,9 +54,8 @@ namespace voxblox {
 class ICP {
  public:
   struct Config {
-    int max_iterations = 20;
-    FloatingPoint min_delta = 0.001;
-    FloatingPoint min_match_ratio = 0.3;
+    int iterations = 5;
+    FloatingPoint min_match_ratio = 0.5;
     FloatingPoint voxel_size_inv = 10.0;
     size_t num_threads = std::thread::hardware_concurrency();
   };
