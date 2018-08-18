@@ -45,6 +45,7 @@ endif()
 ####################
 
 set("${PROJECT_NAME}_SRCS"
+  src/alignment/icp.cc
   src/core/block.cc
   src/core/esdf_map.cc
   src/core/tsdf_map.cc

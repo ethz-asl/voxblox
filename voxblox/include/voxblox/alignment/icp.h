@@ -42,57 +42,48 @@
 
 #include <algorithm>
 
+#include "voxblox/core/common.h"
+#include "voxblox/core/layer.h"
+
+namespace voxblox {
+
 class ICP {
  public:
   struct Config {
-    Config() { iterations = 20; }
+    Config() {
+      iterations = 5;
+      min_match_ratio = 0.5;
+    }
     size_t iterations;
+    FloatingPoint min_match_ratio;
   };
 
   ICP(Config config);
 
-  void setTgtPoints(const Pointcloud &tgt_pc);
-
-  void setSrcPoints(const Pointcloud &src_pc);
-
-  Pointcloud getTransformedSrcPoints() const;
-
-  Transform getCurrentTransform() const;
-
-  void setCurrentTransform(Transform T_src_tgt);
-
-  bool runICP();
-
-  bool getFilteredMatchingPoints(Eigen::Matrix3Xf *src_filt,
-                                 Eigen::Matrix3Xf *tgt_filt) const;
-
-  static bool getTransformFromMatchedPoints(const Eigen::Matrix3Xf &src,
-                                            const Eigen::Matrix3Xf &tgt,
-                                            Transform *T_src_tgt);
+  bool runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
+              const Transformation &T_in, Transformation *T_out) const;
 
  private:
-  Transform T_src_tgt_;
+  static bool getTransformFromCorrelation(const PointsMatrix &src_demean,
+                                          const Point &src_center,
+                                          const PointsMatrix &tgt_demean,
+                                          const Point &tgt_center,
+                                          Transformation *T);
 
-  static bool getTransformFromCorrelation(const Eigen::Matrix3Xf &src_demean,
-                                          const Eigen::Vector3f &src_center,
-                                          const Eigen::Matrix3Xf &tgt_demean,
-                                          const Eigen::Vector3f &tgt_center,
-                                          Transform *T_src_tgt);
+  static bool getTransformFromMatchedPoints(const PointsMatrix &src,
+                                            const PointsMatrix &tgt,
+                                            Transformation *T);
 
-  void matchPoints(Eigen::Matrix3Xf *src, Eigen::Matrix3Xf *tgt) const;
+  static void matchPoints(const Layer<TsdfVoxel> *tsdf_layer,
+                          const Pointcloud &points, const Transformation &T,
+                          PointsMatrix *src, PointsMatrix *tgt);
 
-  static void removeOutliers(const Eigen::Matrix3Xf &src,
-                             const Eigen::Matrix3Xf &tgt,
-                             const float max_inlier_dist,
-                             Eigen::Matrix3Xf *src_filt,
-                             Eigen::Matrix3Xf *tgt_filt);
+  bool stepICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
+               const Transformation &T_in, Transformation *T_out) const;
 
-  bool stepICP();
-
-  Pointcloud src_pc_;
-  Pointcloud::Ptr tgt_pc_ptr_;
-  pcl::KdTreeFLANN<Point> tgt_kdtree_;
   Config config_;
 };
 
-#endif
+}  // namespace voxblox
+
+#endif //VOXBLOX_INTEGRATOR_ICP_H_
