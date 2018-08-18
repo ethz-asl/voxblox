@@ -33,8 +33,10 @@ inline TsdfMap::Config getTsdfMapConfigFromRosParam(
 inline ICP::Config getICPConfigFromRosParam(const ros::NodeHandle& nh_private) {
   ICP::Config icp_config;
 
-  nh_private.param("icp_iterations", icp_config.iterations,
-                   icp_config.iterations);
+  nh_private.param("icp_max_iterations", icp_config.max_iterations,
+                   icp_config.max_iterations);
+  nh_private.param("icp_min_delta", icp_config.min_delta,
+                   icp_config.min_delta);
   nh_private.param("icp_min_match_ratio", icp_config.min_match_ratio,
                    icp_config.min_match_ratio);
 

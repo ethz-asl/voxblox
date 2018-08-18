@@ -216,18 +216,18 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   static constexpr size_t masked_bits_ = 20;
   // only needs to zero the above 8mb of memory once every 10,000 scans
   // (uses an additional 80,000 bytes)
-  static constexpr size_t full_reset_threshold = 10000;
+  static constexpr size_t full_reset_threshold_ = 10000;
 
   // Voxel start locations are added to this set before ray casting. The ray
   // casting only occurs if no ray has been cast from this location for this
   // scan.
-  ApproxHashSet<masked_bits_, full_reset_threshold, GlobalIndex, LongIndexHash>
+  ApproxHashSet<masked_bits_, full_reset_threshold_, GlobalIndex, LongIndexHash>
       start_voxel_approx_set_;
   // This set records which voxels a scans rays have passed through. If a ray
   // moves through max_consecutive_ray_collisions voxels in a row that have
   // already been seen this scan, it is deemed to be adding no new information
   // and the casting stops.
-  ApproxHashSet<masked_bits_, full_reset_threshold, GlobalIndex, LongIndexHash>
+  ApproxHashSet<masked_bits_, full_reset_threshold_, GlobalIndex, LongIndexHash>
       voxel_observed_approx_set_;
 
   // Used in terminating the integration early if it exceeds a time limit.
