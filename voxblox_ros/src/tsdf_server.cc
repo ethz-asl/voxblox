@@ -219,8 +219,6 @@ void TsdfServer::processPointCloudMessageAndInsert(
   ros::WallTime end = ros::WallTime::now();
   if (verbose_) {
     ROS_INFO("Finished ICP in %f seconds.", (end - start).toSec());
-    ROS_WARN_STREAM("T:\n " << T_G_C);
-    ROS_WARN_STREAM("T_refined:\n " << T_G_C_refined);
   }
 
   start = ros::WallTime::now();
