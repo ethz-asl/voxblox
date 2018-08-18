@@ -33,16 +33,14 @@ inline TsdfMap::Config getTsdfMapConfigFromRosParam(
 inline ICP::Config getICPConfigFromRosParam(const ros::NodeHandle& nh_private) {
   ICP::Config icp_config;
 
-  nh_private.param("icp_max_iterations", icp_config.max_iterations,
-                   icp_config.max_iterations);
-  nh_private.param("icp_min_delta", icp_config.min_delta,
-                   icp_config.min_delta);
+  nh_private.param("icp_iterations", icp_config.iterations,
+                   icp_config.iterations);
   nh_private.param("icp_min_match_ratio", icp_config.min_match_ratio,
                    icp_config.min_match_ratio);
 
   double voxel_size;
   if (nh_private.getParam("tsdf_voxel_size", voxel_size)) {
-    icp_config.voxel_size_inv = 0.5 / voxel_size;
+    icp_config.voxel_size_inv = 1.0 / voxel_size;
   }
 
   return icp_config;
