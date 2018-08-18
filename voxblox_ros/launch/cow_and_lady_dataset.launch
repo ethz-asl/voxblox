@@ -1,7 +1,7 @@
 <launch>
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="/path/to/your/file"/>
-  <arg name="voxel_size" default="0.05"/>
+  <arg name="bag_file" default="/home/z/Downloads/data.bag"/>
+  <arg name="voxel_size" default="0.10"/>
 
   <node name="player" pkg="rosbag" type="play" output="screen" args="-r 1.0 -s 0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 

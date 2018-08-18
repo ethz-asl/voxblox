@@ -138,6 +138,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   mesh_integrator_.reset(new MeshIntegrator<TsdfVoxel>(
       mesh_config, tsdf_map_->getTsdfLayerPtr(), mesh_layer_.get()));
 
+  icp_.reset(new ICP(getICPConfigFromRosParam(nh_private)));
+
   // Advertise services.
   generate_mesh_srv_ = nh_private_.advertiseService(
       "generate_mesh", &TsdfServer::generateMeshCallback, this);
@@ -207,8 +209,23 @@ void TsdfServer::processPointCloudMessageAndInsert(
     ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
   }
   ros::WallTime start = ros::WallTime::now();
-  integratePointcloud(T_G_C, points_C, colors, is_freespace_pointcloud);
+
+  Transformation T_G_C_refined;
+  if (!icp_->runICP(tsdf_map_->getTsdfLayerPtr(), points_C, T_G_C,
+                    &T_G_C_refined) &&
+      verbose_) {
+    ROS_INFO("ICP refinement step failed, using base Transformation");
+  }
   ros::WallTime end = ros::WallTime::now();
+  if (verbose_) {
+    ROS_INFO("Finished ICP in %f seconds.", (end - start).toSec());
+    ROS_WARN_STREAM("T:\n " << T_G_C);
+    ROS_WARN_STREAM("T_refined:\n " << T_G_C_refined);
+  }
+
+  start = ros::WallTime::now();
+  integratePointcloud(T_G_C_refined, points_C, colors, is_freespace_pointcloud);
+  end = ros::WallTime::now();
   if (verbose_) {
     ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
              (end - start).toSec(),
