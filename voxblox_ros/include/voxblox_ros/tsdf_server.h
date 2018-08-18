@@ -13,6 +13,7 @@
 #include <memory>
 #include <string>
 
+#include <voxblox/alignment/icp.h>
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
@@ -167,6 +168,9 @@ class TsdfServer {
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
+
+  // ICP matcher
+  std::shared_ptr<ICP> icp_;
 
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;

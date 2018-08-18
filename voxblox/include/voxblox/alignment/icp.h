@@ -42,6 +42,7 @@
 
 #include <algorithm>
 
+#include "voxblox/core/block_hash.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 
@@ -52,10 +53,12 @@ class ICP {
   struct Config {
     Config() {
       iterations = 5;
-      min_match_ratio = 0.5;
+      min_match_ratio = 0.2;
+      voxel_size_inv = 10.0;
     }
-    size_t iterations;
+    int iterations;
     FloatingPoint min_match_ratio;
+    FloatingPoint voxel_size_inv;
   };
 
   ICP(Config config);
@@ -78,6 +81,9 @@ class ICP {
                           const Pointcloud &points, const Transformation &T,
                           PointsMatrix *src, PointsMatrix *tgt);
 
+  void downsampleCloud(const Pointcloud &points,
+                       Pointcloud *points_downsampled) const;
+
   bool stepICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
                const Transformation &T_in, Transformation *T_out) const;
 
@@ -86,4 +92,4 @@ class ICP {
 
 }  // namespace voxblox
 
-#endif //VOXBLOX_INTEGRATOR_ICP_H_
+#endif  // VOXBLOX_INTEGRATOR_ICP_H_
