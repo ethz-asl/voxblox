@@ -265,6 +265,15 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `esdf_max_distance_m` | The maximum distance that the esdf will be calculated out to | 2.0 |
 | `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
 
+### ICP Refinement Parameters
+ICP based refinement can be applied to the poses of the input pointclouds before merging.
+
+| Parameter | Description | Default |
+| --------------------  |:-----------:| :-------:|
+| `icp_iterations` | Number of ICP iterations to perform, zero to disable. | 0 |
+| `icp_subsample_keep_ratio` | Random subsampling will be used to reduce the number of points used for matching by this factor.  | 0.05 |
+| `icp_min_match_ratio` | For an ICP refinement to be accepted, at least this ratio of points in the pointcloud must fall within the truncation distance of the existing TSDF layer | 0.75 |
+
 ### Input Transform Parameters
 | Parameter | Description | Default |
 | --------------------  |:-----------:| :-------:|
