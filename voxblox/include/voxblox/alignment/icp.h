@@ -56,7 +56,7 @@ class ICP {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    int iterations = 5;
+    int iterations = 0;
     FloatingPoint min_match_ratio = 0.75;
     FloatingPoint subsample_keep_ratio = 0.05;
     size_t num_threads = std::thread::hardware_concurrency();
@@ -75,7 +75,8 @@ class ICP {
     Point gradient;
   };
 
-  typedef typename AnyIndexHashMapType<std::shared_ptr<DistInfo>>::type DistInfoMap;
+  typedef
+      typename AnyIndexHashMapType<std::shared_ptr<DistInfo>>::type DistInfoMap;
 
   static bool getTransformFromCorrelation(const PointsMatrix &src_demean,
                                           const Point &src_center,
@@ -86,6 +87,8 @@ class ICP {
   static bool getTransformFromMatchedPoints(const PointsMatrix &src,
                                             const PointsMatrix &tgt,
                                             Transformation *T);
+
+  void subSample(const Pointcloud &points_in, Pointcloud *points_out);
 
   void matchPoints(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
                    const Transformation &T, PointsMatrix *src,
