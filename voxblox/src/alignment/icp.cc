@@ -38,6 +38,8 @@
  *
  */
 
+#include <random>
+
 #include "voxblox/alignment/icp.h"
 #include "voxblox/interpolator/interpolator.h"
 #include "voxblox/utils/timing.h"
@@ -98,11 +100,11 @@ bool ICP::getTransformFromMatchedPoints(const PointsMatrix &src,
 void ICP::matchPoints(const Layer<TsdfVoxel> *tsdf_layer,
                       const Pointcloud &points, const Transformation &T,
                       PointsMatrix *src, PointsMatrix *tgt) {
-  ThreadSafeIndex index_getter(config_.subsample_keep_ratio * points.size());
+  ThreadSafeIndex index_getter(points.size());
 
   std::list<std::thread> threads;
-  src->resize(3, config_.subsample_keep_ratio * points.size());
-  tgt->resize(3, config_.subsample_keep_ratio * points.size());
+  src->resize(3, points.size());
+  tgt->resize(3, points.size());
 
   std::atomic<size_t> atomic_out_idx(0);
 
@@ -117,6 +119,18 @@ void ICP::matchPoints(const Layer<TsdfVoxel> *tsdf_layer,
 
   src->conservativeResize(3, atomic_out_idx.load());
   tgt->conservativeResize(3, atomic_out_idx.load());
+}
+
+void ICP::subSample(const Pointcloud &points_in, Pointcloud *points_out) {
+  std::default_random_engine generator(0);
+  std::uniform_real_distribution<float> distribution(0, 1);
+
+  points_out->reserve(1.1 * config_.subsample_keep_ratio * points_in.size());
+  for (const Point &point : points_in) {
+    if (distribution(generator) < config_.subsample_keep_ratio) {
+      points_out->push_back(point);
+    }
+  }
 }
 
 void ICP::calcMatches(const Layer<TsdfVoxel> *tsdf_layer,
@@ -212,13 +226,16 @@ bool ICP::runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
     return true;
   }
 
+  Pointcloud subsampled_points;
+  subSample(points, &subsampled_points);
+
   dist_info_caches_.resize(config_.num_threads);
 
   Transformation T_current = T_in;
 
   bool success = true;
   for (int i = 0; i < config_.iterations; ++i) {
-    if (!stepICP(tsdf_layer, points, T_current, T_out)) {
+    if (!stepICP(tsdf_layer, subsampled_points, T_current, T_out)) {
       *T_out = T_in;
       success = false;
       break;
