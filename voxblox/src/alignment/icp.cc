@@ -42,7 +42,6 @@
 
 #include "voxblox/alignment/icp.h"
 #include "voxblox/interpolator/interpolator.h"
-#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
@@ -193,14 +192,10 @@ void ICP::calcMatches(const Layer<TsdfVoxel> *tsdf_layer,
 
 bool ICP::stepICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
                   const Transformation &T_in, Transformation *T_out) {
-  timing::Timer match_timer("icp_matching");
-
   PointsMatrix src;
   PointsMatrix tgt;
 
   matchPoints(tsdf_layer, points, T_in, &src, &tgt);
-
-  match_timer.Stop();
 
   if (src.cols() <
       std::max(3, static_cast<int>(config_.subsample_keep_ratio *
@@ -208,13 +203,9 @@ bool ICP::stepICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
     return false;
   }
 
-  timing::Timer tform_timer("icp_tform");
-
   if (!getTransformFromMatchedPoints(src, tgt, T_out)) {
-    tform_timer.Stop();
     return false;
   }
-  tform_timer.Stop();
 
   return true;
 }
