@@ -37,11 +37,8 @@ inline ICP::Config getICPConfigFromRosParam(const ros::NodeHandle& nh_private) {
                    icp_config.iterations);
   nh_private.param("icp_min_match_ratio", icp_config.min_match_ratio,
                    icp_config.min_match_ratio);
-
-  double voxel_size;
-  if (nh_private.getParam("tsdf_voxel_size", voxel_size)) {
-    icp_config.voxel_size_inv = 1.0 / voxel_size;
-  }
+  nh_private.param("icp_subsample_keep_ratio", icp_config.subsample_keep_ratio,
+                   icp_config.subsample_keep_ratio);
 
   return icp_config;
 }

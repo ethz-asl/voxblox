@@ -214,6 +214,8 @@ void TsdfServer::processPointCloudMessageAndInsert(
     ROS_INFO("ICP refinement step failed, using base Transformation");
   }
 
+  icp_timer.Stop();
+
   if (verbose_) {
     ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
   }

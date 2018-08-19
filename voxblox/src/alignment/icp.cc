@@ -40,6 +40,7 @@
 
 #include "voxblox/alignment/icp.h"
 #include "voxblox/interpolator/interpolator.h"
+#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
@@ -95,119 +96,113 @@ bool ICP::getTransformFromMatchedPoints(const PointsMatrix &src,
 }
 
 void ICP::matchPoints(const Layer<TsdfVoxel> *tsdf_layer,
-                      const AlignedVector<Pointcloud> &points,
-                      const Transformation &T, PointsMatrix *src,
-                      PointsMatrix *tgt) const {
-  AlignedVector<std::shared_ptr<ThreadSafeIndex>> index_getters;
-  for (const Pointcloud &pointcloud : points) {
-    index_getters.push_back(
-        std::make_shared<ThreadSafeIndex>(pointcloud.size()));
-  }
+                      const Pointcloud &points, const Transformation &T,
+                      PointsMatrix *src, PointsMatrix *tgt) {
+  ThreadSafeIndex index_getter(config_.subsample_keep_ratio * points.size());
 
   std::list<std::thread> threads;
-  AlignedVector<Pointcloud> src_points(config_.num_threads);
-  AlignedVector<Pointcloud> tgt_points(config_.num_threads);
+  src->resize(3, config_.subsample_keep_ratio * points.size());
+  tgt->resize(3, config_.subsample_keep_ratio * points.size());
+
+  std::atomic<size_t> atomic_out_idx(0);
 
   for (size_t i = 0; i < config_.num_threads; ++i) {
-    threads.emplace_back(&ICP::calcMatches, this, tsdf_layer, points,
-                         &index_getters, T, &src_points[i], &tgt_points[i]);
+    threads.emplace_back(&ICP::calcMatches, this, tsdf_layer, points, T, i,
+                         &index_getter, &atomic_out_idx, src, tgt);
   }
 
   for (std::thread &thread : threads) {
     thread.join();
   }
 
-  size_t a_size = 0;
-  for (const Pointcloud &pointcloud : points) {
-    a_size += pointcloud.size();
-  }
-
-  size_t total_size = 0;
-  for (const Pointcloud &pointcloud : src_points) {
-    total_size += pointcloud.size();
-  }
-
-  src->resize(3, total_size);
-  tgt->resize(3, total_size);
-
-  size_t index = 0;
-  for (size_t i = 0; i < src_points.size(); ++i) {
-    for (size_t j = 0; j < src_points[i].size(); ++j) {
-      src->col(index) = src_points[i][j];
-      tgt->col(index) = tgt_points[i][j];
-      ++index;
-    }
-  }
+  src->conservativeResize(3, atomic_out_idx.load());
+  tgt->conservativeResize(3, atomic_out_idx.load());
 }
 
-void ICP::calcMatches(
-    const Layer<TsdfVoxel> *tsdf_layer, const AlignedVector<Pointcloud> &points,
-    AlignedVector<std::shared_ptr<ThreadSafeIndex>> *index_getters,
-    const Transformation &T, Pointcloud *src, Pointcloud *tgt) const {
+void ICP::calcMatches(const Layer<TsdfVoxel> *tsdf_layer,
+                      const Pointcloud &points, const Transformation &T,
+                      const size_t cache_idx, ThreadSafeIndex *index_getter,
+                      std::atomic<size_t> *atomic_out_idx, PointsMatrix *src,
+                      PointsMatrix *tgt) {
   Interpolator<TsdfVoxel> interpolator(tsdf_layer);
 
-  constexpr bool kInterpolateDist = true;
+  constexpr bool kInterpolateDist = false;
   constexpr bool kInterpolateGrad = false;
   constexpr FloatingPoint kMinGradMag = 0.1;
 
-  for (size_t i = 0; i < points.size(); ++i) {
-    size_t point_idx;
-    while (index_getters->at(i)->getNextIndex(&point_idx)) {
-      const Point &point = points[i][point_idx];
-      Point point_tformed = T * point;
-
-      Point grad;
-      FloatingPoint distance;
-
-      if (interpolator.getDistance(point_tformed, &distance,
-                                   kInterpolateDist) &&
-          interpolator.getGradient(point_tformed, &grad, kInterpolateGrad) &&
-          (grad.squaredNorm() > kMinGradMag)) {
-        src->push_back(point);
-        tgt->push_back(point_tformed - distance * grad.normalized());
-      }
-    }
-  }
-}
-
-bool ICP::stepICP(const Layer<TsdfVoxel> *tsdf_layer,
-                  const AlignedVector<Pointcloud> &points,
-                  const Transformation &T_in, Transformation *T_out) {
-  PointsMatrix src;
-  PointsMatrix tgt;
-
-  size_t total_size = 0;
-  for (const Pointcloud &pointcloud : points) {
-    total_size += pointcloud.size();
-  }
-
-  matchPoints(tsdf_layer, points, T_in, &src, &tgt);
-
-  if (src.cols() <
-      std::max(3, static_cast<int>(total_size * config_.min_match_ratio))) {
-    return false;
-  }
-
-  if (!getTransformFromMatchedPoints(src, tgt, T_out)) {
-    return false;
-  }
-
-  return true;
-}
-
-void ICP::downsampleCloud(const Pointcloud &points,
-                          ThreadSafeIndex *index_getter,
-                          Pointcloud *points_downsampled) {
   size_t point_idx;
   while (index_getter->getNextIndex(&point_idx)) {
     const Point &point = points[point_idx];
-    const GlobalIndex voxel_idx =
-        getGridIndexFromPoint<GlobalIndex>(point, config_.voxel_size_inv);
+    const Point point_tformed = T * point;
+    const AnyIndex voxel_idx = getGridIndexFromPoint<AnyIndex>(
+        point_tformed, tsdf_layer->voxel_size_inv());
 
-    if (voxel_approx_set_.replaceHash(voxel_idx)) {
-      points_downsampled->push_back(point);
+    std::shared_ptr<DistInfo> dist_info;
+
+    DistInfoMap::const_iterator it =
+        dist_info_caches_[cache_idx].find(voxel_idx);
+
+    if (it != dist_info_caches_[cache_idx].end()) {
+      dist_info = it->second;
+    } else {
+      dist_info = std::make_shared<DistInfo>();
+
+      if (interpolator.getDistance(point_tformed, &dist_info->distance,
+                                   kInterpolateDist) &&
+          interpolator.getGradient(point_tformed, &dist_info->gradient,
+                                   kInterpolateGrad) &&
+          (dist_info->gradient.squaredNorm() > kMinGradMag)) {
+        dist_info->gradient.normalize();
+        dist_info->valid = true;
+      } else {
+        dist_info->valid = false;
+      }
+
+      dist_info_caches_[cache_idx][voxel_idx] = dist_info;
+    }
+
+    if (dist_info->valid) {
+      // uninterpolated distance is to the center of the voxel, as we now have
+      // the gradient we can use it to do better
+      const Point voxel_center = getCenterPointFromGridIndex<AnyIndex>(
+          voxel_idx, tsdf_layer->voxel_size());
+      FloatingPoint distance =
+          dist_info->distance +
+          dist_info->gradient.dot(point_tformed - voxel_center);
+
+      const size_t idx = atomic_out_idx->fetch_add(1);
+      src->col(idx) = point;
+      tgt->col(idx) = point_tformed - distance * dist_info->gradient;
     }
   }
+}
+
+bool ICP::stepICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
+                  const Transformation &T_in, Transformation *T_out) {
+  timing::Timer match_timer("icp_matching");
+
+  PointsMatrix src;
+  PointsMatrix tgt;
+
+  matchPoints(tsdf_layer, points, T_in, &src, &tgt);
+
+  match_timer.Stop();
+
+  if (src.cols() <
+      std::max(3, static_cast<int>(config_.subsample_keep_ratio *
+                                   points.size() * config_.min_match_ratio))) {
+    return false;
+  }
+
+  timing::Timer tform_timer("icp_tform");
+
+  if (!getTransformFromMatchedPoints(src, tgt, T_out)) {
+    tform_timer.Stop();
+    return false;
+  }
+  tform_timer.Stop();
+
+  return true;
 }
 
 bool ICP::runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
@@ -217,31 +212,24 @@ bool ICP::runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
     return true;
   }
 
-  voxel_approx_set_.resetApproxSet();
-
-  ThreadSafeIndex index_getter(points.size());
-  std::list<std::thread> threads;
-  AlignedVector<Pointcloud> points_downsampled(config_.num_threads);
-  for (size_t i = 0; i < config_.num_threads; ++i) {
-    threads.emplace_back(&ICP::downsampleCloud, this, points, &index_getter,
-                         &points_downsampled[i]);
-  }
-
-  for (std::thread &thread : threads) {
-    thread.join();
-  }
+  dist_info_caches_.resize(config_.num_threads);
 
   Transformation T_current = T_in;
 
+  bool success = true;
   for (int i = 0; i < config_.iterations; ++i) {
-    if (!stepICP(tsdf_layer, points_downsampled, T_current, T_out)) {
+    if (!stepICP(tsdf_layer, points, T_current, T_out)) {
       *T_out = T_in;
-      return false;
+      success = false;
+      break;
     }
 
     T_current = *T_out;
   }
-  return true;
+
+  dist_info_caches_.clear();
+
+  return success;
 }
 
 }  // namespace voxblox

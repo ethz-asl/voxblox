@@ -53,10 +53,12 @@ namespace voxblox {
 
 class ICP {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   struct Config {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     int iterations = 5;
-    FloatingPoint min_match_ratio = 0.5;
-    FloatingPoint voxel_size_inv = 10.0;
+    FloatingPoint min_match_ratio = 0.75;
+    FloatingPoint subsample_keep_ratio = 0.05;
     size_t num_threads = std::thread::hardware_concurrency();
   };
 
@@ -66,6 +68,15 @@ class ICP {
               const Transformation &T_in, Transformation *T_out);
 
  private:
+  struct DistInfo {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    bool valid;
+    FloatingPoint distance;
+    Point gradient;
+  };
+
+  typedef typename AnyIndexHashMapType<std::shared_ptr<DistInfo>>::type DistInfoMap;
+
   static bool getTransformFromCorrelation(const PointsMatrix &src_demean,
                                           const Point &src_center,
                                           const PointsMatrix &tgt_demean,
@@ -76,36 +87,21 @@ class ICP {
                                             const PointsMatrix &tgt,
                                             Transformation *T);
 
-  void matchPoints(const Layer<TsdfVoxel> *tsdf_layer,
-                   const AlignedVector<Pointcloud> &points,
+  void matchPoints(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
                    const Transformation &T, PointsMatrix *src,
-                   PointsMatrix *tgt) const;
+                   PointsMatrix *tgt);
 
-  void calcMatches(
-      const Layer<TsdfVoxel> *tsdf_layer,
-      const AlignedVector<Pointcloud> &points,
-      AlignedVector<std::shared_ptr<ThreadSafeIndex>> *index_getters,
-      const Transformation &T, Pointcloud *src, Pointcloud *tgt) const;
+  void calcMatches(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
+                   const Transformation &T, const size_t cache_idx,
+                   ThreadSafeIndex *index_getter,
+                   std::atomic<size_t> *atomic_out_idx, PointsMatrix *src,
+                   PointsMatrix *tgt);
 
-  void downsampleCloud(const Pointcloud &points, ThreadSafeIndex *index_getter,
-                       Pointcloud *points_downsampled);
-
-  bool stepICP(const Layer<TsdfVoxel> *tsdf_layer,
-               const AlignedVector<Pointcloud> &points,
+  bool stepICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
                const Transformation &T_in, Transformation *T_out);
 
   Config config_;
-
-  // uses 2^20 bytes (8 megabytes) of ram per tester
-  // A testers false negative rate is inversely proportional to its size
-  static constexpr size_t masked_bits_ = 20;
-  // only needs to zero the above 8mb of memory once every 10,000 scans
-  // (uses an additional 80,000 bytes)
-  static constexpr size_t full_reset_threshold_ = 10000;
-
-  // used for fast downsampling
-  ApproxHashSet<masked_bits_, full_reset_threshold_, GlobalIndex, LongIndexHash>
-      voxel_approx_set_;
+  std::vector<DistInfoMap> dist_info_caches_;
 };
 
 }  // namespace voxblox
