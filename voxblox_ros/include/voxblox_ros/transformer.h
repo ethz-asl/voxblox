@@ -23,6 +23,8 @@ class Transformer {
 
   void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
 
+  void removeRollPitch(Transformation* transform);
+
  private:
   bool lookupTransformTf(const std::string& from_frame,
                          const std::string& to_frame,
