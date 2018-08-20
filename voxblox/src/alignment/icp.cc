@@ -107,8 +107,9 @@ void ICP::matchPoints(const Layer<TsdfVoxel> *tsdf_layer,
 
   std::atomic<size_t> atomic_out_idx(0);
 
+  // get distance info
   for (size_t i = 0; i < config_.num_threads; ++i) {
-    threads.emplace_back(&ICP::calcMatches, this, tsdf_layer, points, T, i,
+    threads.emplace_back(&ICP::calcMatches, this, tsdf_layer, points, T,
                          &index_getter, &atomic_out_idx, src, tgt);
   }
 
@@ -121,20 +122,24 @@ void ICP::matchPoints(const Layer<TsdfVoxel> *tsdf_layer,
 }
 
 void ICP::subSample(const Pointcloud &points_in, Pointcloud *points_out) {
-  std::default_random_engine generator(0);
-  std::uniform_real_distribution<float> distribution(0, 1);
+  const int num_keep = config_.subsample_keep_ratio * points_in.size();
+  const int skip_per_keep = points_in.size() / num_keep;
 
-  points_out->reserve(1.1 * config_.subsample_keep_ratio * points_in.size());
-  for (const Point &point : points_in) {
-    if (distribution(generator) < config_.subsample_keep_ratio) {
-      points_out->push_back(point);
-    }
+  std::default_random_engine generator(0);
+  std::uniform_int_distribution<int> distribution(
+      0, std::max(0, skip_per_keep - 1));
+
+  points_out->reserve(num_keep);
+
+  for (int i = 0; i < num_keep; ++i) {
+    const int point_idx = i * skip_per_keep + distribution(generator);
+    points_out->push_back(points_in[point_idx]);
   }
 }
 
 void ICP::calcMatches(const Layer<TsdfVoxel> *tsdf_layer,
                       const Pointcloud &points, const Transformation &T,
-                      const size_t cache_idx, ThreadSafeIndex *index_getter,
+                      ThreadSafeIndex *index_getter,
                       std::atomic<size_t> *atomic_out_idx, PointsMatrix *src,
                       PointsMatrix *tgt) {
   Interpolator<TsdfVoxel> interpolator(tsdf_layer);
@@ -150,42 +155,23 @@ void ICP::calcMatches(const Layer<TsdfVoxel> *tsdf_layer,
     const AnyIndex voxel_idx = getGridIndexFromPoint<AnyIndex>(
         point_tformed, tsdf_layer->voxel_size_inv());
 
-    std::shared_ptr<DistInfo> dist_info;
+    FloatingPoint distance;
+    Point gradient;
 
-    DistInfoMap::const_iterator it =
-        dist_info_caches_[cache_idx].find(voxel_idx);
+    if (interpolator.getDistance(point_tformed, &distance, kInterpolateDist) &&
+        interpolator.getGradient(point_tformed, &gradient, kInterpolateGrad) &&
+        (gradient.squaredNorm() > kMinGradMag)) {
+      gradient.normalize();
 
-    if (it != dist_info_caches_[cache_idx].end()) {
-      dist_info = it->second;
-    } else {
-      dist_info = std::make_shared<DistInfo>();
-
-      if (interpolator.getDistance(point_tformed, &dist_info->distance,
-                                   kInterpolateDist) &&
-          interpolator.getGradient(point_tformed, &dist_info->gradient,
-                                   kInterpolateGrad) &&
-          (dist_info->gradient.squaredNorm() > kMinGradMag)) {
-        dist_info->gradient.normalize();
-        dist_info->valid = true;
-      } else {
-        dist_info->valid = false;
-      }
-
-      dist_info_caches_[cache_idx][voxel_idx] = dist_info;
-    }
-
-    if (dist_info->valid) {
       // uninterpolated distance is to the center of the voxel, as we now have
       // the gradient we can use it to do better
       const Point voxel_center = getCenterPointFromGridIndex<AnyIndex>(
           voxel_idx, tsdf_layer->voxel_size());
-      FloatingPoint distance =
-          dist_info->distance +
-          dist_info->gradient.dot(point_tformed - voxel_center);
+      distance += gradient.dot(point_tformed - voxel_center);
 
       const size_t idx = atomic_out_idx->fetch_add(1);
       src->col(idx) = point;
-      tgt->col(idx) = point_tformed - distance * dist_info->gradient;
+      tgt->col(idx) = point_tformed - distance * gradient;
     }
   }
 }
@@ -220,8 +206,6 @@ bool ICP::runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
   Pointcloud subsampled_points;
   subSample(points, &subsampled_points);
 
-  dist_info_caches_.resize(config_.num_threads);
-
   Transformation T_current = T_in;
 
   bool success = true;
@@ -234,8 +218,6 @@ bool ICP::runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
 
     T_current = *T_out;
   }
-
-  dist_info_caches_.clear();
 
   return success;
 }

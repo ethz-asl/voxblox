@@ -37,8 +37,8 @@
  * $Id$
  *
  */
-#ifndef VOXBLOX_INTEGRATOR_ICP_H_
-#define VOXBLOX_INTEGRATOR_ICP_H_
+#ifndef VOXBLOX_ALIGNMENT_ICP_H_
+#define VOXBLOX_ALIGNMENT_ICP_H_
 
 #include <algorithm>
 #include <thread>
@@ -62,22 +62,12 @@ class ICP {
     size_t num_threads = std::thread::hardware_concurrency();
   };
 
-  ICP(Config config);
+  explicit ICP(Config config);
 
   bool runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
               const Transformation &T_in, Transformation *T_out);
 
  private:
-  struct DistInfo {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    bool valid;
-    FloatingPoint distance;
-    Point gradient;
-  };
-
-  typedef
-      typename AnyIndexHashMapType<std::shared_ptr<DistInfo>>::type DistInfoMap;
-
   static bool getTransformFromCorrelation(const PointsMatrix &src_demean,
                                           const Point &src_center,
                                           const PointsMatrix &tgt_demean,
@@ -95,8 +85,7 @@ class ICP {
                    PointsMatrix *tgt);
 
   void calcMatches(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
-                   const Transformation &T, const size_t cache_idx,
-                   ThreadSafeIndex *index_getter,
+                   const Transformation &T, ThreadSafeIndex *index_getter,
                    std::atomic<size_t> *atomic_out_idx, PointsMatrix *src,
                    PointsMatrix *tgt);
 
@@ -104,9 +93,8 @@ class ICP {
                const Transformation &T_in, Transformation *T_out);
 
   Config config_;
-  std::vector<DistInfoMap> dist_info_caches_;
 };
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_ICP_H_
+#endif  // VOXBLOX_ALIGNMENT_ICP_H_

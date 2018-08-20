@@ -207,12 +207,15 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
   timing::Timer icp_timer("icp");
 
+  static Transformation T_offset;
   Transformation T_G_C_refined;
-  if (!icp_->runICP(tsdf_map_->getTsdfLayerPtr(), points_C, T_G_C,
+  if (!icp_->runICP(tsdf_map_->getTsdfLayerPtr(), points_C, T_offset * T_G_C,
                     &T_G_C_refined) &&
       verbose_) {
     ROS_INFO("ICP refinement step failed, using base Transformation");
   }
+
+  T_offset = T_G_C_refined * T_G_C.inverse();
 
   icp_timer.Stop();
 
