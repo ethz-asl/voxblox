@@ -13,7 +13,7 @@ Transformer::Transformer(const ros::NodeHandle& nh,
       world_frame_("world"),
       sensor_frame_(""),
       use_tf_transforms_(true),
-      timestamp_tolerance_ns_(10000000) {
+      timestamp_tolerance_ns_(50000000) {
   nh_private_.param("world_frame", world_frame_, world_frame_);
   nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
 
@@ -73,6 +73,14 @@ bool Transformer::lookupTransform(const std::string& from_frame,
   } else {
     return lookupTransformQueue(timestamp, transform);
   }
+}
+
+void Transformer::removeRollPitch(Transformation* transform) {
+  *transform = *transform * T_B_D_;
+  Transformation::Vector6 t_vec = transform->log();
+  t_vec[3] = 0.0;
+  t_vec[4] = 0.0;
+  *transform = Transformation::exp(t_vec) * T_B_D_.inverse();
 }
 
 // Stolen from octomap_manager
