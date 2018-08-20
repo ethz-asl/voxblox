@@ -43,7 +43,6 @@ class Transformer {
   // parameters and transform topics (false).
   bool use_tf_transforms_;
   int64_t timestamp_tolerance_ns_;
-  int64_t timestamp_future_tolerance_ns_;
   // B is the body frame of the robot, C is the camera/sensor frame creating
   // the pointclouds, and D is the 'dynamic' frame; i.e., incoming messages
   // are assumed to be T_G_D.
