@@ -67,10 +67,6 @@ class ICP {
   bool runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
               const Transformation &T_in, Transformation *T_out);
 
-  int getIterations() const {
-    return config_.iterations;
-  }
-
  private:
   static bool getTransformFromCorrelation(const PointsMatrix &src_demean,
                                           const Point &src_center,

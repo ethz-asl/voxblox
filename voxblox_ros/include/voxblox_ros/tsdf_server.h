@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_ROS_TSDF_SERVER_H_
 #define VOXBLOX_ROS_TSDF_SERVER_H_
 
+#include <memory>
 #include <pcl/conversions.h>
 #include <pcl/filters/filter.h>
 #include <pcl/point_types.h>
@@ -9,9 +10,9 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <memory>
 #include <string>
+#include <tf/transform_broadcaster.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/tsdf_map.h>
@@ -106,6 +107,9 @@ class TsdfServer {
   // Global/map coordinate frame. Will always look up TF transforms to this
   // frame.
   std::string world_frame_;
+  // Name of the ICP corrected frame. Publishes TF and transform topic to this
+  // if ICP on.
+  std::string icp_corrected_frame_;
 
   // Delete blocks that are far from the system to help manage memory
   double max_block_distance_from_body_;
@@ -134,6 +138,15 @@ class TsdfServer {
   // Whether to save the latest mesh message sent (for inheriting classes).
   bool cache_mesh_;
 
+  // Whether to enable ICP corrections. Every pointcloud coming in will attempt
+  // to be matched up to the existing structure using ICP. Requires the initial
+  // guess from odometry to already be very good.
+  bool enable_icp_;
+  // If using ICP corrections, whether to store accumulate the corrected
+  // transform. If this is set to false, the transform will reset every
+  // iteration.
+  bool accumulate_icp_corrections_;
+
   // Data subscribers.
   ros::Subscriber pointcloud_sub_;
   ros::Subscriber freespace_pointcloud_sub_;
@@ -147,6 +160,7 @@ class TsdfServer {
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
+  ros::Publisher icp_transform_pub_;
 
   // Publish the complete map for other nodes to consume.
   ros::Publisher tsdf_map_pub_;
@@ -161,6 +175,9 @@ class TsdfServer {
   ros::ServiceServer load_map_srv_;
   ros::ServiceServer publish_pointclouds_srv_;
   ros::ServiceServer publish_tsdf_map_srv_;
+
+  // Tools for broadcasting TFs.
+  tf::TransformBroadcaster tf_broadcaster_;
 
   // Timers.
   ros::Timer update_mesh_timer_;
@@ -181,6 +198,9 @@ class TsdfServer {
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.
   Transformer transformer_;
+
+  // Current transform corrections from ICP.
+  Transformation icp_corrected_transform_;
 };
 
 }  // namespace voxblox
