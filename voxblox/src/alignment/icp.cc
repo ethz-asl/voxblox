@@ -184,8 +184,7 @@ bool ICP::stepICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
   matchPoints(tsdf_layer, points, T_in, &src, &tgt);
 
   if (src.cols() <
-      std::max(3, static_cast<int>(config_.subsample_keep_ratio *
-                                   points.size() * config_.min_match_ratio))) {
+      std::max(3, static_cast<int>(points.size() * config_.min_match_ratio))) {
     return false;
   }
 
