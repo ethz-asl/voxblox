@@ -57,7 +57,7 @@ class ICP {
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     int iterations = 0;
-    FloatingPoint min_match_ratio = 0.75;
+    FloatingPoint min_match_ratio = 0.5;
     FloatingPoint subsample_keep_ratio = 0.05;
     size_t num_threads = std::thread::hardware_concurrency();
   };
