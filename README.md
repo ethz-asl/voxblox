@@ -201,6 +201,7 @@ The tsdf_server and esdf_server publish and subscribe to the following topics:
   - **`freespace_pointcloud`** of type `sensor_msgs::PointCLoud2`. Only appears if `use_freespace_pointcloud` is true. Unlike the `pointcloud` topic where the given points lie on surfaces, the points in the `freespace_pointcloud` are taken to be floating in empty space. These points can assist in generating more complete freespace information in a map.
   - **`tsdf_map_in`** of type `voxblox_msgs::Layer`. Replaces the current TSDF layer with that from this topic. Voxel size and voxels per side should match.
   - **`esdf_map_in`** of type `voxblox_msgs::Layer`. Replaces the current ESDF layer with that from this topic. Voxel size and voxels per side should match.
+  - **`icp_transform`** of type `geometry_msgs::TransformStamped`. If ICP is enabled, this is the current corrected transform between the world frame and the ICP frame.
 
 ## Services
 
@@ -270,7 +271,10 @@ ICP based refinement can be applied to the poses of the input pointclouds before
 
 | Parameter | Description | Default |
 | --------------------  |:-----------:| :-------:|
-| `icp_iterations` | Number of ICP iterations to perform, zero to disable. | 0 |
+| `enable_icp` | Whether to use ICP to align all incoming pointclouds to the existing structure. | false |
+| `accumulate_icp_corrections` | Whether to accumulate transform corrections from ICP over all pointclouds. Reset at each new pointcloud if false. | true |
+| `icp_corrected_frame` | TF frame to output the ICP corrections to.| `icp_corrected` |
+| `icp_iterations` | Number of ICP iterations to perform. | 20 |
 | `icp_subsample_keep_ratio` | Random subsampling will be used to reduce the number of points used for matching by this factor.  | 0.05 |
 | `icp_min_match_ratio` | For an ICP refinement to be accepted, at least this ratio of points in the pointcloud must fall within the truncation distance of the existing TSDF layer | 0.75 |
 

@@ -1,6 +1,8 @@
-#include "voxblox_ros/tsdf_server.h"
-
+#include <minkindr_conversions/kindr_msg.h>
+#include <minkindr_conversions/kindr_tf.h>
 #include "voxblox_ros/ros_params.h"
+
+#include "voxblox_ros/tsdf_server.h"
 
 namespace voxblox {
 
@@ -25,9 +27,11 @@ void TsdfServer::getServerConfigFromRosParam(
 
   nh_private.param("use_freespace_pointcloud", use_freespace_pointcloud_,
                    use_freespace_pointcloud_);
-
   nh_private.param("pointcloud_queue_size", pointcloud_queue_size_,
                    pointcloud_queue_size_);
+  nh_private.param("enable_icp", enable_icp_, enable_icp_);
+  nh_private.param("accumulate_icp_corrections", accumulate_icp_corrections_,
+                   accumulate_icp_corrections_);
 
   nh_private.param("verbose", verbose_, verbose_);
 
@@ -63,6 +67,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       verbose_(true),
       world_frame_("world"),
+      icp_corrected_frame_("icp_corrected"),
       max_block_distance_from_body_(std::numeric_limits<FloatingPoint>::max()),
       slice_level_(0.5),
       use_freespace_pointcloud_(false),
@@ -71,6 +76,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       publish_pointclouds_(false),
       publish_tsdf_map_(false),
       cache_mesh_(false),
+      enable_icp_(false),
+      accumulate_icp_corrections_(true),
       pointcloud_queue_size_(1),
       transformer_(nh, nh_private) {
   getServerConfigFromRosParam(nh_private);
@@ -108,6 +115,13 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     freespace_pointcloud_sub_ =
         nh_.subscribe("freespace_pointcloud", pointcloud_queue_size_,
                       &TsdfServer::insertFreespacePointcloud, this);
+  }
+
+  if (enable_icp_) {
+    icp_transform_pub_ = nh_private_.advertise<geometry_msgs::TransformStamped>(
+        "icp_transform", 1, true);
+    icp_corrected_frame_ = nh_private_.param(
+        "icp_corrected_frame", icp_corrected_frame_, icp_corrected_frame_);
   }
 
   // Initialize TSDF Map and integrator.
@@ -206,18 +220,34 @@ void TsdfServer::processPointCloudMessageAndInsert(
   ptcloud_timer.Stop();
 
   Transformation T_G_C_refined = T_G_C;
-  if (icp_->getIterations() > 0) {
-    ROS_INFO_STREAM("Num iterations: " << icp_->getIterations());
+  if (enable_icp_) {
     timing::Timer icp_timer("icp");
-
+    if (!accumulate_icp_corrections_) {
+      icp_corrected_transform_.setIdentity();
+    }
     static Transformation T_offset;
-    if (!icp_->runICP(tsdf_map_->getTsdfLayerPtr(), points_C, T_offset * T_G_C,
-                      &T_G_C_refined) &&
+    if (!icp_->runICP(tsdf_map_->getTsdfLayerPtr(), points_C,
+                      icp_corrected_transform_ * T_G_C, &T_G_C_refined) &&
         verbose_) {
       ROS_INFO("ICP refinement step failed, using base Transformation");
+    } else {
+      icp_corrected_transform_ = T_G_C_refined * T_G_C.inverse();
     }
 
-    T_offset = T_G_C_refined * T_G_C.inverse();
+    // Publish transforms as both TF and message.
+    tf::Transform tf_msg;
+    geometry_msgs::TransformStamped transform_msg;
+
+    tf::transformKindrToTF(icp_corrected_transform_.cast<double>(), &tf_msg);
+    tf::transformKindrToMsg(icp_corrected_transform_.cast<double>(),
+                            &transform_msg.transform);
+    tf_broadcaster_.sendTransform(
+        tf::StampedTransform(tf_msg, pointcloud_msg->header.stamp, world_frame_,
+                             icp_corrected_frame_));
+
+    transform_msg.header.frame_id = world_frame_;
+    transform_msg.child_frame_id = icp_corrected_frame_;
+    icp_transform_pub_.publish(transform_msg);
 
     icp_timer.Stop();
   }

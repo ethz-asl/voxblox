@@ -17,6 +17,14 @@ Transformer::Transformer(const ros::NodeHandle& nh,
   nh_private_.param("world_frame", world_frame_, world_frame_);
   nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
 
+  const double kNanoSecondsInSecond = 1.0e9;
+  double timestamp_tolerance_sec =
+      timestamp_tolerance_ns_ / kNanoSecondsInSecond;
+  nh_private_.param("timestamp_tolerance_sec", timestamp_tolerance_sec,
+                    timestamp_tolerance_sec);
+  timestamp_tolerance_ns_ =
+      static_cast<int64_t>(timestamp_tolerance_sec * kNanoSecondsInSecond);
+
   // Transform settings.
   nh_private_.param("use_tf_transforms", use_tf_transforms_,
                     use_tf_transforms_);
