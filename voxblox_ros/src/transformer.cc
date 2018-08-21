@@ -122,8 +122,9 @@ bool Transformer::lookupTransformQueue(const ros::Time& timestamp,
                                        Transformation* transform) {
   CHECK_NOTNULL(transform);
   if (transform_queue_.empty()) {
-    ROS_WARN_STREAM_THROTTLE(
-        30, "No match found for transform timestamp: " << timestamp);
+    ROS_WARN_STREAM_THROTTLE(30, "No match found for transform timestamp: "
+                                     << timestamp
+                                     << " as transform queue is empty.");
     return false;
   }
   // Try to match the transforms in the queue.
@@ -155,11 +156,10 @@ bool Transformer::lookupTransformQueue(const ros::Time& timestamp,
     // within bounds and interpolate.
     if (it == transform_queue_.begin() || it == transform_queue_.end()) {
       ROS_WARN_STREAM_THROTTLE(
-          30, "No match found for transform timestamp: " << timestamp);
-      ROS_WARN_STREAM_THROTTLE(
-          30,
-          "Queue front: " << transform_queue_.front().header.stamp
-                          << " back: " << transform_queue_.back().header.stamp);
+          30, "No match found for transform timestamp: "
+                  << timestamp
+                  << " Queue front: " << transform_queue_.front().header.stamp
+                  << " back: " << transform_queue_.back().header.stamp);
       return false;
     }
     // Newest should be 1 past the requested timestamp, oldest should be one
@@ -179,8 +179,7 @@ bool Transformer::lookupTransformQueue(const ros::Time& timestamp,
 
     Transformation::Vector6 diff_vector =
         (T_G_D_oldest.inverse() * T_G_D_newest).log();
-    Transformation out =
-        T_G_D_oldest * Transformation::exp(t_diff_ratio * diff_vector);
+    T_G_D = T_G_D_oldest * Transformation::exp(t_diff_ratio * diff_vector);
   }
 
   // If we have a static transform, apply it too.
