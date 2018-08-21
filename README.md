@@ -91,10 +91,10 @@ Rendered Mesh | Setup
 </center>
 
 # Installation
-To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) or [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu).
+To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu), [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu) or [ROS Melodic](http://wiki.ros.org/melodic/Installation/Ubuntu).
 These instructions are for Ubuntu, Voxblox will also run on OS X, but you're more or less on your own there.
 
-First install additional system dependencies (swap kinetic for indigo as necessary):
+First install additional system dependencies (swap kinetic for indigo or melodic as necessary):
 ```
 sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler autoconf
 ```
