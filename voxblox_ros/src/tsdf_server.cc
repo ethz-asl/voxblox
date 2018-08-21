@@ -307,6 +307,7 @@ bool TsdfServer::getNextPointcloudFromQueue(
   if (queue->empty()) {
     return false;
   }
+  ROS_WARN("Queue size: %llu   ", queue->size());
   *pointcloud_msg = queue->front();
   if (transformer_.lookupTransform((*pointcloud_msg)->header.frame_id,
                                    world_frame_,
