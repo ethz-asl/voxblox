@@ -272,8 +272,10 @@ ICP based refinement can be applied to the poses of the input pointclouds before
 | Parameter | Description | Default |
 | --------------------  |:-----------:| :-------:|
 | `enable_icp` | Whether to use ICP to align all incoming pointclouds to the existing structure. | false |
+| `icp_refine_roll_pitch` | True to apply 6-dof pose correction, false for 4-dof (x, y, z, yaw) correction. | false |
 | `accumulate_icp_corrections` | Whether to accumulate transform corrections from ICP over all pointclouds. Reset at each new pointcloud if false. | true |
 | `icp_corrected_frame` | TF frame to output the ICP corrections to.| `icp_corrected` |
+| `pose_corrected_frame` | TF frame used to output the ICP corrected poses relative to the `icp_corrected_frame`.| `pose_corrected` |
 | `icp_iterations` | Number of ICP iterations to perform. | 20 |
 | `icp_subsample_keep_ratio` | Random subsampling will be used to reduce the number of points used for matching by this factor.  | 0.05 |
 | `icp_min_match_ratio` | For an ICP refinement to be accepted, at least this ratio of points in the pointcloud must fall within the truncation distance of the existing TSDF layer | 0.75 |
