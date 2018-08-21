@@ -307,7 +307,6 @@ bool TsdfServer::getNextPointcloudFromQueue(
   if (queue->empty()) {
     return false;
   }
-  ROS_WARN("Queue size: %llu   ", queue->size());
   *pointcloud_msg = queue->front();
   if (transformer_.lookupTransform((*pointcloud_msg)->header.frame_id,
                                    world_frame_,
@@ -318,9 +317,8 @@ bool TsdfServer::getNextPointcloudFromQueue(
     if (queue->size() >= kMaxQueueSize) {
       ROS_ERROR_THROTTLE(60,
                          "Input pointcloud queue getting too long! Dropping "
-                         "some pointclouds. Either "
-                         "unable to look up transform timestamps or the "
-                         "processing is taking too long.");
+                         "some pointclouds. Either unable to look up transform "
+                         "timestamps or the processing is taking too long.");
       while (queue->size() >= kMaxQueueSize) {
         queue->pop();
       }
@@ -331,36 +329,27 @@ bool TsdfServer::getNextPointcloudFromQueue(
 
 void TsdfServer::insertPointcloud(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
-  // Check if there's anything in the queue that needs to be processed.
-  bool process_queue_instead = false;
-  Transformation T_G_C;
-  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
-
-  process_queue_instead =
-      getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg, &T_G_C);
-
-  // Figure out if we should insert this.
-  if (pointcloud_msg_in->header.stamp - last_msg_time_ptcloud_ <
+  if (pointcloud_msg_in->header.stamp - last_msg_time_ptcloud_ >
       min_time_between_msgs_) {
-    if (!process_queue_instead) {
-      return;
-    }
-  } else {
     last_msg_time_ptcloud_ = pointcloud_msg_in->header.stamp;
     // So we have to process the queue anyway... Push this back.
     pointcloud_queue_.push(pointcloud_msg_in);
   }
 
-  if (!process_queue_instead) {
-    if (!getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg,
-                                    &T_G_C)) {
-      return;
-    }
+  Transformation T_G_C;
+  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
+  bool processed_any = false;
+  while (
+      getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg, &T_G_C)) {
+    constexpr bool is_freespace_pointcloud = false;
+    processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
+                                      is_freespace_pointcloud);
+    processed_any = true;
   }
 
-  constexpr bool is_freespace_pointcloud = false;
-  processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
-                                    is_freespace_pointcloud);
+  if (!processed_any) {
+    return;
+  }
 
   if (publish_tsdf_info_) {
     publishAllUpdatedTsdfVoxels();
@@ -380,36 +369,21 @@ void TsdfServer::insertPointcloud(
 
 void TsdfServer::insertFreespacePointcloud(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
-  // Check if there's anything in the queue that needs to be processed.
-  bool process_queue_instead = false;
-  Transformation T_G_C;
-  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
-
-  process_queue_instead = getNextPointcloudFromQueue(
-      &freespace_pointcloud_queue_, &pointcloud_msg, &T_G_C);
-
-  // Figure out if we should insert this.
-  if (pointcloud_msg_in->header.stamp - last_msg_time_freespace_ptcloud_ <
+  if (pointcloud_msg_in->header.stamp - last_msg_time_freespace_ptcloud_ >
       min_time_between_msgs_) {
-    if (!process_queue_instead) {
-      return;
-    }
-  } else {
     last_msg_time_freespace_ptcloud_ = pointcloud_msg_in->header.stamp;
     // So we have to process the queue anyway... Push this back.
     freespace_pointcloud_queue_.push(pointcloud_msg_in);
   }
 
-  if (!process_queue_instead) {
-    if (!getNextPointcloudFromQueue(&freespace_pointcloud_queue_,
+  Transformation T_G_C;
+  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
+  while (getNextPointcloudFromQueue(&freespace_pointcloud_queue_,
                                     &pointcloud_msg, &T_G_C)) {
-      return;
-    }
+    constexpr bool is_freespace_pointcloud = true;
+    processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
+                                      is_freespace_pointcloud);
   }
-
-  constexpr bool is_freespace_pointcloud = true;
-  processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
-                                    is_freespace_pointcloud);
 }
 
 void TsdfServer::integratePointcloud(const Transformation& T_G_C,
