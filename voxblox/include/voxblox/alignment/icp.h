@@ -41,12 +41,14 @@
 #define VOXBLOX_ALIGNMENT_ICP_H_
 
 #include <algorithm>
+#include <memory>
 #include <thread>
 
 #include "voxblox/core/block_hash.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/integrator/integrator_utils.h"
+#include "voxblox/interpolator/interpolator.h"
 #include "voxblox/utils/approx_hash_array.h"
 
 namespace voxblox {
@@ -63,9 +65,9 @@ class ICP {
     size_t num_threads = std::thread::hardware_concurrency();
   };
 
-  explicit ICP(Config config);
+  explicit ICP(const Config& config);
 
-  bool runICP(const Layer<TsdfVoxel>* tsdf_layer, const Pointcloud& points,
+  bool runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
               const Transformation& T_in, Transformation* T_out);
 
   bool refiningRollPitch() { return config_.refine_roll_pitch; }
@@ -78,19 +80,22 @@ class ICP {
 
   void subSample(const Pointcloud& points_in, Pointcloud* points_out);
 
-  void matchPoints(const Layer<TsdfVoxel>* tsdf_layer, const Pointcloud& points,
-                   const Transformation& T, PointsMatrix* src,
-                   PointsMatrix* tgt);
+  void matchPoints(const Pointcloud& points, const Transformation& T,
+                   PointsMatrix* src, PointsMatrix* tgt);
 
-  void calcMatches(const Layer<TsdfVoxel>* tsdf_layer, const Pointcloud& points,
-                   const Transformation& T, ThreadSafeIndex* index_getter,
+  void calcMatches(const Pointcloud& points, const Transformation& T,
+                   ThreadSafeIndex* index_getter,
                    std::atomic<size_t>* atomic_out_idx, PointsMatrix* src,
                    PointsMatrix* tgt);
 
-  bool stepICP(const Layer<TsdfVoxel>* tsdf_layer, const Pointcloud& points,
-               const Transformation& T_in, Transformation* T_out);
+  bool stepICP(const Pointcloud& points, const Transformation& T_in,
+               Transformation* T_out);
 
   Config config_;
+
+  FloatingPoint voxel_size_;
+  FloatingPoint voxel_size_inv_;
+  std::shared_ptr<Interpolator<TsdfVoxel>> interpolator_;
 };
 
 }  // namespace voxblox
