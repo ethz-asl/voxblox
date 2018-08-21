@@ -1,7 +1,6 @@
 #ifndef VOXBLOX_ROS_TSDF_SERVER_H_
 #define VOXBLOX_ROS_TSDF_SERVER_H_
 
-#include <memory>
 #include <pcl/conversions.h>
 #include <pcl/filters/filter.h>
 #include <pcl/point_types.h>
@@ -10,9 +9,10 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
-#include <string>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <memory>
+#include <string>
 
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/tsdf_map.h>
@@ -110,6 +110,9 @@ class TsdfServer {
   // Name of the ICP corrected frame. Publishes TF and transform topic to this
   // if ICP on.
   std::string icp_corrected_frame_;
+
+  // Name of the pose in the ICP correct Frame.
+  std::string pose_corrected_frame_;
 
   // Delete blocks that are far from the system to help manage memory
   double max_block_distance_from_body_;
