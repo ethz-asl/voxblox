@@ -120,7 +120,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   if (enable_icp_) {
     icp_transform_pub_ = nh_private_.advertise<geometry_msgs::TransformStamped>(
         "icp_transform", 1, true);
-    icp_corrected_frame_ = nh_private_.param(
+    nh_private_.param(
         "icp_corrected_frame", icp_corrected_frame_, icp_corrected_frame_);
   }
 
