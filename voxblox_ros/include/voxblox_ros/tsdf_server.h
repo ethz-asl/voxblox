@@ -118,6 +118,8 @@ class TsdfServer {
   // Name of the ICP corrected frame. Publishes TF and transform topic to this
   // if ICP on.
   std::string icp_corrected_frame_;
+  // Name of the pose in the ICP correct Frame.
+  std::string pose_corrected_frame_;
 
   // Delete blocks that are far from the system to help manage memory
   double max_block_distance_from_body_;

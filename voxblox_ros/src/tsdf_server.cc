@@ -68,6 +68,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       verbose_(true),
       world_frame_("world"),
       icp_corrected_frame_("icp_corrected"),
+      pose_corrected_frame_("pose_corrected"),
       max_block_distance_from_body_(std::numeric_limits<FloatingPoint>::max()),
       slice_level_(0.5),
       use_freespace_pointcloud_(false),
@@ -123,6 +124,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
         "icp_transform", 1, true);
     nh_private_.param("icp_corrected_frame", icp_corrected_frame_,
                       icp_corrected_frame_);
+    nh_private_.param("pose_corrected_frame", pose_corrected_frame_,
+                      pose_corrected_frame_);
   }
 
   // Initialize TSDF Map and integrator.
@@ -249,24 +252,38 @@ void TsdfServer::processPointCloudMessageAndInsert(
       icp_corrected_transform_.setIdentity();
     }
     static Transformation T_offset;
-    if (!icp_->runICP(tsdf_map_->getTsdfLayerPtr(), points_C,
+    if (!icp_->runICP(tsdf_map_->getTsdfLayer(), points_C,
                       icp_corrected_transform_ * T_G_C, &T_G_C_refined) &&
         verbose_) {
       ROS_INFO("ICP refinement step failed, using base Transformation");
     } else {
       icp_corrected_transform_ = T_G_C_refined * T_G_C.inverse();
+
+      if (!icp_->refiningRollPitch()) {
+        // its already removed internally but small floating point errors can
+        // build up if accumulating transforms
+        Transformation::Vector6 T_vec = icp_corrected_transform_.log();
+        T_vec[3] = 0.0;
+        T_vec[4] = 0.0;
+        icp_corrected_transform_ = Transformation::exp(T_vec);
+      }
     }
 
     // Publish transforms as both TF and message.
-    tf::Transform tf_msg;
+    tf::Transform icp_tf_msg, pose_tf_msg;
     geometry_msgs::TransformStamped transform_msg;
 
-    tf::transformKindrToTF(icp_corrected_transform_.cast<double>(), &tf_msg);
+    tf::transformKindrToTF(icp_corrected_transform_.cast<double>(),
+                           &icp_tf_msg);
+    tf::transformKindrToTF(T_G_C.cast<double>(), &pose_tf_msg);
     tf::transformKindrToMsg(icp_corrected_transform_.cast<double>(),
                             &transform_msg.transform);
     tf_broadcaster_.sendTransform(
-        tf::StampedTransform(tf_msg, pointcloud_msg->header.stamp, world_frame_,
-                             icp_corrected_frame_));
+        tf::StampedTransform(icp_tf_msg, pointcloud_msg->header.stamp,
+                             world_frame_, icp_corrected_frame_));
+    tf_broadcaster_.sendTransform(
+        tf::StampedTransform(pose_tf_msg, pointcloud_msg->header.stamp,
+                             icp_corrected_frame_, pose_corrected_frame_));
 
     transform_msg.header.frame_id = world_frame_;
     transform_msg.child_frame_id = icp_corrected_frame_;

@@ -41,12 +41,14 @@
 #define VOXBLOX_ALIGNMENT_ICP_H_
 
 #include <algorithm>
+#include <memory>
 #include <thread>
 
 #include "voxblox/core/block_hash.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/integrator/integrator_utils.h"
+#include "voxblox/interpolator/interpolator.h"
 #include "voxblox/utils/approx_hash_array.h"
 
 namespace voxblox {
@@ -56,43 +58,44 @@ class ICP {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    bool refine_roll_pitch = false;
     int iterations = 0;
     FloatingPoint min_match_ratio = 0.5;
     FloatingPoint subsample_keep_ratio = 0.05;
     size_t num_threads = std::thread::hardware_concurrency();
   };
 
-  explicit ICP(Config config);
+  explicit ICP(const Config& config);
 
-  bool runICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
-              const Transformation &T_in, Transformation *T_out);
+  bool runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
+              const Transformation& T_in, Transformation* T_out);
+
+  bool refiningRollPitch() { return config_.refine_roll_pitch; }
 
  private:
-  static bool getTransformFromCorrelation(const PointsMatrix &src_demean,
-                                          const Point &src_center,
-                                          const PointsMatrix &tgt_demean,
-                                          const Point &tgt_center,
-                                          Transformation *T);
+  static bool getTransformFromMatchedPoints(const PointsMatrix& src,
+                                            const PointsMatrix& tgt,
+                                            const bool refine_roll_pitch,
+                                            Transformation* T);
 
-  static bool getTransformFromMatchedPoints(const PointsMatrix &src,
-                                            const PointsMatrix &tgt,
-                                            Transformation *T);
+  void subSample(const Pointcloud& points_in, Pointcloud* points_out);
 
-  void subSample(const Pointcloud &points_in, Pointcloud *points_out);
+  void matchPoints(const Pointcloud& points, const Transformation& T,
+                   PointsMatrix* src, PointsMatrix* tgt);
 
-  void matchPoints(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
-                   const Transformation &T, PointsMatrix *src,
-                   PointsMatrix *tgt);
+  void calcMatches(const Pointcloud& points, const Transformation& T,
+                   ThreadSafeIndex* index_getter,
+                   std::atomic<size_t>* atomic_out_idx, PointsMatrix* src,
+                   PointsMatrix* tgt);
 
-  void calcMatches(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
-                   const Transformation &T, ThreadSafeIndex *index_getter,
-                   std::atomic<size_t> *atomic_out_idx, PointsMatrix *src,
-                   PointsMatrix *tgt);
-
-  bool stepICP(const Layer<TsdfVoxel> *tsdf_layer, const Pointcloud &points,
-               const Transformation &T_in, Transformation *T_out);
+  bool stepICP(const Pointcloud& points, const Transformation& T_in,
+               Transformation* T_out);
 
   Config config_;
+
+  FloatingPoint voxel_size_;
+  FloatingPoint voxel_size_inv_;
+  std::shared_ptr<Interpolator<TsdfVoxel>> interpolator_;
 };
 
 }  // namespace voxblox
