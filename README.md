@@ -304,7 +304,8 @@ ICP based refinement can be applied to the poses of the input pointclouds before
 | `publish_esdf_map` | Whether to publish the complete ESDF map periodically over ROS topics. | false |
 | `publish_tsdf_info` | Enables publishing of `tsdf_pointcloud`, `surface_pointcloud` and `occupied_nodes`. | false |
 | `publish_pointclouds` | If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated | false |
-
+| `intensity_colormap` | If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are `rainbow`, `inverse_rainbow`, `grayscale`, `inverse_grayscale`, `ironbow` (thermal) | `rainbow` |
+| `intensity_max_value` | Maximum value to use for the intensity mapping. Minimum value is always 0. | 100.0 |
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
