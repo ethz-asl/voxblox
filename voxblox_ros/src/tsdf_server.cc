@@ -294,22 +294,13 @@ void TsdfServer::processPointCloudMessageAndInsert(
 }
 
 void TsdfServer::insertPointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
   // Figure out if we should insert this.
   static ros::Time last_msg_time;
-  if (pointcloud_msg_in->header.stamp - last_msg_time <
-      min_time_between_msgs_) {
+  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
     return;
   }
-  last_msg_time = pointcloud_msg_in->header.stamp;
-
-  static std::list<sensor_msgs::PointCloud2::Ptr> pointcloud_queue;
-  pointcloud_queue.push_back(pointcloud_msg_in);
-  if (pointcloud_queue.size() < 10) {
-    return;
-  }
-  sensor_msgs::PointCloud2::Ptr pointcloud_msg = pointcloud_queue.front();
-  pointcloud_queue.pop_front();
+  last_msg_time = pointcloud_msg->header.stamp;
 
   constexpr bool is_freespace_pointcloud = false;
   Transformation T_G_C;
