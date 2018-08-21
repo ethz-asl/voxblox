@@ -41,6 +41,8 @@ inline ICP::Config getICPConfigFromRosParam(const ros::NodeHandle& nh_private) {
                    icp_config.min_match_ratio);
   nh_private.param("icp_subsample_keep_ratio", icp_config.subsample_keep_ratio,
                    icp_config.subsample_keep_ratio);
+  nh_private.param("icp_refine_roll_pitch", icp_config.refine_roll_pitch,
+                   icp_config.refine_roll_pitch);
 
   return icp_config;
 }
