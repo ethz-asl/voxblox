@@ -1,7 +1,6 @@
 #ifndef VOXBLOX_ROS_TSDF_SERVER_H_
 #define VOXBLOX_ROS_TSDF_SERVER_H_
 
-#include <memory>
 #include <pcl/conversions.h>
 #include <pcl/filters/filter.h>
 #include <pcl/point_types.h>
@@ -10,9 +9,11 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
-#include <string>
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <memory>
+#include <queue>
+#include <string>
 
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/tsdf_map.h>
@@ -100,6 +101,12 @@ class TsdfServer {
   void tsdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
  protected:
+  // Gets the next pointcloud that has an available transform to process from
+  // the queue.
+  bool getNextPointcloudFromQueue(
+      std::queue<sensor_msgs::PointCloud2::Ptr>* queue,
+      sensor_msgs::PointCloud2::Ptr* pointcloud_msg, Transformation* T_G_C);
+
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
@@ -202,6 +209,14 @@ class TsdfServer {
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.
   Transformer transformer_;
+  // Queue of incoming pointclouds, in case the transforms can't be immediately
+  // resolved.
+  std::queue<sensor_msgs::PointCloud2::Ptr> pointcloud_queue_;
+  std::queue<sensor_msgs::PointCloud2::Ptr> freespace_pointcloud_queue_;
+
+  // Last message times for throttling input.
+  ros::Time last_msg_time_ptcloud_;
+  ros::Time last_msg_time_freespace_ptcloud_;
 
   // Current transform corrections from ICP.
   Transformation icp_corrected_transform_;

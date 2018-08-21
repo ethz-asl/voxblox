@@ -299,25 +299,67 @@ void TsdfServer::processPointCloudMessageAndInsert(
   newPoseCallback(T_G_C);
 }
 
-void TsdfServer::insertPointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
-  // Figure out if we should insert this.
-  static ros::Time last_msg_time;
-  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
-    return;
+// Checks if we can get the next message from queue.
+bool TsdfServer::getNextPointcloudFromQueue(
+    std::queue<sensor_msgs::PointCloud2::Ptr>* queue,
+    sensor_msgs::PointCloud2::Ptr* pointcloud_msg, Transformation* T_G_C) {
+  const size_t kMaxQueueSize = 10;
+  if (queue->empty()) {
+    return false;
   }
-  last_msg_time = pointcloud_msg->header.stamp;
+  *pointcloud_msg = queue->front();
+  if (transformer_.lookupTransform((*pointcloud_msg)->header.frame_id,
+                                   world_frame_,
+                                   (*pointcloud_msg)->header.stamp, T_G_C)) {
+    queue->pop();
+    return true;
+  } else {
+    if (queue->size() >= kMaxQueueSize) {
+      ROS_ERROR_THROTTLE(60,
+                         "Input pointcloud queue getting too long! Dropping "
+                         "some pointclouds. Either "
+                         "unable to look up transform timestamps or the "
+                         "processing is taking too long.");
+      while (queue->size() >= kMaxQueueSize) {
+        queue->pop();
+      }
+    }
+  }
+  return false;
+}
+
+void TsdfServer::insertPointcloud(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
+  // Check if there's anything in the queue that needs to be processed.
+  bool process_queue_instead = false;
+  Transformation T_G_C;
+  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
+
+  process_queue_instead =
+      getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg, &T_G_C);
+
+  // Figure out if we should insert this.
+  if (pointcloud_msg_in->header.stamp - last_msg_time_ptcloud_ <
+      min_time_between_msgs_) {
+    if (!process_queue_instead) {
+      return;
+    }
+  } else {
+    last_msg_time_ptcloud_ = pointcloud_msg_in->header.stamp;
+    // So we have to process the queue anyway... Push this back.
+    pointcloud_queue_.push(pointcloud_msg_in);
+  }
+
+  if (!process_queue_instead) {
+    if (!getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg,
+                                    &T_G_C)) {
+      return;
+    }
+  }
 
   constexpr bool is_freespace_pointcloud = false;
-  Transformation T_G_C;
-  if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
-                                   world_frame_, pointcloud_msg->header.stamp,
-                                   &T_G_C)) {
-    processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
-                                      is_freespace_pointcloud);
-  } else {
-    ROS_WARN_THROTTLE(60, "Couldn't look up pose for incoming pointcloud.");
-  }
+  processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
+                                    is_freespace_pointcloud);
 
   if (publish_tsdf_info_) {
     publishAllUpdatedTsdfVoxels();
@@ -336,24 +378,37 @@ void TsdfServer::insertPointcloud(
 }
 
 void TsdfServer::insertFreespacePointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
+  // Check if there's anything in the queue that needs to be processed.
+  bool process_queue_instead = false;
+  Transformation T_G_C;
+  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
+
+  process_queue_instead = getNextPointcloudFromQueue(
+      &freespace_pointcloud_queue_, &pointcloud_msg, &T_G_C);
+
   // Figure out if we should insert this.
-  static ros::Time last_msg_time;
-  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
-    return;
+  if (pointcloud_msg_in->header.stamp - last_msg_time_freespace_ptcloud_ <
+      min_time_between_msgs_) {
+    if (!process_queue_instead) {
+      return;
+    }
+  } else {
+    last_msg_time_freespace_ptcloud_ = pointcloud_msg_in->header.stamp;
+    // So we have to process the queue anyway... Push this back.
+    freespace_pointcloud_queue_.push(pointcloud_msg_in);
   }
-  last_msg_time = pointcloud_msg->header.stamp;
+
+  if (!process_queue_instead) {
+    if (!getNextPointcloudFromQueue(&freespace_pointcloud_queue_,
+                                    &pointcloud_msg, &T_G_C)) {
+      return;
+    }
+  }
 
   constexpr bool is_freespace_pointcloud = true;
-  Transformation T_G_C;
-  if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
-                                   world_frame_, pointcloud_msg->header.stamp,
-                                   &T_G_C)) {
-    processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
-                                      is_freespace_pointcloud);
-  } else {
-    ROS_WARN_THROTTLE(60, "Couldn't look up pose for incoming pointcloud.");
-  }
+  processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
+                                    is_freespace_pointcloud);
 }
 
 void TsdfServer::integratePointcloud(const Transformation& T_G_C,
@@ -505,7 +560,8 @@ bool TsdfServer::saveMap(const std::string& file_path) {
 }
 
 bool TsdfServer::loadMap(const std::string& file_path) {
-  // Inheriting classes should add other layers to load, as this will only load
+  // Inheriting classes should add other layers to load, as this will only
+  // load
   // the TSDF layer.
   constexpr bool kMulitpleLayerSupport = true;
   bool success = io::LoadBlocksFromFile(
@@ -517,42 +573,42 @@ bool TsdfServer::loadMap(const std::string& file_path) {
   return success;
 }
 
-bool TsdfServer::clearMapCallback(
-    std_srvs::Empty::Request& /*request*/,
-    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+bool TsdfServer::clearMapCallback(std_srvs::Empty::Request& /*request*/,
+                                  std_srvs::Empty::Response&
+                                  /*response*/) {  // NOLINT
   clear();
   return true;
 }
 
-bool TsdfServer::generateMeshCallback(
-    std_srvs::Empty::Request& /*request*/,
-    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+bool TsdfServer::generateMeshCallback(std_srvs::Empty::Request& /*request*/,
+                                      std_srvs::Empty::Response&
+                                      /*response*/) {  // NOLINT
   return generateMesh();
 }
 
-bool TsdfServer::saveMapCallback(
-    voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
+bool TsdfServer::saveMapCallback(voxblox_msgs::FilePath::Request& request,
+                                 voxblox_msgs::FilePath::Response&
+                                 /*response*/) {  // NOLINT
   return saveMap(request.file_path);
 }
 
-bool TsdfServer::loadMapCallback(
-    voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
+bool TsdfServer::loadMapCallback(voxblox_msgs::FilePath::Request& request,
+                                 voxblox_msgs::FilePath::Response&
+                                 /*response*/) {  // NOLINT
   bool success = loadMap(request.file_path);
   return success;
 }
 
 bool TsdfServer::publishPointcloudsCallback(
-    std_srvs::Empty::Request& /*request*/,
-    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/, std_srvs::Empty::Response&
+    /*response*/) {  // NOLINT
   publishPointclouds();
   return true;
 }
 
-bool TsdfServer::publishTsdfMapCallback(
-    std_srvs::Empty::Request& /*request*/,
-    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+bool TsdfServer::publishTsdfMapCallback(std_srvs::Empty::Request& /*request*/,
+                                        std_srvs::Empty::Response&
+                                        /*response*/) {  // NOLINT
   publishMap();
   return true;
 }
