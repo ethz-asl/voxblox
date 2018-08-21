@@ -1,6 +1,9 @@
 #ifndef VOXBLOX_ROS_ROS_PARAMS_H_
 #define VOXBLOX_ROS_ROS_PARAMS_H_
 
+#include <ros/node_handle.h>
+
+#include <voxblox/alignment/icp.h>
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
@@ -27,6 +30,21 @@ inline TsdfMap::Config getTsdfMapConfigFromRosParam(
   tsdf_config.tsdf_voxels_per_side = voxels_per_side;
 
   return tsdf_config;
+}
+
+inline ICP::Config getICPConfigFromRosParam(const ros::NodeHandle& nh_private) {
+  ICP::Config icp_config;
+
+  nh_private.param("icp_iterations", icp_config.iterations,
+                   icp_config.iterations);
+  nh_private.param("icp_min_match_ratio", icp_config.min_match_ratio,
+                   icp_config.min_match_ratio);
+  nh_private.param("icp_subsample_keep_ratio", icp_config.subsample_keep_ratio,
+                   icp_config.subsample_keep_ratio);
+  nh_private.param("icp_refine_roll_pitch", icp_config.refine_roll_pitch,
+                   icp_config.refine_roll_pitch);
+
+  return icp_config;
 }
 
 inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
