@@ -98,13 +98,11 @@ bool Transformer::lookupTransformTf(const std::string& from_frame,
     from_frame_modified = sensor_frame_;
   }
 
-  // If this transform isn't possible at the time, then try to just look up
-  // the latest (this is to work with bag files and static transform
-  // publisher, etc).
+  // Previous behavior was just to use the latest transform if the time is in
+  // the future. Now we will just wait.
   if (!tf_listener_.canTransform(to_frame, from_frame_modified,
                                  time_to_lookup)) {
-    time_to_lookup = ros::Time(0);
-    ROS_WARN("Using latest TF transform instead of timestamp match.");
+    return false;
   }
 
   try {
