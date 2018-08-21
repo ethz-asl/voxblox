@@ -52,6 +52,30 @@ void TsdfServer::getServerConfigFromRosParam(
   } else {  // Default case is gray.
     color_mode_ = ColorMode::kGray;
   }
+
+  // Color map for intensity pointclouds.
+  std::string intensity_colormap("rainbow");
+  float intensity_max_value = 100.0;
+  nh_private.param("intensity_colormap", intensity_colormap,
+                   intensity_colormap);
+  nh_private.param("intensity_max_value", intensity_max_value,
+                   intensity_max_value);
+
+  // Default set in constructor.
+  if (intensity_colormap == "rainbow") {
+    color_map_.reset(new RainbowColorMap());
+  } else if (intensity_colormap == "inverse_rainbow") {
+    color_map_.reset(new InverseRainbowColorMap());
+  } else if (intensity_colormap == "grayscale") {
+    color_map_.reset(new GrayscaleColorMap());
+  } else if (intensity_colormap == "inverse_grayscale") {
+    color_map_.reset(new InverseGrayscaleColorMap());
+  } else if (intensity_colormap == "ironbow") {
+    color_map_.reset(new IronbowColorMap());
+  } else {
+    ROS_ERROR_STREAM("Invalid color map: " << intensity_colormap);
+  }
+  color_map_->setMaxValue(intensity_max_value);
 }
 
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
@@ -72,7 +96,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       max_block_distance_from_body_(std::numeric_limits<FloatingPoint>::max()),
       slice_level_(0.5),
       use_freespace_pointcloud_(false),
-      color_map_(new IronbowColorMap()),
+      color_map_(new RainbowColorMap()),
       publish_tsdf_info_(false),
       publish_slices_(false),
       publish_pointclouds_(false),
@@ -176,8 +200,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   double update_mesh_every_n_sec = 0.0;
   nh_private_.param("update_mesh_every_n_sec", update_mesh_every_n_sec,
                     update_mesh_every_n_sec);
-
-  color_map_->setMaxValue(100.0f);
 
   if (update_mesh_every_n_sec > 0.0) {
     update_mesh_timer_ =
