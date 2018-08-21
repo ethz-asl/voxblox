@@ -20,6 +20,7 @@
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
+#include <voxblox/utils/color_maps.h>
 #include <voxblox_msgs/Mesh.h>
 
 #include <voxblox_msgs/FilePath.h>
@@ -125,6 +126,9 @@ class TsdfServer {
   std::string mesh_filename_;
   // How to color the mesh.
   ColorMode color_mode_;
+
+  // Colormap to use for intensity pointclouds.
+  std::unique_ptr<ColorMap> color_map_;
 
   // Will throttle to this message rate.
   ros::Duration min_time_between_msgs_;

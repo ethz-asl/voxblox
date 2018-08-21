@@ -71,6 +71,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       max_block_distance_from_body_(std::numeric_limits<FloatingPoint>::max()),
       slice_level_(0.5),
       use_freespace_pointcloud_(false),
+      color_map_(new IronbowColorMap()),
       publish_tsdf_info_(false),
       publish_slices_(false),
       publish_pointclouds_(false),
@@ -120,8 +121,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   if (enable_icp_) {
     icp_transform_pub_ = nh_private_.advertise<geometry_msgs::TransformStamped>(
         "icp_transform", 1, true);
-    icp_corrected_frame_ = nh_private_.param(
-        "icp_corrected_frame", icp_corrected_frame_, icp_corrected_frame_);
+    nh_private_.param("icp_corrected_frame", icp_corrected_frame_,
+                      icp_corrected_frame_);
   }
 
   // Initialize TSDF Map and integrator.
@@ -173,6 +174,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   nh_private_.param("update_mesh_every_n_sec", update_mesh_every_n_sec,
                     update_mesh_every_n_sec);
 
+  color_map_->setMaxValue(100.0f);
+
   if (update_mesh_every_n_sec > 0.0) {
     update_mesh_timer_ =
         nh_private_.createTimer(ros::Duration(update_mesh_every_n_sec),
@@ -184,39 +187,59 @@ void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
     const Transformation& T_G_C, const bool is_freespace_pointcloud) {
   // Convert the PCL pointcloud into our awesome format.
-  // TODO(helenol): improve...
+
   // Horrible hack fix to fix color parsing colors in PCL.
+  bool color_pointcloud = false;
   for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
     if (pointcloud_msg->fields[d].name == std::string("rgb")) {
       pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
+      color_pointcloud = true;
     }
   }
-
-  pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
-  // pointcloud_pcl is modified below:
-  pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-
-  timing::Timer ptcloud_timer("ptcloud_preprocess");
 
   Pointcloud points_C;
   Colors colors;
-  points_C.reserve(pointcloud_pcl.size());
-  colors.reserve(pointcloud_pcl.size());
-  for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-    if (!std::isfinite(pointcloud_pcl.points[i].x) ||
-        !std::isfinite(pointcloud_pcl.points[i].y) ||
-        !std::isfinite(pointcloud_pcl.points[i].z)) {
-      continue;
+  timing::Timer ptcloud_timer("ptcloud_preprocess");
+
+  // Convert differently depending on RGB or I type.
+  if (color_pointcloud) {
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+    // pointcloud_pcl is modified below:
+    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+    points_C.reserve(pointcloud_pcl.size());
+    colors.reserve(pointcloud_pcl.size());
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
+          !std::isfinite(pointcloud_pcl.points[i].y) ||
+          !std::isfinite(pointcloud_pcl.points[i].z)) {
+        continue;
+      }
+      points_C.push_back(Point(pointcloud_pcl.points[i].x,
+                               pointcloud_pcl.points[i].y,
+                               pointcloud_pcl.points[i].z));
+      colors.push_back(
+          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
+                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
     }
-
-    points_C.push_back(Point(pointcloud_pcl.points[i].x,
-                             pointcloud_pcl.points[i].y,
-                             pointcloud_pcl.points[i].z));
-    colors.push_back(
-        Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
-              pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+  } else {
+    pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
+    // pointcloud_pcl is modified below:
+    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+    points_C.reserve(pointcloud_pcl.size());
+    colors.reserve(pointcloud_pcl.size());
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
+          !std::isfinite(pointcloud_pcl.points[i].y) ||
+          !std::isfinite(pointcloud_pcl.points[i].z)) {
+        continue;
+      }
+      points_C.push_back(Point(pointcloud_pcl.points[i].x,
+                               pointcloud_pcl.points[i].y,
+                               pointcloud_pcl.points[i].z));
+      colors.push_back(
+          color_map_->colorLookup(pointcloud_pcl.points[i].intensity));
+    }
   }
-
   ptcloud_timer.Stop();
 
   Transformation T_G_C_refined = T_G_C;
