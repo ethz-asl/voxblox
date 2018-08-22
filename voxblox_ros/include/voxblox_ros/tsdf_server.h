@@ -12,6 +12,7 @@
 #include <tf/transform_broadcaster.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <memory>
+#include <queue>
 #include <string>
 
 #include <voxblox/alignment/icp.h>
@@ -20,14 +21,17 @@
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
+#include <voxblox/utils/color_maps.h>
+#include <voxblox_msgs/FilePath.h>
 #include <voxblox_msgs/Mesh.h>
 
-#include <voxblox_msgs/FilePath.h>
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/transformer.h"
 
 namespace voxblox {
+
+constexpr float kDefaultMaxIntensity = 100.0;
 
 class TsdfServer {
  public:
@@ -99,6 +103,12 @@ class TsdfServer {
   void tsdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
  protected:
+  // Gets the next pointcloud that has an available transform to process from
+  // the queue.
+  bool getNextPointcloudFromQueue(
+      std::queue<sensor_msgs::PointCloud2::Ptr>* queue,
+      sensor_msgs::PointCloud2::Ptr* pointcloud_msg, Transformation* T_G_C);
+
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
@@ -110,7 +120,6 @@ class TsdfServer {
   // Name of the ICP corrected frame. Publishes TF and transform topic to this
   // if ICP on.
   std::string icp_corrected_frame_;
-
   // Name of the pose in the ICP correct Frame.
   std::string pose_corrected_frame_;
 
@@ -128,6 +137,9 @@ class TsdfServer {
   std::string mesh_filename_;
   // How to color the mesh.
   ColorMode color_mode_;
+
+  // Colormap to use for intensity pointclouds.
+  std::unique_ptr<ColorMap> color_map_;
 
   // Will throttle to this message rate.
   ros::Duration min_time_between_msgs_;
@@ -201,6 +213,14 @@ class TsdfServer {
   // Transformer object to keep track of either TF transforms or messages from
   // a transform topic.
   Transformer transformer_;
+  // Queue of incoming pointclouds, in case the transforms can't be immediately
+  // resolved.
+  std::queue<sensor_msgs::PointCloud2::Ptr> pointcloud_queue_;
+  std::queue<sensor_msgs::PointCloud2::Ptr> freespace_pointcloud_queue_;
+
+  // Last message times for throttling input.
+  ros::Time last_msg_time_ptcloud_;
+  ros::Time last_msg_time_freespace_ptcloud_;
 
   // Current transform corrections from ICP.
   Transformation icp_corrected_transform_;
