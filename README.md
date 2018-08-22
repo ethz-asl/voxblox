@@ -32,7 +32,7 @@ A video of voxblox being used for online planning on-board a multicopter can be 
 
 If using voxblox for scientific publications, please cite the following paper, available [here](http://helenol.github.io/publications/iros_2017_voxblox.pdf):
 
-Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Incremental 3D Euclidean Signed Distance Fields for On-Board MAV Planning**”, in *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2016.
+Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Incremental 3D Euclidean Signed Distance Fields for On-Board MAV Planning**”, in *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2017.
 
 ```latex
 @inproceedings{oleynikova2017voxblox,
@@ -132,31 +132,6 @@ cd ~/catkin_ws/src/
 catkin build voxblox_ros
 ```
 
-# Contributing to voxblox
-These steps are only necessary if you plan on contributing to voxblox.
-
-### Code style
-
-We follow the style and best practices listed in the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
-
-### Setting up the linter
-This setups a linter which checks if the code conforms to our style guide during commits.
-
-First, install the dependencies listed [here](https://github.com/ethz-asl/linter#dependencies).
-
-```bash
-cd ~/catkin_ws/src/
-git clone git@github.com:ethz-asl/linter.git
-cd linter
-echo ". $(realpath setup_linter.sh)" >> ~/.bashrc  # Or the matching file for
-                                                   # your shell.
-bash
-
-# Initialize linter in voxblox repo
-cd ~/catkin_ws/src/voxblox
-init_linter_git_hooks
-```
-For more information about the linter visit  [ethz/linter](https://github.com/ethz-asl/linter)
 
 
 # Running Voxblox
@@ -194,6 +169,7 @@ The tsdf_server and esdf_server publish and subscribe to the following topics:
   - **`occupied_nodes`** of type `visualization_msgs::MarkerArray`. Visualizes the location of the allocated voxels in the TSDF.
   - **`tsdf_map_out`** of type `voxblox_msgs::Layer`. Publishes the entire TSDF layer to update other nodes (that listen on tsdf_layer_in). Only published if `publish_tsdf_map` is set to true.
   - **`esdf_map_out`** of type `voxblox_msgs::Layer`. Publishes the entire ESDF layer to update other nodes (that listen on esdf_layer_in). Only published if `publish_esdf_map` is set to true.
+  - **`traversable`** of type `pcl::PointCloud<pcl::PointXYZI>`. (ESDF server only) Outputs all the points within the map that are considered traversable, controlled by the `publish_traversable` and `traversability_radius` parameters.
 
 - Subscribed topics:
   - **`transform`** of type `geometry_msgs::TransformStamped`. Only appears if `use_tf_transforms` is false. The transformation from the world frame to the current sensor frame.
@@ -308,6 +284,140 @@ ICP based refinement can be applied to the poses of the input pointclouds before
 | `publish_pointclouds` | If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated | false |
 | `intensity_colormap` | If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are `rainbow`, `inverse_rainbow`, `grayscale`, `inverse_grayscale`, `ironbow` (thermal) | `rainbow` |
 | `intensity_max_value` | Maximum value to use for the intensity mapping. Minimum value is always 0. | 100.0 |
+| `publish_traversable` | Whether to display a traversability pointcloud from an ESDF server. | false |
+| `traversability_radius` | The minimum radius at which a point is considered traversable. | 1.0 |
+
+# Using voxblox for planning
+The planners described in [Continuous-Time Trajectory Optimization for Online UAV Replanning](http://helenol.github.io/publications/iros_2016_replanning.pdf), [Safe Local Exploration for Replanning in Cluttered Unknown Environments for Micro-Aerial Vehicles](http://helenol.github.io/publications/ral_2018_local_exploration.pdf), and [Sparse 3D Topological Graphs for Micro-Aerial Vehicle Planning](https://arxiv.org/pdf/1803.04345.pdf) will be open-sourced shortly.
+
+In the mean-time, the general idea behind using voxblox for planning is to have two nodes running: one for the mapping, which ingests pointcloud data and produces both a TSDF and an ESDF, and one for planning, which subscribes to the latest ESDF layer over ROS.
+
+The planner should have a ``voxblox::EsdfServer`` as a member, and simply remap the `esdf_map_out` and `esdf_map_in` topics to match.
+
+A sample launch file is shown below:
+```xml
+<launch>
+  <arg name="robot_name" default="my_robot" />
+  <arg name="voxel_size" default="0.20" />
+  <arg name="voxels_per_side" default="16" />
+  <arg name="world_frame" default="odom" />
+  <group ns="$(arg robot_name)">
+
+    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr" clear_params="true">
+      <remap from="pointcloud" to="great_sensor/my_pointcloud"/>
+      <remap from="voxblox_node/esdf_map_out" to="esdf_map" />
+      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+      <param name="publish_esdf_map" value="true" />
+      <param name="publish_pointclouds" value="true" />
+      <param name="esdf_max_distance_m" value="2.0" />
+      <param name="color_mode" value="color" />
+      <param name="use_tf_transforms" value="true" />
+      <param name="update_mesh_every_n_sec" value="1.0" />
+      <param name="clear_sphere_for_planning" value="true" />
+      <param name="slice_level" value="1.0" />
+      <param name="world_frame" value="$(arg world_frame)" />
+      <param name="verbose" value="false" />
+    </node>
+
+    <node name="my_voxblox_planner" pkg="voxblox_planner" type="my_voxblox_planner" output="screen" args="-alsologtostderr">
+      <remap from="odometry" to="great_estimator/odometry" />
+      <remap from="my_voxblox_planner/esdf_map_in" to="esdf_map" />
+      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+      <param name="update_mesh_every_n_sec" value="0.0" />
+      <param name="world_frame" value="$(arg world_frame)" />
+      <param name="verbose" value="false" />
+    </node>
+
+  </group>
+</launch>
+
+```
+
+And some scaffolding for writing your own planner using ESDF collision checking:
+```c++
+class YourPlannerVoxblox {
+ public:
+  YourPlannerVoxblox(const ros::NodeHandle& nh,
+                    const ros::NodeHandle& nh_private);
+  virtual ~YourPlannerVoxblox() {}
+  double getMapDistance(const Eigen::Vector3d& position) const;
+ private:
+  ros::NodeHandle nh_;
+  ros::NodeHandle nh_private_;
+
+  // Map!
+  voxblox::EsdfServer voxblox_server_;
+};
+```
+There's also a traversability pointcloud you can enable/disable, that if you set the radius to your robot's collision checking radius, can show you parts of the map the planner thinks are traversable in a pointcloud:
+```c++
+YourPlannerVoxblox::YourPlannerVoxblox(const ros::NodeHandle& nh,
+                                     const ros::NodeHandle& nh_private)
+    : nh_(nh),
+      nh_private_(nh_private),
+      voxblox_server_(nh_, nh_private_) {
+  // Optionally load a map saved with the save_map service call in voxblox.
+  std::string input_filepath;
+  nh_private_.param("voxblox_path", input_filepath, input_filepath);
+  if (!input_filepath.empty()) {
+    if (!voxblox_server_.loadMap(input_filepath)) {
+      ROS_ERROR("Couldn't load ESDF map!");
+    }
+  }
+  double robot_radius = 1.0;
+  voxblox_server_.setTraversabilityRadius(robot_radius);
+  voxblox_server_.publishTraversable();
+}
+```
+
+Then to check for collisions you can just compare map distance to your robot radius:
+```c++
+double YourPlannerVoxblox::getMapDistance(
+    const Eigen::Vector3d& position) const {
+  if (!voxblox_server_.getEsdfMapPtr()) {
+    return 0.0;
+  }
+  double distance = 0.0;
+  if (!voxblox_server_.getEsdfMapPtr()->getDistanceAtPosition(position,
+                                                              &distance)) {
+    return 0.0;
+  }
+  return distance;
+}
+```
+
+# Transformations in Voxblox
+Voxblox uses active transforms and Hamilton quaternions. For futher details on the notation used throughout the code see [the minkindr wiki](https://github.com/ethz-asl/minkindr/wiki/Common-Transformation-Conventions)
+
+
+# Contributing to voxblox
+These steps are only necessary if you plan on contributing to voxblox.
+
+### Code style
+
+We follow the style and best practices listed in the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+
+### Setting up the linter
+This setups a linter which checks if the code conforms to our style guide during commits.
+
+First, install the dependencies listed [here](https://github.com/ethz-asl/linter#dependencies).
+
+```bash
+cd ~/catkin_ws/src/
+git clone git@github.com:ethz-asl/linter.git
+cd linter
+echo ". $(realpath setup_linter.sh)" >> ~/.bashrc  # Or the matching file for
+                                                   # your shell.
+bash
+
+# Initialize linter in voxblox repo
+cd ~/catkin_ws/src/voxblox
+init_linter_git_hooks
+```
+For more information about the linter visit  [ethz/linter](https://github.com/ethz-asl/linter)
+
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
@@ -372,6 +482,3 @@ void Block<YOUR_FANCY_VOXEL>::SerializeVoxelData(const YOUR_FANCY_VOXEL* voxels,
 
   TODO(mfehr, helenol): add example package with a new voxel type
 
-# Transformations in Voxblox
-
-Voxblox uses active transforms and Hamilton quaternions. For futher details on the notation used throughout the code see [the minkindr wiki](https://github.com/ethz-asl/minkindr/wiki/Common-Transformation-Conventions)
