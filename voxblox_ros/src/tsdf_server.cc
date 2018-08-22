@@ -52,6 +52,30 @@ void TsdfServer::getServerConfigFromRosParam(
   } else {  // Default case is gray.
     color_mode_ = ColorMode::kGray;
   }
+
+  // Color map for intensity pointclouds.
+  std::string intensity_colormap("rainbow");
+  float intensity_max_value = kDefaultMaxIntensity;
+  nh_private.param("intensity_colormap", intensity_colormap,
+                   intensity_colormap);
+  nh_private.param("intensity_max_value", intensity_max_value,
+                   intensity_max_value);
+
+  // Default set in constructor.
+  if (intensity_colormap == "rainbow") {
+    color_map_.reset(new RainbowColorMap());
+  } else if (intensity_colormap == "inverse_rainbow") {
+    color_map_.reset(new InverseRainbowColorMap());
+  } else if (intensity_colormap == "grayscale") {
+    color_map_.reset(new GrayscaleColorMap());
+  } else if (intensity_colormap == "inverse_grayscale") {
+    color_map_.reset(new InverseGrayscaleColorMap());
+  } else if (intensity_colormap == "ironbow") {
+    color_map_.reset(new IronbowColorMap());
+  } else {
+    ROS_ERROR_STREAM("Invalid color map: " << intensity_colormap);
+  }
+  color_map_->setMaxValue(intensity_max_value);
 }
 
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
@@ -72,6 +96,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       max_block_distance_from_body_(std::numeric_limits<FloatingPoint>::max()),
       slice_level_(0.5),
       use_freespace_pointcloud_(false),
+      color_map_(new RainbowColorMap()),
       publish_tsdf_info_(false),
       publish_slices_(false),
       publish_pointclouds_(false),
@@ -187,39 +212,59 @@ void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
     const Transformation& T_G_C, const bool is_freespace_pointcloud) {
   // Convert the PCL pointcloud into our awesome format.
-  // TODO(helenol): improve...
+
   // Horrible hack fix to fix color parsing colors in PCL.
+  bool color_pointcloud = false;
   for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
     if (pointcloud_msg->fields[d].name == std::string("rgb")) {
       pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
+      color_pointcloud = true;
     }
   }
-
-  pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
-  // pointcloud_pcl is modified below:
-  pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-
-  timing::Timer ptcloud_timer("ptcloud_preprocess");
 
   Pointcloud points_C;
   Colors colors;
-  points_C.reserve(pointcloud_pcl.size());
-  colors.reserve(pointcloud_pcl.size());
-  for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-    if (!std::isfinite(pointcloud_pcl.points[i].x) ||
-        !std::isfinite(pointcloud_pcl.points[i].y) ||
-        !std::isfinite(pointcloud_pcl.points[i].z)) {
-      continue;
+  timing::Timer ptcloud_timer("ptcloud_preprocess");
+
+  // Convert differently depending on RGB or I type.
+  if (color_pointcloud) {
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+    // pointcloud_pcl is modified below:
+    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+    points_C.reserve(pointcloud_pcl.size());
+    colors.reserve(pointcloud_pcl.size());
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
+          !std::isfinite(pointcloud_pcl.points[i].y) ||
+          !std::isfinite(pointcloud_pcl.points[i].z)) {
+        continue;
+      }
+      points_C.push_back(Point(pointcloud_pcl.points[i].x,
+                               pointcloud_pcl.points[i].y,
+                               pointcloud_pcl.points[i].z));
+      colors.push_back(
+          Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
+                pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
     }
-
-    points_C.push_back(Point(pointcloud_pcl.points[i].x,
-                             pointcloud_pcl.points[i].y,
-                             pointcloud_pcl.points[i].z));
-    colors.push_back(
-        Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
-              pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
+  } else {
+    pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
+    // pointcloud_pcl is modified below:
+    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+    points_C.reserve(pointcloud_pcl.size());
+    colors.reserve(pointcloud_pcl.size());
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
+          !std::isfinite(pointcloud_pcl.points[i].y) ||
+          !std::isfinite(pointcloud_pcl.points[i].z)) {
+        continue;
+      }
+      points_C.push_back(Point(pointcloud_pcl.points[i].x,
+                               pointcloud_pcl.points[i].y,
+                               pointcloud_pcl.points[i].z));
+      colors.push_back(
+          color_map_->colorLookup(pointcloud_pcl.points[i].intensity));
+    }
   }
-
   ptcloud_timer.Stop();
 
   Transformation T_G_C_refined = T_G_C;
@@ -293,24 +338,56 @@ void TsdfServer::processPointCloudMessageAndInsert(
   newPoseCallback(T_G_C);
 }
 
-void TsdfServer::insertPointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
-  // Figure out if we should insert this.
-  static ros::Time last_msg_time;
-  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
-    return;
+// Checks if we can get the next message from queue.
+bool TsdfServer::getNextPointcloudFromQueue(
+    std::queue<sensor_msgs::PointCloud2::Ptr>* queue,
+    sensor_msgs::PointCloud2::Ptr* pointcloud_msg, Transformation* T_G_C) {
+  const size_t kMaxQueueSize = 10;
+  if (queue->empty()) {
+    return false;
   }
-  last_msg_time = pointcloud_msg->header.stamp;
+  *pointcloud_msg = queue->front();
+  if (transformer_.lookupTransform((*pointcloud_msg)->header.frame_id,
+                                   world_frame_,
+                                   (*pointcloud_msg)->header.stamp, T_G_C)) {
+    queue->pop();
+    return true;
+  } else {
+    if (queue->size() >= kMaxQueueSize) {
+      ROS_ERROR_THROTTLE(60,
+                         "Input pointcloud queue getting too long! Dropping "
+                         "some pointclouds. Either unable to look up transform "
+                         "timestamps or the processing is taking too long.");
+      while (queue->size() >= kMaxQueueSize) {
+        queue->pop();
+      }
+    }
+  }
+  return false;
+}
 
-  constexpr bool is_freespace_pointcloud = false;
+void TsdfServer::insertPointcloud(
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
+  if (pointcloud_msg_in->header.stamp - last_msg_time_ptcloud_ >
+      min_time_between_msgs_) {
+    last_msg_time_ptcloud_ = pointcloud_msg_in->header.stamp;
+    // So we have to process the queue anyway... Push this back.
+    pointcloud_queue_.push(pointcloud_msg_in);
+  }
+
   Transformation T_G_C;
-  if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
-                                   world_frame_, pointcloud_msg->header.stamp,
-                                   &T_G_C)) {
+  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
+  bool processed_any = false;
+  while (
+      getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg, &T_G_C)) {
+    constexpr bool is_freespace_pointcloud = false;
     processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
                                       is_freespace_pointcloud);
-  } else {
-    ROS_WARN_THROTTLE(60, "Couldn't look up pose for incoming pointcloud.");
+    processed_any = true;
+  }
+
+  if (!processed_any) {
+    return;
   }
 
   if (publish_tsdf_info_) {
@@ -330,23 +407,21 @@ void TsdfServer::insertPointcloud(
 }
 
 void TsdfServer::insertFreespacePointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg) {
-  // Figure out if we should insert this.
-  static ros::Time last_msg_time;
-  if (pointcloud_msg->header.stamp - last_msg_time < min_time_between_msgs_) {
-    return;
+    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
+  if (pointcloud_msg_in->header.stamp - last_msg_time_freespace_ptcloud_ >
+      min_time_between_msgs_) {
+    last_msg_time_freespace_ptcloud_ = pointcloud_msg_in->header.stamp;
+    // So we have to process the queue anyway... Push this back.
+    freespace_pointcloud_queue_.push(pointcloud_msg_in);
   }
-  last_msg_time = pointcloud_msg->header.stamp;
 
-  constexpr bool is_freespace_pointcloud = true;
   Transformation T_G_C;
-  if (transformer_.lookupTransform(pointcloud_msg->header.frame_id,
-                                   world_frame_, pointcloud_msg->header.stamp,
-                                   &T_G_C)) {
+  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
+  while (getNextPointcloudFromQueue(&freespace_pointcloud_queue_,
+                                    &pointcloud_msg, &T_G_C)) {
+    constexpr bool is_freespace_pointcloud = true;
     processPointCloudMessageAndInsert(pointcloud_msg, T_G_C,
                                       is_freespace_pointcloud);
-  } else {
-    ROS_WARN_THROTTLE(60, "Couldn't look up pose for incoming pointcloud.");
   }
 }
 
@@ -494,7 +569,8 @@ bool TsdfServer::saveMap(const std::string& file_path) {
 }
 
 bool TsdfServer::loadMap(const std::string& file_path) {
-  // Inheriting classes should add other layers to load, as this will only load
+  // Inheriting classes should add other layers to load, as this will only
+  // load
   // the TSDF layer.
   constexpr bool kMulitpleLayerSupport = true;
   bool success = io::LoadBlocksFromFile(
@@ -506,42 +582,42 @@ bool TsdfServer::loadMap(const std::string& file_path) {
   return success;
 }
 
-bool TsdfServer::clearMapCallback(
-    std_srvs::Empty::Request& /*request*/,
-    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+bool TsdfServer::clearMapCallback(std_srvs::Empty::Request& /*request*/,
+                                  std_srvs::Empty::Response&
+                                  /*response*/) {  // NOLINT
   clear();
   return true;
 }
 
-bool TsdfServer::generateMeshCallback(
-    std_srvs::Empty::Request& /*request*/,
-    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+bool TsdfServer::generateMeshCallback(std_srvs::Empty::Request& /*request*/,
+                                      std_srvs::Empty::Response&
+                                      /*response*/) {  // NOLINT
   return generateMesh();
 }
 
-bool TsdfServer::saveMapCallback(
-    voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
+bool TsdfServer::saveMapCallback(voxblox_msgs::FilePath::Request& request,
+                                 voxblox_msgs::FilePath::Response&
+                                 /*response*/) {  // NOLINT
   return saveMap(request.file_path);
 }
 
-bool TsdfServer::loadMapCallback(
-    voxblox_msgs::FilePath::Request& request,
-    voxblox_msgs::FilePath::Response& /*response*/) {  // NOLINT
+bool TsdfServer::loadMapCallback(voxblox_msgs::FilePath::Request& request,
+                                 voxblox_msgs::FilePath::Response&
+                                 /*response*/) {  // NOLINT
   bool success = loadMap(request.file_path);
   return success;
 }
 
 bool TsdfServer::publishPointcloudsCallback(
-    std_srvs::Empty::Request& /*request*/,
-    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+    std_srvs::Empty::Request& /*request*/, std_srvs::Empty::Response&
+    /*response*/) {  // NOLINT
   publishPointclouds();
   return true;
 }
 
-bool TsdfServer::publishTsdfMapCallback(
-    std_srvs::Empty::Request& /*request*/,
-    std_srvs::Empty::Response& /*response*/) {  // NOLINT
+bool TsdfServer::publishTsdfMapCallback(std_srvs::Empty::Request& /*request*/,
+                                        std_srvs::Empty::Response&
+                                        /*response*/) {  // NOLINT
   publishMap();
   return true;
 }
