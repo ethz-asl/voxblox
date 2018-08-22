@@ -31,6 +31,8 @@
 
 namespace voxblox {
 
+constexpr float kDefaultMaxIntensity = 100.0;
+
 class TsdfServer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

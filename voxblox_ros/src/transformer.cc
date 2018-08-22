@@ -13,7 +13,7 @@ Transformer::Transformer(const ros::NodeHandle& nh,
       world_frame_("world"),
       sensor_frame_(""),
       use_tf_transforms_(true),
-      timestamp_tolerance_ns_(10000000) {
+      timestamp_tolerance_ns_(1000000) {
   nh_private_.param("world_frame", world_frame_, world_frame_);
   nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
 
@@ -174,8 +174,9 @@ bool Transformer::lookupTransformQueue(const ros::Time& timestamp,
     int64_t offset_oldest_ns = (timestamp - it->header.stamp).toNSec();
 
     // Interpolate between the two transformations using the exponential map.
-    FloatingPoint t_diff_ratio = static_cast<FloatingPoint>(offset_oldest_ns) /
-                                 (offset_newest_ns + offset_oldest_ns);
+    FloatingPoint t_diff_ratio =
+        static_cast<FloatingPoint>(offset_oldest_ns) /
+        static_cast<FloatingPoint>(offset_newest_ns + offset_oldest_ns);
 
     Transformation::Vector6 diff_vector =
         (T_G_D_oldest.inverse() * T_G_D_newest).log();
