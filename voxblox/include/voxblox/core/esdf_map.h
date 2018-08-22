@@ -60,18 +60,22 @@ class EsdfMap {
   // functions.
   bool getDistanceAtPosition(const Eigen::Vector3d& position,
                              double* distance) const;
+  bool getDistanceAtPosition(const Eigen::Vector3d& position, bool interpolate,
+                             double* distance) const;
 
   bool getDistanceAndGradientAtPosition(const Eigen::Vector3d& position,
                                         double* distance,
                                         Eigen::Vector3d* gradient) const;
+  bool getDistanceAndGradientAtPosition(const Eigen::Vector3d& position,
+                                        bool interpolate, double* distance,
+                                        Eigen::Vector3d* gradient) const;
 
   bool isObserved(const Eigen::Vector3d& position) const;
 
-  /* NOTE(mereweth@jpl.nasa.gov)
-   * EigenDRef is fully dynamic stride type alias for Numpy array slices
-   * Use column-major matrices; column-by-column traversal is faster
-   * Convenience alias borrowed from pybind11
-   */
+  // NOTE(mereweth@jpl.nasa.gov)
+  // EigenDRef is fully dynamic stride type alias for Numpy array slices
+  // Use column-major matrices; column-by-column traversal is faster
+  // Convenience alias borrowed from pybind11
   using EigenDStride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
   template <typename MatrixType>
   using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
@@ -95,11 +99,10 @@ class EsdfMap {
   unsigned int coordPlaneSliceGetCount(unsigned int free_plane_index,
                                        double free_plane_val) const;
 
-  /* Extract all voxels on a slice plane that is parallel to one of the
-   * axis-aligned planes.
-   * free_plane_index specifies the free coordinate (zero-based; x, y, z order)
-   * free_plane_val specifies the plane intercept coordinate along that axis
-   */
+  // Extract all voxels on a slice plane that is parallel to one of the
+  // axis-aligned planes.
+  // free_plane_index specifies the free coordinate (zero-based; x, y, z order)
+  // free_plane_val specifies the plane intercept coordinate along that axis
   unsigned int coordPlaneSliceGetDistance(
       unsigned int free_plane_index, double free_plane_val,
       EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
