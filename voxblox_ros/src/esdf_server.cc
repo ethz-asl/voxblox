@@ -113,9 +113,6 @@ void EsdfServer::updateMesh() {
   if (publish_traversable_) {
     publishTraversable();
   }
-
-  // VERY important to call this before calling the mesh update, as this clears
-  // the updated flag in the blocks!
   if (publish_esdf_map_) {
     publishMap();
   }
