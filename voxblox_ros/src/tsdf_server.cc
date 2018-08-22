@@ -55,7 +55,7 @@ void TsdfServer::getServerConfigFromRosParam(
 
   // Color map for intensity pointclouds.
   std::string intensity_colormap("rainbow");
-  float intensity_max_value = 100.0;
+  float intensity_max_value = kDefaultMaxIntensity;
   nh_private.param("intensity_colormap", intensity_colormap,
                    intensity_colormap);
   nh_private.param("intensity_max_value", intensity_max_value,
