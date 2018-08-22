@@ -1,6 +1,8 @@
-#include "voxblox/integrator/esdf_integrator.h"
-
 #include <iostream>
+
+#include <voxblox/utils/planning_utils.h>
+
+#include "voxblox/integrator/esdf_integrator.h"
 
 namespace voxblox {
 
@@ -22,43 +24,16 @@ EsdfIntegrator::EsdfIntegrator(const Config& config,
   neighbor_tools_.setLayer(esdf_layer);
 }
 
-void EsdfIntegrator::getSphereAroundPoint(
-    const Point& center, FloatingPoint radius,
-    BlockVoxelListMap* block_voxel_list) const {
-  // search a cube with side length 2*radius
-  for (FloatingPoint x = -radius; x <= radius; x += esdf_voxel_size_) {
-    for (FloatingPoint y = -radius; y <= radius; y += esdf_voxel_size_) {
-      for (FloatingPoint z = -radius; z <= radius; z += esdf_voxel_size_) {
-        Point point(x, y, z);
-
-        // check if point is inside the spheres radius
-        if (point.squaredNorm() <= radius * radius) {
-          // convert to global coordinate
-          point += center;
-
-          BlockIndex block_index =
-              esdf_layer_->computeBlockIndexFromCoordinates(point);
-
-          (*block_voxel_list)[block_index].push_back(
-              esdf_layer_->allocateBlockPtrByIndex(block_index)
-                  ->computeTruncatedVoxelIndexFromCoordinates(point));
-        }
-      }
-    }
-  }
-}
-
 // Used for planning - allocates sphere around as observed but occupied,
 // and clears space in a sphere around current position.
 void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   timing::Timer clear_timer("esdf/clear_radius");
 
   // First set all in inner sphere to free.
-  BlockVoxelListMap block_voxel_list_free;
-  getSphereAroundPoint(position, config_.clear_sphere_radius,
-                       &block_voxel_list_free);
-  for (const std::pair<BlockIndex, VoxelIndexList>& kv :
-       block_voxel_list_free) {
+  HierarchicalIndexMap block_voxel_list;
+  utils::getAndAllocateSphereAroundPoint(position, config_.clear_sphere_radius,
+                                         esdf_layer_, &block_voxel_list);
+  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr =
         esdf_layer_->allocateBlockPtrByIndex(kv.first);
@@ -79,9 +54,10 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   }
 
   // Second set all remaining unknown to occupied.
-  BlockVoxelListMap block_voxel_list_occ;
-  getSphereAroundPoint(position, config_.occupied_sphere_radius,
-                       &block_voxel_list_occ);
+  HierarchicalIndexMap block_voxel_list_occ;
+  utils::getAndAllocateSphereAroundPoint(position,
+                                         config_.occupied_sphere_radius,
+                                         esdf_layer_, &block_voxel_list_occ);
   for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_occ) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr =
@@ -189,6 +165,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
     // Block indices are the same across all layers.
     Block<EsdfVoxel>::Ptr esdf_block =
         esdf_layer_->allocateBlockPtrByIndex(block_index);
+    esdf_block->set_updated(true);
 
     // TODO(helenol): assumes that TSDF and ESDF layer are the same size.
     // This will not always be true...
@@ -305,6 +282,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
     // Block indices are the same across all layers.
     Block<EsdfVoxel>::Ptr esdf_block =
         esdf_layer_->allocateBlockPtrByIndex(block_index);
+    esdf_block->set_updated(true);
 
     // TODO(helenol): assumes that TSDF and ESDF layer are the same size.
     // This will not always be true...
@@ -367,6 +345,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         // If the tsdf voxel isn't fixed...
         // If it used to be, then this is a raise.
         // Or sign is flipped...
+
         if (esdf_voxel.observed &&
             (esdf_voxel.fixed ||
              signum(esdf_voxel.distance) != signum(tsdf_voxel.distance))) {
@@ -672,16 +651,6 @@ void EsdfIntegrator::processOpenSet() {
         continue;
       }
 
-      bool track_progress = false;
-      if (neighbor_voxel.hallucinated &&
-          neighbor_voxel.distance >= config_.max_distance_m) {
-        LOG(INFO) << "ESDF voxel distance: " << esdf_voxel.distance
-                  << " ESDF voxel hallucinated? " << esdf_voxel.hallucinated
-                  << " Distance to neighbor: " << distance_to_neighbor
-                  << " Is voxel in queue? " << neighbor_voxel.in_queue;
-        track_progress = true;
-      }
-
       // Everything outside the surface.
       // I think this can easily be combined with that below...
       if (esdf_voxel.distance + distance_to_neighbor >= 0.0 &&
@@ -756,10 +725,6 @@ void EsdfIntegrator::processOpenSet() {
             neighbor_voxel.in_queue = true;
           }
         }
-      }
-
-      if (track_progress) {
-        LOG(INFO) << "Neighbor distance: " << neighbor_voxel.distance;
       }
     }
 

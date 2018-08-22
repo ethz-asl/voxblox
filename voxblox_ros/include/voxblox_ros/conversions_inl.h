@@ -61,6 +61,7 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
   constexpr double kVoxelSizeEpsilon = 1e-5;
   if (msg.voxels_per_side != layer->voxels_per_side() ||
       std::abs(msg.voxel_size - layer->voxel_size()) > kVoxelSizeEpsilon) {
+    LOG(ERROR) << "Sizes don't match!";
     return false;
   }
 

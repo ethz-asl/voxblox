@@ -144,7 +144,7 @@ void NeighborTools<VoxelType>::getNeighborIndex(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
     const SignedIndex& direction, BlockIndex* neighbor_block_index,
     VoxelIndex* neighbor_voxel_index) const {
-  CHECK_NE(voxels_per_side_, 0);
+  CHECK_NE(voxels_per_side_, 0u);
   CHECK_NOTNULL(neighbor_block_index);
   CHECK_NOTNULL(neighbor_voxel_index);
 
@@ -169,7 +169,7 @@ SignedIndex NeighborTools<VoxelType>::getOffsetBetweenVoxels(
     const BlockIndex& start_block_index, const VoxelIndex& start_voxel_index,
     const BlockIndex& end_block_index,
     const VoxelIndex& end_voxel_index) const {
-  CHECK_NE(voxels_per_side_, 0);
+  CHECK_NE(voxels_per_side_, 0u);
   BlockIndex current_block_index = end_block_index;
   SignedIndex voxel_offset = SignedIndex::Zero();
 

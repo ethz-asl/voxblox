@@ -425,6 +425,9 @@ void TsdfServer::updateMesh() {
   if (verbose_) {
     ROS_INFO("Updating mesh.");
   }
+  if (publish_tsdf_map_) {
+    publishMap(false);
+  }
 
   timing::Timer generate_mesh_timer("mesh/update");
   constexpr bool only_mesh_updated_blocks = true;
@@ -444,14 +447,6 @@ void TsdfServer::updateMesh() {
 
   if (publish_pointclouds_) {
     publishPointclouds();
-  }
-
-  if (publish_tsdf_map_ && tsdf_map_pub_.getNumSubscribers() > 0u) {
-    constexpr bool only_publish_updated_blocks = false;
-    voxblox_msgs::Layer layer_msg;
-    serializeLayerAsMsg<TsdfVoxel>(tsdf_map_->getTsdfLayer(),
-                                   only_publish_updated_blocks, &layer_msg);
-    tsdf_map_pub_.publish(layer_msg);
   }
 }
 
