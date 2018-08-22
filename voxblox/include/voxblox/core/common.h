@@ -58,6 +58,7 @@ typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 typedef AlignedVector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
+typedef AlignedVector<LongIndex> LongIndexVector;
 
 struct Color;
 typedef uint32_t Label;

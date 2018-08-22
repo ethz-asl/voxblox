@@ -6,6 +6,13 @@
 namespace voxblox {
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
+                       const ros::NodeHandle& nh_private)
+    : EsdfServer(nh, nh_private, getEsdfMapConfigFromRosParam(nh_private),
+                 getEsdfIntegratorConfigFromRosParam(nh_private),
+                 getTsdfMapConfigFromRosParam(nh_private),
+                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
+
+EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private,
                        const EsdfMap::Config& esdf_config,
                        const EsdfIntegrator::Config& esdf_integrator_config,
@@ -13,7 +20,9 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const TsdfIntegratorBase::Config& tsdf_integrator_config)
     : TsdfServer(nh, nh_private, tsdf_config, tsdf_integrator_config),
       clear_sphere_for_planning_(false),
-      publish_esdf_map_(false) {
+      publish_esdf_map_(false),
+      publish_traversable_(false),
+      traversability_radius_(1.0) {
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
@@ -22,13 +31,6 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
 
   setupRos();
 }
-
-EsdfServer::EsdfServer(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private)
-    : EsdfServer(nh, nh_private, getEsdfMapConfigFromRosParam(nh_private),
-                 getEsdfIntegratorConfigFromRosParam(nh_private),
-                 getTsdfMapConfigFromRosParam(nh_private),
-                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
 
 void EsdfServer::setupRos() {
   // Set up publisher.
@@ -111,13 +113,8 @@ void EsdfServer::updateMesh() {
   if (publish_traversable_) {
     publishTraversable();
   }
-
-  if (publish_esdf_map_ && esdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = false;
-    voxblox_msgs::Layer layer_msg;
-    serializeLayerAsMsg<EsdfVoxel>(esdf_map_->getEsdfLayer(), only_updated,
-                                   &layer_msg);
-    esdf_map_pub_.publish(layer_msg);
+  if (publish_esdf_map_) {
+    publishMap();
   }
 
   TsdfServer::updateMesh();
@@ -173,17 +170,12 @@ bool EsdfServer::saveMap(const std::string& file_path) {
 bool EsdfServer::loadMap(const std::string& file_path) {
   // Load in the same order: TSDF first, then ESDF.
   bool success = TsdfServer::loadMap(file_path);
-  constexpr bool kMulitpleLayerSupport = true;
-  success = success &&
-            io::LoadBlocksFromFile(
-                file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
-                kMulitpleLayerSupport, esdf_map_->getEsdfLayerPtr());
-  if (success) {
-    LOG(INFO) << "Successfully loaded ESDF layer.";
-  }
 
-  publishPointclouds();
-  return success;
+  constexpr bool kMultipleLayerSupport = true;
+  return success &&
+         io::LoadBlocksFromFile(
+             file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
+             kMultipleLayerSupport, esdf_map_->getEsdfLayerPtr());
 }
 
 void EsdfServer::updateEsdf() {
@@ -246,7 +238,7 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
 void EsdfServer::clear() {
   esdf_map_->getEsdfLayerPtr()->removeAllBlocks();
   esdf_integrator_->clear();
-  CHECK_EQ(esdf_map_->getEsdfLayerPtr()->getNumberOfAllocatedBlocks(), 0);
+  CHECK_EQ(esdf_map_->getEsdfLayerPtr()->getNumberOfAllocatedBlocks(), 0u);
 
   TsdfServer::clear();
 
