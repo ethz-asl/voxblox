@@ -12,19 +12,31 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
  * Features an implementation of building Euclidean Signed Distance Fields (ESDFs, EDTs) directly from TSDFs.
 
 # Table of Contents
-* [Paper and Video](README.md#paper-and-video)
-* [Credits](README.md#credits)
-* [Example Outputs](README.md#example-outputs)
-* [Performance](README.md#performance)
-* [Installation](README.md#installation)
-* [Running Voxblox](README.md#running-voxblox)
-* [Voxblox Node](README.md#voxblox-node)
-  * [Published and Subscribed Topics](README.md#published-and-subscribed-topics)
-  * [Services](README.md#Services)
-  * [Parameters](README.md#parameters)
-* [Modifying Voxblox](README.md#modifying-voxblox)
-  * [Serialization](README.md#serialization)
-* [Transformations in Voxblox](README.md#transformations-in-voxblox)
+- [Paper and Video](#paper-and-video)
+- [Credits](#credits)
+- [Example Outputs](#example-outputs)
+- [Performance](#performance)
+- [Installation](#installation)
+- [Running Voxblox](#running-voxblox)
+- [Voxblox Node (TSDF Server, ESDF Server)](#voxblox-node--tsdf-server--esdf-server-)
+  * [Published and Subscribed Topics](#published-and-subscribed-topics)
+  * [Services](#services)
+  * [Parameters](#parameters)
+    + [General Parameters](#general-parameters)
+    + [TSDF Integrator Parameters](#tsdf-integrator-parameters)
+    + [Fast TSDF Integrator Specific Parameters](#fast-tsdf-integrator-specific-parameters)
+    + [ESDF Integrator Parameters](#esdf-integrator-parameters)
+    + [ICP Refinement Parameters](#icp-refinement-parameters)
+    + [Input Transform Parameters](#input-transform-parameters)
+    + [Output Parameters](#output-parameters)
+- [Using voxblox for planning](#using-voxblox-for-planning)
+- [Transformations in Voxblox](#transformations-in-voxblox)
+- [Contributing to voxblox](#contributing-to-voxblox)
+    + [Code style](#code-style)
+    + [Setting up the linter](#setting-up-the-linter)
+- [Modifying Voxblox](#modifying-voxblox)
+  * [Serialization](#serialization)
+    + [How to add your own voxel/layer type](#how-to-add-your-own-voxel-layer-type)
 
 # Paper and Video
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
@@ -315,14 +327,10 @@ A sample launch file is shown below:
       <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
       <param name="publish_esdf_map" value="true" />
       <param name="publish_pointclouds" value="true" />
-      <param name="esdf_max_distance_m" value="2.0" />
-      <param name="color_mode" value="color" />
       <param name="use_tf_transforms" value="true" />
       <param name="update_mesh_every_n_sec" value="1.0" />
       <param name="clear_sphere_for_planning" value="true" />
-      <param name="slice_level" value="1.0" />
       <param name="world_frame" value="$(arg world_frame)" />
-      <param name="verbose" value="false" />
     </node>
 
     <node name="my_voxblox_planner" pkg="voxblox_planner" type="my_voxblox_planner" output="screen" args="-alsologtostderr">
@@ -332,7 +340,6 @@ A sample launch file is shown below:
       <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
       <param name="update_mesh_every_n_sec" value="0.0" />
       <param name="world_frame" value="$(arg world_frame)" />
-      <param name="verbose" value="false" />
     </node>
 
   </group>
