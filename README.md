@@ -238,7 +238,6 @@ These parameters are only used if the integrator `method` is set to "fast".
 ### ESDF Integrator Parameters
 | Parameter | Description | Default |
 | --------------------  |:-----------:| :-------:|
-| `generate_esdf` |  If the eucliden signed distance field should be generated. | false |
 | `esdf_max_distance_m` | The maximum distance that the esdf will be calculated out to | 2.0 |
 | `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
 
