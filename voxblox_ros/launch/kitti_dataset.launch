@@ -2,12 +2,13 @@
 <launch>
   <arg name="play_bag" default="true" />
   <!-- <arg name="bag_file" default="/path/to/drive35.bag"/> -->
-  <arg name="bag_file" default="/home/helen/data/voxblox_datasets/drive35_new.bag"/>
   <arg name="process_every_nth_frame" default="1" />
   <arg name="voxel_size" default="0.25" />
   <arg name="scale" default="0.25" />
   <!-- whether to use laser (true) or stereo (false) for the map. -->
   <arg name="use_laser" default="true" />
+
+  <!-- These datasets can be created with the KITTI raw datasets: http://www.cvlibs.net/datasets/kitti/raw_data.php and kitti_to_rosbag: https://github.com/ethz-asl/kitti_to_rosbag -->
 
   <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.2 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
 

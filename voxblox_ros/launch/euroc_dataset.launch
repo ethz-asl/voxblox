@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-15"?>
 <launch>
   <arg name="play_bag" default="true" />
-  <!-- <arg name="bag_file" default="/path/to/V1_01_easy.bag"/> -->
-  <arg name="bag_file" default="/home/helen/data/voxblox_datasets/V1_01_easy.bag"/>
+  <arg name="bag_file" default="/path/to/V1_01_easy.bag"/>
   <arg name="voxel_size" default="0.10"/>
   <arg name="process_every_nth_frame" default="5" />
   <arg name="scale" default="0.5" />
