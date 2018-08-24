@@ -243,6 +243,9 @@ These parameters are only used if the integrator `method` is set to "fast".
 | --------------------  |:-----------:| :-------:|
 | `esdf_max_distance_m` | The maximum distance that the esdf will be calculated out to | 2.0 |
 | `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
+| `clear_sphere_for_planning` | Enables setting unknown space to free near the current pose of the sensor, and unknown space to occupied further away from the sensor. Controlled by the two parameters below. | false |
+| `clear_sphere_radius` | Radius of the inner sphere where unknown is set to free, in meters. | 1.5 |
+| `occupied_sphere_radius` | Radius of the outer sphere where unknown is set to occupied, in meters. | 5.0 |
 
 ### ICP Refinement Parameters
 ICP based refinement can be applied to the poses of the input pointclouds before merging.
