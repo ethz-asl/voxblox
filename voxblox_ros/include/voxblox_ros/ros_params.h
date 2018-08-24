@@ -122,6 +122,12 @@ inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
                    esdf_integrator_config.default_distance_m);
   nh_private.param("esdf_min_diff_m", esdf_integrator_config.min_diff_m,
                    esdf_integrator_config.min_diff_m);
+  nh_private.param("clear_sphere_radius",
+                   esdf_integrator_config.clear_sphere_radius,
+                   esdf_integrator_config.clear_sphere_radius);
+  nh_private.param("occupied_sphere_radius",
+                   esdf_integrator_config.occupied_sphere_radius,
+                   esdf_integrator_config.occupied_sphere_radius);
 
   if (esdf_integrator_config.default_distance_m <
       esdf_integrator_config.max_distance_m) {

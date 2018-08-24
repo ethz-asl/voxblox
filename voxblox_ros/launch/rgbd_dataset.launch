@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="ISO-8859-15"?>
 <launch>
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="/Users/helen/data/karrer_rgbd/RS_d1_30Hz.bag"/>
+  <arg name="bag_file" default="/path/to/RS_d1_30Hz.bag"/>
   <arg name="voxel_size" default="0.20"/>
+
+  <!-- These are the datasets from http://www.v4rl.ethz.ch/research/datasets-code/V4RL-Dense-Reconstruction-Dataset.html -->
 
   <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
 
