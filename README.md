@@ -168,6 +168,9 @@ For each of these datasets, there's a launch file associated under `voxblox_ros/
 The easiest way to start is to download the [cow and lady dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), edit the path to the bagfile in `cow_and_lady_dataset.launch`, and then simply:
 ```roslaunch voxblox_ros cow_and_lady_dataset.launch```
 
+An alternative dataset the [basement dataset](https://projects.asl.ethz.ch/datasets/doku.php?id=basement2018). Is also avaliable. While this dataset lacks groundtruth it demonstrates the capabilities of Voxblox running on Velodyne lidar data and uses ICP corrections to compensate for a drifting pose estimate. To run the dataset edit the path to the bagfile in `basement_dataset.launch`, and then simply:
+```roslaunch voxblox_ros basement_dataset.launch```
+
 If you open rviz, you should be able to see the the mesh visualized on the `/voxblox_node/mesh` MarkerArray topic, in the `world` static frame, as shown below.
 The mesh only updates once per second (this is a setting in the launch file).
 
