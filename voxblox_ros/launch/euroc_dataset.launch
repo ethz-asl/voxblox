@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<launch>
+  <arg name="play_bag" default="true" />
+  <arg name="bag_file" default="/path/to/V1_01_easy.bag"/>
+  <arg name="voxel_size" default="0.10"/>
+  <arg name="process_every_nth_frame" default="5" />
+  <arg name="scale" default="0.5" />
+
+  <!-- Download dataset here: https://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets -->
+
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
+
+  <node name="dense_stereo" pkg="image_undistort" type="dense_stereo_node">
+    <param name="input_camera_info_from_ros_params" value = "true"/>
+    <param name="first_camera_namespace" value="cam0"/>
+    <param name="second_camera_namespace" value="cam1"/>
+    <param name="first_output_frame" value="cam0"/>
+    <param name="second_output_frame" value="cam1"/>
+    <param name="scale" value="$(arg scale)"/>
+    <param name="process_every_nth_frame" value="$(arg process_every_nth_frame)"/>
+
+    <rosparam file="$(find voxblox_ros)/cfg/calibrations/euroc_camchain.yaml"/>
+
+    <remap from="raw/first/image" to="cam0/image_raw"/>
+    <remap from="raw/second/image" to="cam1/image_raw"/>
+    <remap from="raw/first/camera_info" to="cam0/camera_info"/>
+    <remap from="raw/second/camera_info" to="cam1/camera_info"/>
+  </node>
+
+  <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr" clear_params="true">
+    <remap from="pointcloud" to="dense_stereo/pointcloud"/>
+    <remap from="freespace_pointcloud" to="dense_stereo/freespace_pointcloud"/>
+    <param name="use_freespace_pointcloud" value="true" />
+    <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+    <param name="tsdf_voxels_per_side" value="16" />
+    <param name="voxel_carving_enabled" value="true" />
+    <param name="color_mode" value="colors" />
+    <param name="use_tf_transforms" value="false" />
+    <param name="verbose" value="true" />
+    <remap from="transform" to="vicon/firefly_sbx/firefly_sbx" />
+    <param name="update_mesh_every_n_sec" value="1.0" />
+    <param name="slice_level" value="1.0" />
+    <param name="method" value="fast" />
+    <param name="use_const_weight" value="false" />
+    <param name="publish_slices" value="true" />
+    <param name="publish_pointclouds" value="true" />
+
+    <rosparam file="$(find voxblox_ros)/cfg/euroc_dataset.yaml"/>
+
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon euroc).ply" />
+  </node>
+</launch>
