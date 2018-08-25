@@ -260,7 +260,7 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `occupied_sphere_radius` | Radius of the outer sphere where unknown is set to occupied, in meters. | 5.0 |
 
 ### ICP Refinement Parameters
-ICP based refinement can be applied to the poses of the input pointclouds before merging.
+A refinement can be applied to the poses of the input pointclouds before merging. This is based on an ICP inspired method.
 
 | Parameter | Description | Default |
 | --------------------  |:-----------:| :-------:|
