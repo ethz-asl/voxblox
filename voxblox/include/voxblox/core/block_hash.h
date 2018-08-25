@@ -15,13 +15,11 @@ namespace voxblox {
 struct AnyIndexHash {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  static constexpr size_t prime1 = 73856093;
-  static constexpr size_t prime2 = 19349663;
-  static constexpr size_t prime3 = 83492791;
+  static constexpr size_t sl = 17191;
+  static constexpr size_t sl2 = sl*sl;
 
   std::size_t operator()(const AnyIndex& index) const {
-    return (static_cast<unsigned int>(index.x()) * prime1 ^ index.y() * prime2 ^
-            index.z() * prime3);
+    return static_cast<unsigned int>(index.x() + index.y()*sl + index.z()*sl2);
   }
 };
 
@@ -49,13 +47,11 @@ typedef typename HierarchicalIndexMap::value_type HierarchicalIndex;
 struct LongIndexHash {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  static constexpr size_t prime1 = 73856093;
-  static constexpr size_t prime2 = 19349663;
-  static constexpr size_t prime3 = 83492791;
+  static constexpr size_t sl = 17191;
+  static constexpr size_t sl2 = sl*sl;
 
   std::size_t operator()(const LongIndex& index) const {
-    return (static_cast<unsigned int>(index.x()) * prime1 ^ index.y() * prime2 ^
-            index.z() * prime3);
+    return static_cast<unsigned int>(index.x() + index.y()*sl + index.z()*sl2);
   }
 };
 
