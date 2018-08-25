@@ -192,11 +192,10 @@ void ICP::runThread(const Pointcloud& points, Transformation* T_current,
       Transformation T_temp = T_delta * *T_current;
       T_delta = T_current->inverse() * T_temp;
 
-      // todo don't assume all axes independent
-      const Transformation::Vector6 weight =
-          est_info_mat.diagonal().array() /
-          (base_info_mat->diagonal() + est_info_mat.diagonal()).array();
-      T_delta = Transformation::exp(T_delta.log().array() * weight.array());
+      const SquareMatrix<6> weight =
+          Eigen::LDLT<SquareMatrix<6>>(*base_info_mat + est_info_mat)
+              .solve(est_info_mat);
+      T_delta = Transformation::exp(weight * T_delta.log());
 
       *base_info_mat += est_info_mat;
 
@@ -208,8 +207,7 @@ void ICP::runThread(const Pointcloud& points, Transformation* T_current,
 }
 
 size_t ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
-                 const Transformation& T_in, Transformation* T_out) {
-
+                   const Transformation& T_in, Transformation* T_out) {
   interpolator_ = std::make_shared<Interpolator<TsdfVoxel>>(&tsdf_layer);
   voxel_size_ = tsdf_layer.voxel_size();
   voxel_size_inv_ = tsdf_layer.voxel_size_inv();
