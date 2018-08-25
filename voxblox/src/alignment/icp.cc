@@ -169,7 +169,7 @@ bool ICP::stepICP(const Pointcloud& points, const size_t start_idx,
 }
 
 void ICP::runThread(const Pointcloud& points, Transformation* T_current,
-               SquareMatrix<6>* base_info_mat) {
+                    SquareMatrix<6>* base_info_mat, size_t* num_updates) {
   Transformation T_local;
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -178,7 +178,7 @@ void ICP::runThread(const Pointcloud& points, Transformation* T_current,
 
   while (true) {
     const size_t start_idx = atomic_idx_.fetch_add(config_.mini_batch_size);
-    if (start_idx > points.size()) {
+    if (start_idx > config_.subsample_keep_ratio * points.size()) {
       break;
     }
 
@@ -202,16 +202,13 @@ void ICP::runThread(const Pointcloud& points, Transformation* T_current,
 
       *T_current = *T_current * T_delta;
       T_local = *T_current;
+      ++(*num_updates);
     }
   }
 }
 
-bool ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
+size_t ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
                  const Transformation& T_in, Transformation* T_out) {
-  if (config_.iterations == 0) {
-    *T_out = T_in;
-    return true;
-  }
 
   interpolator_ = std::make_shared<Interpolator<TsdfVoxel>>(&tsdf_layer);
   voxel_size_ = tsdf_layer.voxel_size();
@@ -234,9 +231,11 @@ bool ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
 
   std::list<std::thread> threads;
   atomic_idx_.store(0);
-  
+  size_t num_updates = 0;
+
   for (size_t i = 0; i < config_.num_threads; ++i) {
-    threads.emplace_back(&ICP::runThread, this, shuffled_points, T_out, &base_info_mat);
+    threads.emplace_back(&ICP::runThread, this, shuffled_points, T_out,
+                         &base_info_mat, &num_updates);
   }
   for (std::thread& thread : threads) {
     thread.join();
@@ -244,7 +243,7 @@ bool ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
 
   interpolator_.reset();
 
-  return true;
+  return num_updates;
 }
 
 }  // namespace voxblox

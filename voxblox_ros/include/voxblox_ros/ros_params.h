@@ -35,12 +35,12 @@ inline TsdfMap::Config getTsdfMapConfigFromRosParam(
 inline ICP::Config getICPConfigFromRosParam(const ros::NodeHandle& nh_private) {
   ICP::Config icp_config;
 
-  nh_private.param("icp_iterations", icp_config.iterations,
-                   icp_config.iterations);
   nh_private.param("icp_min_match_ratio", icp_config.min_match_ratio,
                    icp_config.min_match_ratio);
   nh_private.param("icp_subsample_keep_ratio", icp_config.subsample_keep_ratio,
                    icp_config.subsample_keep_ratio);
+  nh_private.param("icp_mini_batch_size", icp_config.mini_batch_size,
+                   icp_config.mini_batch_size);
   nh_private.param("icp_refine_roll_pitch", icp_config.refine_roll_pitch,
                    icp_config.refine_roll_pitch);
   nh_private.param("icp_inital_translation_weighting",

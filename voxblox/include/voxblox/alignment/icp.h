@@ -59,18 +59,17 @@ class ICP {
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     bool refine_roll_pitch = false;
-    int iterations = 5;
-    int mini_batch_size = 100;
-    FloatingPoint min_match_ratio = 0.5;
-    FloatingPoint subsample_keep_ratio = 0.05;
-    FloatingPoint inital_translation_weighting = 1000.0;
-    FloatingPoint inital_rotation_weighting = 1000.0;
+    int mini_batch_size = 20;
+    FloatingPoint min_match_ratio = 0.8;
+    FloatingPoint subsample_keep_ratio = 0.5;
+    FloatingPoint inital_translation_weighting = 100.0;
+    FloatingPoint inital_rotation_weighting = 100.0;
     size_t num_threads = std::thread::hardware_concurrency();
   };
 
   explicit ICP(const Config& config);
 
-  bool runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
+  size_t runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
               const Transformation& T_in, Transformation* T_out);
 
   bool refiningRollPitch() { return config_.refine_roll_pitch; }
@@ -120,7 +119,7 @@ class ICP {
                SquareMatrix<6>* info_mat);
 
   void runThread(const Pointcloud& points, Transformation* T_current,
-               SquareMatrix<6>* base_info_mat);
+               SquareMatrix<6>* base_info_mat, size_t* num_updates);
 
   Config config_;
 
