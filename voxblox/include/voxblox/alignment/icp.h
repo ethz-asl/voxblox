@@ -62,6 +62,8 @@ class ICP {
     int iterations = 5;
     FloatingPoint min_match_ratio = 0.5;
     FloatingPoint subsample_keep_ratio = 0.05;
+    FloatingPoint inital_translation_weighting = 1000.0;
+    FloatingPoint inital_rotation_weighting = 1000.0;
     size_t num_threads = std::thread::hardware_concurrency();
   };
 
@@ -73,23 +75,49 @@ class ICP {
   bool refiningRollPitch() { return config_.refine_roll_pitch; }
 
  private:
+  template <size_t dim>
+  static bool getRotationFromMatchedPoints(const PointsMatrix& src_demean,
+                                           const PointsMatrix& tgt_demean,
+                                           Rotation* rotation) {
+    SquareMatrix<3> rotation_matrix = SquareMatrix<3>::Identity();
+
+    SquareMatrix<dim> H =
+        src_demean.topRows<dim>() * tgt_demean.topRows<dim>().transpose();
+
+    // Compute the Singular Value Decomposition
+    Eigen::JacobiSVD<SquareMatrix<dim>> svd(
+        H, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    SquareMatrix<dim> u = svd.matrixU();
+    SquareMatrix<dim> v = svd.matrixV();
+
+    // Compute R = V * U'
+    if (u.determinant() * v.determinant() < 0.0) {
+      v.col(dim - 1) *= -1.0;
+    }
+
+    rotation_matrix.topLeftCorner<dim, dim>() = v * u.transpose();
+
+    *rotation = Rotation(rotation_matrix);
+
+    return Rotation::isValidRotationMatrix(rotation_matrix);
+  }
+
   static bool getTransformFromMatchedPoints(const PointsMatrix& src,
                                             const PointsMatrix& tgt,
                                             const bool refine_roll_pitch,
                                             Transformation* T);
 
+  static void addNormalizedPointInfo(const Point& point_gradient,
+                                     SquareMatrix<6>* info_mat);
+
   void subSample(const Pointcloud& points_in, Pointcloud* points_out);
 
   void matchPoints(const Pointcloud& points, const Transformation& T,
-                   PointsMatrix* src, PointsMatrix* tgt);
-
-  void calcMatches(const Pointcloud& points, const Transformation& T,
-                   ThreadSafeIndex* index_getter,
-                   std::atomic<size_t>* atomic_out_idx, PointsMatrix* src,
-                   PointsMatrix* tgt);
+                   PointsMatrix* src, PointsMatrix* tgt,
+                   SquareMatrix<6>* info_mat);
 
   bool stepICP(const Pointcloud& points, const Transformation& T_in,
-               Transformation* T_out);
+               Transformation* T_out, SquareMatrix<6>* info_mat);
 
   Config config_;
 

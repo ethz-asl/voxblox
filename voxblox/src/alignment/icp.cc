@@ -59,72 +59,92 @@ bool ICP::getTransformFromMatchedPoints(const PointsMatrix& src,
   const PointsMatrix src_demean = src.colwise() - src_center;
   const PointsMatrix tgt_demean = tgt.colwise() - tgt_center;
 
-  Matrix3 rotation_matrix = Matrix3::Identity();
-
-  if (!refine_roll_pitch) {
-    // Assemble the correlation matrix H = source * target'
-    Matrix2 H = src_demean.topRows<2>() * tgt_demean.topRows<2>().transpose();
-
-    // Compute the Singular Value Decomposition
-    Eigen::JacobiSVD<Matrix2> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Matrix2 u = svd.matrixU();
-    Matrix2 v = svd.matrixV();
-
-    // Compute R = V * U'
-    if (u.determinant() * v.determinant() < 0.0) {
-      v.col(1) *= -1.0;
-    }
-
-    rotation_matrix.topLeftCorner<2, 2>() = v * u.transpose();
+  bool success;
+  Rotation rotation;
+  if (refine_roll_pitch) {
+    success =
+        getRotationFromMatchedPoints<3>(src_demean, tgt_demean, &rotation);
   } else {
-    // Assemble the correlation matrix H = source * target'
-    Matrix3 H = src_demean * tgt_demean.transpose();
-
-    // Compute the Singular Value Decomposition
-    Eigen::JacobiSVD<Matrix3> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Matrix3 u = svd.matrixU();
-    Matrix3 v = svd.matrixV();
-
-    // Compute R = V * U'
-    if (u.determinant() * v.determinant() < 0) {
-      v.col(2) *= -1.0;
-    }
-
-    rotation_matrix = v * u.transpose();
+    success =
+        getRotationFromMatchedPoints<2>(src_demean, tgt_demean, &rotation);
   }
 
-  Point trans = tgt_center - (rotation_matrix * src_center);
+  const Point trans = tgt_center - rotation.rotate(src_center);
 
-  if (!Rotation::isValidRotationMatrix(rotation_matrix)) {
-    return false;
+  *T = Transformation(rotation, trans);
+  return success;
+}
+
+void ICP::addNormalizedPointInfo(const Point& point_gradient,
+                                 SquareMatrix<6>* info_mat) {
+  // find othogonal vectors
+  const Point point_norm = point_gradient.normalized();
+  Point oth_vec_a, oth_vec_b;
+
+  // avoid singularity by choosing convient up direction
+  if (point_norm(2) < 0.5) {
+    const Point up(0.0, 0.0, 1.0);
+    oth_vec_a = up.cross(point_norm).normalized();
+  } else {
+    const Point up(0.0, 1.0, 0.0);
+    oth_vec_a = up.cross(point_norm).normalized();
   }
+  oth_vec_b = point_norm.cross(oth_vec_a).normalized();
 
-  *T = Transformation(Rotation(rotation_matrix), trans);
-  return true;
+  // add translational point information
+  info_mat->topLeftCorner<3, 3>() += point_norm * point_norm.transpose();
+  // add rotational point information
+  info_mat->bottomRightCorner<3, 3>() +=
+      oth_vec_a * oth_vec_a.transpose() + oth_vec_b * oth_vec_b.transpose();
 }
 
 void ICP::matchPoints(const Pointcloud& points, const Transformation& T,
-                      PointsMatrix* src, PointsMatrix* tgt) {
-  ThreadSafeIndex index_getter(points.size());
+                      PointsMatrix* src, PointsMatrix* tgt,
+                      SquareMatrix<6>* info_mat) {
+  constexpr bool kInterpolateDist = false;
+  constexpr bool kInterpolateGrad = false;
+  constexpr FloatingPoint kMinGradMag = 0.1;
 
-  std::list<std::thread> threads;
   src->resize(3, points.size());
   tgt->resize(3, points.size());
 
-  std::atomic<size_t> atomic_out_idx(0);
+  // epsilion to ensure the matrix can be inverted
+  *info_mat = kEpsilon * SquareMatrix<6>::Identity();
 
-  // get distance info
-  for (size_t i = 0; i < config_.num_threads; ++i) {
-    threads.emplace_back(&ICP::calcMatches, this, points, T, &index_getter,
-                         &atomic_out_idx, src, tgt);
+  size_t idx = 0;
+  for (const Point& point : points) {
+    const Point point_tformed = T * point;
+    const AnyIndex voxel_idx =
+        getGridIndexFromPoint<AnyIndex>(point_tformed, voxel_size_inv_);
+
+    FloatingPoint distance;
+    Point gradient;
+
+    if (interpolator_->getDistance(point_tformed, &distance,
+                                   kInterpolateDist) &&
+        interpolator_->getGradient(point_tformed, &gradient,
+                                   kInterpolateGrad) &&
+        (gradient.squaredNorm() > kMinGradMag)) {
+      gradient.normalize();
+
+      addNormalizedPointInfo(gradient, info_mat);
+
+      // uninterpolated distance is to the center of the voxel, as we now have
+      // the gradient we can use it to do better
+      const Point voxel_center =
+          getCenterPointFromGridIndex<AnyIndex>(voxel_idx, voxel_size_);
+      distance += gradient.dot(point_tformed - voxel_center);
+
+      src->col(idx) = point_tformed;
+      tgt->col(idx) = point_tformed - distance * gradient;
+      ++idx;
+    }
   }
 
-  for (std::thread& thread : threads) {
-    thread.join();
-  }
+  // std::cout << "info mat\n" << info_mat << std::endl;
 
-  src->conservativeResize(3, atomic_out_idx.load());
-  tgt->conservativeResize(3, atomic_out_idx.load());
+  src->conservativeResize(3, idx);
+  tgt->conservativeResize(3, idx);
 }
 
 void ICP::subSample(const Pointcloud& points_in, Pointcloud* points_out) {
@@ -143,62 +163,22 @@ void ICP::subSample(const Pointcloud& points_in, Pointcloud* points_out) {
   }
 }
 
-void ICP::calcMatches(const Pointcloud& points, const Transformation& T,
-                      ThreadSafeIndex* index_getter,
-                      std::atomic<size_t>* atomic_out_idx, PointsMatrix* src,
-                      PointsMatrix* tgt) {
-  constexpr bool kInterpolateDist = false;
-  constexpr bool kInterpolateGrad = false;
-  constexpr FloatingPoint kMinGradMag = 0.1;
-
-  size_t point_idx;
-  while (index_getter->getNextIndex(&point_idx)) {
-    const Point& point = points[point_idx];
-    const Point point_tformed = T * point;
-    const AnyIndex voxel_idx =
-        getGridIndexFromPoint<AnyIndex>(point_tformed, voxel_size_inv_);
-
-    FloatingPoint distance;
-    Point gradient;
-
-    if (interpolator_->getDistance(point_tformed, &distance,
-                                   kInterpolateDist) &&
-        interpolator_->getGradient(point_tformed, &gradient,
-                                   kInterpolateGrad) &&
-        (gradient.squaredNorm() > kMinGradMag)) {
-      gradient.normalize();
-
-      // uninterpolated distance is to the center of the voxel, as we now have
-      // the gradient we can use it to do better
-      const Point voxel_center =
-          getCenterPointFromGridIndex<AnyIndex>(voxel_idx, voxel_size_);
-      distance += gradient.dot(point_tformed - voxel_center);
-
-      const size_t idx = atomic_out_idx->fetch_add(1);
-      src->col(idx) = point_tformed;
-      tgt->col(idx) = point_tformed - distance * gradient;
-    }
-  }
-}
-
 bool ICP::stepICP(const Pointcloud& points, const Transformation& T_in,
-                  Transformation* T_out) {
+                  Transformation* T_delta, SquareMatrix<6>* info_mat) {
   PointsMatrix src;
   PointsMatrix tgt;
 
-  matchPoints(points, T_in, &src, &tgt);
+  matchPoints(points, T_in, &src, &tgt, info_mat);
 
   if (src.cols() <
       std::max(3, static_cast<int>(points.size() * config_.min_match_ratio))) {
     return false;
   }
 
-  Transformation T_delta;
   if (!getTransformFromMatchedPoints(src, tgt, config_.refine_roll_pitch,
-                                     &T_delta)) {
+                                     T_delta)) {
     return false;
   }
-  *T_out = T_delta * T_in;
 
   return true;
 }
@@ -219,18 +199,35 @@ bool ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
 
   Transformation T_current = T_in;
 
+  SquareMatrix<6> base_info_mat;
+  base_info_mat.topLeftCorner<3,3> = config_.inital_translation_weighting * SquareMatrix<3>::Identity();
+  base_info_mat.bottomRightCorner<3,3> = config_.inital_rotation_weighting * SquareMatrix<3>::Identity();
+
+  SquareMatrix<6> est_info_mat;
+
   bool success = true;
+  Transformation T_delta;
   for (int i = 0; i < config_.iterations; ++i) {
-    if (!stepICP(subsampled_points, T_current, T_out)) {
+    if (!stepICP(subsampled_points, T_current, &T_delta, &est_info_mat)) {
       *T_out = T_in;
       success = false;
       break;
     }
 
-    T_current = *T_out;
+    T_current = T_delta * T_current;
   }
 
   interpolator_.reset();
+
+  T_delta = T_in.inverse() * T_current;
+
+  //todo don't assume all axes independent
+  const Transformation::Vector6 weight =
+      est_info_mat.diagonal().array() /
+      (base_info_mat.diagonal() + est_info_mat.diagonal()).array();
+  T_delta = Transformation::exp(T_delta.log().array() * weight.array());
+
+  *T_out = T_in * T_delta;
 
   return success;
 }

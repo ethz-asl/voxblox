@@ -43,6 +43,12 @@ inline ICP::Config getICPConfigFromRosParam(const ros::NodeHandle& nh_private) {
                    icp_config.subsample_keep_ratio);
   nh_private.param("icp_refine_roll_pitch", icp_config.refine_roll_pitch,
                    icp_config.refine_roll_pitch);
+  nh_private.param("icp_inital_translation_weighting",
+                   icp_config.inital_translation_weighting,
+                   icp_config.inital_translation_weighting);
+  nh_private.param("icp_inital_rotation_weighting",
+                   icp_config.inital_rotation_weighting,
+                   icp_config.inital_rotation_weighting);
 
   return icp_config;
 }
