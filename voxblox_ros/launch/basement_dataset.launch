@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="/home/z/Downloads/basement_dataset.bag"/>
+  <arg name="bag_file" default="/path/to/basement_dataset.bag"/>
 
   <!-- Download the dataset here: https://projects.asl.ethz.ch/datasets/doku.php?id=basement2018 -->
 
