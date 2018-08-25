@@ -119,7 +119,13 @@ class ICP {
                const Transformation& T_in, Transformation* T_out,
                SquareMatrix<6>* info_mat);
 
+  void runThread(const Pointcloud& points, Transformation* T_current,
+               SquareMatrix<6>* base_info_mat);
+
   Config config_;
+
+  std::atomic<size_t> atomic_idx_;
+  std::mutex mutex_;
 
   FloatingPoint voxel_size_;
   FloatingPoint voxel_size_inv_;
