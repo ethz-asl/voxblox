@@ -98,21 +98,23 @@ void ICP::addNormalizedPointInfo(const Point& point_gradient,
       oth_vec_a * oth_vec_a.transpose() + oth_vec_b * oth_vec_b.transpose();
 }
 
-void ICP::matchPoints(const Pointcloud& points, const Transformation& T,
-                      PointsMatrix* src, PointsMatrix* tgt,
-                      SquareMatrix<6>* info_mat) {
+void ICP::matchPoints(const Pointcloud& points, const size_t start_idx,
+                      const Transformation& T, PointsMatrix* src,
+                      PointsMatrix* tgt, SquareMatrix<6>* info_mat) {
   constexpr bool kInterpolateDist = false;
   constexpr bool kInterpolateGrad = false;
   constexpr FloatingPoint kMinGradMag = 0.1;
 
-  src->resize(3, points.size());
-  tgt->resize(3, points.size());
+  src->resize(3, config_.mini_batch_size);
+  tgt->resize(3, config_.mini_batch_size);
 
   // epsilion to ensure the matrix can be inverted
   *info_mat = kEpsilon * SquareMatrix<6>::Identity();
 
   size_t idx = 0;
-  for (const Point& point : points) {
+  for (size_t i = start_idx;
+       i < std::min(points.size(), start_idx + config_.mini_batch_size); ++i) {
+    const Point& point = points[i];
     const Point point_tformed = T * point;
     const AnyIndex voxel_idx =
         getGridIndexFromPoint<AnyIndex>(point_tformed, voxel_size_inv_);
@@ -141,37 +143,20 @@ void ICP::matchPoints(const Pointcloud& points, const Transformation& T,
     }
   }
 
-  // std::cout << "info mat\n" << info_mat << std::endl;
-
   src->conservativeResize(3, idx);
   tgt->conservativeResize(3, idx);
 }
 
-void ICP::subSample(const Pointcloud& points_in, Pointcloud* points_out) {
-  const int num_keep = config_.subsample_keep_ratio * points_in.size();
-  const int skip_per_keep = points_in.size() / num_keep;
-
-  std::default_random_engine generator(0);
-  std::uniform_int_distribution<int> distribution(
-      0, std::max(0, skip_per_keep - 1));
-
-  points_out->reserve(num_keep);
-
-  for (int i = 0; i < num_keep; ++i) {
-    const int point_idx = i * skip_per_keep + distribution(generator);
-    points_out->push_back(points_in[point_idx]);
-  }
-}
-
-bool ICP::stepICP(const Pointcloud& points, const Transformation& T_in,
-                  Transformation* T_delta, SquareMatrix<6>* info_mat) {
+bool ICP::stepICP(const Pointcloud& points, const size_t start_idx,
+                  const Transformation& T_in, Transformation* T_delta,
+                  SquareMatrix<6>* info_mat) {
   PointsMatrix src;
   PointsMatrix tgt;
 
-  matchPoints(points, T_in, &src, &tgt, info_mat);
+  matchPoints(points, start_idx, T_in, &src, &tgt, info_mat);
 
-  if (src.cols() <
-      std::max(3, static_cast<int>(points.size() * config_.min_match_ratio))) {
+  if (src.cols() < std::max(3, static_cast<int>(config_.mini_batch_size *
+                                                config_.min_match_ratio))) {
     return false;
   }
 
@@ -194,40 +179,47 @@ bool ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
   voxel_size_ = tsdf_layer.voxel_size();
   voxel_size_inv_ = tsdf_layer.voxel_size_inv();
 
-  Pointcloud subsampled_points;
-  subSample(points, &subsampled_points);
+  Pointcloud shuffled_points = points;
+
+  // randomize point order
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::shuffle(shuffled_points.begin(), shuffled_points.end(),
+               std::default_random_engine(seed));
 
   Transformation T_current = T_in;
 
   SquareMatrix<6> base_info_mat;
-  base_info_mat.topLeftCorner<3,3> = config_.inital_translation_weighting * SquareMatrix<3>::Identity();
-  base_info_mat.bottomRightCorner<3,3> = config_.inital_rotation_weighting * SquareMatrix<3>::Identity();
+  base_info_mat.topLeftCorner<3, 3>() =
+      config_.inital_translation_weighting * SquareMatrix<3>::Identity();
+  base_info_mat.bottomRightCorner<3, 3>() =
+      config_.inital_rotation_weighting * SquareMatrix<3>::Identity();
 
   SquareMatrix<6> est_info_mat;
 
   bool success = true;
   Transformation T_delta;
-  for (int i = 0; i < config_.iterations; ++i) {
-    if (!stepICP(subsampled_points, T_current, &T_delta, &est_info_mat)) {
-      *T_out = T_in;
-      success = false;
-      break;
-    }
 
-    T_current = T_delta * T_current;
+  for (size_t i = 0; i < shuffled_points.size(); i += config_.mini_batch_size) {
+    if (stepICP(shuffled_points, i, T_current, &T_delta, &est_info_mat)) {
+      // flip tform order
+      Transformation T_temp = T_delta * T_current;
+      T_delta = T_current.inverse() * T_temp;
+
+      // todo don't assume all axes independent
+      const Transformation::Vector6 weight =
+          est_info_mat.diagonal().array() /
+          (base_info_mat.diagonal() + est_info_mat.diagonal()).array();
+      T_delta = Transformation::exp(T_delta.log().array() * weight.array());
+
+      base_info_mat += est_info_mat;
+
+      T_current = T_current * T_delta;
+    }
   }
 
   interpolator_.reset();
 
-  T_delta = T_in.inverse() * T_current;
-
-  //todo don't assume all axes independent
-  const Transformation::Vector6 weight =
-      est_info_mat.diagonal().array() /
-      (base_info_mat.diagonal() + est_info_mat.diagonal()).array();
-  T_delta = Transformation::exp(T_delta.log().array() * weight.array());
-
-  *T_out = T_in * T_delta;
+  *T_out = T_current;
 
   return success;
 }

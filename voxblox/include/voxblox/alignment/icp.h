@@ -60,6 +60,7 @@ class ICP {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     bool refine_roll_pitch = false;
     int iterations = 5;
+    int mini_batch_size = 100;
     FloatingPoint min_match_ratio = 0.5;
     FloatingPoint subsample_keep_ratio = 0.05;
     FloatingPoint inital_translation_weighting = 1000.0;
@@ -110,14 +111,13 @@ class ICP {
   static void addNormalizedPointInfo(const Point& point_gradient,
                                      SquareMatrix<6>* info_mat);
 
-  void subSample(const Pointcloud& points_in, Pointcloud* points_out);
+  void matchPoints(const Pointcloud& points, const size_t start_idx,
+                   const Transformation& T, PointsMatrix* src,
+                   PointsMatrix* tgt, SquareMatrix<6>* info_mat);
 
-  void matchPoints(const Pointcloud& points, const Transformation& T,
-                   PointsMatrix* src, PointsMatrix* tgt,
-                   SquareMatrix<6>* info_mat);
-
-  bool stepICP(const Pointcloud& points, const Transformation& T_in,
-               Transformation* T_out, SquareMatrix<6>* info_mat);
+  bool stepICP(const Pointcloud& points, const size_t start_idx,
+               const Transformation& T_in, Transformation* T_out,
+               SquareMatrix<6>* info_mat);
 
   Config config_;
 
