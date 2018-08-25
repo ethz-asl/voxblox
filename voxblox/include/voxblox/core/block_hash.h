@@ -16,10 +16,11 @@ struct AnyIndexHash {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   static constexpr size_t sl = 17191;
-  static constexpr size_t sl2 = sl*sl;
+  static constexpr size_t sl2 = sl * sl;
 
   std::size_t operator()(const AnyIndex& index) const {
-    return static_cast<unsigned int>(index.x() + index.y()*sl + index.z()*sl2);
+    return static_cast<unsigned int>(index.x() + index.y() * sl +
+                                     index.z() * sl2);
   }
 };
 
@@ -48,10 +49,11 @@ struct LongIndexHash {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   static constexpr size_t sl = 17191;
-  static constexpr size_t sl2 = sl*sl;
+  static constexpr size_t sl2 = sl * sl;
 
   std::size_t operator()(const LongIndex& index) const {
-    return static_cast<unsigned int>(index.x() + index.y()*sl + index.z()*sl2);
+    return static_cast<unsigned int>(index.x() + index.y() * sl +
+                                     index.z() * sl2);
   }
 };
 
@@ -65,11 +67,9 @@ struct LongIndexHashMapType {
       type;
 };
 
-
 typedef std::unordered_set<LongIndex, LongIndexHash, std::equal_to<LongIndex>,
                            Eigen::aligned_allocator<LongIndex> >
     LongIndexSet;
-
 
 }  // namespace voxblox
 
