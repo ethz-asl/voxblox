@@ -177,8 +177,8 @@ void ICP::runThread(const Pointcloud& points, Transformation* T_current,
   }
 
   while (true) {
-    const size_t start_idx = atomic_idx.fetch_add(config_.mini_batch_size);
-    if (start_idx > shuffled_points.size()) {
+    const size_t start_idx = atomic_idx_.fetch_add(config_.mini_batch_size);
+    if (start_idx > points.size()) {
       break;
     }
 
@@ -195,14 +195,13 @@ void ICP::runThread(const Pointcloud& points, Transformation* T_current,
       // todo don't assume all axes independent
       const Transformation::Vector6 weight =
           est_info_mat.diagonal().array() /
-          (base_info_mat.diagonal() + est_info_mat.diagonal()).array();
+          (base_info_mat->diagonal() + est_info_mat.diagonal()).array();
       T_delta = Transformation::exp(T_delta.log().array() * weight.array());
 
-      base_info_mat += est_info_mat;
+      *base_info_mat += est_info_mat;
 
       *T_current = *T_current * T_delta;
-
-      T_local = *T_current
+      T_local = *T_current;
     }
   }
 }
