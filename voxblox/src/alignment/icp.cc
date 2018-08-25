@@ -168,6 +168,45 @@ bool ICP::stepICP(const Pointcloud& points, const size_t start_idx,
   return true;
 }
 
+void ICP::runThread(const Pointcloud& points, Transformation* T_current,
+               SquareMatrix<6>* base_info_mat) {
+  Transformation T_local;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    T_local = *T_current;
+  }
+
+  while (true) {
+    const size_t start_idx = atomic_idx.fetch_add(config_.mini_batch_size);
+    if (start_idx > shuffled_points.size()) {
+      break;
+    }
+
+    SquareMatrix<6> est_info_mat;
+    Transformation T_delta;
+
+    if (stepICP(points, start_idx, T_local, &T_delta, &est_info_mat)) {
+      std::lock_guard<std::mutex> lock(mutex_);
+
+      // flip tform order
+      Transformation T_temp = T_delta * *T_current;
+      T_delta = T_current->inverse() * T_temp;
+
+      // todo don't assume all axes independent
+      const Transformation::Vector6 weight =
+          est_info_mat.diagonal().array() /
+          (base_info_mat.diagonal() + est_info_mat.diagonal()).array();
+      T_delta = Transformation::exp(T_delta.log().array() * weight.array());
+
+      base_info_mat += est_info_mat;
+
+      *T_current = *T_current * T_delta;
+
+      T_local = *T_current
+    }
+  }
+}
+
 bool ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
                  const Transformation& T_in, Transformation* T_out) {
   if (config_.iterations == 0) {
@@ -186,7 +225,7 @@ bool ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
   std::shuffle(shuffled_points.begin(), shuffled_points.end(),
                std::default_random_engine(seed));
 
-  Transformation T_current = T_in;
+  *T_out = T_in;
 
   SquareMatrix<6> base_info_mat;
   base_info_mat.topLeftCorner<3, 3>() =
@@ -194,34 +233,19 @@ bool ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
   base_info_mat.bottomRightCorner<3, 3>() =
       config_.inital_rotation_weighting * SquareMatrix<3>::Identity();
 
-  SquareMatrix<6> est_info_mat;
-
-  bool success = true;
-  Transformation T_delta;
-
-  for (size_t i = 0; i < shuffled_points.size(); i += config_.mini_batch_size) {
-    if (stepICP(shuffled_points, i, T_current, &T_delta, &est_info_mat)) {
-      // flip tform order
-      Transformation T_temp = T_delta * T_current;
-      T_delta = T_current.inverse() * T_temp;
-
-      // todo don't assume all axes independent
-      const Transformation::Vector6 weight =
-          est_info_mat.diagonal().array() /
-          (base_info_mat.diagonal() + est_info_mat.diagonal()).array();
-      T_delta = Transformation::exp(T_delta.log().array() * weight.array());
-
-      base_info_mat += est_info_mat;
-
-      T_current = T_current * T_delta;
-    }
+  std::list<std::thread> threads;
+  atomic_idx_.store(0);
+  
+  for (size_t i = 0; i < config_.num_threads; ++i) {
+    threads.emplace_back(&ICP::runThread, this, shuffled_points, T_out, &base_info_mat);
+  }
+  for (std::thread& thread : threads) {
+    thread.join();
   }
 
   interpolator_.reset();
 
-  *T_out = T_current;
-
-  return success;
+  return true;
 }
 
 }  // namespace voxblox
