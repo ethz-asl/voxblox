@@ -70,11 +70,13 @@ class ICP {
   explicit ICP(const Config& config);
 
   size_t runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
-              const Transformation& T_in, Transformation* T_out);
+                const Transformation& T_in, Transformation* T_out);
 
   bool refiningRollPitch() { return config_.refine_roll_pitch; }
 
  private:
+  typedef Transformation::Vector6 Vector6;
+
   template <size_t dim>
   static bool getRotationFromMatchedPoints(const PointsMatrix& src_demean,
                                            const PointsMatrix& tgt_demean,
@@ -99,6 +101,11 @@ class ICP {
 
     *rotation = Rotation(rotation_matrix);
 
+    //not caught by is valid check
+    if(!std::isfinite(rotation_matrix.sum())){
+      return false;
+    }
+
     return Rotation::isValidRotationMatrix(rotation_matrix);
   }
 
@@ -107,19 +114,20 @@ class ICP {
                                             const bool refine_roll_pitch,
                                             Transformation* T);
 
-  static void addNormalizedPointInfo(const Point& point_gradient,
-                                     SquareMatrix<6>* info_mat);
+  static void addNormalizedPointInfo(const Point& point,
+                                     const Point& normalized_point_normal,
+                                     Vector6* info_vector);
 
   void matchPoints(const Pointcloud& points, const size_t start_idx,
                    const Transformation& T, PointsMatrix* src,
-                   PointsMatrix* tgt, SquareMatrix<6>* info_mat);
+                   PointsMatrix* tgt, Vector6* info_vector);
 
   bool stepICP(const Pointcloud& points, const size_t start_idx,
                const Transformation& T_in, Transformation* T_out,
-               SquareMatrix<6>* info_mat);
+               Vector6* info_vector);
 
   void runThread(const Pointcloud& points, Transformation* T_current,
-               SquareMatrix<6>* base_info_mat, size_t* num_updates);
+                 Vector6* base_info_vector, size_t* num_updates);
 
   Config config_;
 
