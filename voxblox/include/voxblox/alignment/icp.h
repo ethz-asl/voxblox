@@ -71,8 +71,8 @@ class ICP {
 
   // returns number of successful mini batches
   size_t runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
-                const Transformation& inital_T_tsdf_points,
-                Transformation* refined_T_tsdf_points,
+                const Transformation& inital_T_tsdf_sensor,
+                Transformation* refined_T_tsdf_sensor,
                 const unsigned seed = std::chrono::system_clock::now()
                                           .time_since_epoch()
                                           .count());
@@ -85,7 +85,7 @@ class ICP {
   template <size_t dim>
   static bool getRotationFromMatchedPoints(const PointsMatrix& src_demean,
                                            const PointsMatrix& tgt_demean,
-                                           Rotation* R_tsdf_points) {
+                                           Rotation* R_tgt_src) {
     SquareMatrix<3> rotation_matrix = SquareMatrix<3>::Identity();
 
     SquareMatrix<dim> H =
@@ -104,7 +104,7 @@ class ICP {
 
     rotation_matrix.topLeftCorner<dim, dim>() = v * u.transpose();
 
-    *R_tsdf_points = Rotation(rotation_matrix);
+    *R_tgt_src = Rotation(rotation_matrix);
 
     // not caught by is valid check
     if (!std::isfinite(rotation_matrix.sum())) {
@@ -117,22 +117,22 @@ class ICP {
   static bool getTransformFromMatchedPoints(const PointsMatrix& src,
                                             const PointsMatrix& tgt,
                                             const bool refine_roll_pitch,
-                                            Transformation* T_tsdf_points);
+                                            Transformation* T_tsdf_sensor);
 
   static void addNormalizedPointInfo(const Point& point,
                                      const Point& normalized_point_normal,
                                      Vector6* info_vector);
 
   void matchPoints(const Pointcloud& points, const size_t start_idx,
-                   const Transformation& T_tsdf_points, PointsMatrix* src,
+                   const Transformation& T_tsdf_sensor, PointsMatrix* src,
                    PointsMatrix* tgt, Vector6* info_vector);
 
   bool stepICP(const Pointcloud& points, const size_t start_idx,
-               const Transformation& inital_T_tsdf_points,
-               Transformation* refined_T_tsdf_points, Vector6* info_vector);
+               const Transformation& inital_T_tsdf_sensor,
+               Transformation* refined_T_tsdf_sensor, Vector6* info_vector);
 
   void runThread(const Pointcloud& points,
-                 Transformation* current_T_tsdf_points,
+                 Transformation* current_T_tsdf_sensor,
                  Vector6* base_info_vector, size_t* num_updates);
 
   Config config_;
