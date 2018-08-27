@@ -274,7 +274,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
       icp_corrected_transform_.setIdentity();
     }
     static Transformation T_offset;
-    size_t num_icp_updates =
+    const size_t num_icp_updates =
         icp_->runICP(tsdf_map_->getTsdfLayer(), points_C,
                      icp_corrected_transform_ * T_G_C, &T_G_C_refined);
     if (verbose_) {
