@@ -171,7 +171,7 @@ inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
     mesh_msg->mesh_blocks.push_back(mesh_block);
 
     // delete empty mesh blocks after sending them
-    if(!mesh->hasVertices()){
+    if (!mesh->hasVertices()) {
       mesh_layer->removeMesh(block_index);
     }
 

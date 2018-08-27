@@ -33,7 +33,7 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
 }
 
 // Thread safe.
-inline bool TsdfIntegratorBase::isPointValid(const Point& point_C,
+bool TsdfIntegratorBase::isPointValid(const Point& point_C,
                                              const bool point_in_freespace,
                                              bool* is_clearing) const {
   DCHECK(is_clearing != nullptr);

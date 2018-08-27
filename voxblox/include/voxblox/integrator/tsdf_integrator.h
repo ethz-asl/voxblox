@@ -71,8 +71,8 @@ class TsdfIntegratorBase {
 
  protected:
   // Thread safe.
-  inline bool isPointValid(const Point& point_C, const bool freespace_point,
-                           bool* is_clearing) const;
+  bool isPointValid(const Point& point_C, const bool freespace_point,
+                    bool* is_clearing) const;
 
   // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
   // layer. Thread safe.
@@ -203,7 +203,7 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
                            const Pointcloud& points_C, const Colors& colors,
                            const bool freespace_points = false);
 
- private:
+ protected:
   // Two approximate sets are used below. The limitations of these sets are
   // outlined in approx_hash_array.h, but in brief they are thread safe and very
   // fast, but have a small chance of returning false positives and false
