@@ -63,7 +63,7 @@ bool TsdfIntegratorBase::isPointValid(const Point& point_C,
 // These temporary blocks can be merged into the layer later by calling
 // updateLayerWithStoredBlocks()
 TsdfVoxel* TsdfIntegratorBase::allocateStorageAndGetVoxelPtr(
-    const VoxelIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
+    const GlobalIndex& global_voxel_idx, Block<TsdfVoxel>::Ptr* last_block,
     BlockIndex* last_block_idx) {
   DCHECK(last_block != nullptr);
   DCHECK(last_block_idx != nullptr);
@@ -123,7 +123,7 @@ void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
 // Updates tsdf_voxel. Thread safe.
 void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
                                          const Point& point_G,
-                                         const VoxelIndex& global_voxel_idx,
+                                         const GlobalIndex& global_voxel_idx,
                                          const Color& color, const float weight,
                                          TsdfVoxel* tsdf_voxel) {
   DCHECK(tsdf_voxel != nullptr);
@@ -218,7 +218,7 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
                                                const bool freespace_points) {
-  timing::Timer integrate_timer("integrate");
+  timing::Timer integrate_timer("integrate/simple");
   CHECK_EQ(points_C.size(), colors.size());
   ThreadSafeIndex index_getter(points_C.size());
 
@@ -265,7 +265,7 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 
     Block<TsdfVoxel>::Ptr block = nullptr;
     BlockIndex block_idx;
-    VoxelIndex global_voxel_idx;
+    GlobalIndex global_voxel_idx;
     while (ray_caster.nextRayIndex(&global_voxel_idx)) {
       TsdfVoxel* voxel =
           allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
@@ -281,15 +281,15 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
                                                const Colors& colors,
                                                const bool freespace_points) {
-  timing::Timer integrate_timer("integrate");
+  timing::Timer integrate_timer("integrate/merged");
   CHECK_EQ(points_C.size(), colors.size());
 
   // Pre-compute a list of unique voxels to end on.
   // Create a hashmap: VOXEL INDEX -> index in original cloud.
-  AnyIndexHashMapType<AlignedVector<size_t>>::type voxel_map;
+  LongIndexHashMapType<AlignedVector<size_t>>::type voxel_map;
   // This is a hash map (same as above) to all the indices that need to be
   // cleared.
-  AnyIndexHashMapType<AlignedVector<size_t>>::type clear_map;
+  LongIndexHashMapType<AlignedVector<size_t>>::type clear_map;
 
   ThreadSafeIndex index_getter(points_C.size());
 
@@ -312,8 +312,8 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
 void MergedTsdfIntegrator::bundleRays(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const bool freespace_points, ThreadSafeIndex* index_getter,
-    AnyIndexHashMapType<AlignedVector<size_t>>::type* voxel_map,
-    AnyIndexHashMapType<AlignedVector<size_t>>::type* clear_map) {
+    LongIndexHashMapType<AlignedVector<size_t>>::type* voxel_map,
+    LongIndexHashMapType<AlignedVector<size_t>>::type* clear_map) {
   DCHECK(voxel_map != nullptr);
   DCHECK(clear_map != nullptr);
 
@@ -327,7 +327,8 @@ void MergedTsdfIntegrator::bundleRays(
 
     const Point point_G = T_G_C * point_C;
 
-    VoxelIndex voxel_index = getGridIndexFromPoint(point_G, voxel_size_inv_);
+    GlobalIndex voxel_index =
+        getGridIndexFromPoint<GlobalIndex>(point_G, voxel_size_inv_);
 
     if (is_clearing) {
       (*clear_map)[voxel_index].push_back(point_idx);
@@ -344,8 +345,8 @@ void MergedTsdfIntegrator::bundleRays(
 void MergedTsdfIntegrator::integrateVoxel(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-    const std::pair<AnyIndex, AlignedVector<size_t>>& kv,
-    const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map) {
+    const std::pair<GlobalIndex, AlignedVector<size_t>>& kv,
+    const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map) {
   if (kv.second.empty()) {
     return;
   }
@@ -360,6 +361,9 @@ void MergedTsdfIntegrator::integrateVoxel(
     const Color& color = colors[pt_idx];
 
     const float point_weight = getVoxelWeight(point_C);
+    if (point_weight < kEpsilon) {
+      continue;
+    }
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
                      (merged_weight + point_weight);
     merged_color =
@@ -378,7 +382,7 @@ void MergedTsdfIntegrator::integrateVoxel(
                        config_.voxel_carving_enabled, config_.max_ray_length_m,
                        voxel_size_inv_, config_.default_truncation_distance);
 
-  VoxelIndex global_voxel_idx;
+  GlobalIndex global_voxel_idx;
   while (ray_caster.nextRayIndex(&global_voxel_idx)) {
     if (enable_anti_grazing) {
       // Check if this one is already the the block hash map for this
@@ -402,10 +406,10 @@ void MergedTsdfIntegrator::integrateVoxel(
 void MergedTsdfIntegrator::integrateVoxels(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-    const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
-    const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
+    const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
+    const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
     size_t thread_idx) {
-  AnyIndexHashMapType<AlignedVector<size_t>>::type::const_iterator it;
+  LongIndexHashMapType<AlignedVector<size_t>>::type::const_iterator it;
   size_t map_size;
   if (clearing_ray) {
     it = clear_map.begin();
@@ -427,8 +431,8 @@ void MergedTsdfIntegrator::integrateVoxels(
 void MergedTsdfIntegrator::integrateRays(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-    const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
-    const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map) {
+    const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
+    const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map) {
   // if only 1 thread just do function call, otherwise spawn threads
   if (config_.integrator_threads == 1) {
     constexpr size_t thread_idx = 0;
@@ -479,7 +483,8 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     // if a start location is 'close' to another points by inserting the point
     // into a set of voxels. This voxel set has a resolution
     // start_voxel_subsampling_factor times higher then the voxel size.
-    AnyIndex global_voxel_idx = getGridIndexFromPoint(
+    GlobalIndex global_voxel_idx;
+    global_voxel_idx = getGridIndexFromPoint<GlobalIndex>(
         point_G, config_.start_voxel_subsampling_factor * voxel_size_inv_);
     if (!start_voxel_approx_set_.replaceHash(global_voxel_idx)) {
       continue;
@@ -523,7 +528,7 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                              const Pointcloud& points_C,
                                              const Colors& colors,
                                              const bool freespace_points) {
-  timing::Timer integrate_timer("integrate");
+  timing::Timer integrate_timer("integrate/fast");
   CHECK_EQ(points_C.size(), colors.size());
 
   integration_start_time_ = std::chrono::steady_clock::now();

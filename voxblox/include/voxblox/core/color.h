@@ -75,7 +75,7 @@ inline Color grayColorMap(double h) {
   color.a = 255;
 
   color.r = round(h * 255);
-  color.b = 128;
+  color.b = color.r;
   color.g = color.r;
 
   return color;

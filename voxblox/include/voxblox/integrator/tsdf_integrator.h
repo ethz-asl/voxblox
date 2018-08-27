@@ -15,13 +15,13 @@
 #include <glog/logging.h>
 #include <Eigen/Core>
 
+#include "voxblox/core/block_hash.h"
+#include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/approx_hash_array.h"
 #include "voxblox/utils/timing.h"
-
-#include "voxblox/core/block_hash.h"
 
 namespace voxblox {
 
@@ -83,7 +83,7 @@ class TsdfIntegratorBase {
   // mutex allowing it to grow during integration.
   // These temporary blocks can be merged into the layer later by calling
   // updateLayerWithStoredBlocks()
-  TsdfVoxel* allocateStorageAndGetVoxelPtr(const VoxelIndex& global_voxel_idx,
+  TsdfVoxel* allocateStorageAndGetVoxelPtr(const GlobalIndex& global_voxel_idx,
                                            Block<TsdfVoxel>::Ptr* last_block,
                                            BlockIndex* last_block_idx);
 
@@ -92,8 +92,9 @@ class TsdfIntegratorBase {
 
   // Updates tsdf_voxel. Thread safe.
   void updateTsdfVoxel(const Point& origin, const Point& point_G,
-                       const VoxelIndex& global_voxel_index, const Color& color,
-                       const float weight, TsdfVoxel* tsdf_voxel);
+                       const GlobalIndex& global_voxel_index,
+                       const Color& color, const float weight,
+                       TsdfVoxel* tsdf_voxel);
 
   // Thread safe.
   float computeDistance(const Point& origin, const Point& point_G,
@@ -130,7 +131,7 @@ class TsdfIntegratorBase {
   // the voxels hash. Assuming a uniform hash distribution, this means the
   // chance of two threads needing the same lock for unrelated voxels is
   // (num_threads / (2^n)). For 8 threads and 12 bits this gives 0.2%.
-  ApproxHashArray<12, std::mutex> mutexes_;
+  ApproxHashArray<12, std::mutex, GlobalIndex, LongIndexHash> mutexes_;
 };
 
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
@@ -164,27 +165,27 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
  protected:
   void bundleRays(const Transformation& T_G_C, const Pointcloud& points_C,
                   const bool freespace_points, ThreadSafeIndex* index_getter,
-                  AnyIndexHashMapType<AlignedVector<size_t>>::type* voxel_map,
-                  AnyIndexHashMapType<AlignedVector<size_t>>::type* clear_map);
+                  LongIndexHashMapType<AlignedVector<size_t>>::type* voxel_map,
+                  LongIndexHashMapType<AlignedVector<size_t>>::type* clear_map);
 
   void integrateVoxel(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const std::pair<AnyIndex, AlignedVector<size_t>>& kv,
-      const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map);
+      const std::pair<GlobalIndex, AlignedVector<size_t>>& kv,
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map);
 
   void integrateVoxels(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
-      const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
       size_t thread_idx);
 
   void integrateRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const AnyIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
-      const AnyIndexHashMapType<AlignedVector<size_t>>::type& clear_map);
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map);
 };
 
 class FastTsdfIntegrator : public TsdfIntegratorBase {
@@ -215,17 +216,19 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   static constexpr size_t masked_bits_ = 20;
   // only needs to zero the above 8mb of memory once every 10,000 scans
   // (uses an additional 80,000 bytes)
-  static constexpr size_t full_reset_threshold = 10000;
+  static constexpr size_t full_reset_threshold_ = 10000;
 
   // Voxel start locations are added to this set before ray casting. The ray
   // casting only occurs if no ray has been cast from this location for this
   // scan.
-  ApproxHashSet<masked_bits_, full_reset_threshold> start_voxel_approx_set_;
+  ApproxHashSet<masked_bits_, full_reset_threshold_, GlobalIndex, LongIndexHash>
+      start_voxel_approx_set_;
   // This set records which voxels a scans rays have passed through. If a ray
   // moves through max_consecutive_ray_collisions voxels in a row that have
   // already been seen this scan, it is deemed to be adding no new information
   // and the casting stops.
-  ApproxHashSet<masked_bits_, full_reset_threshold> voxel_observed_approx_set_;
+  ApproxHashSet<masked_bits_, full_reset_threshold_, GlobalIndex, LongIndexHash>
+      voxel_observed_approx_set_;
 
   // Used in terminating the integration early if it exceeds a time limit.
   std::chrono::time_point<std::chrono::steady_clock> integration_start_time_;

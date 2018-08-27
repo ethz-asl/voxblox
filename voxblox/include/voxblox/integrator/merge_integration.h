@@ -107,8 +107,9 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
           T_out_in *
           input_block.computeCoordinatesFromLinearIndex(input_linear_voxel_idx);
 
-      const VoxelIndex global_output_voxel_idx =
-          getGridIndexFromPoint(voxel_center, layer_out->voxel_size_inv());
+      const GlobalIndex global_output_voxel_idx =
+          getGridIndexFromPoint<GlobalIndex>(voxel_center,
+                                             layer_out->voxel_size_inv());
 
       // allocate it in the output
       typename Block<VoxelType>::Ptr output_block =
@@ -167,7 +168,7 @@ void transformLayer(const Layer<VoxelType>& layer_in,
         for (FloatingPoint z = c_out.z() - offset; z < c_out.z() + offset;
              z += layer_out->block_size()) {
           const Point current_center_out = Point(x, y, z);
-          BlockIndex current_idx = getGridIndexFromPoint(
+          BlockIndex current_idx = getGridIndexFromPoint<BlockIndex>(
               current_center_out, 1.0f / layer_out->block_size());
           block_idx_set.insert(current_idx);
         }

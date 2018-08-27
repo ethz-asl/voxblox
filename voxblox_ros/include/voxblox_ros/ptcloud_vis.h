@@ -242,6 +242,16 @@ inline bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
   return false;
 }
 
+inline bool visualizeIntensityVoxels(
+    const IntensityVoxel& voxel, const Point& /*coord*/, double* intensity) {
+  CHECK_NOTNULL(intensity);
+  if (voxel.weight > 0.0) {
+    *intensity = voxel.intensity;
+    return true;
+  }
+  return false;
+}
+
 inline bool visualizeDistanceIntensityEsdfVoxelsSlice(
     const EsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
     FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
@@ -265,6 +275,15 @@ inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
   return false;
 }
 
+inline bool visualizeFreeEsdfVoxels(const EsdfVoxel& voxel,
+                                        const Point& /*coord*/, float min_distance, double* intensity) {
+  if (voxel.observed && voxel.distance >= min_distance) {
+    *intensity = voxel.distance;
+    return true;
+  }
+  return false;
+}
+
 inline bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
                                              const Point& /*coord*/) {
   const float kThresholdLogOccupancy = logOddsFromProbability(0.7);
@@ -283,9 +302,8 @@ inline void createSurfacePointcloudFromTsdfLayer(
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
-                surface_distance, ph::_3),
+      layer, std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
+                       surface_distance, ph::_3),
       pointcloud);
 }
 
@@ -316,9 +334,8 @@ inline void createSurfaceDistancePointcloudFromTsdfLayer(
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
-                ph::_2, surface_distance, ph::_3),
+      layer, std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
+                       ph::_2, surface_distance, ph::_3),
       pointcloud);
 }
 
@@ -330,10 +347,36 @@ inline void createDistancePointcloudFromEsdfLayer(
       layer, &visualizeDistanceIntensityEsdfVoxels, pointcloud);
 }
 
+
+inline void createFreePointcloudFromEsdfLayer(
+    const Layer<EsdfVoxel>& layer, float min_distance,
+    pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
+  createColorPointcloudFromLayer<EsdfVoxel>(
+      layer, std::bind(&visualizeFreeEsdfVoxels, ph::_1,
+                       ph::_2, min_distance, ph::_3), pointcloud);
+}
+
+inline void createIntensityPointcloudFromIntensityLayer(
+    const Layer<IntensityVoxel>& layer,
+    pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
+  createColorPointcloudFromLayer<IntensityVoxel>(
+      layer, &visualizeIntensityVoxels, pointcloud);
+}
+
 inline void createDistancePointcloudFromTsdfLayerSlice(
     const Layer<TsdfVoxel>& layer, unsigned int free_plane_index,
     FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
+  // Make sure that the free_plane_val doesn't fall evenly between 2 slices.
+  // Prefer to push it up.
+  // Using std::remainder rather than std::fmod as the latter has huge crippling
+  // issues with floating-point division.
+  if (std::remainder(free_plane_val, layer.voxel_size()) < kFloatEpsilon) {
+    free_plane_val += layer.voxel_size() / 2.0;
+  }
+
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityTsdfVoxelsSlice, ph::_1, ph::_2,
@@ -345,6 +388,14 @@ inline void createDistancePointcloudFromEsdfLayerSlice(
     const Layer<EsdfVoxel>& layer, unsigned int free_plane_index,
     FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
+  // Make sure that the free_plane_val doesn't fall evenly between 2 slices.
+  // Prefer to push it up.
+  // Using std::remainder rather than std::fmod as the latter has huge crippling
+  // issues with floating-point division.
+  if (std::remainder(free_plane_val, layer.voxel_size()) < kFloatEpsilon) {
+    free_plane_val += layer.voxel_size() / 2.0;
+  }
+
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityEsdfVoxelsSlice, ph::_1, ph::_2,

@@ -45,12 +45,14 @@ endif()
 ####################
 
 set("${PROJECT_NAME}_SRCS"
+  src/alignment/icp.cc
   src/core/block.cc
   src/core/esdf_map.cc
   src/core/tsdf_map.cc
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
   src/integrator/integrator_utils.cc
+  src/integrator/intensity_integrator.cc
   src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
   src/io/sdf_ply.cc
@@ -176,6 +178,11 @@ catkin_add_gtest(test_layer_utils
   test/test_layer_utils.cc
 )
 target_link_libraries(test_layer_utils ${PROJECT_NAME})
+
+catkin_add_gtest(test_sdf_integrators
+  test/test_sdf_integrators.cc
+)
+target_link_libraries(test_sdf_integrators ${PROJECT_NAME})
 
 ##########
 # EXPORT #

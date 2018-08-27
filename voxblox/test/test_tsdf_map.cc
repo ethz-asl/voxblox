@@ -335,7 +335,8 @@ TEST_F(TsdfMapTest, ComputeBlockIndexFromOriginFromBlockIndexTest) {
         BlockIndex block_idx = {x, y, z};
         Point block_origin = getOriginPointFromGridIndex(block_idx, kBlockSize);
         BlockIndex block_idx_from_origin =
-            getGridIndexFromOriginPoint(block_origin, kBlockSizeInv);
+            getGridIndexFromOriginPoint<BlockIndex>(block_origin,
+                                                    kBlockSizeInv);
 
         EXPECT_EQ(block_idx.x(), block_idx_from_origin.x());
         EXPECT_EQ(block_idx.y(), block_idx_from_origin.y());

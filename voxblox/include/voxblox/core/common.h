@@ -48,14 +48,17 @@ typedef Eigen::Matrix<FloatingPoint, 3, 1> Ray;
 typedef Eigen::Matrix<IndexElement, 3, 1> AnyIndex;
 typedef AnyIndex VoxelIndex;
 typedef AnyIndex BlockIndex;
+typedef AnyIndex SignedIndex;
 
 typedef Eigen::Matrix<LongIndexElement, 3, 1> LongIndex;
+typedef LongIndex GlobalIndex;
 
 typedef std::pair<BlockIndex, VoxelIndex> VoxelKey;
 
 typedef AlignedVector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
+typedef AlignedVector<LongIndex> LongIndexVector;
 
 struct Color;
 typedef uint32_t Label;
@@ -76,10 +79,13 @@ typedef AlignedVector<Triangle> TriangleVector;
 typedef kindr::minimal::QuatTransformationTemplate<FloatingPoint>
     Transformation;
 typedef kindr::minimal::RotationQuaternionTemplate<FloatingPoint> Rotation;
+typedef kindr::minimal::RotationQuaternionTemplate<
+    FloatingPoint>::Implementation Quaternion;
 
 // For alignment of layers / point clouds
 typedef Eigen::Matrix<FloatingPoint, 3, Eigen::Dynamic> PointsMatrix;
 typedef Eigen::Matrix<FloatingPoint, 3, 3> Matrix3;
+typedef Eigen::Matrix<FloatingPoint, 2, 2> Matrix2;
 
 // Interpolation structure
 typedef Eigen::Matrix<FloatingPoint, 8, 8> InterpTable;
@@ -144,49 +150,64 @@ constexpr float kFloatEpsilon = 1e-6;     // Used for weights.
 // function doesn't always compute the correct grid index for coordinates
 // near the grid cell boundaries. Use the safer `getGridIndexFromOriginPoint` if
 // the origin point is available.
-inline AnyIndex getGridIndexFromPoint(const Point& point,
-                                      const FloatingPoint grid_size_inv) {
-  return AnyIndex(std::floor(point.x() * grid_size_inv + kEpsilon),
-                  std::floor(point.y() * grid_size_inv + kEpsilon),
-                  std::floor(point.z() * grid_size_inv + kEpsilon));
+template <typename IndexType>
+inline IndexType getGridIndexFromPoint(const Point& point,
+                                       const FloatingPoint grid_size_inv) {
+  return IndexType(std::floor(point.x() * grid_size_inv + kEpsilon),
+                   std::floor(point.y() * grid_size_inv + kEpsilon),
+                   std::floor(point.z() * grid_size_inv + kEpsilon));
 }
 
 // NOTE: Due the limited accuracy of the FloatingPoint type, this
 // function doesn't always compute the correct grid index for coordinates
 // near the grid cell boundaries.
-inline AnyIndex getGridIndexFromPoint(const Point& scaled_point) {
-  return AnyIndex(std::floor(scaled_point.x() + kEpsilon),
-                  std::floor(scaled_point.y() + kEpsilon),
-                  std::floor(scaled_point.z() + kEpsilon));
+template <typename IndexType>
+inline IndexType getGridIndexFromPoint(const Point& scaled_point) {
+  return IndexType(std::floor(scaled_point.x() + kEpsilon),
+                   std::floor(scaled_point.y() + kEpsilon),
+                   std::floor(scaled_point.z() + kEpsilon));
 }
 
 // NOTE: This function is safer than `getGridIndexFromPoint`, because it assumes
 // we pass in not an arbitrary point in the grid cell, but the ORIGIN. This way
 // we can avoid the floating point precision issue that arrises for calls to
 // `getGridIndexFromPoint`for arbitrary points near the border of the grid cell.
-inline AnyIndex getGridIndexFromOriginPoint(const Point& point,
-                                            const FloatingPoint grid_size_inv) {
-  return AnyIndex(std::round(point.x() * grid_size_inv),
-                  std::round(point.y() * grid_size_inv),
-                  std::round(point.z() * grid_size_inv));
+template <typename IndexType>
+inline IndexType getGridIndexFromOriginPoint(
+    const Point& point, const FloatingPoint grid_size_inv) {
+  return IndexType(std::round(point.x() * grid_size_inv),
+                   std::round(point.y() * grid_size_inv),
+                   std::round(point.z() * grid_size_inv));
 }
 
-inline Point getCenterPointFromGridIndex(const AnyIndex& idx,
+template <typename IndexType>
+inline Point getCenterPointFromGridIndex(const IndexType& idx,
                                          FloatingPoint grid_size) {
   return Point((static_cast<FloatingPoint>(idx.x()) + 0.5) * grid_size,
                (static_cast<FloatingPoint>(idx.y()) + 0.5) * grid_size,
                (static_cast<FloatingPoint>(idx.z()) + 0.5) * grid_size);
 }
 
-inline Point getOriginPointFromGridIndex(const AnyIndex& idx,
+template <typename IndexType>
+inline Point getOriginPointFromGridIndex(const IndexType& idx,
                                          FloatingPoint grid_size) {
   return Point(static_cast<FloatingPoint>(idx.x()) * grid_size,
                static_cast<FloatingPoint>(idx.y()) * grid_size,
                static_cast<FloatingPoint>(idx.z()) * grid_size);
 }
 
+// Conversions between Block + Voxel index and GlobalVoxelIndex.
+// Note that this takes int VOXELS_PER_SIDE, and the individual block conversion
+// takes voxels per side inverse.
+inline GlobalIndex getGlobalVoxelIndexFromBlockAndVoxelIndex(
+    const BlockIndex& block_index, const VoxelIndex& voxel_index,
+    int voxels_per_side) {
+  return GlobalIndex(block_index.cast<LongIndexElement>() * voxels_per_side +
+                     voxel_index.cast<LongIndexElement>());
+}
+
 inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
-    const AnyIndex& global_voxel_idx, FloatingPoint voxels_per_side_inv) {
+    const GlobalIndex& global_voxel_idx, FloatingPoint voxels_per_side_inv) {
   return BlockIndex(
       std::floor(static_cast<FloatingPoint>(global_voxel_idx.x()) *
                  voxels_per_side_inv),
@@ -198,12 +219,12 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
 
 inline bool isPowerOfTwo(int x) { return (x & (x - 1)) == 0; }
 
-inline VoxelIndex getLocalFromGlobalVoxelIndex(const AnyIndex& global_voxel_idx,
-                                               int voxels_per_side) {
+inline VoxelIndex getLocalFromGlobalVoxelIndex(
+    const GlobalIndex& global_voxel_idx, const int voxels_per_side) {
   // add a big number to the index to make it positive
   constexpr int offset = 1 << (8 * sizeof(IndexElement) - 1);
 
-  DCHECK(isPowerOfTwo(voxels_per_side));
+  CHECK(isPowerOfTwo(voxels_per_side));
 
   // assume that voxels_per_side is a power of 2 and uses a bitwise and as a
   // computationally cheap substitute for the modulus operator
@@ -212,17 +233,40 @@ inline VoxelIndex getLocalFromGlobalVoxelIndex(const AnyIndex& global_voxel_idx,
                     (global_voxel_idx.z() + offset) & (voxels_per_side - 1));
 }
 
+inline void getBlockAndVoxelIndexFromGlobalVoxelIndex(
+    const GlobalIndex& global_voxel_idx, const int voxels_per_side,
+    BlockIndex* block_index, VoxelIndex* voxel_index) {
+  CHECK_NOTNULL(block_index);
+  CHECK_NOTNULL(voxel_index);
+  const FloatingPoint voxels_per_side_inv = 1.0 / voxels_per_side;
+  *block_index =
+      getBlockIndexFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_inv);
+  *voxel_index =
+      getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side);
+}
+
 // Math functions.
 inline int signum(FloatingPoint x) { return (x == 0) ? 0 : x < 0 ? -1 : 1; }
 
 // For occupancy/octomap-style mapping.
 inline float logOddsFromProbability(float probability) {
-  DCHECK(probability >= 0.0f && probability <= 1.0f);
+  CHECK(probability >= 0.0f && probability <= 1.0f);
   return log(probability / (1.0 - probability));
 }
 
 inline float probabilityFromLogOdds(float log_odds) {
   return 1.0 - (1.0 / (1.0 + exp(log_odds)));
+}
+
+inline void transformPointcloud(const Transformation& T_N_O,
+                                const Pointcloud& ptcloud,
+                                Pointcloud* ptcloud_out) {
+  ptcloud_out->clear();
+  ptcloud_out->resize(ptcloud.size());
+
+  for (size_t i = 0; i < ptcloud.size(); ++i) {
+    (*ptcloud_out)[i] = T_N_O * ptcloud[i];
+  }
 }
 
 }  // namespace voxblox

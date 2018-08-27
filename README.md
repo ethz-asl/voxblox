@@ -12,19 +12,31 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
  * Features an implementation of building Euclidean Signed Distance Fields (ESDFs, EDTs) directly from TSDFs.
 
 # Table of Contents
-* [Paper and Video](README.md#paper-and-video)
-* [Credits](README.md#credits)
-* [Example Outputs](README.md#example-outputs)
-* [Performance](README.md#performance)
-* [Installation](README.md#installation)
-* [Running Voxblox](README.md#running-voxblox)
-* [Voxblox Node](README.md#voxblox-node)
-  * [Published and Subscribed Topics](README.md#published-and-subscribed-topics)
-  * [Services](README.md#Services)
-  * [Parameters](README.md#parameters)
-* [Modifying Voxblox](README.md#modifying-voxblox)
-  * [Serialization](README.md#serialization)
-* [Transformations in Voxblox](README.md#transformations-in-voxblox)
+* [Paper and Video](#paper-and-video)
+* [Credits](#credits)
+* [Example Outputs](#example-outputs)
+* [Performance](#performance)
+* [Installation](#installation)
+* [Running Voxblox](#running-voxblox)
+* [Voxblox Node (TSDF Server, ESDF Server)](#voxblox-node--tsdf-server--esdf-server-)
+  * [Published and Subscribed Topics](#published-and-subscribed-topics)
+  * [Services](#services)
+  * [Parameters](#parameters)
+    * [General Parameters](#general-parameters)
+    * [TSDF Integrator Parameters](#tsdf-integrator-parameters)
+    * [Fast TSDF Integrator Specific Parameters](#fast-tsdf-integrator-specific-parameters)
+    * [ESDF Integrator Parameters](#esdf-integrator-parameters)
+    * [ICP Refinement Parameters](#icp-refinement-parameters)
+    * [Input Transform Parameters](#input-transform-parameters)
+    * [Output Parameters](#output-parameters)
+* [Using voxblox for planning](#using-voxblox-for-planning)
+* [Transformations in Voxblox](#transformations-in-voxblox)
+* [Contributing to voxblox](#contributing-to-voxblox)
+    * [Code style](#code-style)
+    * [Setting up the linter](#setting-up-the-linter)
+* [Modifying Voxblox](#modifying-voxblox)
+  * [Serialization](#serialization)
+    * [How to add your own voxel/layer type](#how-to-add-your-own-voxel-layer-type)
 
 # Paper and Video
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
@@ -32,7 +44,7 @@ A video of voxblox being used for online planning on-board a multicopter can be 
 
 If using voxblox for scientific publications, please cite the following paper, available [here](http://helenol.github.io/publications/iros_2017_voxblox.pdf):
 
-Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Incremental 3D Euclidean Signed Distance Fields for On-Board MAV Planning**”, in *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2016.
+Helen Oleynikova, Zachary Taylor, Marius Fehr, Juan Nieto, and Roland Siegwart, “**Voxblox: Incremental 3D Euclidean Signed Distance Fields for On-Board MAV Planning**”, in *IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)*, 2017.
 
 ```latex
 @inproceedings{oleynikova2017voxblox,
@@ -91,10 +103,10 @@ Rendered Mesh | Setup
 </center>
 
 # Installation
-To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) or [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu).
+To install voxblox, please install [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu), [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu) or [ROS Melodic](http://wiki.ros.org/melodic/Installation/Ubuntu).
 These instructions are for Ubuntu, Voxblox will also run on OS X, but you're more or less on your own there.
 
-First install additional system dependencies (swap kinetic for indigo as necessary):
+First install additional system dependencies (swap kinetic for indigo or melodic as necessary):
 ```
 sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler autoconf
 ```
@@ -132,6 +144,8 @@ cd ~/catkin_ws/src/
 catkin build voxblox_ros
 ```
 
+
+
 # Running Voxblox
 The easiest way to test out voxblox is to try it out on a dataset.
 We have launch files for our [own dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), the [Euroc Vicon Room datasets](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets), and the [KITTI raw datasets](http://www.cvlibs.net/datasets/kitti/) processed through [kitti_to_rosbag](https://github.com/ethz-asl/kitti_to_rosbag).
@@ -140,6 +154,9 @@ For each of these datasets, there's a launch file associated under `voxblox_ros/
 
 The easiest way to start is to download the [cow and lady dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=iros2017), edit the path to the bagfile in `cow_and_lady_dataset.launch`, and then simply:
 ```roslaunch voxblox_ros cow_and_lady_dataset.launch```
+
+An alternative dataset the [basement dataset](https://projects.asl.ethz.ch/datasets/doku.php?id=basement2018) is also avaliable. While this dataset lacks groundtruth it demonstrates the capabilities of Voxblox running on Velodyne lidar data and uses ICP corrections to compensate for a drifting pose estimate. To run the dataset edit the path to the bagfile in `basement_dataset.launch`, and then simply:
+```roslaunch voxblox_ros basement_dataset.launch```
 
 If you open rviz, you should be able to see the the mesh visualized on the `/voxblox_node/mesh` MarkerArray topic, in the `world` static frame, as shown below.
 The mesh only updates once per second (this is a setting in the launch file).
@@ -167,6 +184,7 @@ The tsdf_server and esdf_server publish and subscribe to the following topics:
   - **`occupied_nodes`** of type `visualization_msgs::MarkerArray`. Visualizes the location of the allocated voxels in the TSDF.
   - **`tsdf_map_out`** of type `voxblox_msgs::Layer`. Publishes the entire TSDF layer to update other nodes (that listen on tsdf_layer_in). Only published if `publish_tsdf_map` is set to true.
   - **`esdf_map_out`** of type `voxblox_msgs::Layer`. Publishes the entire ESDF layer to update other nodes (that listen on esdf_layer_in). Only published if `publish_esdf_map` is set to true.
+  - **`traversable`** of type `pcl::PointCloud<pcl::PointXYZI>`. (ESDF server only) Outputs all the points within the map that are considered traversable, controlled by the `publish_traversable` and `traversability_radius` parameters.
 
 - Subscribed topics:
   - **`transform`** of type `geometry_msgs::TransformStamped`. Only appears if `use_tf_transforms` is false. The transformation from the world frame to the current sensor frame.
@@ -174,6 +192,7 @@ The tsdf_server and esdf_server publish and subscribe to the following topics:
   - **`freespace_pointcloud`** of type `sensor_msgs::PointCLoud2`. Only appears if `use_freespace_pointcloud` is true. Unlike the `pointcloud` topic where the given points lie on surfaces, the points in the `freespace_pointcloud` are taken to be floating in empty space. These points can assist in generating more complete freespace information in a map.
   - **`tsdf_map_in`** of type `voxblox_msgs::Layer`. Replaces the current TSDF layer with that from this topic. Voxel size and voxels per side should match.
   - **`esdf_map_in`** of type `voxblox_msgs::Layer`. Replaces the current ESDF layer with that from this topic. Voxel size and voxels per side should match.
+  - **`icp_transform`** of type `geometry_msgs::TransformStamped`. If ICP is enabled, this is the current corrected transform between the world frame and the ICP frame.
 
 ## Services
 
@@ -234,9 +253,25 @@ These parameters are only used if the integrator `method` is set to "fast".
 ### ESDF Integrator Parameters
 | Parameter | Description | Default |
 | --------------------  |:-----------:| :-------:|
-| `generate_esdf` |  If the eucliden signed distance field should be generated. | false |
 | `esdf_max_distance_m` | The maximum distance that the esdf will be calculated out to | 2.0 |
 | `esdf_default_distance_m` | Default distance set for unknown values and values >`esdf_max_distance_m` | 2.0 |
+| `clear_sphere_for_planning` | Enables setting unknown space to free near the current pose of the sensor, and unknown space to occupied further away from the sensor. Controlled by the two parameters below. | false |
+| `clear_sphere_radius` | Radius of the inner sphere where unknown is set to free, in meters. | 1.5 |
+| `occupied_sphere_radius` | Radius of the outer sphere where unknown is set to occupied, in meters. | 5.0 |
+
+### ICP Refinement Parameters
+ICP based refinement can be applied to the poses of the input pointclouds before merging.
+
+| Parameter | Description | Default |
+| --------------------  |:-----------:| :-------:|
+| `enable_icp` | Whether to use ICP to align all incoming pointclouds to the existing structure. | false |
+| `icp_refine_roll_pitch` | True to apply 6-dof pose correction, false for 4-dof (x, y, z, yaw) correction. | false |
+| `accumulate_icp_corrections` | Whether to accumulate transform corrections from ICP over all pointclouds. Reset at each new pointcloud if false. | true |
+| `icp_corrected_frame` | TF frame to output the ICP corrections to.| `icp_corrected` |
+| `pose_corrected_frame` | TF frame used to output the ICP corrected poses relative to the `icp_corrected_frame`.| `pose_corrected` |
+| `icp_iterations` | Number of ICP iterations to perform. | 20 |
+| `icp_subsample_keep_ratio` | Random subsampling will be used to reduce the number of points used for matching by this factor.  | 0.05 |
+| `icp_min_match_ratio` | For an ICP refinement to be accepted, at least this ratio of points in the pointcloud must fall within the truncation distance of the existing TSDF layer | 0.5 |
 
 ### Input Transform Parameters
 | Parameter | Description | Default |
@@ -263,6 +298,138 @@ These parameters are only used if the integrator `method` is set to "fast".
 | `publish_tsdf_map` | Whether to publish the complete TSDF map periodically over ROS topics. | false |
 | `publish_esdf_map` | Whether to publish the complete ESDF map periodically over ROS topics. | false |
 | `publish_tsdf_info` | Enables publishing of `tsdf_pointcloud`, `surface_pointcloud` and `occupied_nodes`. | false |
+| `publish_pointclouds` | If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated | false |
+| `intensity_colormap` | If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are `rainbow`, `inverse_rainbow`, `grayscale`, `inverse_grayscale`, `ironbow` (thermal) | `rainbow` |
+| `intensity_max_value` | Maximum value to use for the intensity mapping. Minimum value is always 0. | 100.0 |
+| `publish_traversable` | Whether to display a traversability pointcloud from an ESDF server. | false |
+| `traversability_radius` | The minimum radius at which a point is considered traversable. | 1.0 |
+
+# Using voxblox for planning
+The planners described in [Continuous-Time Trajectory Optimization for Online UAV Replanning](http://helenol.github.io/publications/iros_2016_replanning.pdf), [Safe Local Exploration for Replanning in Cluttered Unknown Environments for Micro-Aerial Vehicles](http://helenol.github.io/publications/ral_2018_local_exploration.pdf), and [Sparse 3D Topological Graphs for Micro-Aerial Vehicle Planning](https://arxiv.org/pdf/1803.04345.pdf) will be open-sourced shortly.
+
+In the mean-time, the general idea behind using voxblox for planning is to have two nodes running: one for the mapping, which ingests pointcloud data and produces both a TSDF and an ESDF, and one for planning, which subscribes to the latest ESDF layer over ROS.
+
+The planner should have a ``voxblox::EsdfServer`` as a member, and simply remap the `esdf_map_out` and `esdf_map_in` topics to match.
+
+A sample launch file is shown below:
+```xml
+<launch>
+  <arg name="robot_name" default="my_robot" />
+  <arg name="voxel_size" default="0.20" />
+  <arg name="voxels_per_side" default="16" />
+  <arg name="world_frame" default="odom" />
+  <group ns="$(arg robot_name)">
+
+    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr" clear_params="true">
+      <remap from="pointcloud" to="great_sensor/my_pointcloud"/>
+      <remap from="voxblox_node/esdf_map_out" to="esdf_map" />
+      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+      <param name="publish_esdf_map" value="true" />
+      <param name="publish_pointclouds" value="true" />
+      <param name="use_tf_transforms" value="true" />
+      <param name="update_mesh_every_n_sec" value="1.0" />
+      <param name="clear_sphere_for_planning" value="true" />
+      <param name="world_frame" value="$(arg world_frame)" />
+    </node>
+
+    <node name="my_voxblox_planner" pkg="voxblox_planner" type="my_voxblox_planner" output="screen" args="-alsologtostderr">
+      <remap from="odometry" to="great_estimator/odometry" />
+      <remap from="my_voxblox_planner/esdf_map_in" to="esdf_map" />
+      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+      <param name="update_mesh_every_n_sec" value="0.0" />
+      <param name="world_frame" value="$(arg world_frame)" />
+    </node>
+
+  </group>
+</launch>
+
+```
+
+And some scaffolding for writing your own planner using ESDF collision checking:
+```c++
+class YourPlannerVoxblox {
+ public:
+  YourPlannerVoxblox(const ros::NodeHandle& nh,
+                    const ros::NodeHandle& nh_private);
+  virtual ~YourPlannerVoxblox() {}
+  double getMapDistance(const Eigen::Vector3d& position) const;
+ private:
+  ros::NodeHandle nh_;
+  ros::NodeHandle nh_private_;
+
+  // Map!
+  voxblox::EsdfServer voxblox_server_;
+};
+```
+There's also a traversability pointcloud you can enable/disable, that if you set the radius to your robot's collision checking radius, can show you parts of the map the planner thinks are traversable in a pointcloud:
+```c++
+YourPlannerVoxblox::YourPlannerVoxblox(const ros::NodeHandle& nh,
+                                     const ros::NodeHandle& nh_private)
+    : nh_(nh),
+      nh_private_(nh_private),
+      voxblox_server_(nh_, nh_private_) {
+  // Optionally load a map saved with the save_map service call in voxblox.
+  std::string input_filepath;
+  nh_private_.param("voxblox_path", input_filepath, input_filepath);
+  if (!input_filepath.empty()) {
+    if (!voxblox_server_.loadMap(input_filepath)) {
+      ROS_ERROR("Couldn't load ESDF map!");
+    }
+  }
+  double robot_radius = 1.0;
+  voxblox_server_.setTraversabilityRadius(robot_radius);
+  voxblox_server_.publishTraversable();
+}
+```
+
+Then to check for collisions you can just compare map distance to your robot radius:
+```c++
+double YourPlannerVoxblox::getMapDistance(
+    const Eigen::Vector3d& position) const {
+  if (!voxblox_server_.getEsdfMapPtr()) {
+    return 0.0;
+  }
+  double distance = 0.0;
+  if (!voxblox_server_.getEsdfMapPtr()->getDistanceAtPosition(position,
+                                                              &distance)) {
+    return 0.0;
+  }
+  return distance;
+}
+```
+
+# Transformations in Voxblox
+Voxblox uses active transforms and Hamilton quaternions. For futher details on the notation used throughout the code see [the minkindr wiki](https://github.com/ethz-asl/minkindr/wiki/Common-Transformation-Conventions)
+
+
+# Contributing to voxblox
+These steps are only necessary if you plan on contributing to voxblox.
+
+### Code style
+
+We follow the style and best practices listed in the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+
+### Setting up the linter
+This setups a linter which checks if the code conforms to our style guide during commits.
+
+First, install the dependencies listed [here](https://github.com/ethz-asl/linter#dependencies).
+
+```bash
+cd ~/catkin_ws/src/
+git clone git@github.com:ethz-asl/linter.git
+cd linter
+echo ". $(realpath setup_linter.sh)" >> ~/.bashrc  # Or the matching file for
+                                                   # your shell.
+bash
+
+# Initialize linter in voxblox repo
+cd ~/catkin_ws/src/voxblox
+init_linter_git_hooks
+```
+For more information about the linter visit  [ethz/linter](https://github.com/ethz-asl/linter)
+
 
 # Modifying Voxblox
 Here's some hints on how to extend voxblox to fit your needs...
@@ -326,8 +493,4 @@ void Block<YOUR_FANCY_VOXEL>::SerializeVoxelData(const YOUR_FANCY_VOXEL* voxels,
   **Have a look at the example package:**
 
   TODO(mfehr, helenol): add example package with a new voxel type
-
-# Transformations in Voxblox
-
-Voxblox uses active transforms and Hamilton quaternions. For futher details on the notation used throughout the code see [the minkindr wiki](https://github.com/ethz-asl/minkindr/wiki/Common-Transformation-Conventions)
 
