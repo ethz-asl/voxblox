@@ -75,32 +75,31 @@ bool ICP::getTransformFromMatchedPoints(const PointsMatrix& src,
   return success;
 }
 
-void ICP::addNormalizedPointInfo(const Point& point_gradient,
-                                 SquareMatrix<6>* info_mat) {
-  // find othogonal vectors
-  const Point point_norm = point_gradient.normalized();
-  Point oth_vec_a, oth_vec_b;
-
-  // avoid singularity by choosing convient up direction
-  if (point_norm(2) < 0.5) {
-    const Point up(0.0, 0.0, 1.0);
-    oth_vec_a = up.cross(point_norm).normalized();
-  } else {
-    const Point up(0.0, 1.0, 0.0);
-    oth_vec_a = up.cross(point_norm).normalized();
-  }
-  oth_vec_b = point_norm.cross(oth_vec_a).normalized();
-
+void ICP::addNormalizedPointInfo(const Point& point,
+                                 const Point& normalized_point_normal,
+                                 Vector6* info_vector) {
   // add translational point information
-  info_mat->topLeftCorner<3, 3>() += point_norm * point_norm.transpose();
-  // add rotational point information
-  info_mat->bottomRightCorner<3, 3>() +=
-      oth_vec_a * oth_vec_a.transpose() + oth_vec_b * oth_vec_b.transpose();
+  info_vector->head<3>() +=
+      2.0 * normalized_point_normal.cwiseProduct(normalized_point_normal);
+  // add rotational point information (todo verify correct)
+  info_vector->tail<3>() +=
+      2.0 * Point(point.y() * point.y() * normalized_point_normal.z() *
+                          normalized_point_normal.z() +
+                      point.z() * point.z() * normalized_point_normal.y() *
+                          normalized_point_normal.y(),
+                  point.x() * point.x() * normalized_point_normal.z() *
+                          normalized_point_normal.z() +
+                      point.z() * point.z() * normalized_point_normal.x() *
+                          normalized_point_normal.x(),
+                  point.x() * point.x() * normalized_point_normal.y() *
+                          normalized_point_normal.y() +
+                      point.y() * point.y() * normalized_point_normal.x() *
+                          normalized_point_normal.x());
 }
 
 void ICP::matchPoints(const Pointcloud& points, const size_t start_idx,
                       const Transformation& T, PointsMatrix* src,
-                      PointsMatrix* tgt, SquareMatrix<6>* info_mat) {
+                      PointsMatrix* tgt, Vector6* info_vector) {
   constexpr bool kInterpolateDist = false;
   constexpr bool kInterpolateGrad = false;
   constexpr FloatingPoint kMinGradMag = 0.1;
@@ -108,8 +107,8 @@ void ICP::matchPoints(const Pointcloud& points, const size_t start_idx,
   src->resize(3, config_.mini_batch_size);
   tgt->resize(3, config_.mini_batch_size);
 
-  // epsilion to ensure the matrix can be inverted
-  *info_mat = kEpsilon * SquareMatrix<6>::Identity();
+  // epsilon to ensure we can always divide by it
+  info_vector->setConstant(kEpsilon);
 
   size_t idx = 0;
   for (size_t i = start_idx;
@@ -129,7 +128,8 @@ void ICP::matchPoints(const Pointcloud& points, const size_t start_idx,
         (gradient.squaredNorm() > kMinGradMag)) {
       gradient.normalize();
 
-      addNormalizedPointInfo(gradient, info_mat);
+      addNormalizedPointInfo(point_tformed - T.getPosition(), gradient,
+                             info_vector);
 
       // uninterpolated distance is to the center of the voxel, as we now have
       // the gradient we can use it to do better
@@ -149,11 +149,11 @@ void ICP::matchPoints(const Pointcloud& points, const size_t start_idx,
 
 bool ICP::stepICP(const Pointcloud& points, const size_t start_idx,
                   const Transformation& T_in, Transformation* T_delta,
-                  SquareMatrix<6>* info_mat) {
+                  Vector6* info_vector) {
   PointsMatrix src;
   PointsMatrix tgt;
 
-  matchPoints(points, start_idx, T_in, &src, &tgt, info_mat);
+  matchPoints(points, start_idx, T_in, &src, &tgt, info_vector);
 
   if (src.cols() < std::max(3, static_cast<int>(config_.mini_batch_size *
                                                 config_.min_match_ratio))) {
@@ -169,7 +169,7 @@ bool ICP::stepICP(const Pointcloud& points, const size_t start_idx,
 }
 
 void ICP::runThread(const Pointcloud& points, Transformation* T_current,
-                    SquareMatrix<6>* base_info_mat, size_t* num_updates) {
+                    Vector6* base_info_vector, size_t* num_updates) {
   Transformation T_local;
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -182,22 +182,21 @@ void ICP::runThread(const Pointcloud& points, Transformation* T_current,
       break;
     }
 
-    SquareMatrix<6> est_info_mat;
+    Vector6 est_info_vector;
     Transformation T_delta;
 
-    if (stepICP(points, start_idx, T_local, &T_delta, &est_info_mat)) {
+    if (stepICP(points, start_idx, T_local, &T_delta, &est_info_vector)) {
       std::lock_guard<std::mutex> lock(mutex_);
 
       // flip tform order
       Transformation T_temp = T_delta * *T_current;
       T_delta = T_current->inverse() * T_temp;
 
-      const SquareMatrix<6> weight =
-          Eigen::LDLT<SquareMatrix<6>>(*base_info_mat + est_info_mat)
-              .solve(est_info_mat);
-      T_delta = Transformation::exp(weight * T_delta.log());
+      const Vector6 weight = est_info_vector.array() /
+                             (*base_info_vector + est_info_vector).array();
+      T_delta = Transformation::exp(weight.cwiseProduct(T_delta.log()));
 
-      *base_info_mat += est_info_mat;
+      *base_info_vector += est_info_vector;
 
       *T_current = *T_current * T_delta;
       T_local = *T_current;
@@ -221,11 +220,9 @@ size_t ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
 
   *T_out = T_in;
 
-  SquareMatrix<6> base_info_mat;
-  base_info_mat.topLeftCorner<3, 3>() =
-      config_.inital_translation_weighting * SquareMatrix<3>::Identity();
-  base_info_mat.bottomRightCorner<3, 3>() =
-      config_.inital_rotation_weighting * SquareMatrix<3>::Identity();
+  Vector6 base_info_vector;
+  base_info_vector.head<3>().setConstant(config_.inital_translation_weighting);
+  base_info_vector.tail<3>().setConstant(config_.inital_rotation_weighting);
 
   std::list<std::thread> threads;
   atomic_idx_.store(0);
@@ -233,7 +230,7 @@ size_t ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
 
   for (size_t i = 0; i < config_.num_threads; ++i) {
     threads.emplace_back(&ICP::runThread, this, shuffled_points, T_out,
-                         &base_info_mat, &num_updates);
+                         &base_info_vector, &num_updates);
   }
   for (std::thread& thread : threads) {
     thread.join();
