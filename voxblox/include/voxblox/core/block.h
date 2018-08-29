@@ -53,6 +53,21 @@ class Block {
     return linear_index;
   }
 
+inline size_t computeLinearIndexFromVoxelIndex(const int x, const int y,
+                                               const int z) const {
+  size_t linear_index =
+      static_cast<size_t>(x + voxels_per_side_ * (y + z * voxels_per_side_));
+
+  DCHECK(x >= 0 && x < static_cast<int>(voxels_per_side_));
+  DCHECK(y >= 0 && y < static_cast<int>(voxels_per_side_));
+  DCHECK(z >= 0 && z < static_cast<int>(voxels_per_side_));
+
+  DCHECK_LT(linear_index,
+            voxels_per_side_ * voxels_per_side_ * voxels_per_side_);
+  DCHECK_GE(linear_index, 0u);
+  return linear_index;
+}
+
   // NOTE: This function is dangerous, it will truncate the voxel index to an
   // index that is within this block if you pass a coordinate outside the range
   // of this block. Try not to use this function if there is an alternative to
@@ -122,6 +137,11 @@ class Block {
   inline const VoxelType& getVoxelByVoxelIndex(const VoxelIndex& index) const {
     return voxels_[computeLinearIndexFromVoxelIndex(index)];
   }
+
+inline const VoxelType& getVoxelByVoxelIndex(const int x, const int y,
+                                             const int z) const {
+  return voxels_[computeLinearIndexFromVoxelIndex(x, y, z)];
+}
 
   // NOTE: The following three functions are dangerous, they will truncate the
   // voxel index to an index that is within this block if you pass a coordinate
