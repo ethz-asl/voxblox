@@ -51,6 +51,7 @@ bool ICP::getTransformFromMatchedPoints(const PointsMatrix& src,
                                         const bool refine_roll_pitch,
                                         Transformation* T_tgt_src) {
   CHECK(src.cols() == tgt.cols());
+  CHECK_NOTNULL(T_tgt_src);
 
   // find and remove mean
   const Point src_center = src.rowwise().mean();
@@ -78,6 +79,8 @@ bool ICP::getTransformFromMatchedPoints(const PointsMatrix& src,
 void ICP::addNormalizedPointInfo(const Point& point,
                                  const Point& normalized_point_normal,
                                  Vector6* info_vector) {
+  DCHECK(info_vector != nullptr);
+
   // add translational point information
   info_vector->head<3>() +=
       2.0 * normalized_point_normal.cwiseProduct(normalized_point_normal);
@@ -100,6 +103,10 @@ void ICP::addNormalizedPointInfo(const Point& point,
 void ICP::matchPoints(const Pointcloud& points, const size_t start_idx,
                       const Transformation& T_tsdf_sensor, PointsMatrix* src,
                       PointsMatrix* tgt, Vector6* info_vector) {
+  CHECK_NOTNULL(src);
+  CHECK_NOTNULL(tgt);
+  CHECK_NOTNULL(info_vector);
+
   constexpr bool kInterpolateDist = false;
   constexpr bool kInterpolateGrad = false;
   constexpr FloatingPoint kMinGradMag = 0.1;
@@ -148,6 +155,9 @@ void ICP::matchPoints(const Pointcloud& points, const size_t start_idx,
 bool ICP::stepICP(const Pointcloud& points, const size_t start_idx,
                   const Transformation& inital_T_tsdf_sensor,
                   Transformation* delta_T_tsdf_sensor, Vector6* info_vector) {
+  CHECK_NOTNULL(delta_T_tsdf_sensor);
+  CHECK_NOTNULL(info_vector);
+
   PointsMatrix src;
   PointsMatrix tgt;
 
@@ -169,6 +179,10 @@ bool ICP::stepICP(const Pointcloud& points, const size_t start_idx,
 void ICP::runThread(const Pointcloud& points,
                     Transformation* current_T_tsdf_sensor,
                     Vector6* base_info_vector, size_t* num_updates) {
+  CHECK_NOTNULL(current_T_tsdf_sensor);
+  CHECK_NOTNULL(base_info_vector);
+  CHECK_NOTNULL(num_updates);
+
   Transformation current_thread_T_tsdf_sensor;
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -209,6 +223,8 @@ void ICP::runThread(const Pointcloud& points,
 size_t ICP::runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
                    const Transformation& inital_T_tsdf_sensor,
                    Transformation* refined_T_tsdf_sensor, const unsigned seed) {
+  CHECK_NOTNULL(refined_T_tsdf_sensor);
+
   interpolator_ = std::make_shared<Interpolator<TsdfVoxel>>(&tsdf_layer);
   voxel_size_ = tsdf_layer.voxel_size();
   voxel_size_inv_ = tsdf_layer.voxel_size_inv();
