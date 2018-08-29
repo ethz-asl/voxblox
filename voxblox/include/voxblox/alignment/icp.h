@@ -86,6 +86,10 @@ class ICP {
   static bool getRotationFromMatchedPoints(const PointsMatrix& src_demean,
                                            const PointsMatrix& tgt_demean,
                                            Rotation* R_tgt_src) {
+    static_assert((dim == 3) || (dim == 2),
+                  "Rotation calculation is only meaningful for 2D or 3D data");
+    CHECK_NOTNULL(R_tgt_src);
+
     SquareMatrix<3> rotation_matrix = SquareMatrix<3>::Identity();
 
     SquareMatrix<dim> H =
