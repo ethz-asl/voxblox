@@ -14,7 +14,6 @@
     <param name="color_mode" value="normals" />
     <param name="enable_icp" value="true" />
     <param name="icp_refine_roll_pitch" value="false" />
-    <param name="icp_iterations" value="10"/>
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="min_time_between_msgs_sec" value="0.0" />
     <param name="mesh_min_weight" value="2" />
