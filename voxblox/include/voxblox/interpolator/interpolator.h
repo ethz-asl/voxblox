@@ -27,6 +27,10 @@ class Interpolator {
   bool getVoxel(const Point& pos, VoxelType* voxel,
                 bool interpolate = false) const;
 
+  // NOTE(mfehr): This function behaves strangly, it manages to return
+  // distances that are larger than the truncation distance. So either it does
+  // already do some ESDF calculation or there is a bug.
+  // --------------------------------------------------------------------------
   // This tries to use whatever information is available to interpolate the
   // distance and gradient -- if only one side is available, for instance,
   // this will still estimate a 1-sided gradient. Should give the same results
