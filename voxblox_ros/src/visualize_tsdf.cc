@@ -156,7 +156,7 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
 
     // Output as point cloud.
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
-    fillPointcloudWithMesh(mesh_layer, tsdf_mesh_color_mode_, &pointcloud);
+    fillPointcloudWithMesh(*mesh_layer, tsdf_mesh_color_mode_, &pointcloud);
     pointcloud.header.frame_id = tsdf_world_frame_;
     mesh_pointcloud_pub_.publish(pointcloud);
 
