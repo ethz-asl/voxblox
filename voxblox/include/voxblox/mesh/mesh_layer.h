@@ -139,6 +139,11 @@ class MeshLayer {
     meshes->reserve(mesh_map_.size());
     for (const std::pair<const BlockIndex, typename Mesh::Ptr>& kv :
          mesh_map_) {
+      if (kv.second == nullptr) {
+        LOG(WARNING) << "Mesh index: " << kv.first.transpose()
+                     << " exists, but has a nullptr!";
+        continue;
+      }
       meshes->emplace_back(kv.first);
     }
   }
@@ -147,6 +152,11 @@ class MeshLayer {
     meshes->clear();
     for (const std::pair<const BlockIndex, typename Mesh::Ptr>& kv :
          mesh_map_) {
+      if (kv.second == nullptr) {
+        LOG(WARNING) << "Mesh index: " << kv.first.transpose()
+                     << " exists, but has a nullptr!";
+        continue;
+      }
       if (kv.second->updated) {
         meshes->emplace_back(kv.first);
       }
