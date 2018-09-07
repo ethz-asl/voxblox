@@ -236,7 +236,7 @@ void EsdfIntegrator::updateFromTsdfBlocksFullEuclidean(
         if (esdf_voxel.observed) {
           continue;
         }
-        esdf_voxel.distance = config_.min_distance_m;
+        esdf_voxel.distance = -config_.min_distance_m;
         esdf_voxel.fixed = true;
         esdf_voxel.parent.setZero();
 
@@ -639,17 +639,12 @@ void EsdfIntegrator::processOpenSet() {
       EsdfVoxel& neighbor_voxel =
           neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
 
-      if (!neighbor_voxel.observed) {
+      if (!neighbor_voxel.observed || neighbor_voxel.fixed) {
         continue;
       }
 
       const FloatingPoint distance_to_neighbor =
           distances[i] * esdf_voxel_size_;
-
-      // Don't bother updating fixed voxels.
-      if (neighbor_voxel.fixed) {
-        continue;
-      }
 
       // Everything outside the surface.
       // I think this can easily be combined with that below...
@@ -738,6 +733,9 @@ void EsdfIntegrator::processOpenSet() {
 void EsdfIntegrator::processOpenSetFullEuclidean() {
   size_t num_updates = 0u;
   while (!open_.empty()) {
+    if (num_updates > 10000000) {
+      break;
+    }
     VoxelKey kv = open_.front();
     open_.pop();
 
@@ -807,7 +805,8 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
 
       // Everything outside the surface.
       if (neighbor_distance >= 0.0 && neighbor_voxel.distance >= 0.0 &&
-          neighbor_distance < neighbor_voxel.distance) {
+          esdf_voxel.distance >= 0.0 &&
+          neighbor_distance + config_.min_diff_m < neighbor_voxel.distance) {
         neighbor_voxel.distance = neighbor_distance;
         // Also update parent.
         neighbor_voxel.parent = esdf_voxel.parent - directions[i];
@@ -821,8 +820,9 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
       }
 
       // Everything inside the surface.
-      if (neighbor_distance < 0.0 && neighbor_voxel.distance < 0.0 &&
-          neighbor_distance > neighbor_voxel.distance) {
+      if (neighbor_distance < 0.0 && neighbor_voxel.distance <= 0.0 &&
+          esdf_voxel.distance <= 0.0 &&
+          neighbor_distance - config_.min_diff_m > neighbor_voxel.distance) {
         neighbor_voxel.distance = neighbor_distance;
         // Also update parent.
         neighbor_voxel.parent = esdf_voxel.parent - directions[i];
@@ -838,14 +838,14 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
         // The ESDF voxel is in the fixed band, and the distance between the
         // two is greater than the actual distance (i.e., a discontinuity):
         if (esdf_voxel.fixed) {
-          neighbor_voxel.distance =
-              esdf_voxel.distance -
-              signum(esdf_voxel.distance) * distances[i] * esdf_voxel_size_;
-          neighbor_voxel.parent = esdf_voxel.parent - directions[i];
-          if (!neighbor_voxel.in_queue) {
-            open_.push(neighbors[i], neighbor_voxel.distance);
-            neighbor_voxel.in_queue = true;
-          }
+          /* neighbor_voxel.distance = 3;
+              // esdf_voxel.distance -
+              // signum(esdf_voxel.distance) * distances[i] * esdf_voxel_size_;
+           neighbor_voxel.parent = esdf_voxel.parent - directions[i];
+           if (!neighbor_voxel.in_queue) {
+             open_.push(neighbors[i], neighbor_voxel.distance);
+             neighbor_voxel.in_queue = true;
+           } */
           // ESDF voxel not in fixed band, and is outside an obstacle, while the
           // neighbor voxel is inside an obstacle.
         } else if (neighbor_voxel.distance < 0.0) {

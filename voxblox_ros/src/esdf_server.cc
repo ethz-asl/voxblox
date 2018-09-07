@@ -22,7 +22,8 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
       clear_sphere_for_planning_(false),
       publish_esdf_map_(false),
       publish_traversable_(false),
-      traversability_radius_(1.0) {
+      traversability_radius_(1.0),
+      incremental_update_(true) {
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
@@ -103,7 +104,8 @@ bool EsdfServer::generateEsdfCallback(
 
 void EsdfServer::updateMesh() {
   // Also update the ESDF now, if there's any blocks in the TSDF.
-  if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+  if (incremental_update_ &&
+      tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = false;
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   }
