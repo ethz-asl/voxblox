@@ -222,16 +222,16 @@ inline void fillMarkerWithMesh(const MeshLayer::ConstPtr& mesh_layer,
 }
 
 inline void fillPointcloudWithMesh(
-    const MeshLayer::ConstPtr& mesh_layer, ColorMode color_mode,
+    const MeshLayer& mesh_layer, ColorMode color_mode,
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   pointcloud->clear();
 
   BlockIndexList mesh_indices;
-  mesh_layer->getAllAllocatedMeshes(&mesh_indices);
+  mesh_layer.getAllAllocatedMeshes(&mesh_indices);
 
   for (const BlockIndex& block_index : mesh_indices) {
-    Mesh::ConstPtr mesh = mesh_layer->getMeshPtrByIndex(block_index);
+    Mesh::ConstPtr mesh = mesh_layer.getMeshPtrByIndex(block_index);
 
     if (!mesh->hasVertices()) {
       continue;

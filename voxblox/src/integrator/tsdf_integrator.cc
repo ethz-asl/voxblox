@@ -1,4 +1,5 @@
 #include "voxblox/integrator/tsdf_integrator.h"
+
 #include <iostream>
 #include <list>
 
@@ -34,8 +35,8 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
 
 // Thread safe.
 bool TsdfIntegratorBase::isPointValid(const Point& point_C,
-                                             const bool point_in_freespace,
-                                             bool* is_clearing) const {
+                                      const bool point_in_freespace,
+                                      bool* is_clearing) const {
   DCHECK(is_clearing != nullptr);
   const FloatingPoint ray_distance = point_C.norm();
   if (ray_distance < config_.min_ray_length_m) {
@@ -296,13 +297,13 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   bundleRays(T_G_C, points_C, freespace_points, &index_getter, &voxel_map,
              &clear_map);
 
-  integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, false,
-                voxel_map, clear_map);
+  integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing,
+                false /*clearing ray*/, voxel_map, clear_map);
 
   timing::Timer clear_timer("integrate/clear");
 
-  integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, true,
-                voxel_map, clear_map);
+  integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing,
+                true /*clearing ray*/, voxel_map, clear_map);
 
   clear_timer.Stop();
 

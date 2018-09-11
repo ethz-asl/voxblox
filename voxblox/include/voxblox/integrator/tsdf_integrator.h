@@ -37,7 +37,8 @@ class TsdfIntegratorBase {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     float default_truncation_distance = 0.1;
-    float max_weight = 10000.0;
+    float max_weight = 10000.0f;
+    const float kMinObservedVoxelWeight = 1e-6f;
     bool voxel_carving_enabled = true;
     FloatingPoint min_ray_length_m = 0.1;
     FloatingPoint max_ray_length_m = 5.0;
