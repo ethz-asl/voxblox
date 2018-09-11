@@ -60,10 +60,10 @@ class TsdfServer {
   void publishTsdfOccupiedNodes();
 
   virtual void publishSlices();
-  virtual void updateMesh();    // Incremental update.
-  virtual bool generateMesh();  // Batch update.
+  virtual void updateMesh();          // Incremental update.
+  virtual bool generateMesh();        // Batch update.
   virtual void publishPointclouds();  // Publishes all available pointclouds.
-  virtual void publishMap(); // Publishes the complete map
+  virtual void publishMap();          // Publishes the complete map
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
@@ -74,11 +74,10 @@ class TsdfServer {
   bool generateMeshCallback(std_srvs::Empty::Request& request,       // NOLINT
                             std_srvs::Empty::Response& response);    // NOLINT
   bool publishPointcloudsCallback(
-      std_srvs::Empty::Request& request,     // NOLINT
-      std_srvs::Empty::Response& response);  // NOLINT
-  bool publishTsdfMapCallback(
-          std_srvs::Empty::Request& request,     // NOLINT
-          std_srvs::Empty::Response& response);  // NOLINT
+      std_srvs::Empty::Request& request,                             // NOLINT
+      std_srvs::Empty::Response& response);                          // NOLINT
+  bool publishTsdfMapCallback(std_srvs::Empty::Request& request,     // NOLINT
+                              std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
 
@@ -87,6 +86,11 @@ class TsdfServer {
   // Accessors for setting and getting parameters.
   double getSliceLevel() const { return slice_level_; }
   void setSliceLevel(double slice_level) { slice_level_ = slice_level; }
+
+  bool setPublishSlices() const { return publish_slices_; }
+  void setPublishSlices(const bool publish_slices) {
+    publish_slices_ = publish_slices;
+  }
 
   // CLEARS THE ENTIRE MAP!
   virtual void clear();
