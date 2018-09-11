@@ -84,8 +84,8 @@ typedef kindr::minimal::RotationQuaternionTemplate<
 
 // For alignment of layers / point clouds
 typedef Eigen::Matrix<FloatingPoint, 3, Eigen::Dynamic> PointsMatrix;
-typedef Eigen::Matrix<FloatingPoint, 3, 3> Matrix3;
-typedef Eigen::Matrix<FloatingPoint, 2, 2> Matrix2;
+template <size_t size>
+using SquareMatrix = Eigen::Matrix<FloatingPoint, size, size>;
 
 // Interpolation structure
 typedef Eigen::Matrix<FloatingPoint, 8, 8> InterpTable;
