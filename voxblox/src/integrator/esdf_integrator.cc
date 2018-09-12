@@ -83,13 +83,13 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   // are allocated.
   // Don't need to check the free set, as the occupied voxel list also contains
   // the inner free sphere.
-  /* timing::Timer push_timer("esdf/clear_radius/push_neighbors");
+  timing::Timer push_timer("esdf/clear_radius/push_neighbors");
   for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_occ) {
     for (const VoxelIndex& voxel_index : kv.second) {
       pushNeighborsToOpen(kv.first, voxel_index);
     }
   }
-  push_timer.Stop(); */
+  push_timer.Stop();
 
   VLOG(3) << "Changed " << updated_blocks_.size()
           << " blocks from unknown to free or occupied near the robot.";
