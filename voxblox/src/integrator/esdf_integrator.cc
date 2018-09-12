@@ -31,12 +31,13 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
 
   // First set all in inner sphere to free.
   HierarchicalIndexMap block_voxel_list;
+  timing::Timer sphere_timer("esdf/clear_radius/get_sphere");
   utils::getAndAllocateSphereAroundPoint(position, config_.clear_sphere_radius,
                                          esdf_layer_, &block_voxel_list);
+  sphere_timer.Stop();
   for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
     // Get block.
-    Block<EsdfVoxel>::Ptr block_ptr =
-        esdf_layer_->allocateBlockPtrByIndex(kv.first);
+    Block<EsdfVoxel>::Ptr block_ptr = esdf_layer_->getBlockPtrByIndex(kv.first);
 
     for (const VoxelIndex& voxel_index : kv.second) {
       if (!block_ptr->isValidVoxelIndex(voxel_index)) {
@@ -55,13 +56,14 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
 
   // Second set all remaining unknown to occupied.
   HierarchicalIndexMap block_voxel_list_occ;
+  timing::Timer outer_sphere_timer("esdf/clear_radius/get_outer_sphere");
   utils::getAndAllocateSphereAroundPoint(position,
                                          config_.occupied_sphere_radius,
                                          esdf_layer_, &block_voxel_list_occ);
+  outer_sphere_timer.Stop();
   for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_occ) {
     // Get block.
-    Block<EsdfVoxel>::Ptr block_ptr =
-        esdf_layer_->allocateBlockPtrByIndex(kv.first);
+    Block<EsdfVoxel>::Ptr block_ptr = esdf_layer_->getBlockPtrByIndex(kv.first);
 
     for (const VoxelIndex& voxel_index : kv.second) {
       if (!block_ptr->isValidVoxelIndex(voxel_index)) {
@@ -81,11 +83,13 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   // are allocated.
   // Don't need to check the free set, as the occupied voxel list also contains
   // the inner free sphere.
+  /* timing::Timer push_timer("esdf/clear_radius/push_neighbors");
   for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_occ) {
     for (const VoxelIndex& voxel_index : kv.second) {
       pushNeighborsToOpen(kv.first, voxel_index);
     }
   }
+  push_timer.Stop(); */
 
   VLOG(3) << "Changed " << updated_blocks_.size()
           << " blocks from unknown to free or occupied near the robot.";
@@ -838,14 +842,16 @@ void EsdfIntegrator::processOpenSetFullEuclidean() {
         // The ESDF voxel is in the fixed band, and the distance between the
         // two is greater than the actual distance (i.e., a discontinuity):
         if (esdf_voxel.fixed) {
-          /* neighbor_voxel.distance = 3;
-              // esdf_voxel.distance -
-              // signum(esdf_voxel.distance) * distances[i] * esdf_voxel_size_;
-           neighbor_voxel.parent = esdf_voxel.parent - directions[i];
-           if (!neighbor_voxel.in_queue) {
-             open_.push(neighbors[i], neighbor_voxel.distance);
-             neighbor_voxel.in_queue = true;
-           } */
+          neighbor_voxel.distance =
+              -signum(esdf_voxel.distance) * distances[i] * esdf_voxel_size_;
+          // esdf_voxel.distance -
+          // signum(esdf_voxel.distance) * distances[i] * esdf_voxel_size_;
+          neighbor_voxel.parent
+              .setZero();  //= esdf_voxel.parent - directions[i];
+          if (!neighbor_voxel.in_queue) {
+            open_.push(neighbors[i], neighbor_voxel.distance);
+            neighbor_voxel.in_queue = true;
+          }
           // ESDF voxel not in fixed band, and is outside an obstacle, while the
           // neighbor voxel is inside an obstacle.
         } else if (neighbor_voxel.distance < 0.0) {
