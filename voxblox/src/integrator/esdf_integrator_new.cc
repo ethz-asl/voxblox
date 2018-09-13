@@ -9,8 +9,8 @@ EsdfIntegratorNew::EsdfIntegratorNew(const Config& config,
   CHECK(tsdf_layer_);
   CHECK(esdf_layer_);
 
-  esdf_voxels_per_side_ = esdf_layer_->voxels_per_side();
-  esdf_voxel_size_ = esdf_layer_->voxel_size();
+  voxels_per_side_ = esdf_layer_->voxels_per_side();
+  voxel_size_ = esdf_layer_->voxel_size();
 
   CHECK_EQ(esdf_layer_->voxels_per_side(), tsdf_layer_->voxels_per_side());
   CHECK_NEAR(esdf_layer_->voxel_size(), tsdf_layer_->voxel_size(), 1e-6);
@@ -146,7 +146,7 @@ void EsdfIntegratorNew::updateFromTsdfBlocks(
       VoxelIndex voxel_index =
           esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
       GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-          block_index, voxel_index, esdf_voxels_per_side_);
+          block_index, voxel_index, voxels_per_side_);
 
       // If there was nothing there before:
       if (!esdf_voxel.observed) {
@@ -264,7 +264,61 @@ void EsdfIntegratorNew::processRaiseSet() {
 
 void EsdfIntegratorNew::processOpenSet() {
   size_t num_updates = 0u;
-  {}
+  GlobalIndexVector neighbors;
+
+  while (!open_.empty()) {
+    GlobalIndex global_index = open_.front();
+    open_.pop();
+
+    EsdfVoxel* voxel = esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+    CHECK_NOTNULL(voxel);
+
+    // Skip voxels that are unobserved or outside the ranges we care about.
+    if (!voxel->observed || voxel->distance >= config_.max_distance_m ||
+        voxel->distance <= -config_.max_distance_m) {
+      voxel->in_queue = false;
+      continue;
+    }
+
+    // Get the global indices of neighbors.
+    neighbor_tools_.getNeighborsByGlobalIndex(
+        global_index, Connectivity::kTwentySix, &neighbors);
+
+    // Go through the neighbors and see if we can update any of them.
+    for (const GlobalIndex& neighbor_index : neighbors) {
+      EsdfVoxel* neighbor_voxel =
+          esdf_layer_->getVoxelPtrByGlobalIndex(neighbor_index);
+      if (neighbor_voxel == nullptr) {
+        continue;
+      }
+
+      // Don't touch unobserved voxels and can't do anything with fixed voxels.
+      if (!neighbor_voxel->observed || neighbor_voxel->fixed) {
+        continue;
+      }
+
+      SignedIndex direction = (neighbor_index - global_index).cast<int>();
+      FloatingPoint distance =
+          direction.cast<FloatingPoint>().norm() * voxel_size_;
+
+      // Both are OUTSIDE the surface.
+      if (voxel->distance > 0 && neighbor_voxel->distance > 0) {
+        if (voxel->distance + distance + config_.min_diff_m <
+            neighbor_voxel->distance) {
+          num_updates++;
+          neighbor_voxel->distance = voxel->distance + distance;
+          // Also update parent.
+          neighbor_voxel->parent = -direction;
+          // We push this voxel back into the queue even if it's already in the
+          // queue.
+          if (config_.multi_queue || !neighbor_voxel->in_queue) {
+            open_.push(neighbor_index, neighbor_voxel->distance);
+            neighbor_voxel->in_queue = true;
+          }
+        }
+      }
+    }
+  }
 
   VLOG(3) << "[ESDF update]: made " << num_updates << " voxel updates.";
 }
