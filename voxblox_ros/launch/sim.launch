@@ -3,6 +3,7 @@
     <param name="tsdf_voxel_size" value="0.1" />
     <param name="tsdf_voxels_per_side" value="16" />
     <param name="incremental" value="true" />
+    <param name="add_robot_pose" value="true" />
     <param name="generate_mesh" value="true" />
     <param name="num_viewpoints" value="50" />
     <param name="truncation_distance" value="0.4" />

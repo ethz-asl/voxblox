@@ -1,3 +1,5 @@
+#include <voxblox/utils/planning_utils.h>
+
 #include "voxblox/integrator/esdf_integrator_new.h"
 
 namespace voxblox {
@@ -24,7 +26,7 @@ EsdfIntegratorNew::EsdfIntegratorNew(const Config& config,
 // and clears space in a sphere around current position.
 void EsdfIntegratorNew::addNewRobotPosition(const Point& position) {
   timing::Timer clear_timer("esdf/clear_radius");
-  /*
+
   // First set all in inner sphere to free.
   HierarchicalIndexMap block_voxel_list;
   timing::Timer sphere_timer("esdf/clear_radius/get_sphere");
@@ -46,7 +48,11 @@ void EsdfIntegratorNew::addNewRobotPosition(const Point& position) {
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
         updated_blocks_.insert(kv.first);
-        pushNeighborsToOpen(kv.first, voxel_index);
+        // pushNeighborsToOpen(kv.first, voxel_index);
+      } else if (esdf_voxel.observed) {
+        GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+            kv.first, voxel_index, voxels_per_side_);
+        open_.push(global_index, esdf_voxel.distance);
       }
     }
   }
@@ -72,13 +78,17 @@ void EsdfIntegratorNew::addNewRobotPosition(const Point& position) {
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
         updated_blocks_.insert(kv.first);
-        pushNeighborsToOpen(kv.first, voxel_index);
+        // pushNeighborsToOpen(kv.first, voxel_index);
+      } else {
+        GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+            kv.first, voxel_index, voxels_per_side_);
+        open_.push(global_index, esdf_voxel.distance);
       }
     }
   }
 
   VLOG(3) << "Changed " << updated_blocks_.size()
-          << " blocks from unknown to free or occupied near the robot."; */
+          << " blocks from unknown to free or occupied near the robot.";
   clear_timer.Stop();
 }
 
@@ -180,9 +190,11 @@ void EsdfIntegratorNew::updateFromTsdfBlocks(
         // lower and raise rules apply as above.
         if (tsdf_fixed || esdf_voxel.fixed) {
           if ((esdf_voxel.distance > 0 &&
-               tsdf_voxel.distance < esdf_voxel.distance) ||
+               tsdf_voxel.distance + config_.min_diff_m <
+                   esdf_voxel.distance) ||
               (esdf_voxel.distance <= 0 &&
-               tsdf_voxel.distance > esdf_voxel.distance)) {
+               tsdf_voxel.distance - config_.min_diff_m >
+                   esdf_voxel.distance)) {
             // Lower.
             esdf_voxel.fixed = tsdf_fixed;
             if (esdf_voxel.fixed) {
@@ -196,9 +208,11 @@ void EsdfIntegratorNew::updateFromTsdfBlocks(
             open_.push(global_index, esdf_voxel.distance);
             num_lower++;
           } else if ((esdf_voxel.distance > 0 &&
-                      tsdf_voxel.distance > esdf_voxel.distance) ||
+                      tsdf_voxel.distance - config_.min_diff_m >
+                          esdf_voxel.distance) ||
                      (esdf_voxel.distance <= 0 &&
-                      tsdf_voxel.distance < esdf_voxel.distance)) {
+                      tsdf_voxel.distance + config_.min_diff_m <
+                          esdf_voxel.distance)) {
             // Raise.
             esdf_voxel.fixed = tsdf_fixed;
             if (esdf_voxel.fixed) {

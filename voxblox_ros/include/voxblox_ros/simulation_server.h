@@ -78,6 +78,7 @@ class SimulationServer {
   FloatingPoint visualization_slice_level_;
   bool generate_mesh_;
   bool incremental_;
+  bool add_robot_pose_;
   FloatingPoint truncation_distance_;
   FloatingPoint esdf_max_distance_;
   size_t max_attempts_to_generate_viewpoint_;
