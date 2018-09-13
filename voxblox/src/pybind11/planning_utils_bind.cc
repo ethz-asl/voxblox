@@ -11,21 +11,21 @@ using EsdfLayer = voxblox::Layer<EsdfVoxel>;
 using voxblox::utils::fillSphereAroundPoint;
 using voxblox::utils::clearSphereAroundPoint;
 
-void planning_utils_bind(py::module &m) {
+void planning_utils_bind(py::module& m) {
   m.def("fillSphereAroundPoint",
-    [](EsdfLayer* layer, const Point& center, const FloatingPoint radius) {
-        if (!layer) {
-          throw std::runtime_error(std::string("Empty layer"));
-        }
-        fillSphereAroundPoint(layer, center, radius);
-      }
-  );
+        [](const Point& center, const FloatingPoint radius,
+           const float max_distance_m, EsdfLayer* layer) {
+          if (!layer) {
+            throw std::runtime_error(std::string("Empty layer"));
+          }
+          fillSphereAroundPoint(center, radius, max_distance_m, layer);
+        });
   m.def("clearSphereAroundPoint",
-    [](EsdfLayer* layer, const Point& center, const FloatingPoint radius) {
-        if (!layer) {
-          throw std::runtime_error(std::string("Empty layer"));
-        }
-        clearSphereAroundPoint(layer, center, radius);
-      }
-  );
+        [](const Point& center, const float max_distance_m,
+           const FloatingPoint radius, EsdfLayer* layer) {
+          if (!layer) {
+            throw std::runtime_error(std::string("Empty layer"));
+          }
+          clearSphereAroundPoint(center, radius, max_distance_m, layer);
+        });
 }

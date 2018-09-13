@@ -97,7 +97,7 @@ class MeshLayer {
   // Coord to mesh index.
   inline BlockIndex computeBlockIndexFromCoordinates(
       const Point& coords) const {
-    return getGridIndexFromPoint(coords, block_size_inv_);
+    return getGridIndexFromPoint<BlockIndex>(coords, block_size_inv_);
   }
 
   // Pure virtual function -- inheriting class MUST overwrite.
@@ -120,6 +120,18 @@ class MeshLayer {
 
   void removeMeshByCoordinates(const Point& coords) {
     mesh_map_.erase(computeBlockIndexFromCoordinates(coords));
+  }
+
+  void clearDistantMesh(const Point& center, const double max_distance) {
+    // we clear the mesh, but do not delete it from the map as the empty mesh
+    // must be sent to rviz so it is also cleared there
+    for (std::pair<const BlockIndex, typename Mesh::Ptr>& kv : mesh_map_) {
+      if ((kv.second->origin - center).squaredNorm() >
+          max_distance * max_distance) {
+        kv.second->clear();
+        kv.second->updated = true;
+      }
+    }
   }
 
   void getAllAllocatedMeshes(BlockIndexList* meshes) const {

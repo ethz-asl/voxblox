@@ -79,8 +79,8 @@ class LayerTest {
 };
 
 template <typename VoxelType>
-void LayerTest<VoxelType>::CompareVoxel(const VoxelType& voxel_A,
-                                        const VoxelType& voxel_B) const {
+void LayerTest<VoxelType>::CompareVoxel(const VoxelType& /* voxel_A */,
+                                        const VoxelType& /* voxel_B */) const {
   LOG(FATAL) << "Not implemented for this voxel type!";
 }
 
@@ -90,14 +90,16 @@ void LayerTest<EsdfVoxel>::CompareVoxel(const EsdfVoxel& voxel_A,
   constexpr double kTolerance = 1e-10;
 
   EXPECT_NEAR(voxel_A.distance, voxel_B.distance, kTolerance);
+
+  // Flags
   EXPECT_EQ(voxel_A.observed, voxel_B.observed);
+  EXPECT_EQ(voxel_A.hallucinated, voxel_B.hallucinated);
   EXPECT_EQ(voxel_A.in_queue, voxel_B.in_queue);
   EXPECT_EQ(voxel_A.fixed, voxel_B.fixed);
 
-  // TODO(helenol): is this not serialized?
-  // EXPECT_EQ(voxel_A.parent.x(), voxel_B.parent.x());
-  // EXPECT_EQ(voxel_A.parent.y(), voxel_B.parent.y());
-  // EXPECT_EQ(voxel_A.parent.z(), voxel_B.parent.z());
+  EXPECT_EQ(voxel_A.parent.x(), voxel_B.parent.x());
+  EXPECT_EQ(voxel_A.parent.y(), voxel_B.parent.y());
+  EXPECT_EQ(voxel_A.parent.z(), voxel_B.parent.z());
 }
 
 template <>
@@ -118,6 +120,13 @@ void LayerTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
   EXPECT_EQ(voxel_A.color.g, voxel_B.color.g);
   EXPECT_EQ(voxel_A.color.b, voxel_B.color.b);
   EXPECT_EQ(voxel_A.color.a, voxel_B.color.a);
+}
+
+template <>
+void LayerTest<IntensityVoxel>::CompareVoxel(
+    const IntensityVoxel& voxel_A, const IntensityVoxel& voxel_B) const {
+  EXPECT_NEAR(voxel_A.intensity, voxel_B.intensity, kTolerance);
+  EXPECT_NEAR(voxel_A.weight, voxel_B.weight, kTolerance);
 }
 
 template <typename VoxelType>
@@ -179,9 +188,9 @@ inline void fillVoxelWithTestData(size_t x, size_t y, size_t z,
                                   EsdfVoxel* voxel) {
   CHECK_NOTNULL(voxel);
   voxel->distance = x * y * 0.66 + z;
-  voxel->parent.x() = x % 255;
-  voxel->parent.y() = y % 255;
-  voxel->parent.z() = z % 255;
+  voxel->parent.x() = x % INT8_MAX;
+  voxel->parent.y() = y % INT8_MAX;
+  voxel->parent.z() = z % INT8_MAX;
 
   voxel->observed = true;
   voxel->in_queue = true;
@@ -194,6 +203,14 @@ inline void fillVoxelWithTestData(size_t x, size_t y, size_t z,
   CHECK_NOTNULL(voxel);
   voxel->probability_log = x * y * 0.66 + z;
   voxel->observed = true;
+}
+
+template <>
+inline void fillVoxelWithTestData(size_t x, size_t y, size_t z,
+                                  IntensityVoxel* voxel) {
+  CHECK_NOTNULL(voxel);
+  voxel->intensity = x * y * 0.66 + z;
+  voxel->weight = y * z * 0.33 + x;
 }
 
 }  // namespace test

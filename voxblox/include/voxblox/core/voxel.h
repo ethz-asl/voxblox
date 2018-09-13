@@ -10,33 +10,36 @@
 namespace voxblox {
 
 struct TsdfVoxel {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   float distance = 0.0f;
   float weight = 0.0f;
   Color color;
 };
 
 struct EsdfVoxel {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   float distance = 0.0f;
+
   bool observed = false;
-  bool in_queue = false;
-  bool fixed = false;
   // Whether the voxel was copied from the TSDF (false) or created from a pose
   // or some other source (true). This member is not serialized!!!
   bool hallucinated = false;
+  bool in_queue = false;
+  bool fixed = false;
+
   // Relative direction toward parent. If itself, then either uninitialized
   // or in the fixed frontier.
   Eigen::Vector3i parent = Eigen::Vector3i::Zero();
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct OccupancyVoxel {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   float probability_log = 0.0f;
   bool observed = false;
+};
+
+struct IntensityVoxel {
+  float intensity = 0.0f;
+  float weight = 0.0f;
 };
 
 // Used for serialization only.
@@ -45,6 +48,7 @@ const std::string kNotSerializable = "not_serializable";
 const std::string kTsdf = "tsdf";
 const std::string kEsdf = "esdf";
 const std::string kOccupancy = "occupancy";
+const std::string kIntensity = "intensity";
 }  // namespace voxel_types
 
 template <typename Type>
@@ -65,6 +69,11 @@ inline std::string getVoxelType<EsdfVoxel>() {
 template <>
 inline std::string getVoxelType<OccupancyVoxel>() {
   return voxel_types::kOccupancy;
+}
+
+template <>
+inline std::string getVoxelType<IntensityVoxel>() {
+  return voxel_types::kIntensity;
 }
 
 }  // namespace voxblox
