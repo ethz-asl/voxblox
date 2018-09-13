@@ -252,12 +252,10 @@ void EsdfIntegratorNew::updateFromTsdfBlocks(
           << " New: " << num_new;
 
   timing::Timer raise_timer("esdf/raise_esdf");
-  // Process the open set now.
   processRaiseSet();
   raise_timer.Stop();
 
   timing::Timer update_timer("esdf/update_esdf");
-  // Process the open set now.
   processOpenSet();
   update_timer.Stop();
 
@@ -298,8 +296,16 @@ void EsdfIntegratorNew::processRaiseSet() {
         continue;
       }
       SignedIndex direction = (neighbor_index - global_index).cast<int>();
+      bool is_neighbors_parent = (neighbor_voxel->parent == -direction);
+      if (config_.full_euclidean_distance) {
+        Point voxel_parent_direction =
+            neighbor_voxel->parent.cast<FloatingPoint>().normalized();
+        voxel_parent_direction = Eigen::round(voxel_parent_direction.array());
+        is_neighbors_parent =
+            (voxel_parent_direction.cast<int>() == -direction);
+      }
       // This will never update fixed voxels as they are their own parents.
-      if (neighbor_voxel->parent == -direction) {
+      if (is_neighbors_parent) {
         // This is the case where we are the parent of this one, so we
         // should clear it and raise it.
         neighbor_voxel->distance =
