@@ -34,11 +34,13 @@ class EsdfIntegratorNew {
     FloatingPoint default_distance_m = 2.0;
     // For cheaper but less accurate map updates: the minimum difference in
     // a voxel distance, before the change is propagated.
-    FloatingPoint min_diff_m = 0.001;
+    FloatingPoint min_diff_m = 0.0;  // 0.001;
     // Minimum weight to consider a TSDF value seen at.
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
+    // Whether to push stuff to the queue multiple times.
+    bool multi_queue = true;
     // Whether to add an outside layer of occupied voxels. Basically just sets
     // all unknown voxels in the allocated blocks to occupied.
     // Only implemented in Batch Full Euclidean updating. If using incremental
@@ -107,8 +109,8 @@ class EsdfIntegratorNew {
   // have their values invalidated.
   AlignedQueue<GlobalIndex> raise_;
 
-  size_t esdf_voxels_per_side_;
-  FloatingPoint esdf_voxel_size_;
+  size_t voxels_per_side_;
+  FloatingPoint voxel_size_;
 
   IndexSet updated_blocks_;
 };
