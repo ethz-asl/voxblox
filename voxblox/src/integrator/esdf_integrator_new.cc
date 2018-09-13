@@ -148,15 +148,17 @@ void EsdfIntegratorNew::updateFromTsdfBlocks(
       GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
           block_index, voxel_index, voxels_per_side_);
 
+      bool tsdf_fixed = isFixed(tsdf_voxel.distance);
+
       // If there was nothing there before:
       if (!esdf_voxel.observed) {
         // Two options: ESDF is in the fixed truncation band, or outside.
-        if (isFixed(tsdf_voxel.distance)) {
+        if (tsdf_fixed) {
           // In fixed band, just add and lock it.
           esdf_voxel.distance = tsdf_voxel.distance;
           esdf_voxel.fixed = true;
           // Also add it to open so it can update the neighbors.
-          open_.push(global_index, tsdf_voxel.distance);
+          open_.push(global_index, esdf_voxel.distance);
         } else {
           // Not in the fixed band. Just copy the sign.
           esdf_voxel.distance =
@@ -169,6 +171,70 @@ void EsdfIntegratorNew::updateFromTsdfBlocks(
         num_new++;
       } else {
         // If this voxel DID exist before.
+        // There are three main options:
+        // (1) lower: esdf or tsdf is fixed, and tsdf is closer to surface than
+        // it used to be.
+        // (2) raise: esdf or tsdf is fixed, and tsdf is further from surface
+        // than it used to be.
+        // (3) sign flip: tsdf and esdf have different signs, otherwise the
+        // lower and raise rules apply as above.
+        if (tsdf_fixed || esdf_voxel.fixed) {
+          if ((esdf_voxel.distance > 0 &&
+               tsdf_voxel.distance < esdf_voxel.distance) ||
+              (esdf_voxel.distance <= 0 &&
+               tsdf_voxel.distance > esdf_voxel.distance)) {
+            // Lower.
+            esdf_voxel.fixed = tsdf_fixed;
+            if (esdf_voxel.fixed) {
+              esdf_voxel.distance = tsdf_voxel.distance;
+            } else {
+              esdf_voxel.distance =
+                  signum(tsdf_voxel.distance) * config_.default_distance_m;
+            }
+            esdf_voxel.observed = true;
+            esdf_voxel.parent.setZero();
+            open_.push(global_index, esdf_voxel.distance);
+            num_lower++;
+          } else if ((esdf_voxel.distance > 0 &&
+                      tsdf_voxel.distance > esdf_voxel.distance) ||
+                     (esdf_voxel.distance <= 0 &&
+                      tsdf_voxel.distance < esdf_voxel.distance)) {
+            // Raise.
+            esdf_voxel.fixed = tsdf_fixed;
+            if (esdf_voxel.fixed) {
+              esdf_voxel.distance = tsdf_voxel.distance;
+            } else {
+              esdf_voxel.distance =
+                  signum(tsdf_voxel.distance) * config_.default_distance_m;
+            }
+            esdf_voxel.observed = true;
+            esdf_voxel.parent.setZero();
+            raise_.push(global_index);
+            num_raise++;
+          }
+        } else if (signum(tsdf_voxel.distance) != signum(esdf_voxel.distance)) {
+          // This means ESDF was positive and TSDF is negative.
+          // So lower.
+          if (tsdf_voxel.distance < esdf_voxel.distance) {
+            esdf_voxel.distance =
+                signum(tsdf_voxel.distance) * config_.default_distance_m;
+            esdf_voxel.observed = true;
+            esdf_voxel.parent.setZero();
+            open_.push(global_index, esdf_voxel.distance);
+            num_lower++;
+          } else {
+            // Otherwise ESDF was negative and TSDF is positive.
+            // So raise.
+            esdf_voxel.distance =
+                signum(tsdf_voxel.distance) * config_.default_distance_m;
+            esdf_voxel.observed = true;
+            esdf_voxel.parent.setZero();
+            raise_.push(global_index);
+            num_raise++;
+          }
+        }
+        // Otherwise we just don't care. Not fixed voxels that match the right
+        // sign can be whatever value that they want to be.
       }
     }
   }
@@ -272,11 +338,11 @@ void EsdfIntegratorNew::processOpenSet() {
 
     EsdfVoxel* voxel = esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
     CHECK_NOTNULL(voxel);
+    voxel->in_queue = false;
 
     // Skip voxels that are unobserved or outside the ranges we care about.
     if (!voxel->observed || voxel->distance >= config_.max_distance_m ||
         voxel->distance <= -config_.max_distance_m) {
-      voxel->in_queue = false;
       continue;
     }
 
@@ -292,7 +358,8 @@ void EsdfIntegratorNew::processOpenSet() {
         continue;
       }
 
-      // Don't touch unobserved voxels and can't do anything with fixed voxels.
+      // Don't touch unobserved voxels and can't do anything with fixed
+      // voxels.
       if (!neighbor_voxel->observed || neighbor_voxel->fixed) {
         continue;
       }
@@ -360,8 +427,6 @@ void EsdfIntegratorNew::processOpenSet() {
         }
       }
     }
-
-    voxel->in_queue = false;
   }
 
   VLOG(3) << "[ESDF update]: made " << num_updates << " voxel updates.";
