@@ -23,7 +23,7 @@ void SimulationServer::getServerConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   // Settings for simulation.
   nh_private_.param("tsdf_voxel_size", voxel_size_, voxel_size_);
-  nh_private_.param("voxels_per_side", voxels_per_side_, voxels_per_side_);
+  nh_private_.param("tsdf_voxels_per_side", voxels_per_side_, voxels_per_side_);
   nh_private.param("incremental", incremental_, incremental_);
   nh_private.param("generate_mesh", generate_mesh_, generate_mesh_);
 

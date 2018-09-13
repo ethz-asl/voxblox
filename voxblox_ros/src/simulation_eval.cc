@@ -24,7 +24,7 @@ class SimulationServerImpl : public voxblox::SimulationServer {
     world_.addObject(std::unique_ptr<Object>(
         new Cube(Point(-4.0, 4.0, 2.0), Point(4, 4, 4), Color::Green())));
 
-    world_.addGroundLevel(0.0);
+    world_.addGroundLevel(0.03);
 
     world_.generateSdfFromWorld(truncation_distance_, tsdf_gt_.get());
     world_.generateSdfFromWorld(esdf_max_distance_, esdf_gt_.get());
