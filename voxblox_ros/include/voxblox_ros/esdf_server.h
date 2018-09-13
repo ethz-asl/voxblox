@@ -23,16 +23,17 @@ class EsdfServer : public TsdfServer {
              const TsdfIntegratorBase::Config& tsdf_integrator_config);
   virtual ~EsdfServer() {}
 
-  void publishAllUpdatedEsdfVoxels();
-  virtual void publishSlices();
-
   bool generateEsdfCallback(std_srvs::Empty::Request& request,     // NOLINT
                             std_srvs::Empty::Response& response);  // NOLINT
+
+  void publishAllUpdatedEsdfVoxels();
+  virtual void publishSlices();
+  void publishTraversable();
 
   virtual void updateMesh();
   virtual void publishPointclouds();
   virtual void newPoseCallback(const Transformation& T_G_C);
-  virtual void publishMap();
+  virtual void publishMap(const bool reset_remote_map = false);
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
@@ -56,13 +57,19 @@ class EsdfServer : public TsdfServer {
   }
   float getEsdfMaxDistance() const;
   void setEsdfMaxDistance(float max_distance);
+  float getTraversabilityRadius() const;
+  void setTraversabilityRadius(float traversability_radius);
 
   virtual void clear();
 
  protected:
+  // Sets up publishing and subscribing. Should only be called from constructor.
+  void setupRos();
+
   // Publish markers for visualization.
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher esdf_slice_pub_;
+  ros::Publisher traversable_pub_;
 
   // Publish the complete map for other nodes to consume.
   ros::Publisher esdf_map_pub_;
@@ -75,6 +82,8 @@ class EsdfServer : public TsdfServer {
 
   bool clear_sphere_for_planning_;
   bool publish_esdf_map_;
+  bool publish_traversable_;
+  float traversability_radius_;
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;

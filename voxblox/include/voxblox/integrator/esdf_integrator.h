@@ -1,9 +1,9 @@
 #ifndef VOXBLOX_INTEGRATOR_ESDF_INTEGRATOR_H_
 #define VOXBLOX_INTEGRATOR_ESDF_INTEGRATOR_H_
 
-#include <glog/logging.h>
-#include <Eigen/Core>
 #include <algorithm>
+#include <Eigen/Core>
+#include <glog/logging.h>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -12,6 +12,7 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/bucket_queue.h"
+#include "voxblox/utils/neighbor_tools.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -40,6 +41,11 @@ class EsdfIntegrator {
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
+    // Whether to add an outside layer of occupied voxels. Basically just sets
+    // all unknown voxels in the allocated blocks to occupied.
+    // Only implemented in Batch Full Euclidean updating. If using incremental
+    // updates, prefer to use occupied spheres below.
+    bool add_occupied_crust = true;
 
     // For marking unknown space around a robot as free or occupied, these are
     // the radiuses used around each robot position.
@@ -98,23 +104,9 @@ class EsdfIntegrator {
   void pushNeighborsToOpen(const BlockIndex& block_index,
                            const VoxelIndex& voxel_index);
 
-  // Uses 26-connectivity and quasi-Euclidean distances.
-  // Directions is the direction that the neighbor voxel lives in. If you
-  // need the direction FROM the neighbor voxel TO the current voxel, take
-  // negative of the given direction.
-  void getNeighborsAndDistances(
-      const BlockIndex& block_index, const VoxelIndex& voxel_index,
-      AlignedVector<VoxelKey>* neighbors, AlignedVector<float>* distances,
-      AlignedVector<Eigen::Vector3i>* directions) const;
-  // Get a single neighbor in a particular direction.
-  void getNeighbor(const BlockIndex& block_index, const VoxelIndex& voxel_index,
-                   const Eigen::Vector3i& direction,
-                   BlockIndex* neighbor_block_index,
-                   VoxelIndex* neighbor_voxel_index) const;
-
   // Convenience functions.
   inline bool isFixed(FloatingPoint dist_m) const {
-    return std::abs(dist_m) <= config_.min_distance_m;
+    return std::abs(dist_m) < config_.min_distance_m;
   }
 
   inline bool isFixedOccupancy(FloatingPoint dist_m) const {
@@ -138,15 +130,13 @@ class EsdfIntegrator {
   }
 
  protected:
-  // Convenience functions for planning.
-  typedef AnyIndexHashMapType<VoxelIndexList>::type BlockVoxelListMap;
-  void getSphereAroundPoint(const Point& center, FloatingPoint radius,
-                            BlockVoxelListMap* block_voxel_list) const;
-
   Config config_;
 
   Layer<TsdfVoxel>* tsdf_layer_;
   Layer<EsdfVoxel>* esdf_layer_;
+
+  // Neighbor tools to look up neighbors.
+  NeighborTools<EsdfVoxel> neighbor_tools_;
 
   // Open Queue for incremental updates. Contains global voxel indices
   // for the ESDF layer.

@@ -9,5 +9,11 @@ uint8 action   # See action defines below
 voxblox_msgs/Block[] blocks
 
 # Action definitions
-uint8 ACTION_FULL_MAP = 0
-uint8 ACTION_UPDATE = 1
+# Update all blocks that are part of this message to the new state,
+# leave the rest of the map as it was.
+uint8 ACTION_UPDATE = 0
+# Merge all blocks that are part of this message with the current state of
+# the map, leave the rest of the map as it was.
+uint8 ACTION_MERGE = 1
+# Set the layer to the state described by this message.
+uint8 ACTION_RESET = 2
