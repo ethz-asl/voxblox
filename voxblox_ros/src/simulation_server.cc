@@ -4,7 +4,7 @@
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/tsdf_map.h>
-#include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/esdf_integrator_new.h>
 #include <voxblox/integrator/esdf_occ_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
@@ -64,7 +64,7 @@ void SimulationServer::getServerConfigFromRosParam(
 SimulationServer::SimulationServer(
     const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
     const EsdfMap::Config& esdf_config,
-    const EsdfIntegrator::Config& esdf_integrator_config,
+    const EsdfIntegratorNew::Config& esdf_integrator_config,
     const TsdfMap::Config& tsdf_config,
     const TsdfIntegratorBase::Config& tsdf_integrator_config)
     : nh_(nh),
@@ -103,7 +103,7 @@ SimulationServer::SimulationServer(
   tsdf_integrator_.reset(
       new MergedTsdfIntegrator(tsdf_integrator_config, tsdf_test_.get()));
 
-  esdf_integrator_.reset(new EsdfIntegrator(
+  esdf_integrator_.reset(new EsdfIntegratorNew(
       esdf_integrator_config, tsdf_test_.get(), esdf_test_.get()));
 
   if (generate_occupancy_) {
@@ -149,7 +149,7 @@ SimulationServer::SimulationServer(
 SimulationServer::SimulationServer(const ros::NodeHandle& nh,
                                    const ros::NodeHandle& nh_private)
     : SimulationServer(nh, nh_private, getEsdfMapConfigFromRosParam(nh_private),
-                       getEsdfIntegratorConfigFromRosParam(nh_private),
+                       getEsdfIntegratorNewConfigFromRosParam(nh_private),
                        getTsdfMapConfigFromRosParam(nh_private),
                        getTsdfIntegratorConfigFromRosParam(nh_private)) {}
 
