@@ -48,11 +48,6 @@ void EsdfIntegratorNew::addNewRobotPosition(const Point& position) {
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
         updated_blocks_.insert(kv.first);
-        // pushNeighborsToOpen(kv.first, voxel_index);
-      } else if (esdf_voxel.observed) {
-        GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-            kv.first, voxel_index, voxels_per_side_);
-        open_.push(global_index, esdf_voxel.distance);
       }
     }
   }
@@ -78,8 +73,7 @@ void EsdfIntegratorNew::addNewRobotPosition(const Point& position) {
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
         updated_blocks_.insert(kv.first);
-        // pushNeighborsToOpen(kv.first, voxel_index);
-      } else {
+      } else if (!esdf_voxel.in_queue) {
         GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
             kv.first, voxel_index, voxels_per_side_);
         open_.push(global_index, esdf_voxel.distance);
@@ -363,8 +357,17 @@ void EsdfIntegratorNew::processOpenSet() {
       }
 
       SignedIndex direction = (neighbor_index - global_index).cast<int>();
+      SignedIndex new_parent = -direction;
       FloatingPoint distance =
           direction.cast<FloatingPoint>().norm() * voxel_size_;
+      if (config_.full_euclidean_distance) {
+        // In this case, the new parent is is actually the parent of the current
+        // voxel.
+        // And the distance is... Well, complicated.
+        new_parent = voxel->parent - direction;
+        distance = new_parent.cast<FloatingPoint>().norm() * voxel_size_ -
+                   std::abs(voxel->distance);
+      }
 
       // Both are OUTSIDE the surface.
       if (voxel->distance > 0 && neighbor_voxel->distance > 0) {
@@ -373,7 +376,7 @@ void EsdfIntegratorNew::processOpenSet() {
           num_updates++;
           neighbor_voxel->distance = voxel->distance + distance;
           // Also update parent.
-          neighbor_voxel->parent = -direction;
+          neighbor_voxel->parent = new_parent;
           // Push into the queue if necessary.
           if (config_.multi_queue || !neighbor_voxel->in_queue) {
             open_.push(neighbor_index, neighbor_voxel->distance);
@@ -387,7 +390,7 @@ void EsdfIntegratorNew::processOpenSet() {
           num_updates++;
           neighbor_voxel->distance = voxel->distance - distance;
           // Also update parent.
-          neighbor_voxel->parent = -direction;
+          neighbor_voxel->parent = new_parent;
           // Push into the queue if necessary.
           if (config_.multi_queue || !neighbor_voxel->in_queue) {
             open_.push(neighbor_index, neighbor_voxel->distance);
@@ -404,7 +407,7 @@ void EsdfIntegratorNew::processOpenSet() {
             num_updates++;
             neighbor_voxel->distance = potential_distance;
             // Also update parent.
-            neighbor_voxel->parent = -direction;
+            neighbor_voxel->parent = new_parent;
             // Push into the queue if necessary.
             if (config_.multi_queue || !neighbor_voxel->in_queue) {
               open_.push(neighbor_index, neighbor_voxel->distance);
@@ -415,7 +418,7 @@ void EsdfIntegratorNew::processOpenSet() {
             neighbor_voxel->distance =
                 signum(neighbor_voxel->distance) * distance;
             // Also update parent.
-            neighbor_voxel->parent = -direction;
+            neighbor_voxel->parent = new_parent;
             // Push into the queue if necessary.
             if (config_.multi_queue || !neighbor_voxel->in_queue) {
               open_.push(neighbor_index, neighbor_voxel->distance);
