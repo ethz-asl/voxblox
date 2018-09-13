@@ -260,71 +260,55 @@ void EsdfIntegratorNew::updateFromTsdfBlocks(
 void EsdfIntegratorNew::processRaiseSet() {
   size_t num_updates = 0u;
   // For the raise set, get all the neighbors, then:
-  // 1. if the neighbor's parent is the current voxel, add it to the raise
-  //    queue.
-  // 2. if the neighbor's parent differs, add it to open (we will have to
+  // (1) if the neighbor's parent is the current voxel, add it to the raise
+  //     queue.
+  // (2) if the neighbor's parent differs, add it to open (we will have to
   //    update our current distances, of course).
-  /*  while (!raise_.empty()) {
-    VoxelKey kv = raise_.front();
+  GlobalIndexVector neighbors;
+
+  while (!raise_.empty()) {
+    GlobalIndex global_index = raise_.front();
     raise_.pop();
 
-    Block<EsdfVoxel>::Ptr esdf_block =
-        esdf_layer_->getBlockPtrByIndex(kv.first);
+    EsdfVoxel* voxel = esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+    CHECK_NOTNULL(voxel);
 
-    // See if you can update the neighbors.
-    AlignedVector<VoxelKey> neighbors;
-    AlignedVector<float> distances;
-    AlignedVector<Eigen::Vector3i> directions;
-    neighbor_tools_.getNeighborIndexesAndDistances(
-        kv.first, kv.second, Connectivity::kTwentySix, &neighbors,
-  &distances,
-        &directions);
+    // Get the global indices of neighbors.
+    neighbor_tools_.getNeighborsByGlobalIndex(
+        global_index, Connectivity::kTwentySix, &neighbors);
 
-    CHECK_EQ(neighbors.size(), distances.size());
-    for (size_t i = 0u; i < neighbors.size(); ++i) {
-      BlockIndex neighbor_block_index = neighbors[i].first;
-      VoxelIndex neighbor_voxel_index = neighbors[i].second;
-
-      // Get the block for this voxel.
-      Block<EsdfVoxel>::Ptr neighbor_block;
-      if (neighbor_block_index == kv.first) {
-        neighbor_block = esdf_block;
-      } else {
-        neighbor_block =
-  esdf_layer_->getBlockPtrByIndex(neighbor_block_index);
-      }
-      if (!neighbor_block) {
+    // Go through the neighbors and see if we can update any of them.
+    for (const GlobalIndex& neighbor_index : neighbors) {
+      EsdfVoxel* neighbor_voxel =
+          esdf_layer_->getVoxelPtrByGlobalIndex(neighbor_index);
+      if (neighbor_voxel == nullptr) {
         continue;
       }
-      CHECK(neighbor_block->isValidVoxelIndex(neighbor_voxel_index))
-          << "Neigbor voxel index: " << neighbor_voxel_index.transpose();
-
-      EsdfVoxel& neighbor_voxel =
-          neighbor_block->getVoxelByVoxelIndex(neighbor_voxel_index);
-
-      // Do NOT update unobserved distances.
-      if (!neighbor_voxel.observed) {
+      // Don't touch unobserved voxels and can't do anything with fixed
+      // voxels.
+      if (!neighbor_voxel->observed || neighbor_voxel->fixed) {
         continue;
       }
+      SignedIndex direction = (neighbor_index - global_index).cast<int>();
       // This will never update fixed voxels as they are their own parents.
-      if (neighbor_voxel.parent == -directions[i]) {
+      if (neighbor_voxel->parent == -direction) {
         // This is the case where we are the parent of this one, so we
         // should clear it and raise it.
-        neighbor_voxel.distance =
-            signum(neighbor_voxel.distance) * config_.default_distance_m;
-        neighbor_voxel.parent.setZero();
-        raise_.push(neighbors[i]);
+        neighbor_voxel->distance =
+            signum(neighbor_voxel->distance) * config_.default_distance_m;
+        neighbor_voxel->parent.setZero();
+        raise_.push(neighbor_index);
       } else {
         // If it's not in the queue, then add it to open so it can update
         // our weights back.
-        if (!neighbor_voxel.in_queue) {
-          open_.push(neighbors[i], neighbor_voxel.distance);
-          neighbor_voxel.in_queue = true;
+        if (!neighbor_voxel->in_queue) {
+          open_.push(neighbor_index, neighbor_voxel->distance);
+          neighbor_voxel->in_queue = true;
         }
       }
     }
     num_updates++;
-  }*/
+  }
   VLOG(3) << "[ESDF update]: raised " << num_updates << " voxels.";
 }
 
