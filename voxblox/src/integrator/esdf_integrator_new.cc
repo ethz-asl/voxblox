@@ -309,11 +309,53 @@ void EsdfIntegratorNew::processOpenSet() {
           neighbor_voxel->distance = voxel->distance + distance;
           // Also update parent.
           neighbor_voxel->parent = -direction;
-          // We push this voxel back into the queue even if it's already in the
-          // queue.
+          // Push into the queue if necessary.
           if (config_.multi_queue || !neighbor_voxel->in_queue) {
             open_.push(neighbor_index, neighbor_voxel->distance);
             neighbor_voxel->in_queue = true;
+          }
+        }
+        // Next case is both INSIDE the surface.
+      } else if (voxel->distance <= 0 && neighbor_voxel->distance <= 0) {
+        if (voxel->distance - distance - config_.min_diff_m >
+            neighbor_voxel->distance) {
+          num_updates++;
+          neighbor_voxel->distance = voxel->distance - distance;
+          // Also update parent.
+          neighbor_voxel->parent = -direction;
+          // Push into the queue if necessary.
+          if (config_.multi_queue || !neighbor_voxel->in_queue) {
+            open_.push(neighbor_index, neighbor_voxel->distance);
+            neighbor_voxel->in_queue = true;
+          }
+        }
+        // Final case is if the signs are different.
+      } else {
+        FloatingPoint potential_distance =
+            voxel->distance - signum(voxel->distance) * distance;
+        if (std::abs(potential_distance - neighbor_voxel->distance) >
+            distance) {
+          if (signum(potential_distance) == neighbor_voxel->distance) {
+            num_updates++;
+            neighbor_voxel->distance = potential_distance;
+            // Also update parent.
+            neighbor_voxel->parent = -direction;
+            // Push into the queue if necessary.
+            if (config_.multi_queue || !neighbor_voxel->in_queue) {
+              open_.push(neighbor_index, neighbor_voxel->distance);
+              neighbor_voxel->in_queue = true;
+            }
+          } else {
+            num_updates++;
+            neighbor_voxel->distance =
+                signum(neighbor_voxel->distance) * distance;
+            // Also update parent.
+            neighbor_voxel->parent = -direction;
+            // Push into the queue if necessary.
+            if (config_.multi_queue || !neighbor_voxel->in_queue) {
+              open_.push(neighbor_index, neighbor_voxel->distance);
+              neighbor_voxel->in_queue = true;
+            }
           }
         }
       }
