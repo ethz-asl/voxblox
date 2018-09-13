@@ -318,6 +318,8 @@ void EsdfIntegratorNew::processOpenSet() {
         }
       }
     }
+
+    voxel->in_queue = false;
   }
 
   VLOG(3) << "[ESDF update]: made " << num_updates << " voxel updates.";
