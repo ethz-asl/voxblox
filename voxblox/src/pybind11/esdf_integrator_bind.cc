@@ -12,7 +12,7 @@ using voxblox::EsdfVoxel;
 using TsdfLayer = voxblox::Layer<TsdfVoxel>;
 using EsdfLayer = voxblox::Layer<EsdfVoxel>;
 
-void esdf_integrator_bind(py::module &m) {
+void esdf_integrator_bind(py::module &m) {  // NOLINT
   py::class_<EsdfIntegrator::Config>(m, "EsdfIntegratorConfig")
       .def(py::init<>())
       .def_readwrite("max_distance_m", &EsdfIntegrator::Config::max_distance_m)
@@ -31,9 +31,5 @@ void esdf_integrator_bind(py::module &m) {
 
       .def("updateFromTsdfLayerBatch",
            &EsdfIntegrator::updateFromTsdfLayerBatch)
-      .def("updateFromTsdfLayerBatchOccupancy",
-           &EsdfIntegrator::updateFromTsdfLayerBatchOccupancy)
-      .def("updateFromTsdfLayerBatchFullEuclidean",
-           &EsdfIntegrator::updateFromTsdfLayerBatchFullEuclidean)
       .def("updateFromTsdfLayer", &EsdfIntegrator::updateFromTsdfLayer);
 }

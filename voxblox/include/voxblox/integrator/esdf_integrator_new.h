@@ -27,7 +27,7 @@ class EsdfIntegratorNew {
     // Whether to use full euclidean distance (true) or quasi-euclidean (false).
     // Full euclidean is slightly more accurate (up to 8% in the worst case) but
     // slower.
-    bool full_euclidean_distance = true;
+    bool full_euclidean_distance = false;
     // Maximum distance to calculate the actual distance to.
     // Any values above this will be set to default_distance_m.
     FloatingPoint max_distance_m = 2.0;

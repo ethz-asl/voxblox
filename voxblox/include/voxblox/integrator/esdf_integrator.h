@@ -1,9 +1,9 @@
 #ifndef VOXBLOX_INTEGRATOR_ESDF_INTEGRATOR_H_
 #define VOXBLOX_INTEGRATOR_ESDF_INTEGRATOR_H_
 
-#include <algorithm>
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
+#include <algorithm>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -26,6 +26,10 @@ class EsdfIntegrator {
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+    // Whether to use full euclidean distance (true) or quasi-euclidean (false).
+    // Full euclidean is slightly more accurate (up to 8% in the worst case) but
+    // slower.
+    bool full_euclidean_distance = false;
     // Maximum distance to calculate the actual distance to.
     // Any values above this will be set to default_distance_m.
     FloatingPoint max_distance_m = 2.0;
@@ -41,6 +45,8 @@ class EsdfIntegrator {
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
+    // Whether to push stuff to the queue multiple times.
+    bool multi_queue = false;
     // Whether to add an outside layer of occupied voxels. Basically just sets
     // all unknown voxels in the allocated blocks to occupied.
     // Only implemented in Batch Full Euclidean updating. If using incremental
@@ -72,15 +78,6 @@ class EsdfIntegrator {
   // Short-cut for pushing neighbors (i.e., incremental update) by default.
   // Not necessary in batch.
   void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks);
-  void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
-                            bool push_neighbors);
-
-  // Specialty update functions for testing/evaluations. Should not be used
-  // otherwise.
-  void updateFromTsdfLayerBatchOccupancy();
-  void updateFromTsdfLayerBatchFullEuclidean();
-  void updateFromTsdfBlocksFullEuclidean(const BlockIndexList& tsdf_blocks);
-  void updateFromTsdfBlocksAsOccupancy(const BlockIndexList& tsdf_blocks);
 
   // For incremental updates, the raise set contains all fixed voxels whose
   // distances have INCREASED since last iteration. This means that all voxels
@@ -95,31 +92,16 @@ class EsdfIntegrator {
   // set is empty.
   void processOpenSet();
 
-  // Process the open set as above, but using full Euclidean distance.
-  // Much slower so not recommended.
-  void processOpenSetFullEuclidean();
-
-  // Pushes neighbors of newly allocated voxels to the open set, to make sure
-  // that they get a valid value. Only necessary in incremental.
-  void pushNeighborsToOpen(const BlockIndex& block_index,
-                           const VoxelIndex& voxel_index);
-
   // Convenience functions.
   inline bool isFixed(FloatingPoint dist_m) const {
     return std::abs(dist_m) < config_.min_distance_m;
   }
-
-  inline bool isFixedOccupancy(FloatingPoint dist_m) const {
-    return dist_m < 0.0;
-  }
-
   // Clears the state of the integrator, in case robot pose clearance is used.
   void clear() {
     updated_blocks_.clear();
     open_.clear();
-    raise_ = AlignedQueue<VoxelKey>();
+    raise_ = AlignedQueue<GlobalIndex>();
   }
-
   // Update some specific settings.
   float getEsdfMaxDistance() const { return config_.max_distance_m; }
   void setEsdfMaxDistance(float max_distance) {
@@ -127,6 +109,10 @@ class EsdfIntegrator {
     if (config_.default_distance_m < max_distance) {
       config_.default_distance_m = max_distance;
     }
+  }
+  bool getFullEuclidean() const { return config_.full_euclidean_distance; }
+  void setFullEuclidean(bool full_euclidean) {
+    config_.full_euclidean_distance = full_euclidean;
   }
 
  protected:
@@ -140,15 +126,15 @@ class EsdfIntegrator {
 
   // Open Queue for incremental updates. Contains global voxel indices
   // for the ESDF layer.
-  BucketQueue<VoxelKey> open_;
+  BucketQueue<GlobalIndex> open_;
 
   // Raise set for updates; these are values that used to be in the fixed
   // frontier and now have a higher value, or their children which need to
   // have their values invalidated.
-  AlignedQueue<VoxelKey> raise_;
+  AlignedQueue<GlobalIndex> raise_;
 
-  size_t esdf_voxels_per_side_;
-  FloatingPoint esdf_voxel_size_;
+  size_t voxels_per_side_;
+  FloatingPoint voxel_size_;
 
   IndexSet updated_blocks_;
 };

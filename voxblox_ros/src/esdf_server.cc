@@ -189,11 +189,8 @@ void EsdfServer::updateEsdf() {
 
 void EsdfServer::updateEsdfBatch(bool full_euclidean) {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
-    if (full_euclidean) {
-      esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
-    } else {
-      esdf_integrator_->updateFromTsdfLayerBatch();
-    }
+    esdf_integrator_->setFullEuclidean(full_euclidean);
+    esdf_integrator_->updateFromTsdfLayerBatch();
   }
 }
 

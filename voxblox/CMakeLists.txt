@@ -49,7 +49,6 @@ set("${PROJECT_NAME}_SRCS"
   src/core/block.cc
   src/core/esdf_map.cc
   src/core/tsdf_map.cc
-  src/integrator/esdf_integrator_new.cc
   src/integrator/esdf_integrator.cc
   src/integrator/esdf_occ_integrator.cc
   src/integrator/integrator_utils.cc
@@ -180,10 +179,10 @@ add_custom_command(TARGET test_data
 #)
 #target_link_libraries(test_layer_utils ${PROJECT_NAME})
 
-#catkin_add_gtest(test_sdf_integrators
-#  test/test_sdf_integrators.cc
-#)
-#target_link_libraries(test_sdf_integrators ${PROJECT_NAME})
+catkin_add_gtest(test_sdf_integrators
+  test/test_sdf_integrators.cc
+)
+target_link_libraries(test_sdf_integrators ${PROJECT_NAME})
 
 catkin_add_gtest(test_bucket_queue
   test/test_bucket_queue.cc
