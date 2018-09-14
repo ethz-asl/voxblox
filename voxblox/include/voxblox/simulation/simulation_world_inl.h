@@ -63,6 +63,7 @@ void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
       }
 
       // Then update the thing.
+      voxel_dist = std::max(voxel_dist, -max_dist);
       setVoxel(voxel_dist, color, &voxel);
     }
   }

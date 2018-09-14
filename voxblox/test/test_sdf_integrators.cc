@@ -41,7 +41,7 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
     world_.addGroundLevel(0.0);
 
     // Next, generate poses evenly spaced in a circle around the object.
-    FloatingPoint radius = 4.0;
+    FloatingPoint radius = 6.0;
     FloatingPoint height = 2.0;
     int num_poses = 50;  // static_cast<int>(200 * voxel_size_);
     poses_.reserve(num_poses);
@@ -63,7 +63,7 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
 
       // Face the desired yaw and pitch forward a bit to get some of the floor.
       Quaternion rotation =
-          Quaternion(Eigen::AngleAxis<FloatingPoint>(-0.0, Point::UnitY())) *
+          Quaternion(Eigen::AngleAxis<FloatingPoint>(-0.1, Point::UnitY())) *
           Eigen::AngleAxis<FloatingPoint>(desired_yaw, Point::UnitZ());
 
       poses_.emplace_back(Transformation(rotation, position));
@@ -75,6 +75,9 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
 
     truncation_distance_ = 4 * voxel_size_;
     esdf_max_distance_ = 4.0f;
+
+    LOG(INFO) << "Truncation distance: " << truncation_distance_
+              << " ESDF max distance: " << esdf_max_distance_;
 
     world_.generateSdfFromWorld(truncation_distance_, tsdf_gt_.get());
     world_.generateSdfFromWorld(esdf_max_distance_, esdf_gt_.get());
@@ -104,7 +107,7 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
   std::unique_ptr<Layer<EsdfVoxel> > esdf_gt_;
 };
 
-TEST_P(SdfIntegratorsTest, DISABLED_TsdfIntegrators) {
+TEST_P(SdfIntegratorsTest, TsdfIntegrators) {
   TsdfIntegratorBase::Config config;
   config.default_truncation_distance = truncation_distance_;
   config.integrator_threads = 1;
@@ -193,10 +196,11 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   EsdfIntegrator::Config esdf_config;
   esdf_config.max_distance_m = esdf_max_distance_;
   esdf_config.default_distance_m = esdf_max_distance_;
-  esdf_config.min_distance_m = truncation_distance_;
+  esdf_config.min_distance_m = truncation_distance_ / 2.0;
   esdf_config.min_diff_m = 0.0;
   esdf_config.full_euclidean_distance = false;
   esdf_config.add_occupied_crust = false;
+  esdf_config.multi_queue = true;
   EsdfIntegrator incremental_integrator(esdf_config, &tsdf_layer,
                                         &incremental_layer);
   EsdfIntegrator batch_integrator(esdf_config, &tsdf_layer, &batch_layer);
@@ -278,8 +282,9 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   io::SaveLayer(*esdf_gt_, "esdf_gt.voxblox", false);
 }
 
-INSTANTIATE_TEST_CASE_P(VoxelSizes, SdfIntegratorsTest,
-                        ::testing::Values(/*0.1f, 0.2f, 0.3f, 0.4f, */ 0.5f));
+INSTANTIATE_TEST_CASE_P(
+    VoxelSizes, SdfIntegratorsTest,
+    ::testing::Values(0.2f /*0.1f, 0.2f, 0.3f, 0.4f, 0.5f*/));
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
