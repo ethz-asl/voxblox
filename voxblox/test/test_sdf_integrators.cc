@@ -282,9 +282,8 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   io::SaveLayer(*esdf_gt_, "esdf_gt.voxblox", false);
 }
 
-INSTANTIATE_TEST_CASE_P(
-    VoxelSizes, SdfIntegratorsTest,
-    ::testing::Values(0.2f /*0.1f, 0.2f, 0.3f, 0.4f, 0.5f*/));
+INSTANTIATE_TEST_CASE_P(VoxelSizes, SdfIntegratorsTest,
+                        ::testing::Values(0.1f, 0.2f, 0.3f, 0.4f, 0.5f));
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
