@@ -7,7 +7,6 @@
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
-#include <voxblox/integrator/esdf_integrator_new.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 
 namespace voxblox {
@@ -140,42 +139,9 @@ inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
   nh_private.param("occupied_sphere_radius",
                    esdf_integrator_config.occupied_sphere_radius,
                    esdf_integrator_config.occupied_sphere_radius);
-
-  if (esdf_integrator_config.default_distance_m <
-      esdf_integrator_config.max_distance_m) {
-    esdf_integrator_config.default_distance_m =
-        esdf_integrator_config.max_distance_m;
-  }
-
-  return esdf_integrator_config;
-}
-
-inline EsdfIntegratorNew::Config getEsdfIntegratorNewConfigFromRosParam(
-    const ros::NodeHandle& nh_private) {
-  EsdfIntegratorNew::Config esdf_integrator_config;
-
-  TsdfIntegratorBase::Config tsdf_integrator_config =
-      getTsdfIntegratorConfigFromRosParam(nh_private);
-
-  esdf_integrator_config.min_distance_m =
-      tsdf_integrator_config.default_truncation_distance;
-
-  nh_private.param("esdf_max_distance_m", esdf_integrator_config.max_distance_m,
-                   esdf_integrator_config.max_distance_m);
-  nh_private.param("esdf_min_distance_m", esdf_integrator_config.min_distance_m,
-                   esdf_integrator_config.min_distance_m);
-  nh_private.param("esdf_default_distance_m",
-                   esdf_integrator_config.default_distance_m,
-                   esdf_integrator_config.default_distance_m);
-  nh_private.param("esdf_min_diff_m", esdf_integrator_config.min_diff_m,
-                   esdf_integrator_config.min_diff_m);
-  nh_private.param("clear_sphere_radius",
-                   esdf_integrator_config.clear_sphere_radius,
-                   esdf_integrator_config.clear_sphere_radius);
-  nh_private.param("occupied_sphere_radius",
-                   esdf_integrator_config.occupied_sphere_radius,
-                   esdf_integrator_config.occupied_sphere_radius);
-
+  nh_private.param("esdf_add_occupied_crust",
+                   esdf_integrator_config.add_occupied_crust,
+                   esdf_integrator_config.add_occupied_crust);
   if (esdf_integrator_config.default_distance_m <
       esdf_integrator_config.max_distance_m) {
     esdf_integrator_config.default_distance_m =

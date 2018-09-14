@@ -145,8 +145,21 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           tsdf_block->getVoxelByLinearIndex(lin_index);
       // If this voxel is unobserved in the original map, skip it.
       if (tsdf_voxel.weight < config_.min_weight) {
+        if (!incremental && config_.add_occupied_crust) {
+          // Create a little crust of occupied voxels around.
+          EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
+          VoxelIndex voxel_index =
+              esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
+          GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+              block_index, voxel_index, voxels_per_side_);
+          esdf_voxel.distance = -config_.default_distance_m;
+          esdf_voxel.observed = true;
+          esdf_voxel.hallucinated = true;
+          esdf_voxel.fixed = false;
+        }
         continue;
       }
+
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
       VoxelIndex voxel_index =
           esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
@@ -251,6 +264,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         // Otherwise we just don't care. Not fixed voxels that match the right
         // sign can be whatever value that they want to be.
       }
+
       esdf_voxel.observed = true;
       esdf_voxel.hallucinated = false;
     }
