@@ -51,7 +51,7 @@ class EsdfIntegrator {
     // all unknown voxels in the allocated blocks to occupied.
     // Try to only use this for batch processing, otherwise look into
     // addNewRobotPosition below, which uses clear spheres.
-    bool add_occupied_crust = true;
+    bool add_occupied_crust = false;
 
     // For marking unknown space around a robot as free or occupied, these are
     // the radiuses used around each robot position.
