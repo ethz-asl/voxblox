@@ -100,7 +100,7 @@ void SimulationWorld::getPointcloudFromViewpoint(
           }
         }
       }
-      if (ray_valid) {
+      if (ray_valid && !ray_intersect.array().isNaN().any()) {
         ptcloud->push_back(ray_intersect);
         colors->push_back(ray_color);
       }
@@ -164,7 +164,7 @@ void SimulationWorld::getNoisyPointcloudFromViewpoint(
           }
         }
       }
-      if (ray_valid) {
+      if (ray_valid && !ray_intersect.array().isNaN().any()) {
         // Apply noise now!
         FloatingPoint noise = getNoise(noise_sigma);
         ray_dist += noise;

@@ -102,7 +102,8 @@ void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   tsdf_blocks.insert(tsdf_blocks.end(), updated_blocks_.begin(),
                      updated_blocks_.end());
   updated_blocks_.clear();
-  updateFromTsdfBlocks(tsdf_blocks);
+  const bool kIncremental = true;
+  updateFromTsdfBlocks(tsdf_blocks, kIncremental);
 
   if (clear_updated_flag) {
     for (const BlockIndex& block_index : tsdf_blocks) {
@@ -113,7 +114,8 @@ void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   }
 }
 
-void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
+void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
+                                          bool incremental) {
   CHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
   timing::Timer esdf_timer("esdf");
 
@@ -167,6 +169,13 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
           esdf_voxel.distance =
               signum(tsdf_voxel.distance) * (config_.default_distance_m);
           esdf_voxel.fixed = false;
+
+          if (incremental) {
+            if (updateVoxelFromNeighbors(global_index)) {
+              esdf_voxel.in_queue = true;
+              open_.push(global_index, esdf_voxel.distance);
+            }
+          }
         }
         // No matter what, basically, the parent is reset.
         esdf_voxel.parent.setZero();
@@ -239,7 +248,6 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
             num_raise++;
           }
         }
-
         // Otherwise we just don't care. Not fixed voxels that match the right
         // sign can be whatever value that they want to be.
       }
@@ -450,6 +458,39 @@ void EsdfIntegrator::processOpenSet() {
   VLOG(3) << "[ESDF update]: made " << num_updates
           << " voxel updates, of which outside: " << num_outside
           << " inside: " << num_inside << " flipped: " << num_flipped;
+}
+
+bool EsdfIntegrator::updateVoxelFromNeighbors(const GlobalIndex& global_index) {
+  EsdfVoxel* voxel = esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+  CHECK_NOTNULL(voxel);
+  // Get the global indices of neighbors.
+  GlobalIndexVector neighbors;
+  neighbor_tools_.getNeighborsByGlobalIndex(
+      global_index, Connectivity::kTwentySix, &neighbors);
+
+  // Go through the neighbors and see if we can update from any of them.
+  for (const GlobalIndex& neighbor_index : neighbors) {
+    EsdfVoxel* neighbor_voxel =
+        esdf_layer_->getVoxelPtrByGlobalIndex(neighbor_index);
+    if (neighbor_voxel == nullptr) {
+      continue;
+    }
+    if (!neighbor_voxel->observed ||
+        neighbor_voxel->distance >= config_.max_distance_m ||
+        neighbor_voxel->distance <= -config_.max_distance_m) {
+      continue;
+    }
+    if (signum(neighbor_voxel->distance) == signum(voxel->distance)) {
+      if (std::abs(neighbor_voxel->distance) < std::abs(voxel->distance)) {
+        voxel->distance =
+            neighbor_voxel->distance +
+            signum(voxel->distance) *
+                (neighbor_index - global_index).cast<FloatingPoint>().norm();
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace voxblox

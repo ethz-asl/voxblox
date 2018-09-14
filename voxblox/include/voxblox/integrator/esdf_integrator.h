@@ -49,9 +49,9 @@ class EsdfIntegrator {
     bool multi_queue = false;
     // Whether to add an outside layer of occupied voxels. Basically just sets
     // all unknown voxels in the allocated blocks to occupied.
-    // Only implemented in Batch Full Euclidean updating. If using incremental
-    // updates, prefer to use occupied spheres below.
-    bool add_occupied_crust = true;
+    // Try to only use this for batch processing, otherwise look into
+    // addNewRobotPosition below, which uses clear spheres.
+    bool add_occupied_crust = false;
 
     // For marking unknown space around a robot as free or occupied, these are
     // the radiuses used around each robot position.
@@ -77,7 +77,8 @@ class EsdfIntegrator {
 
   // Short-cut for pushing neighbors (i.e., incremental update) by default.
   // Not necessary in batch.
-  void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks);
+  void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
+                            bool incremental = false);
 
   // For incremental updates, the raise set contains all fixed voxels whose
   // distances have INCREASED since last iteration. This means that all voxels
@@ -91,6 +92,11 @@ class EsdfIntegrator {
   // neighbors and distance to neighbors. The update is done once the open
   // set is empty.
   void processOpenSet();
+
+  // For new voxels, etc. -- update its value from its neighbors. Sort of the
+  // inverse of what the open set does (pushes the value of voxels *TO* its
+  // neighbors). Used mostly for adding new voxels in.
+  bool updateVoxelFromNeighbors(const GlobalIndex& global_index);
 
   // Convenience functions.
   inline bool isFixed(FloatingPoint dist_m) const {
