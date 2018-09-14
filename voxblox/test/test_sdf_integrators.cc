@@ -4,10 +4,10 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/esdf_integrator.h"
 #include "voxblox/integrator/tsdf_integrator.h"
+#include "voxblox/io/layer_io.h"
 #include "voxblox/simulation/simulation_world.h"
 #include "voxblox/utils/evaluation_utils.h"
 #include "voxblox/utils/layer_utils.h"
-#include "voxblox/io/layer_io.h"
 
 using namespace voxblox;  // NOLINT
 
@@ -194,10 +194,13 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   esdf_config.max_distance_m = esdf_max_distance_;
   esdf_config.default_distance_m = esdf_max_distance_;
   esdf_config.min_distance_m = truncation_distance_;
+  esdf_config.min_diff_m = 0.0;
+  esdf_config.full_euclidean_distance = false;
   esdf_config.add_occupied_crust = false;
   EsdfIntegrator incremental_integrator(esdf_config, &tsdf_layer,
                                         &incremental_layer);
   EsdfIntegrator batch_integrator(esdf_config, &tsdf_layer, &batch_layer);
+  esdf_config.full_euclidean_distance = true;
   EsdfIntegrator batch_full_euclidean_integrator(esdf_config, &tsdf_layer,
                                                  &batch_full_euclidean_layer);
 
@@ -217,7 +220,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
 
   // Do batch updates.
   batch_integrator.updateFromTsdfLayerBatch();
-  batch_full_euclidean_integrator.updateFromTsdfLayerBatchFullEuclidean();
+  batch_full_euclidean_integrator.updateFromTsdfLayerBatch();
 
   utils::VoxelEvaluationDetails incremental_result, batch_result,
       batch_full_euclidean_result;

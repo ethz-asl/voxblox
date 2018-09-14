@@ -28,7 +28,7 @@ class SimulationServer {
 
   SimulationServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
                    const EsdfMap::Config& esdf_config,
-                   const EsdfIntegratorNew::Config& esdf_integrator_config,
+                   const EsdfIntegrator::Config& esdf_integrator_config,
                    const TsdfMap::Config& tsdf_config,
                    const TsdfIntegratorBase::Config& tsdf_integrator_config);
 
@@ -104,7 +104,7 @@ class SimulationServer {
 
   // Integrators:
   std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
-  std::unique_ptr<EsdfIntegratorNew> esdf_integrator_;
+  std::unique_ptr<EsdfIntegrator> esdf_integrator_;
   std::unique_ptr<OccupancyIntegrator> occ_integrator_;
   std::unique_ptr<EsdfOccIntegrator> esdf_occ_integrator_;
 };

@@ -37,10 +37,7 @@ TEST(BucketQueueTest, GetSmallestValue) {
     bucket_queue.pop();
     EXPECT_LT(std::abs(std::abs(val) - std::abs(last_val)), max_diff);
     last_val = val;
-    std::cout << "Next val: " << val << std::endl;
   }
-
-  std::cout << "Re-insertion test.\n";
 
   for (size_t i = 0; i < kNumDistances; i++) {
     bucket_queue.push(i, distances[i]);
@@ -52,10 +49,7 @@ TEST(BucketQueueTest, GetSmallestValue) {
     bucket_queue.pop();
     EXPECT_LT(std::abs(std::abs(val) - std::abs(last_val)), max_diff);
     last_val = val;
-    std::cout << "Next val: " << val << std::endl;
   }
-
-  std::cout << "Adding more values.\n";
 
   for (size_t i = 0; i < kNumDistances / 2.0; i++) {
     bucket_queue.push(i, distances[i]);
@@ -67,7 +61,6 @@ TEST(BucketQueueTest, GetSmallestValue) {
     bucket_queue.pop();
     EXPECT_LT(std::abs(std::abs(val) - std::abs(last_val)), max_diff);
     last_val = val;
-    std::cout << "Next val: " << val << std::endl;
   }
 }
 
