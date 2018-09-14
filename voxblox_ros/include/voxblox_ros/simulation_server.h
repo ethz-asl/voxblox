@@ -7,7 +7,7 @@
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/tsdf_map.h>
-#include <voxblox/integrator/esdf_integrator_new.h>
+#include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/esdf_occ_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
