@@ -152,7 +152,6 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
           block_index, voxel_index, voxels_per_side_);
 
       bool tsdf_fixed = isFixed(tsdf_voxel.distance);
-
       // If there was nothing there before:
       if (!esdf_voxel.observed) {
         // Two options: ESDF is in the fixed truncation band, or outside.
@@ -161,6 +160,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
           esdf_voxel.distance = tsdf_voxel.distance;
           esdf_voxel.fixed = true;
           // Also add it to open so it can update the neighbors.
+          esdf_voxel.in_queue = true;
           open_.push(global_index, esdf_voxel.distance);
         } else {
           // Not in the fixed band. Just copy the sign.
@@ -198,6 +198,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
             }
             esdf_voxel.observed = true;
             esdf_voxel.parent.setZero();
+            esdf_voxel.in_queue = true;
             open_.push(global_index, esdf_voxel.distance);
             num_lower++;
           } else if ((esdf_voxel.distance > 0 &&
@@ -217,6 +218,8 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
             esdf_voxel.observed = true;
             esdf_voxel.parent.setZero();
             raise_.push(global_index);
+            esdf_voxel.in_queue = true;
+            open_.push(global_index, esdf_voxel.distance);
             num_raise++;
           }
         } else if (signum(tsdf_voxel.distance) != signum(esdf_voxel.distance)) {
@@ -227,6 +230,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
                 signum(tsdf_voxel.distance) * config_.default_distance_m;
             esdf_voxel.observed = true;
             esdf_voxel.parent.setZero();
+            esdf_voxel.in_queue = true;
             open_.push(global_index, esdf_voxel.distance);
             num_lower++;
           } else {
@@ -240,8 +244,11 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks) {
             num_raise++;
           }
         }
+
         // Otherwise we just don't care. Not fixed voxels that match the right
         // sign can be whatever value that they want to be.
+        esdf_voxel.observed = true;
+        esdf_voxel.hallucinated = false;
       }
     }
   }
@@ -327,6 +334,9 @@ void EsdfIntegrator::processRaiseSet() {
 
 void EsdfIntegrator::processOpenSet() {
   size_t num_updates = 0u;
+  size_t num_inside = 0u;
+  size_t num_outside = 0u;
+  size_t num_flipped = 0u;
   GlobalIndexVector neighbors;
 
   while (!open_.empty()) {
@@ -379,6 +389,7 @@ void EsdfIntegrator::processOpenSet() {
         if (voxel->distance + distance + config_.min_diff_m <
             neighbor_voxel->distance) {
           num_updates++;
+          num_outside++;
           neighbor_voxel->distance = voxel->distance + distance;
           // Also update parent.
           neighbor_voxel->parent = new_parent;
@@ -393,6 +404,7 @@ void EsdfIntegrator::processOpenSet() {
         if (voxel->distance - distance - config_.min_diff_m >
             neighbor_voxel->distance) {
           num_updates++;
+          num_inside++;
           neighbor_voxel->distance = voxel->distance - distance;
           // Also update parent.
           neighbor_voxel->parent = new_parent;
@@ -410,6 +422,7 @@ void EsdfIntegrator::processOpenSet() {
             distance) {
           if (signum(potential_distance) == neighbor_voxel->distance) {
             num_updates++;
+            num_flipped++;
             neighbor_voxel->distance = potential_distance;
             // Also update parent.
             neighbor_voxel->parent = new_parent;
@@ -420,6 +433,7 @@ void EsdfIntegrator::processOpenSet() {
             }
           } else {
             num_updates++;
+            num_flipped++;
             neighbor_voxel->distance =
                 signum(neighbor_voxel->distance) * distance;
             // Also update parent.
@@ -435,7 +449,9 @@ void EsdfIntegrator::processOpenSet() {
     }
   }
 
-  VLOG(3) << "[ESDF update]: made " << num_updates << " voxel updates.";
+  VLOG(1) << "[ESDF update]: made " << num_updates
+          << " voxel updates, of which outside: " << num_outside
+          << " inside: " << num_inside << " flipped: " << num_flipped;
 }
 
 }  // namespace voxblox

@@ -104,7 +104,7 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
   std::unique_ptr<Layer<EsdfVoxel> > esdf_gt_;
 };
 
-TEST_P(SdfIntegratorsTest, TsdfIntegrators) {
+TEST_P(SdfIntegratorsTest, DISABLED_TsdfIntegrators) {
   TsdfIntegratorBase::Config config;
   config.default_truncation_distance = truncation_distance_;
   config.integrator_threads = 1;
@@ -279,7 +279,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
 }
 
 INSTANTIATE_TEST_CASE_P(VoxelSizes, SdfIntegratorsTest,
-                        ::testing::Values(0.1f, 0.2f, 0.3f, 0.4f, 0.5f));
+                        ::testing::Values(/*0.1f, 0.2f, 0.3f, 0.4f, */ 0.5f));
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
