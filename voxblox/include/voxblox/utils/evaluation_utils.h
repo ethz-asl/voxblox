@@ -72,9 +72,9 @@ struct VoxelEvaluationDetails {
        << "\n num_gt_free_test_free:          " << num_gt_free_test_free
        << "\n False Positive [%]:             " << false_pos
        << "\n False Negative [%]:             " << false_neg
-       << "\n False Negative Alt [%]:         " << false_neg_alt
        << "\n RMSE           [m]:             " << rmse
        << "\n Coverage       [%]:             " << coverage
+       << "\n False Negative Alt [%]:         " << false_neg_alt
         << "\n========================================\n";
 
     return ss.str();
