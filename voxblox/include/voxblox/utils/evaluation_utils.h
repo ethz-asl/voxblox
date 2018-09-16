@@ -50,8 +50,10 @@ struct VoxelEvaluationDetails {
   std::string toString() const {
     size_t num_gt_occ = num_gt_occ_test_occ + num_gt_occ_test_free + num_gt_occ_test_un;
     size_t num_gt_free = num_gt_free_test_occ + num_gt_free_test_free + num_gt_free_test_un;
+    size_t num_gt_un = num_gt_un_test_occ + num_gt_un_test_free + num_gt_un_test_un;
     double false_pos = 100.0 * (num_gt_free_test_occ + num_gt_free_test_un) / num_gt_free;
     double false_neg = 100.0 * num_gt_occ_test_free / num_gt_occ;
+    double false_neg_alt = 100.0 * (num_gt_occ_test_free + num_gt_un_test_free) / (num_gt_occ + num_gt_un);
     double coverage = 100.0 * num_overlapping_voxels / num_observed_voxels_layer_gt;
     std::stringstream ss;
     ss << "\n\n======= Layer Evaluation Results =======\n"
@@ -73,8 +75,9 @@ struct VoxelEvaluationDetails {
        << "\n num_gt_free_test_un:            " << num_gt_free_test_un
        << "\n num_gt_free_test_occ:           " << num_gt_free_test_occ
        << "\n num_gt_free_test_free:          " << num_gt_free_test_free
-       << "\n False Postive  [%]:             " << false_pos
+       << "\n False Positive [%]:             " << false_pos
        << "\n False Negative [%]:             " << false_neg
+       << "\n False Negative Alt [%]:         " << false_neg_alt
        << "\n RMSE           [m]:             " << rmse
        << "\n Coverage       [%]:             " << coverage
         << "\n========================================\n";
