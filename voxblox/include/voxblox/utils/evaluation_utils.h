@@ -47,8 +47,10 @@ struct VoxelEvaluationDetails {
   std::string toString() const {
     size_t num_gt_occ = num_gt_occ_test_occ + num_gt_occ_test_free + num_gt_occ_test_un;
     size_t num_gt_free = num_gt_free_test_occ + num_gt_free_test_free + num_gt_free_test_un;
+    size_t num_gt_un = num_gt_un_test_occ + num_gt_un_test_free + num_gt_un_test_un;
     double false_pos = 100.0 * (num_gt_free_test_occ + num_gt_free_test_un) / num_gt_free;
     double false_neg = 100.0 * num_gt_occ_test_free / num_gt_occ;
+    double false_neg_alt = 100.0 * (num_gt_occ_test_free + num_gt_un_test_free) / (num_gt_occ + num_gt_un);
     double coverage = 100.0 * num_overlapping_voxels / num_observed_voxels_layer_gt;
     std::stringstream ss;
     ss << "\n\n======= Layer Evaluation Results =======\n"
@@ -68,8 +70,9 @@ struct VoxelEvaluationDetails {
        << "\n num_gt_free_test_un:            " << num_gt_free_test_un
        << "\n num_gt_free_test_occ:           " << num_gt_free_test_occ
        << "\n num_gt_free_test_free:          " << num_gt_free_test_free
-       << "\n False Postive  [%]:             " << false_pos
+       << "\n False Positive [%]:             " << false_pos
        << "\n False Negative [%]:             " << false_neg
+       << "\n False Negative Alt [%]:         " << false_neg_alt
        << "\n RMSE           [m]:             " << rmse
        << "\n Coverage       [%]:             " << coverage
         << "\n========================================\n";
@@ -151,7 +154,6 @@ FloatingPoint evaluateLayersRmse(
         if (isObservedVoxel(test_voxel)) {
           if (isIgnoredVoxel(test_voxel, ignore_behind_test_surface)) {
             ++evaluation_details.num_ignored_voxels;
-            ++evaluation_details.num_gt_un_test_un;
           } else {
             ++evaluation_details.num_non_overlapping_voxels;
             const bool test_voxel_is_free = getVoxelSdf(test_voxel) > evaluation_details.free_space_threshold;
@@ -161,8 +163,6 @@ FloatingPoint evaluateLayersRmse(
               ++evaluation_details.num_gt_un_test_occ;
             }
           }
-        } else {
-          ++evaluation_details.num_gt_un_test_un;
         }
       }
       continue;
@@ -206,7 +206,6 @@ FloatingPoint evaluateLayersRmse(
         if(isObservedVoxel(gt_voxel)) {
           if (isIgnoredVoxel(gt_voxel, ignore_behind_gt_surface)) {
             ++evaluation_details.num_ignored_voxels;
-            ++evaluation_details.num_gt_un_test_un;
           } else {
             ++evaluation_details.num_non_overlapping_voxels;
             ++evaluation_details.num_observed_voxels_layer_gt;
@@ -217,8 +216,6 @@ FloatingPoint evaluateLayersRmse(
               ++evaluation_details.num_gt_occ_test_un;
             }
           }
-        } else {
-          ++evaluation_details.num_gt_un_test_un;
         }
       }
     }
@@ -276,11 +273,15 @@ bool computeVoxelError(const VoxelType& voxel_gt, const VoxelType& voxel_test,
   if (isIgnoredVoxel(voxel_gt, ignore_behind_gt_surface)) {
     ++eval_details->num_ignored_voxels;
   }
-  if (gt_observed) {
-    ++eval_details->num_observed_voxels_layer_gt;
-  }
   if (isIgnoredVoxel(voxel_test, ignore_behind_test_surface)) {
     ++eval_details->num_ignored_voxels;
+  }
+  // If both voxels are unobserved, we simply return
+  if (!gt_observed && !test_observed) {
+    return false;
+  }
+  if (gt_observed) {
+    ++eval_details->num_observed_voxels_layer_gt;
   }
 
   const bool both_voxels_observed = gt_observed && test_observed;
