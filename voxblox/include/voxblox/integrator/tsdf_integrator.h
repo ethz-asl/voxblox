@@ -25,6 +25,19 @@
 
 namespace voxblox {
 
+enum class TsdfIntegratorType : int {
+  kSimple = 1,
+  kMerged = 2,
+  kFast = 3,
+};
+
+static constexpr size_t kNumTsdfIntegratorTypes = 3u;
+
+const std::array<std::string, kNumTsdfIntegratorTypes>
+    kTsdfIntegratorTypeNames = {{/*kSimple*/ "simple",
+                                 /*kMerged*/ "merged",
+                                 /*kFast*/ "fast"}};
+
 // Note most functions state if they are thread safe. Unless explicitly stated
 // otherwise, this thread safety is based on the assumption that any pointers
 // passed to the functions point to objects that are guaranteed to not be
@@ -32,6 +45,7 @@ namespace voxblox {
 class TsdfIntegratorBase {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  typedef std::shared_ptr<TsdfIntegratorBase> Ptr;
 
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -132,6 +146,16 @@ class TsdfIntegratorBase {
   // chance of two threads needing the same lock for unrelated voxels is
   // (num_threads / (2^n)). For 8 threads and 12 bits this gives 0.2%.
   ApproxHashArray<12, std::mutex, GlobalIndex, LongIndexHash> mutexes_;
+};
+
+class TsdfIntegratorFactory {
+ public:
+  static TsdfIntegratorBase::Ptr create(
+      const std::string& integrator_type_name,
+      const TsdfIntegratorBase::Config& config, Layer<TsdfVoxel>* layer);
+  static TsdfIntegratorBase::Ptr create(
+      const TsdfIntegratorType integrator_type,
+      const TsdfIntegratorBase::Config& config, Layer<TsdfVoxel>* layer);
 };
 
 class SimpleTsdfIntegrator : public TsdfIntegratorBase {
