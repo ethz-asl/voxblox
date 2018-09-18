@@ -18,8 +18,6 @@ EsdfIntegrator::EsdfIntegrator(const Config& config,
   CHECK_NEAR(esdf_layer_->voxel_size(), tsdf_layer_->voxel_size(), 1e-6);
 
   open_.setNumBuckets(config_.num_buckets, config_.max_distance_m);
-
-  neighbor_tools_.setLayer(esdf_layer);
 }
 
 // Used for planning - allocates sphere around as observed but occupied,
@@ -148,10 +146,6 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         if (!incremental && config_.add_occupied_crust) {
           // Create a little crust of occupied voxels around.
           EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
-          VoxelIndex voxel_index =
-              esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
-          GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-              block_index, voxel_index, voxels_per_side_);
           esdf_voxel.distance = -config_.default_distance_m;
           esdf_voxel.observed = true;
           esdf_voxel.hallucinated = true;
@@ -294,7 +288,7 @@ void EsdfIntegrator::processRaiseSet() {
   // (2) if the neighbor's parent differs, add it to open (we will have to
   //    update our current distances, of course).
   GlobalIndexVector neighbors;
-
+  Neighborhood<Connectivity::kTwentySix>::IndexMatrix neigbor_indices;
   while (!raise_.empty()) {
     GlobalIndex global_index = raise_.front();
     raise_.pop();
@@ -303,11 +297,13 @@ void EsdfIntegrator::processRaiseSet() {
     CHECK_NOTNULL(voxel);
 
     // Get the global indices of neighbors.
-    neighbor_tools_.getNeighborsByGlobalIndex(
-        global_index, Connectivity::kTwentySix, &neighbors);
+    Neighborhood<Connectivity::kTwentySix>::getFromGlobalIndex(
+        global_index, &neigbor_indices);
 
     // Go through the neighbors and see if we can update any of them.
-    for (const GlobalIndex& neighbor_index : neighbors) {
+    for (unsigned int idx = 0u; idx < neigbor_indices.cols(); ++idx) {
+      const GlobalIndex& neighbor_index = neigbor_indices.col(idx);
+
       EsdfVoxel* neighbor_voxel =
           esdf_layer_->getVoxelPtrByGlobalIndex(neighbor_index);
       if (neighbor_voxel == nullptr) {
@@ -354,7 +350,7 @@ void EsdfIntegrator::processOpenSet() {
   size_t num_inside = 0u;
   size_t num_outside = 0u;
   size_t num_flipped = 0u;
-  GlobalIndexVector neighbors;
+  Neighborhood<Connectivity::kTwentySix>::IndexMatrix neigbor_indices;
 
   while (!open_.empty()) {
     GlobalIndex global_index = open_.front();
@@ -370,12 +366,13 @@ void EsdfIntegrator::processOpenSet() {
       continue;
     }
 
-    // Get the global indices of neighbors.
-    neighbor_tools_.getNeighborsByGlobalIndex(
-        global_index, Connectivity::kTwentySix, &neighbors);
+    Neighborhood<Connectivity::kTwentySix>::getFromGlobalIndex(
+        global_index, &neigbor_indices);
 
     // Go through the neighbors and see if we can update any of them.
-    for (const GlobalIndex& neighbor_index : neighbors) {
+    for (unsigned int idx = 0u; idx < neigbor_indices.cols(); ++idx) {
+      const GlobalIndex& neighbor_index = neigbor_indices.col(idx);
+
       EsdfVoxel* neighbor_voxel =
           esdf_layer_->getVoxelPtrByGlobalIndex(neighbor_index);
       if (neighbor_voxel == nullptr) {
@@ -478,12 +475,14 @@ bool EsdfIntegrator::updateVoxelFromNeighbors(const GlobalIndex& global_index) {
   EsdfVoxel* voxel = esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
   CHECK_NOTNULL(voxel);
   // Get the global indices of neighbors.
-  GlobalIndexVector neighbors;
-  neighbor_tools_.getNeighborsByGlobalIndex(
-      global_index, Connectivity::kTwentySix, &neighbors);
+  Neighborhood<Connectivity::kTwentySix>::IndexMatrix neigbor_indices;
+  Neighborhood<Connectivity::kTwentySix>::getFromGlobalIndex(global_index,
+                                                             &neigbor_indices);
 
-  // Go through the neighbors and see if we can update from any of them.
-  for (const GlobalIndex& neighbor_index : neighbors) {
+  // Go through the neighbors and see if we can update any of them.
+  for (unsigned int idx = 0u; idx < neigbor_indices.cols(); ++idx) {
+    const GlobalIndex& neighbor_index = neigbor_indices.col(idx);
+
     EsdfVoxel* neighbor_voxel =
         esdf_layer_->getVoxelPtrByGlobalIndex(neighbor_index);
     if (neighbor_voxel == nullptr) {
