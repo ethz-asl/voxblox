@@ -96,6 +96,16 @@ class TsdfServer {
   double getSliceLevel() const { return slice_level_; }
   void setSliceLevel(double slice_level) { slice_level_ = slice_level; }
 
+  bool setPublishSlices() const { return publish_slices_; }
+  void setPublishSlices(const bool publish_slices) {
+    publish_slices_ = publish_slices;
+  }
+
+  void setWorldFrame(const std::string& world_frame) {
+    world_frame_ = world_frame;
+  }
+  std::string getWorldFrame() const { return world_frame_; }
+
   // CLEARS THE ENTIRE MAP!
   virtual void clear();
 
