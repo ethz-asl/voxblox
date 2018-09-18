@@ -101,6 +101,11 @@ class TsdfServer {
     publish_slices_ = publish_slices;
   }
 
+  void setWorldFrame(const std::string& world_frame) {
+    world_frame_ = world_frame;
+  }
+  std::string getWorldFrame() const { return world_frame_; }
+
   // CLEARS THE ENTIRE MAP!
   virtual void clear();
 
