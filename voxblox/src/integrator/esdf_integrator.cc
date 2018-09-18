@@ -372,6 +372,10 @@ void EsdfIntegrator::processOpenSet() {
     // Go through the neighbors and see if we can update any of them.
     for (unsigned int idx = 0u; idx < neigbor_indices.cols(); ++idx) {
       const GlobalIndex& neighbor_index = neigbor_indices.col(idx);
+      const SignedIndex& direction =
+          NeighborhoodLookupTables::kOffsets.col(idx);
+      FloatingPoint distance =
+          NeighborhoodLookupTables::kDistances[idx] * voxel_size_;
 
       EsdfVoxel* neighbor_voxel =
           esdf_layer_->getVoxelPtrByGlobalIndex(neighbor_index);
@@ -385,10 +389,7 @@ void EsdfIntegrator::processOpenSet() {
         continue;
       }
 
-      SignedIndex direction = (neighbor_index - global_index).cast<int>();
       SignedIndex new_parent = -direction;
-      FloatingPoint distance =
-          direction.cast<FloatingPoint>().norm() * voxel_size_;
       if (config_.full_euclidean_distance) {
         // In this case, the new parent is is actually the parent of the
         // current voxel.
@@ -396,6 +397,7 @@ void EsdfIntegrator::processOpenSet() {
         new_parent = voxel->parent - direction;
         distance = voxel_size_ * (new_parent.cast<FloatingPoint>().norm() -
                                   voxel->parent.cast<FloatingPoint>().norm());
+
         if (distance < 0.0) {
           continue;
         }
@@ -482,6 +484,8 @@ bool EsdfIntegrator::updateVoxelFromNeighbors(const GlobalIndex& global_index) {
   // Go through the neighbors and see if we can update any of them.
   for (unsigned int idx = 0u; idx < neigbor_indices.cols(); ++idx) {
     const GlobalIndex& neighbor_index = neigbor_indices.col(idx);
+    const FloatingPoint distance =
+        Neighborhood<Connectivity::kTwentySix>::kDistances[idx];
 
     EsdfVoxel* neighbor_voxel =
         esdf_layer_->getVoxelPtrByGlobalIndex(neighbor_index);

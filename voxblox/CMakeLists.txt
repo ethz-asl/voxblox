@@ -7,11 +7,6 @@ catkin_simple()
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wall -Wextra)
 
-if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../tools/pybind11/CMakeLists.txt")
-  set(HAVE_PYBIND11 TRUE)
-  message(STATUS "Found pybind11; generating Python bindings")
-endif()
-
 ############
 # PROTOBUF #
 ############
@@ -89,35 +84,6 @@ cs_add_library(${PROJECT_NAME}
   ${${PROJECT_NAME}_SRCS}
 )
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES})
-
-###################
-# PYTHON BINDINGS #
-###################
-if(HAVE_PYBIND11)
-  catkin_python_setup()
-
-  add_subdirectory(../tools/pybind11 pybind11)
-  message("Building Python bindings for voxblox")
-  pybind11_add_module(voxbloxpy
-    ${${PROJECT_NAME}_SRCS}
-    src/pybind11/esdf_map_bind.cc
-    src/pybind11/tsdf_map_bind.cc
-    src/pybind11/esdf_integrator_bind.cc
-    src/pybind11/tsdf_integrator_bind.cc
-    src/pybind11/voxel_bind.cc
-    src/pybind11/layer_bind.cc
-    src/pybind11/block_bind.cc
-    src/pybind11/layer_io_bind.cc
-    src/pybind11/planning_utils_bind.cc
-    src/pybind11/bind.cc)
-  set_target_properties(voxbloxpy PROPERTIES LINKER_LANGUAGE CXX)
-  target_link_libraries(voxbloxpy PUBLIC ${PROJECT_NAME}_proto
-                                         ${PROTOBUF_LIBRARIES})
-
-  set_target_properties(voxbloxpy
-    PROPERTIES LIBRARY_OUTPUT_DIRECTORY
-  ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}/../)
-endif()
 
 ############
 # BINARIES #

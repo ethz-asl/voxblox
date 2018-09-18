@@ -26,6 +26,10 @@ const NeighborhoodLookupTables::IndexOffsets NeighborhoodLookupTables::kOffsets 
                         0,  0,  0,  0, -1,  1,  0,  0,  0,  0, -1,  1, -1,  1, -1, -1,  1,  1, -1,  1, -1,  1, -1,  1, -1,  1;
   return directions_matrix;
 }();
+
+const NeighborhoodLookupTables::LongIndexOffsets NeighborhoodLookupTables::kLongOffsets = [] {
+  return NeighborhoodLookupTables::kOffsets.cast<LongIndexElement>();
+}();
 // clang-format on
 
 }  // namespace voxblox
