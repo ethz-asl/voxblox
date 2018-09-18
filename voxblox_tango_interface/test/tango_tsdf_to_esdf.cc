@@ -43,12 +43,13 @@ int main(int argc, char** argv) {
   esdf_integrator_config.min_distance_m = min_distance_m;
   esdf_integrator_config.max_distance_m = max_distance_m;
   esdf_integrator_config.default_distance_m = default_distance_m;
+  esdf_integrator_config.full_euclidean_distance = true;
 
   EsdfMap esdf_map(esdf_config);
   EsdfIntegrator esdf_integrator(esdf_integrator_config, layer_from_file.get(),
                                  esdf_map.getEsdfLayerPtr());
 
-  esdf_integrator.updateFromTsdfLayerBatchFullEuclidean();
+  esdf_integrator.updateFromTsdfLayerBatch();
 
   const bool esdf_success = io::SaveLayer(esdf_map.getEsdfLayer(), argv[2]);
 
