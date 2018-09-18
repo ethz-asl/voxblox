@@ -246,6 +246,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   // Figure out some metrics to compare against, based on voxel size.
   constexpr FloatingPoint kFloatingPointToleranceHigh = 1e-4;
   constexpr FloatingPoint kKindaSimilar = 1e-2;
+  constexpr FloatingPoint kCloseEnough = 1.0;
 
   // Make sure they're all reasonable.
   EXPECT_NEAR(incremental_result.min_error, 0.0, kFloatingPointToleranceHigh);
@@ -268,7 +269,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
             batch_full_euclidean_result.num_overlapping_voxels);
   EXPECT_NEAR(incremental_result.rmse, batch_result.rmse, kKindaSimilar);
   EXPECT_NEAR(incremental_result.max_error, batch_result.max_error,
-              kKindaSimilar);
+              kCloseEnough);
 
   // Output for debugging.
   io::SaveLayer(tsdf_layer, "esdf_euclidean_test.voxblox", true);
