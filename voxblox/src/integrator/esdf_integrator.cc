@@ -148,10 +148,6 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         if (!incremental && config_.add_occupied_crust) {
           // Create a little crust of occupied voxels around.
           EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
-          VoxelIndex voxel_index =
-              esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
-          GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-              block_index, voxel_index, voxels_per_side_);
           esdf_voxel.distance = -config_.default_distance_m;
           esdf_voxel.observed = true;
           esdf_voxel.hallucinated = true;
@@ -166,7 +162,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
           block_index, voxel_index, voxels_per_side_);
 
-      bool tsdf_fixed = isFixed(tsdf_voxel.distance);
+      const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
       // If there was nothing there before:
       if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
         // Two options: ESDF is in the fixed truncation band, or outside.
@@ -296,7 +292,7 @@ void EsdfIntegrator::processRaiseSet() {
   GlobalIndexVector neighbors;
 
   while (!raise_.empty()) {
-    GlobalIndex global_index = raise_.front();
+    const GlobalIndex global_index = raise_.front();
     raise_.pop();
 
     EsdfVoxel* voxel = esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
@@ -436,7 +432,7 @@ void EsdfIntegrator::processOpenSet() {
         }
         // Final case is if the signs are different.
       } else {
-        FloatingPoint potential_distance =
+        const FloatingPoint potential_distance =
             voxel->distance - signum(voxel->distance) * distance;
         if (std::abs(potential_distance - neighbor_voxel->distance) >
             distance) {
