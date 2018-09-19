@@ -59,6 +59,7 @@ typedef AlignedVector<AnyIndex> IndexVector;
 typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 typedef AlignedVector<LongIndex> LongIndexVector;
+typedef LongIndexVector GlobalIndexVector;
 
 struct Color;
 typedef uint32_t Label;

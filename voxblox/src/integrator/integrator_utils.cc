@@ -193,6 +193,11 @@ bool RayCaster::nextRayIndex(GlobalIndex* ray_index) {
 
 void RayCaster::setupRayCaster(const Point& start_scaled,
                                const Point& end_scaled) {
+  if (start_scaled.array().isNaN().any() || end_scaled.array().isNaN().any()) {
+    ray_length_in_steps_ = 0;
+    return;
+  }
+
   curr_index_ = getGridIndexFromPoint<GlobalIndex>(start_scaled);
   const GlobalIndex end_index = getGridIndexFromPoint<GlobalIndex>(end_scaled);
   const GlobalIndex diff_index = end_index - curr_index_;

@@ -23,7 +23,7 @@ void SimulationServer::getServerConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   // Settings for simulation.
   nh_private_.param("tsdf_voxel_size", voxel_size_, voxel_size_);
-  nh_private_.param("voxels_per_side", voxels_per_side_, voxels_per_side_);
+  nh_private_.param("tsdf_voxels_per_side", voxels_per_side_, voxels_per_side_);
   nh_private.param("incremental", incremental_, incremental_);
   nh_private.param("generate_mesh", generate_mesh_, generate_mesh_);
 
@@ -33,32 +33,33 @@ void SimulationServer::getServerConfigFromRosParam(
 
   nh_private.param("generate_occupancy", generate_occupancy_,
                    generate_occupancy_);
-  nh_private_.param("truncation_distance", truncation_distance_,
-                    truncation_distance_);
+  nh_private.param("add_robot_pose", add_robot_pose_, add_robot_pose_);
+  nh_private.param("truncation_distance", truncation_distance_,
+                   truncation_distance_);
 
-  nh_private_.param("depth_camera_resolution_u", depth_camera_resolution_[0],
-                    depth_camera_resolution_[0]);
-  nh_private_.param("depth_camera_resolution_v", depth_camera_resolution_[1],
-                    depth_camera_resolution_[1]);
+  nh_private.param("depth_camera_resolution_u", depth_camera_resolution_[0],
+                   depth_camera_resolution_[0]);
+  nh_private.param("depth_camera_resolution_v", depth_camera_resolution_[1],
+                   depth_camera_resolution_[1]);
 
-  nh_private_.param("fov_h_rad", fov_h_rad_, fov_h_rad_);
+  nh_private.param("fov_h_rad", fov_h_rad_, fov_h_rad_);
 
-  nh_private_.param("max_dist", max_dist_, max_dist_);
-  nh_private_.param("min_dist", min_dist_, min_dist_);
+  nh_private.param("max_dist", max_dist_, max_dist_);
+  nh_private.param("min_dist", min_dist_, min_dist_);
 
-  nh_private_.param("num_viewpoints", num_viewpoints_, num_viewpoints_);
+  nh_private.param("num_viewpoints", num_viewpoints_, num_viewpoints_);
 
   // NOTE(mfehr): needed because ros params does not support size_t.
   int max_attempts_to_generate_viewpoint =
       static_cast<int>(max_attempts_to_generate_viewpoint_);
-  nh_private_.param("max_attempts_to_generate_viewpoint",
-                    max_attempts_to_generate_viewpoint,
-                    max_attempts_to_generate_viewpoint);
+  nh_private.param("max_attempts_to_generate_viewpoint",
+                   max_attempts_to_generate_viewpoint,
+                   max_attempts_to_generate_viewpoint);
   CHECK_GT(max_attempts_to_generate_viewpoint, 0);
   max_attempts_to_generate_viewpoint_ =
       static_cast<size_t>(max_attempts_to_generate_viewpoint);
 
-  nh_private_.param("world_frame", world_frame_, world_frame_);
+  nh_private.param("world_frame", world_frame_, world_frame_);
 }
 
 SimulationServer::SimulationServer(
@@ -77,6 +78,7 @@ SimulationServer::SimulationServer(
       visualization_slice_level_(2.0),
       generate_mesh_(true),
       incremental_(true),
+      add_robot_pose_(false),
       truncation_distance_(tsdf_integrator_config.default_truncation_distance),
       esdf_max_distance_(esdf_integrator_config.max_distance_m),
       max_attempts_to_generate_viewpoint_(50u),
@@ -103,8 +105,11 @@ SimulationServer::SimulationServer(
   tsdf_integrator_.reset(
       new MergedTsdfIntegrator(tsdf_integrator_config, tsdf_test_.get()));
 
+  EsdfIntegrator::Config esdf_integrator_config_copy = esdf_integrator_config;
+  esdf_integrator_config_copy.clear_sphere_radius = min_dist_;
+
   esdf_integrator_.reset(new EsdfIntegrator(
-      esdf_integrator_config, tsdf_test_.get(), esdf_test_.get()));
+      esdf_integrator_config_copy, tsdf_test_.get(), esdf_test_.get()));
 
   if (generate_occupancy_) {
     occ_test_.reset(new Layer<OccupancyVoxel>(voxel_size_, voxels_per_side_));
@@ -229,6 +234,10 @@ void SimulationServer::generateSDF() {
 
     if (generate_occupancy_) {
       occ_integrator_->integratePointCloud(T_G_C, ptcloud_C);
+    }
+
+    if (add_robot_pose_) {
+      esdf_integrator_->addNewRobotPosition(view_origin);
     }
 
     const bool clear_updated_flag = true;

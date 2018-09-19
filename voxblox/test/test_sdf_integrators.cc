@@ -4,10 +4,10 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/esdf_integrator.h"
 #include "voxblox/integrator/tsdf_integrator.h"
+#include "voxblox/io/layer_io.h"
 #include "voxblox/simulation/simulation_world.h"
 #include "voxblox/utils/evaluation_utils.h"
 #include "voxblox/utils/layer_utils.h"
-#include "voxblox/io/layer_io.h"
 
 using namespace voxblox;  // NOLINT
 
@@ -41,7 +41,7 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
     world_.addGroundLevel(0.0);
 
     // Next, generate poses evenly spaced in a circle around the object.
-    FloatingPoint radius = 4.0;
+    FloatingPoint radius = 6.0;
     FloatingPoint height = 2.0;
     int num_poses = 50;  // static_cast<int>(200 * voxel_size_);
     poses_.reserve(num_poses);
@@ -63,7 +63,7 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
 
       // Face the desired yaw and pitch forward a bit to get some of the floor.
       Quaternion rotation =
-          Quaternion(Eigen::AngleAxis<FloatingPoint>(-0.0, Point::UnitY())) *
+          Quaternion(Eigen::AngleAxis<FloatingPoint>(-0.1, Point::UnitY())) *
           Eigen::AngleAxis<FloatingPoint>(desired_yaw, Point::UnitZ());
 
       poses_.emplace_back(Transformation(rotation, position));
@@ -75,6 +75,9 @@ class SdfIntegratorsTest : public ::testing::TestWithParam<FloatingPoint> {
 
     truncation_distance_ = 4 * voxel_size_;
     esdf_max_distance_ = 4.0f;
+
+    LOG(INFO) << "Truncation distance: " << truncation_distance_
+              << " ESDF max distance: " << esdf_max_distance_;
 
     world_.generateSdfFromWorld(truncation_distance_, tsdf_gt_.get());
     world_.generateSdfFromWorld(esdf_max_distance_, esdf_gt_.get());
@@ -193,11 +196,15 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   EsdfIntegrator::Config esdf_config;
   esdf_config.max_distance_m = esdf_max_distance_;
   esdf_config.default_distance_m = esdf_max_distance_;
-  esdf_config.min_distance_m = truncation_distance_;
+  esdf_config.min_distance_m = truncation_distance_ / 2.0;
+  esdf_config.min_diff_m = 0.0;
+  esdf_config.full_euclidean_distance = false;
   esdf_config.add_occupied_crust = false;
+  esdf_config.multi_queue = true;
   EsdfIntegrator incremental_integrator(esdf_config, &tsdf_layer,
                                         &incremental_layer);
   EsdfIntegrator batch_integrator(esdf_config, &tsdf_layer, &batch_layer);
+  esdf_config.full_euclidean_distance = true;
   EsdfIntegrator batch_full_euclidean_integrator(esdf_config, &tsdf_layer,
                                                  &batch_full_euclidean_layer);
 
@@ -217,7 +224,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
 
   // Do batch updates.
   batch_integrator.updateFromTsdfLayerBatch();
-  batch_full_euclidean_integrator.updateFromTsdfLayerBatchFullEuclidean();
+  batch_full_euclidean_integrator.updateFromTsdfLayerBatch();
 
   utils::VoxelEvaluationDetails incremental_result, batch_result,
       batch_full_euclidean_result;
@@ -239,6 +246,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
   // Figure out some metrics to compare against, based on voxel size.
   constexpr FloatingPoint kFloatingPointToleranceHigh = 1e-4;
   constexpr FloatingPoint kKindaSimilar = 1e-2;
+  constexpr FloatingPoint kCloseEnough = 1.0;
 
   // Make sure they're all reasonable.
   EXPECT_NEAR(incremental_result.min_error, 0.0, kFloatingPointToleranceHigh);
@@ -261,7 +269,7 @@ TEST_P(SdfIntegratorsTest, EsdfIntegrators) {
             batch_full_euclidean_result.num_overlapping_voxels);
   EXPECT_NEAR(incremental_result.rmse, batch_result.rmse, kKindaSimilar);
   EXPECT_NEAR(incremental_result.max_error, batch_result.max_error,
-              kKindaSimilar);
+              kCloseEnough);
 
   // Output for debugging.
   io::SaveLayer(tsdf_layer, "esdf_euclidean_test.voxblox", true);
