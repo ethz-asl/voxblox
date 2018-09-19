@@ -36,6 +36,10 @@ class NeighborTools {
       AlignedVector<float>* distances,
       AlignedVector<Eigen::Vector3i>* directions) const;
 
+  void getNeighborsByGlobalIndex(const GlobalIndex& global_index,
+                                 Connectivity connectivity,
+                                 GlobalIndexVector* neighbors) const;
+
   void getNeighborIndex(const BlockIndex& block_index,
                         const VoxelIndex& voxel_index,
                         const SignedIndex& direction,
@@ -133,6 +137,64 @@ void NeighborTools<VoxelType>::getNeighborIndexesAndDistances(
     }
   }
 
+  if (connectivity != Connectivity::kTwentySix) {
+    LOG(FATAL) << "Unknown neighborhood connectivity: "
+               << static_cast<int>(connectivity);
+  }
+}
+
+template <typename VoxelType>
+void NeighborTools<VoxelType>::getNeighborsByGlobalIndex(
+    const GlobalIndex& global_index, Connectivity connectivity,
+    GlobalIndexVector* neighbors) const {
+  CHECK_NOTNULL(neighbors);
+  neighbors->clear();
+  neighbors->reserve(connectivity);
+
+  GlobalIndex direction;
+  direction.setZero();
+  // Distance 1 set.
+  for (unsigned int i = 0u; i < 3u; ++i) {
+    for (int j = -1; j <= 1; j += 2) {
+      direction(i) = j;
+      neighbors->emplace_back(global_index + direction);
+    }
+    direction(i) = 0;
+  }
+
+  if (connectivity == Connectivity::kSix) {
+    return;
+  }
+
+  // Distance sqrt(2) set.
+  for (unsigned int i = 0u; i < 3u; ++i) {
+    unsigned int next_i = (i + 1) % 3;
+    for (int j = -1; j <= 1; j += 2) {
+      direction(i) = j;
+      for (int k = -1; k <= 1; k += 2) {
+        direction(next_i) = k;
+        neighbors->emplace_back(global_index + direction);
+      }
+      direction(i) = 0;
+      direction(next_i) = 0;
+    }
+  }
+
+  if (connectivity == Connectivity::kEighteen) {
+    return;
+  }
+
+  // Distance sqrt(3) set.
+  for (int i = -1; i <= 1; i += 2) {
+    direction(0) = i;
+    for (int j = -1; j <= 1; j += 2) {
+      direction(1) = j;
+      for (int k = -1; k <= 1; k += 2) {
+        direction(2) = k;
+        neighbors->emplace_back(global_index + direction);
+      }
+    }
+  }
   if (connectivity != Connectivity::kTwentySix) {
     LOG(FATAL) << "Unknown neighborhood connectivity: "
                << static_cast<int>(connectivity);

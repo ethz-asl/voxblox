@@ -2,6 +2,7 @@
 #define VOXBLOX_ROS_ESDF_SERVER_H_
 
 #include <memory>
+#include <string>
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
@@ -60,6 +61,11 @@ class EsdfServer : public TsdfServer {
   float getTraversabilityRadius() const;
   void setTraversabilityRadius(float traversability_radius);
 
+  // These are for enabling or disabling incremental update of the ESDF. Use
+  // carefully.
+  void disableIncrementalUpdate() { incremental_update_ = false; }
+  void enableIncrementalUpdate() { incremental_update_ = true; }
+
   virtual void clear();
 
  protected:
@@ -84,6 +90,7 @@ class EsdfServer : public TsdfServer {
   bool publish_esdf_map_;
   bool publish_traversable_;
   float traversability_radius_;
+  bool incremental_update_;
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;

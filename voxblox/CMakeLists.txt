@@ -141,7 +141,7 @@ catkin_add_gtest(test_merge_integration
 target_link_libraries(test_merge_integration ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 catkin_add_gtest(test_layer_utils
-  test/test_layer_utils.cc
+ test/test_layer_utils.cc
 )
 target_link_libraries(test_layer_utils ${PROJECT_NAME})
 
@@ -149,6 +149,11 @@ catkin_add_gtest(test_sdf_integrators
   test/test_sdf_integrators.cc
 )
 target_link_libraries(test_sdf_integrators ${PROJECT_NAME})
+
+catkin_add_gtest(test_bucket_queue
+  test/test_bucket_queue.cc
+)
+target_link_libraries(test_bucket_queue ${PROJECT_NAME})
 
 ##########
 # EXPORT #

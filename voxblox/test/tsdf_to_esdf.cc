@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
   EsdfIntegrator esdf_integrator(esdf_integrator_config, layer_from_file.get(),
                                  esdf_map.getEsdfLayerPtr());
 
-  esdf_integrator.updateFromTsdfLayerBatchFullEuclidean();
+  esdf_integrator.updateFromTsdfLayerBatch();
 
   const bool esdf_success = io::SaveLayer(esdf_map.getEsdfLayer(), argv[2]);
 
