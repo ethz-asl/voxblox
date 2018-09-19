@@ -358,6 +358,8 @@ class MeshIntegrator {
     }
   }
 
+  const MeshIntegratorConfig& config() const { return config_; }
+
  protected:
   MeshIntegratorConfig config_;
 
