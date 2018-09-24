@@ -31,6 +31,12 @@ void clearSphereAroundPoint(const Point& center, const FloatingPoint radius,
                             const FloatingPoint max_distance_m,
                             Layer<VoxelType>* layer);
 
+// Utility function to get map bounds from an arbitrary layer.
+template <typename VoxelType>
+void computeMapBoundsFromLayer(const voxblox::Layer<VoxelType>& layer,
+                               Eigen::Vector3d* lower_bound,
+                               Eigen::Vector3d* upper_bound);
+
 }  // namespace utils
 }  // namespace voxblox
 
