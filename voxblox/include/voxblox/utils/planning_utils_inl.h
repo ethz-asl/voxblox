@@ -141,27 +141,29 @@ void computeMapBoundsFromLayer(const voxblox::Layer<VoxelType>& layer,
   BlockIndexList all_blocks;
   layer.getAllAllocatedBlocks(&all_blocks);
 
-  Point lower_bound_pt;
-  Point upper_bound_pt;
+  BlockIndex lower_bound_index;
+  BlockIndex upper_bound_index;
+
   bool first_block = true;
 
   for (const voxblox::BlockIndex& block_index : all_blocks) {
-    Point origin_point = getOriginPointFromGridIndex(block_index, block_size);
-
     if (first_block) {
-      lower_bound_pt = origin_point;
-      upper_bound_pt = origin_point.array() + block_size;
+      lower_bound_index = block_index;
+      upper_bound_index = block_index;
       first_block = false;
       continue;
     }
 
-    lower_bound_pt = lower_bound_pt.array().min(origin_point.array());
-    upper_bound_pt =
-        upper_bound_pt.array().max(origin_point.array() + block_size);
+    lower_bound_index = lower_bound_index.array().min(block_index.array());
+    upper_bound_index = upper_bound_index.array().max(block_index.array());
   }
 
-  *lower_bound = lower_bound_pt.cast<double>();
-  *upper_bound = upper_bound_pt.cast<double>();
+  *lower_bound =
+      getOriginPointFromGridIndex(lower_bound_index, block_size).cast<double>();
+  *upper_bound =
+      (getOriginPointFromGridIndex(upper_bound_index, block_size).array() +
+       block_size)
+          .cast<double>();
 }
 
 }  // namespace utils
