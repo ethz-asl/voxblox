@@ -100,7 +100,11 @@ void SimulationWorld::getPointcloudFromViewpoint(
           }
         }
       }
-      if (ray_valid && !ray_intersect.array().isNaN().any()) {
+      if (ray_valid) {
+        if (ray_intersect.array().isNaN().any()) {
+          LOG(ERROR) << "Simulation ray intersect is NaN!";
+          continue;
+        }
         ptcloud->push_back(ray_intersect);
         colors->push_back(ray_color);
       }
@@ -164,7 +168,11 @@ void SimulationWorld::getNoisyPointcloudFromViewpoint(
           }
         }
       }
-      if (ray_valid && !ray_intersect.array().isNaN().any()) {
+      if (ray_valid) {
+        if (ray_intersect.array().isNaN().any()) {
+          LOG(ERROR) << "Simulation ray intersect is NaN!";
+          continue;
+        }
         // Apply noise now!
         FloatingPoint noise = getNoise(noise_sigma);
         ray_dist += noise;

@@ -131,6 +131,41 @@ void clearSphereAroundPoint(const Point& center, const FloatingPoint radius,
   }
 }
 
+// Utility function to get map bounds from an arbitrary layer.
+template <typename VoxelType>
+void computeMapBoundsFromLayer(const voxblox::Layer<VoxelType>& layer,
+                               Eigen::Vector3d* lower_bound,
+                               Eigen::Vector3d* upper_bound) {
+  FloatingPoint block_size = layer.block_size();
+
+  BlockIndexList all_blocks;
+  layer.getAllAllocatedBlocks(&all_blocks);
+
+  BlockIndex lower_bound_index;
+  BlockIndex upper_bound_index;
+
+  bool first_block = true;
+
+  for (const voxblox::BlockIndex& block_index : all_blocks) {
+    if (first_block) {
+      lower_bound_index = block_index;
+      upper_bound_index = block_index;
+      first_block = false;
+      continue;
+    }
+
+    lower_bound_index = lower_bound_index.array().min(block_index.array());
+    upper_bound_index = upper_bound_index.array().max(block_index.array());
+  }
+
+  *lower_bound =
+      getOriginPointFromGridIndex(lower_bound_index, block_size).cast<double>();
+  *upper_bound =
+      (getOriginPointFromGridIndex(upper_bound_index, block_size).array() +
+       block_size)
+          .cast<double>();
+}
+
 }  // namespace utils
 }  // namespace voxblox
 

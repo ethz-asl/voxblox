@@ -45,7 +45,8 @@ class EsdfIntegrator {
     float min_weight = 1e-6;
     // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
-    // Whether to push stuff to the queue multiple times.
+    // Whether to push stuff to the open queue multiple times, with updated
+    // distances.
     bool multi_queue = false;
     // Whether to add an outside layer of occupied voxels. Basically just sets
     // all unknown voxels in the allocated blocks to occupied.
