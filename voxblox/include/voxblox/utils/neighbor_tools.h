@@ -33,7 +33,7 @@ class NeighborhoodLookupTables {
   static const LongIndexOffsets kLongOffsets;
 };
 
-template <Connectivity kConnectivity>
+template <Connectivity kConnectivity = Connectivity::kTwentySix>
 class Neighborhood : public NeighborhoodLookupTables {
  public:
   typedef Eigen::Matrix<LongIndexElement, 3, kConnectivity> IndexMatrix;
@@ -47,11 +47,11 @@ class Neighborhood : public NeighborhoodLookupTables {
     }
   }
 
-  // Get the hierarchical index (block idx, local voxel index) a voxel described
-  // by its hierarchical index and a direction. The main purpose of this
+  // Get the block idx and local voxel index of a neighbor voxel. The neighbor
+  // voxel is defined by providing a direction. The main purpose of this
   // function is to solve the cross-block indexing that happens when looking up
   // neighbors at the block boundaries.
-  static void getFromHierarchicalIndexAndDirection(
+  static void getFromBlockAndVoxelIndexAndDirection(
       const BlockIndex& block_index, const VoxelIndex& voxel_index,
       const SignedIndex& direction, const size_t voxels_per_side,
       BlockIndex* neighbor_block_index, VoxelIndex* neighbor_voxel_index) {
@@ -79,19 +79,29 @@ class Neighborhood : public NeighborhoodLookupTables {
   // neighbors (6, 18, or 26 neighborhood) of a hierarcical index. This function
   // solves the cross-block indexing that happens when looking up neighbors at
   // the block boundary.
-  static void getFromHierarchicalIndex(const BlockIndex& block_index,
-                                       const VoxelIndex& voxel_index,
-                                       const size_t voxels_per_side,
-                                       AlignedVector<VoxelKey>* neighbors_ptr) {
+  static void getFromBlockAndVoxelIndex(
+      const BlockIndex& block_index, const VoxelIndex& voxel_index,
+      const size_t voxels_per_side, AlignedVector<VoxelKey>* neighbors_ptr) {
     CHECK_NOTNULL(neighbors_ptr)->resize(kConnectivity);
 
     AlignedVector<VoxelKey>& neighbors = *neighbors_ptr;
     for (unsigned int i = 0u; i < kConnectivity; ++i) {
       VoxelKey& neighbor = neighbors[i];
-      getFromHierarchicalIndexAndDirection(block_index, voxel_index,
-                                           kOffsets.col(i), voxels_per_side,
-                                           &neighbor.first, &neighbor.second);
+      getFromBlockAndVoxelIndexAndDirection(block_index, voxel_index,
+                                            kOffsets.col(i), voxels_per_side,
+                                            &neighbor.first, &neighbor.second);
     }
+  }
+
+  // Get the signed offset between the global indices of two voxels.
+  static SignedIndex getOffsetBetweenVoxels(const BlockIndex& start_block_index,
+                                            const VoxelIndex& start_voxel_index,
+                                            const BlockIndex& end_block_index,
+                                            const VoxelIndex& end_voxel_index,
+                                            const size_t voxels_per_side) {
+    CHECK_NE(voxels_per_side, 0u);
+    return (end_voxel_index - start_voxel_index) +
+           (end_block_index - start_block_index) * voxels_per_side;
   }
 };
 }  // namespace voxblox
