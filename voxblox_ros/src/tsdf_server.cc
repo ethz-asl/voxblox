@@ -278,7 +278,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
         icp_->runICP(tsdf_map_->getTsdfLayer(), points_C,
                      icp_corrected_transform_ * T_G_C, &T_G_C_refined);
     if (verbose_) {
-      ROS_INFO("ICP refinement performed %u successful update steps",
+      ROS_INFO("ICP refinement performed %zu successful update steps",
                num_icp_updates);
     }
     icp_corrected_transform_ = T_G_C_refined * T_G_C.inverse();

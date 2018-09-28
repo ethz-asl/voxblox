@@ -242,8 +242,9 @@ inline bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
   return false;
 }
 
-inline bool visualizeIntensityVoxels(
-    const IntensityVoxel& voxel, const Point& /*coord*/, double* intensity) {
+inline bool visualizeIntensityVoxels(const IntensityVoxel& voxel,
+                                     const Point& /*coord*/,
+                                     double* intensity) {
   CHECK_NOTNULL(intensity);
   if (voxel.weight > 0.0) {
     *intensity = voxel.intensity;
@@ -276,7 +277,8 @@ inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
 }
 
 inline bool visualizeFreeEsdfVoxels(const EsdfVoxel& voxel,
-                                        const Point& /*coord*/, float min_distance, double* intensity) {
+                                    const Point& /*coord*/, float min_distance,
+                                    double* intensity) {
   if (voxel.observed && voxel.distance >= min_distance) {
     *intensity = voxel.distance;
     return true;
@@ -347,14 +349,14 @@ inline void createDistancePointcloudFromEsdfLayer(
       layer, &visualizeDistanceIntensityEsdfVoxels, pointcloud);
 }
 
-
 inline void createFreePointcloudFromEsdfLayer(
     const Layer<EsdfVoxel>& layer, float min_distance,
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<EsdfVoxel>(
-      layer, std::bind(&visualizeFreeEsdfVoxels, ph::_1,
-                       ph::_2, min_distance, ph::_3), pointcloud);
+      layer,
+      std::bind(&visualizeFreeEsdfVoxels, ph::_1, ph::_2, min_distance, ph::_3),
+      pointcloud);
 }
 
 inline void createIntensityPointcloudFromIntensityLayer(
