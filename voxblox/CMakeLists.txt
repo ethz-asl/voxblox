@@ -57,6 +57,7 @@ set("${PROJECT_NAME}_SRCS"
   src/utils/camera_model.cc
   src/utils/evaluation_utils.cc
   src/utils/layer_utils.cc
+  src/utils/neighbor_tools.cc
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
   src/utils/voxel_utils.cc
