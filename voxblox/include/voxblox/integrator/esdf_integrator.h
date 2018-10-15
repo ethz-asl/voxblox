@@ -128,9 +128,6 @@ class EsdfIntegrator {
   Layer<TsdfVoxel>* tsdf_layer_;
   Layer<EsdfVoxel>* esdf_layer_;
 
-  // Neighbor tools to look up neighbors.
-  NeighborTools<EsdfVoxel> neighbor_tools_;
-
   // Open Queue for incremental updates. Contains global voxel indices
   // for the ESDF layer.
   BucketQueue<GlobalIndex> open_;
