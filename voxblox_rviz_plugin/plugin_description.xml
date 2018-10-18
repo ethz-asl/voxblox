@@ -5,4 +5,10 @@
     <description>Displays incremental voxblox mesh messages.</description>
     <message_type>voxblox_msgs/Mesh</message_type>
   </class>
+  <class name="voxblox_rviz_plugin/VoxbloxMinimalMesh"
+         type="voxblox_rviz_plugin::VoxbloxMinimalMeshDisplay"
+         base_class_type="rviz::Display">
+    <description>Displays a minimal incremental voxblox mesh message.</description>
+    <message_type>voxblox_msgs/MinimalMesh</message_type>
+  </class>
 </library>
