@@ -25,6 +25,7 @@
 #include <voxblox_msgs/FilePath.h>
 #include <voxblox_msgs/Mesh.h>
 
+#include <voxblox_ros/mesh_compress.h>
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/transformer.h"
@@ -163,6 +164,9 @@ class TsdfServer {
   // Whether to save the latest mesh message sent (for inheriting classes).
   bool cache_mesh_;
 
+  // Whether to use the bandwidth saving but more limited minimal_mesh
+  bool minimal_mesh_;
+
   // Whether to enable ICP corrections. Every pointcloud coming in will attempt
   // to be matched up to the existing structure using ICP. Requires the initial
   // guess from odometry to already be very good.
@@ -186,6 +190,8 @@ class TsdfServer {
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
   ros::Publisher icp_transform_pub_;
+
+  BZ2MinimalMeshPublisher minimal_mesh_pub_;
 
   // Publish the complete map for other nodes to consume.
   ros::Publisher tsdf_map_pub_;

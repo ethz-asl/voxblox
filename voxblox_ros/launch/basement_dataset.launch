@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="/path/to/basement_dataset.bag"/>
+  <arg name="bag_file" default="/home/z/Datasets/basement_dataset.bag"/>
 
   <!-- Download the dataset here: https://projects.asl.ethz.ch/datasets/doku.php?id=basement2018 -->
 
@@ -20,6 +20,7 @@
     <param name="method" value="fast" />
     <param name="max_ray_length_m" value="10.0" />
     <param name="use_const_weight" value="true" />
+    <param name="minimal_mesh" value="true" />
     <param name="verbose" value="true" />
     <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon basement).ply" />
   </node>

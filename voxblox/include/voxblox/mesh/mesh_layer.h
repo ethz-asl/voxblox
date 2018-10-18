@@ -25,7 +25,8 @@ class MeshLayer {
   typedef std::shared_ptr<const MeshLayer> ConstPtr;
   typedef typename AnyIndexHashMapType<Mesh::Ptr>::type MeshMap;
 
-  explicit MeshLayer(FloatingPoint block_size) : block_size_(block_size) {}
+  explicit MeshLayer(FloatingPoint block_size)
+      : block_size_(block_size), block_size_inv_(1.0 / block_size) {}
   virtual ~MeshLayer() {}
 
   // By index.
@@ -406,6 +407,8 @@ class MeshLayer {
   void clear() { mesh_map_.clear(); }
 
   FloatingPoint block_size() const { return block_size_; }
+
+  FloatingPoint block_size_inv() const { return block_size_inv_; }
 
  private:
   FloatingPoint block_size_;

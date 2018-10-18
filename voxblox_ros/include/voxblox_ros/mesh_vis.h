@@ -34,6 +34,7 @@
 #include <voxblox/mesh/mesh.h>
 #include <voxblox/mesh/mesh_layer.h>
 #include <voxblox_msgs/Mesh.h>
+#include <voxblox_msgs/MinimalMesh.h>
 
 #include "voxblox_ros/conversions.h"
 
@@ -171,7 +172,63 @@ inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
     mesh_msg->mesh_blocks.push_back(mesh_block);
 
     // delete empty mesh blocks after sending them
-    if(!mesh->hasVertices()){
+    if (!mesh->hasVertices()) {
+      mesh_layer->removeMesh(block_index);
+    }
+
+    mesh->updated = false;
+  }
+}
+
+inline void generateMinimalVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
+                                          voxblox_msgs::MinimalMesh* mesh_msg) {
+  CHECK_NOTNULL(mesh_msg);
+  mesh_msg->header.stamp = ros::Time::now();
+
+  BlockIndexList mesh_indices;
+  mesh_layer->getAllUpdatedMeshes(&mesh_indices);
+
+  mesh_msg->block_edge_length = mesh_layer->block_size();
+  mesh_msg->mesh_blocks.reserve(mesh_indices.size());
+
+  for (const BlockIndex& block_index : mesh_indices) {
+    Mesh::Ptr mesh = mesh_layer->getMeshPtrByIndex(block_index);
+
+    voxblox_msgs::MinimalMeshBlock mesh_block;
+    mesh_block.index[0] = block_index.x();
+    mesh_block.index[1] = block_index.y();
+    mesh_block.index[2] = block_index.z();
+
+    for (size_t i = 0u; i < mesh->vertices.size(); i += 3u) {
+      voxblox_msgs::MinimalTriangle triangle;
+
+      for (size_t local_vert_idx = 0u; local_vert_idx < 3; ++local_vert_idx) {
+        const size_t global_vert_idx = local_vert_idx + i;
+
+        // 0.5 is because mesh verticies can lie outside the block. We only
+        // strictly need one additional voxel of space (as opposed to one block
+        // given here), but communicating how many voxels there are per block
+        // adds some more coupling.
+        Point normalized_verticies =
+            0.5f *
+            (mesh_layer->block_size_inv() * mesh->vertices[global_vert_idx] -
+             block_index.cast<FloatingPoint>());
+
+        triangle.x[local_vert_idx] =
+            static_cast<uint16_t>(65535.0f * normalized_verticies.x());
+        triangle.y[local_vert_idx] =
+            static_cast<uint16_t>(65535.0f * normalized_verticies.y());
+        triangle.z[local_vert_idx] =
+            static_cast<uint16_t>(65535.0f * normalized_verticies.z());
+      }
+
+      mesh_block.triangles.push_back(triangle);
+    }
+
+    mesh_msg->mesh_blocks.push_back(mesh_block);
+
+    // delete empty mesh blocks after sending them
+    if (!mesh->hasVertices()) {
       mesh_layer->removeMesh(block_index);
     }
 

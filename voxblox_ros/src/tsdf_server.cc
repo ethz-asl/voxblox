@@ -102,6 +102,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       publish_pointclouds_(false),
       publish_tsdf_map_(false),
       cache_mesh_(false),
+      minimal_mesh_(false),
       enable_icp_(false),
       accumulate_icp_corrections_(true),
       pointcloud_queue_size_(1),
@@ -109,7 +110,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
-  mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
   surface_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
           "surface_pointcloud", 1, true);
@@ -126,6 +126,13 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                     pointcloud_queue_size_);
   pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size_,
                                   &TsdfServer::insertPointcloud, this);
+
+  nh_private_.param("minimal_mesh", minimal_mesh_, minimal_mesh_);
+  if (minimal_mesh_) {
+    minimal_mesh_pub_.advertise(nh_private_, "mesh", 1, true);
+  } else {
+    mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
+  }
 
   // Publishing/subscribing to a layer from another node (when using this as
   // a library, for example within a planner).
@@ -513,13 +520,31 @@ void TsdfServer::updateMesh() {
   generate_mesh_timer.Stop();
 
   timing::Timer publish_mesh_timer("mesh/publish");
-  voxblox_msgs::Mesh mesh_msg;
-  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
-  mesh_msg.header.frame_id = world_frame_;
-  mesh_pub_.publish(mesh_msg);
-  if (cache_mesh_) {
-    cached_mesh_msg_ = mesh_msg;
+
+  if (minimal_mesh_) {
+    voxblox_msgs::MinimalMesh minimal_mesh_msg;
+    generateMinimalVoxbloxMeshMsg(mesh_layer_, &minimal_mesh_msg);
+    minimal_mesh_msg.header.frame_id = world_frame_;
+    minimal_mesh_pub_.publish(minimal_mesh_msg);
+
+    // cached mesh needs color information
+    if (cache_mesh_) {
+      voxblox_msgs::Mesh mesh_msg;
+      generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &cached_mesh_msg_);
+      cached_mesh_msg_.header.frame_id = world_frame_;
+    }
+
+  } else {
+    voxblox_msgs::Mesh mesh_msg;
+    generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
+    mesh_msg.header.frame_id = world_frame_;
+    mesh_pub_.publish(mesh_msg);
+
+    if (cache_mesh_) {
+      cached_mesh_msg_ = mesh_msg;
+    }
   }
+
   publish_mesh_timer.Stop();
 
   if (publish_pointclouds_) {
@@ -544,10 +569,17 @@ bool TsdfServer::generateMesh() {
   generate_mesh_timer.Stop();
 
   timing::Timer publish_mesh_timer("mesh/publish");
-  voxblox_msgs::Mesh mesh_msg;
-  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
-  mesh_msg.header.frame_id = world_frame_;
-  mesh_pub_.publish(mesh_msg);
+  if (minimal_mesh_) {
+    voxblox_msgs::MinimalMesh minimal_mesh_msg;
+    generateMinimalVoxbloxMeshMsg(mesh_layer_, &minimal_mesh_msg);
+    minimal_mesh_msg.header.frame_id = world_frame_;
+    minimal_mesh_pub_.publish(minimal_mesh_msg);
+  } else {
+    voxblox_msgs::Mesh mesh_msg;
+    generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
+    mesh_msg.header.frame_id = world_frame_;
+    mesh_pub_.publish(mesh_msg);
+  }
   publish_mesh_timer.Stop();
 
   if (!mesh_filename_.empty()) {
