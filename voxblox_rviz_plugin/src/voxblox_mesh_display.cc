@@ -1,5 +1,7 @@
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
+#include <OGRE/RTShaderSystem/OgreRTShaderSystem.h>
+#include <OGRE/RTShaderSystem/OgreShaderGenerator.h>
 
 #include <tf/transform_listener.h>
 
@@ -46,7 +48,21 @@ void VoxbloxMeshDisplay::processMessage(
   visual_->setFrameOrientation(orientation);
 }
 
-VoxbloxMinimalMeshDisplay::VoxbloxMinimalMeshDisplay() {}
+VoxbloxMinimalMeshDisplay::VoxbloxMinimalMeshDisplay() {
+  Ogre::RTShader::ShaderGenerator* mShaderGenerator =
+      Ogre::RTShader::ShaderGenerator::getSingletonPtr();
+
+  // Grab the scheme render state.
+  Ogre::RTShader::RenderState* schemRenderState =
+      mShaderGenerator->getRenderState(
+          Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
+  // Add per pixel lighting sub render state to the global scheme render state.
+  // It will override the default FFP lighting sub render state.
+  Ogre::RTShader::SubRenderState* perPixelLightModel =
+      mShaderGenerator->createSubRenderState(
+          Ogre::RTShader::PerPixelLighting::Type);
+  schemRenderState->addTemplateSubRenderState(perPixelLightModel);
+}
 
 void VoxbloxMinimalMeshDisplay::onInitialize() { MFDClass::onInitialize(); }
 

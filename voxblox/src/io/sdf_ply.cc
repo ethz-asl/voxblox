@@ -2,8 +2,6 @@
 
 #include <algorithm>
 
-#include "voxblox/core/layer.h"
-
 namespace voxblox {
 
 namespace io {

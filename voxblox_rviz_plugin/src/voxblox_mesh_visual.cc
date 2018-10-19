@@ -107,12 +107,11 @@ VoxbloxMinimalMeshVisual::~VoxbloxMinimalMeshVisual() {
 
 void VoxbloxMinimalMeshVisual::setMessage(
     const voxblox_msgs::MinimalMesh::ConstPtr& msg) {
-  size_t vertex_index = 0u;
-
   for (const voxblox_msgs::MinimalMeshBlock& mesh_block : msg->mesh_blocks) {
     const voxblox::BlockIndex index(mesh_block.index[0], mesh_block.index[1],
                                     mesh_block.index[2]);
 
+    size_t vertex_index = 0u;
     voxblox::Mesh mesh;
     for (const voxblox_msgs::MinimalTriangle& triangle : mesh_block.triangles) {
       for (size_t i = 0; i < 3; ++i) {
@@ -151,7 +150,7 @@ void VoxbloxMinimalMeshVisual::setMessage(
 
     // add color information
     mesh.colors.reserve(mesh.normals.size());
-    for (const Point& normal : mesh.normals.size()) {
+    for (const voxblox::Point& normal : mesh.normals) {
       voxblox::Color color;
       color.r = 255.0f * (normal.x() * 0.5 + 0.5);
       color.g = 255.0f * (normal.x() * 0.5 + 0.5);
@@ -187,8 +186,9 @@ void VoxbloxMinimalMeshVisual::setMessage(
     DCHECK(ogre_object != nullptr);
 
     ogre_object->estimateVertexCount(mesh.vertices.size());
-    ogre_object->estimateIndexCount(mesh.indicies.size());
-    ogre_object->begin("BaseWhite", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    ogre_object->estimateIndexCount(mesh.indices.size());
+    ogre_object->begin("shader/orange",
+                       Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
     for (size_t i = 0; i < mesh.vertices.size(); ++i) {
       // note calling position changes what vertex the color and normal calls
@@ -208,7 +208,7 @@ void VoxbloxMinimalMeshVisual::setMessage(
     }
 
     // needed for anything other than flat rendering
-    for (const voxblox::VertexIndex index : mesh.indicies) {
+    for (const voxblox::VertexIndex index : mesh.indices) {
       ogre_object->index(index);
     }
 
