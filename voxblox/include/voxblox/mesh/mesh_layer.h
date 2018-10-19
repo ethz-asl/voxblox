@@ -249,7 +249,7 @@ class MeshLayer {
   // the mesh, chose a threshold greater or near the voxel size until you
   // reached the level of simpliciation desired.
   void getConnectedMesh(
-      Mesh* combined_mesh,
+      Mesh* connected_mesh,
       const FloatingPoint approximate_vertex_proximity_threshold =
           1e-10) const {
     BlockIndexList mesh_indices;
