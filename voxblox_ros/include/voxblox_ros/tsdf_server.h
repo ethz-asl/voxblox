@@ -25,7 +25,6 @@
 #include <voxblox_msgs/FilePath.h>
 #include <voxblox_msgs/Mesh.h>
 
-#include <voxblox_ros/mesh_compress.h>
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/transformer.h"
@@ -190,8 +189,6 @@ class TsdfServer {
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
   ros::Publisher icp_transform_pub_;
-
-  BZ2MinimalMeshPublisher minimal_mesh_pub_;
 
   // Publish the complete map for other nodes to consume.
   ros::Publisher tsdf_map_pub_;

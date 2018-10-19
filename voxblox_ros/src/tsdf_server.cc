@@ -129,7 +129,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   nh_private_.param("minimal_mesh", minimal_mesh_, minimal_mesh_);
   if (minimal_mesh_) {
-    minimal_mesh_pub_.advertise(nh_private_, "mesh", 1, true);
+    mesh_pub_ =
+        nh_private_.advertise<voxblox_msgs::MinimalMesh>("mesh", 1, true);
   } else {
     mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
   }
@@ -525,7 +526,7 @@ void TsdfServer::updateMesh() {
     voxblox_msgs::MinimalMesh minimal_mesh_msg;
     generateMinimalVoxbloxMeshMsg(mesh_layer_, &minimal_mesh_msg);
     minimal_mesh_msg.header.frame_id = world_frame_;
-    minimal_mesh_pub_.publish(minimal_mesh_msg);
+    mesh_pub_.publish(minimal_mesh_msg);
 
     // cached mesh needs color information
     if (cache_mesh_) {
@@ -573,7 +574,7 @@ bool TsdfServer::generateMesh() {
     voxblox_msgs::MinimalMesh minimal_mesh_msg;
     generateMinimalVoxbloxMeshMsg(mesh_layer_, &minimal_mesh_msg);
     minimal_mesh_msg.header.frame_id = world_frame_;
-    minimal_mesh_pub_.publish(minimal_mesh_msg);
+    mesh_pub_.publish(minimal_mesh_msg);
   } else {
     voxblox_msgs::Mesh mesh_msg;
     generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
