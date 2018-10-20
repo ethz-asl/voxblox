@@ -149,13 +149,14 @@ void VoxbloxMinimalMeshVisual::setMessage(
     voxblox::createConnectedMesh(mesh, &connected_mesh);
 
     // add color information
-    mesh.colors.reserve(mesh.normals.size());
-    for (const voxblox::Point& normal : mesh.normals) {
+    connected_mesh.colors.reserve(connected_mesh.normals.size());
+    for (const voxblox::Point& normal : connected_mesh.normals) {
       voxblox::Color color;
       color.r = 255.0f * (normal.x() * 0.5 + 0.5);
-      color.g = 255.0f * (normal.x() * 0.5 + 0.5);
-      color.b = 255.0f * (normal.x() * 0.5 + 0.5);
+      color.g = 255.0f * (normal.y() * 0.5 + 0.5);
+      color.b = 255.0f * (normal.z() * 0.5 + 0.5);
       color.a = 255;
+      connected_mesh.colors.push_back(color);
     }
 
     // got mesh now create ogre object
@@ -185,29 +186,32 @@ void VoxbloxMinimalMeshVisual::setMessage(
 
     DCHECK(ogre_object != nullptr);
 
-    ogre_object->estimateVertexCount(mesh.vertices.size());
-    ogre_object->estimateIndexCount(mesh.indices.size());
-    ogre_object->begin("BaseWhite", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    ogre_object->estimateVertexCount(connected_mesh.vertices.size());
+    ogre_object->estimateIndexCount(connected_mesh.indices.size());
+    ogre_object->begin("BaseWhiteNoLighting",
+                       Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
-    for (size_t i = 0; i < mesh.vertices.size(); ++i) {
+    for (size_t i = 0; i < connected_mesh.vertices.size(); ++i) {
       // note calling position changes what vertex the color and normal calls
       // point to
-      ogre_object->position(mesh.vertices[i].x(), mesh.vertices[i].y(),
-                            mesh.vertices[i].z());
+      ogre_object->position(connected_mesh.vertices[i].x(),
+                            connected_mesh.vertices[i].y(),
+                            connected_mesh.vertices[i].z());
 
-      ogre_object->normal(mesh.normals[i].x(), mesh.normals[i].y(),
-                          mesh.normals[i].z());
+      ogre_object->normal(connected_mesh.normals[i].x(),
+                          connected_mesh.normals[i].y(),
+                          connected_mesh.normals[i].z());
 
       constexpr float color_conv_factor = 1.0f / 255.0f;
       ogre_object->colour(
-          color_conv_factor * static_cast<float>(mesh.colors[i].r),
-          color_conv_factor * static_cast<float>(mesh.colors[i].g),
-          color_conv_factor * static_cast<float>(mesh.colors[i].b),
-          color_conv_factor * static_cast<float>(mesh.colors[i].a));
+          color_conv_factor * static_cast<float>(connected_mesh.colors[i].r),
+          color_conv_factor * static_cast<float>(connected_mesh.colors[i].g),
+          color_conv_factor * static_cast<float>(connected_mesh.colors[i].b),
+          color_conv_factor * static_cast<float>(connected_mesh.colors[i].a));
     }
 
     // needed for anything other than flat rendering
-    for (const voxblox::VertexIndex index : mesh.indices) {
+    for (const voxblox::VertexIndex index : connected_mesh.indices) {
       ogre_object->index(index);
     }
 
