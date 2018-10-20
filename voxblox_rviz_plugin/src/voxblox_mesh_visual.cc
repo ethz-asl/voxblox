@@ -187,8 +187,7 @@ void VoxbloxMinimalMeshVisual::setMessage(
 
     ogre_object->estimateVertexCount(mesh.vertices.size());
     ogre_object->estimateIndexCount(mesh.indices.size());
-    ogre_object->begin("shader/orange",
-                       Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    ogre_object->begin("BaseWhite", Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
     for (size_t i = 0; i < mesh.vertices.size(); ++i) {
       // note calling position changes what vertex the color and normal calls

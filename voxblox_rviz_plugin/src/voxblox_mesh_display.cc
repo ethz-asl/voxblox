@@ -48,21 +48,7 @@ void VoxbloxMeshDisplay::processMessage(
   visual_->setFrameOrientation(orientation);
 }
 
-VoxbloxMinimalMeshDisplay::VoxbloxMinimalMeshDisplay() {
-  Ogre::RTShader::ShaderGenerator* mShaderGenerator =
-      Ogre::RTShader::ShaderGenerator::getSingletonPtr();
-
-  // Grab the scheme render state.
-  Ogre::RTShader::RenderState* schemRenderState =
-      mShaderGenerator->getRenderState(
-          Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
-  // Add per pixel lighting sub render state to the global scheme render state.
-  // It will override the default FFP lighting sub render state.
-  Ogre::RTShader::SubRenderState* perPixelLightModel =
-      mShaderGenerator->createSubRenderState(
-          Ogre::RTShader::PerPixelLighting::Type);
-  schemRenderState->addTemplateSubRenderState(perPixelLightModel);
-}
+VoxbloxMinimalMeshDisplay::VoxbloxMinimalMeshDisplay() {}
 
 void VoxbloxMinimalMeshDisplay::onInitialize() { MFDClass::onInitialize(); }
 
@@ -88,6 +74,24 @@ void VoxbloxMinimalMeshDisplay::processMessage(
   }
 
   if (visual_ == nullptr) {
+    Ogre::RTShader::ShaderGenerator::initialize();
+
+    Ogre::RTShader::ShaderGenerator* mShaderGenerator =
+        Ogre::RTShader::ShaderGenerator::getSingletonPtr();
+
+    mShaderGenerator->addSceneManager(context_->getSceneManager());
+
+    // Grab the scheme render state.
+    Ogre::RTShader::RenderState* schemRenderState =
+        mShaderGenerator->getRenderState(
+            Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
+    // Add per pixel lighting sub render state to the global scheme render
+    // state. It will override the default FFP lighting sub render state.
+    Ogre::RTShader::SubRenderState* perPixelLightModel =
+        mShaderGenerator->createSubRenderState(
+            Ogre::RTShader::PerPixelLighting::Type);
+    schemRenderState->addTemplateSubRenderState(perPixelLightModel);
+
     visual_.reset(
         new VoxbloxMinimalMeshVisual(context_->getSceneManager(), scene_node_));
   }
