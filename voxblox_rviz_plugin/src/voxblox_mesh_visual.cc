@@ -151,10 +151,12 @@ void VoxbloxMinimalMeshVisual::setMessage(
     // add color information
     connected_mesh.colors.reserve(connected_mesh.normals.size());
     for (const voxblox::Point& normal : connected_mesh.normals) {
+      voxblox::Point mod_normal = normal / normal.cwiseAbs().maxCoeff();
+
       voxblox::Color color;
-      color.r = 255.0f * (normal.x() * 0.5 + 0.5);
-      color.g = 255.0f * (normal.y() * 0.5 + 0.5);
-      color.b = 255.0f * (normal.z() * 0.5 + 0.5);
+      color.r = 255.0f * (mod_normal.x() * 0.5 + 0.5);
+      color.g = 255.0f * (mod_normal.y() * 0.5 + 0.5);
+      color.b = 255.0f * (mod_normal.z() * 0.5 + 0.5);
       color.a = 255;
       connected_mesh.colors.push_back(color);
     }

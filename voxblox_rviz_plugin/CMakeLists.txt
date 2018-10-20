@@ -4,10 +4,6 @@ project(voxblox_rviz_plugin)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
-## Seems like OGRE put its cmake files in slightly the wrong place
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/OGRE/cmake/modules")
-find_package(OGRE REQUIRED COMPONENTS RTShaderSystem)
-
 set(CMAKE_MACOSX_RPATH 0)
 add_definitions(-std=c++11 -Wall)
 
@@ -48,7 +44,7 @@ cs_add_library(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-  ${QT_LIBRARIES} ${OGRE_LIBRARIES} OgreRTShaderSystem
+  ${QT_LIBRARIES}
 )
 
 ##########
