@@ -174,7 +174,7 @@ inline void createConnectedMesh(
 
   // The number of vertices should now be less or equal the amount of triangle
   // indices, since we merged some of the vertices.
-  CHECK_LE(connected_mesh->vertices.size(), connected_mesh->indices.size());
+  // CHECK_LE(connected_mesh->vertices.size(), connected_mesh->indices.size());
 }
 
 inline void createConnectedMesh(
@@ -185,6 +185,21 @@ inline void createConnectedMesh(
   createConnectedMesh(meshes, connected_mesh,
                       approximate_vertex_proximity_threshold);
 }
+
+inline void smoothMesh(Mesh* mesh) {
+  for (size_t i = 0; i < mesh->indices.size(); i += 3) {
+    voxblox::Point average_point = (mesh->vertices[mesh->indices[i]] +
+                                    mesh->vertices[mesh->indices[i + 1]] +
+                                    mesh->vertices[mesh->indices[i + 2]]) /
+                                   3.0f;
+    voxblox::Point delta_point =
+        (average_point - mesh->vertices[mesh->indices[i]]).array() *
+        mesh->normals[mesh->indices[i]].array().abs();
+
+    mesh->vertices[mesh->indices[i]] += delta_point;
+  }
+}
+
 };  // namespace voxblox
 
 #endif  // VOXBLOX_MESH_MESH_UTILS_H_

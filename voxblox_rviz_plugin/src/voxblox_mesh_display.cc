@@ -1,7 +1,5 @@
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
-#include <OGRE/RTShaderSystem/OgreRTShaderSystem.h>
-#include <OGRE/RTShaderSystem/OgreShaderGenerator.h>
 
 #include <tf/transform_listener.h>
 
@@ -74,36 +72,6 @@ void VoxbloxMinimalMeshDisplay::processMessage(
   }
 
   if (visual_ == nullptr) {
-    /*Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create(
-        "TEST", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-    Ogre::Technique* mTech = mMat->getTechnique(0);
-    Ogre::Pass* mPass = mTech->getPass(0);
-    mPass->setShadingMode(Ogre::ShadeOptions::SO_GOURAUD);
-
-    mPass->setDiffuse(Ogre::ColourValue(0.3, 0.3, 0.3, 1.0));
-    mPass->setAmbient(Ogre::ColourValue(0.1, 0.2, 0.7, 1.0));
-    mPass->setSpecular(Ogre::ColourValue(0.5, 0.5, 0.5, 0.5));
-    mPass->setSelfIllumination(Ogre::ColourValue(0.1, 0.1, 0.1, 1.0));
-    mPass->setShininess(0.5);
-/*
-    Ogre::RTShader::ShaderGenerator::initialize();
-
-    Ogre::RTShader::ShaderGenerator* mShaderGenerator =
-        Ogre::RTShader::ShaderGenerator::getSingletonPtr();
-
-    mShaderGenerator->addSceneManager(context_->getSceneManager());
-
-    // Grab the scheme render state.
-    Ogre::RTShader::RenderState* schemRenderState =
-        mShaderGenerator->getRenderState(
-            Ogre::RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME);
-    // Add per pixel lighting sub render state to the global scheme render
-    // state. It will override the default FFP lighting sub render state.
-    Ogre::RTShader::SubRenderState* perPixelLightModel =
-        mShaderGenerator->createSubRenderState(
-            Ogre::RTShader::PerPixelLighting::Type);
-    schemRenderState->addTemplateSubRenderState(perPixelLightModel);*/
-
     visual_.reset(
         new VoxbloxMinimalMeshVisual(context_->getSceneManager(), scene_node_));
   }
