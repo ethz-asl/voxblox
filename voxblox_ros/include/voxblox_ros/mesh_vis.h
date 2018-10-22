@@ -27,6 +27,7 @@
 #include <eigen_conversions/eigen_msg.h>
 #include <visualization_msgs/Marker.h>
 #include <algorithm>
+#include <limits>
 
 #include <voxblox/core/common.h>
 #include <voxblox/integrator/esdf_integrator.h>
@@ -34,7 +35,6 @@
 #include <voxblox/mesh/mesh.h>
 #include <voxblox/mesh/mesh_layer.h>
 #include <voxblox_msgs/Mesh.h>
-#include <voxblox_msgs/MinimalMesh.h>
 
 #include "voxblox_ros/conversions.h"
 
@@ -138,6 +138,7 @@ inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
   BlockIndexList mesh_indices;
   mesh_layer->getAllUpdatedMeshes(&mesh_indices);
 
+  mesh_msg->block_edge_length = mesh_layer->block_size();
   mesh_msg->mesh_blocks.reserve(mesh_indices.size());
 
   for (const BlockIndex& block_index : mesh_indices) {
@@ -148,81 +149,39 @@ inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
     mesh_block.index[1] = block_index.y();
     mesh_block.index[2] = block_index.z();
 
-    for (size_t i = 0u; i < mesh->vertices.size(); i += 3u) {
-      voxblox_msgs::Triangle triangle;
+    mesh_block.x.reserve(mesh->vertices.size());
+    mesh_block.y.reserve(mesh->vertices.size());
+    mesh_block.z.reserve(mesh->vertices.size());
 
-      for (size_t local_vert_idx = 0u; local_vert_idx < 3; ++local_vert_idx) {
-        const size_t global_vert_idx = local_vert_idx + i;
-        triangle.x[local_vert_idx] = mesh->vertices[global_vert_idx].x();
-        triangle.y[local_vert_idx] = mesh->vertices[global_vert_idx].y();
-        triangle.z[local_vert_idx] = mesh->vertices[global_vert_idx].z();
-
-        std_msgs::ColorRGBA color_msg =
-            getVertexColor(mesh, color_mode, global_vert_idx);
-
-        triangle.r[local_vert_idx] = static_cast<uint8_t>(255 * color_msg.r);
-        triangle.g[local_vert_idx] = static_cast<uint8_t>(255 * color_msg.g);
-        triangle.b[local_vert_idx] = static_cast<uint8_t>(255 * color_msg.b);
-        triangle.a[local_vert_idx] = 255;
-      }
-
-      mesh_block.triangles.push_back(triangle);
+    // normal coloring is used by RViz plugin by default, so no need to send it
+    if (color_mode != kNormals) {
+      mesh_block.r.reserve(mesh->vertices.size());
+      mesh_block.g.reserve(mesh->vertices.size());
+      mesh_block.b.reserve(mesh->vertices.size());
     }
+    for (size_t i = 0u; i < mesh->vertices.size(); ++i) {
+      // 0.5 is because mesh verticies can lie outside the block. We only
+      // strictly need one additional voxel of space (as opposed to one block
+      // given here), but communicating how many voxels there are per block
+      // adds some more coupling.
+      Point normalized_verticies =
+          0.5f * (mesh_layer->block_size_inv() * mesh->vertices[i] -
+                  block_index.cast<FloatingPoint>());
 
-    mesh_msg->mesh_blocks.push_back(mesh_block);
+      mesh_block.x.push_back(std::numeric_limits<uint16_t>::max() *
+                             normalized_verticies.x());
+      mesh_block.y.push_back(std::numeric_limits<uint16_t>::max() *
+                             normalized_verticies.y());
+      mesh_block.z.push_back(std::numeric_limits<uint16_t>::max() *
+                             normalized_verticies.z());
 
-    // delete empty mesh blocks after sending them
-    if (!mesh->hasVertices()) {
-      mesh_layer->removeMesh(block_index);
-    }
-
-    mesh->updated = false;
-  }
-}
-
-inline void generateMinimalVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
-                                          voxblox_msgs::MinimalMesh* mesh_msg) {
-  CHECK_NOTNULL(mesh_msg);
-  mesh_msg->header.stamp = ros::Time::now();
-
-  BlockIndexList mesh_indices;
-  mesh_layer->getAllUpdatedMeshes(&mesh_indices);
-
-  mesh_msg->block_edge_length = mesh_layer->block_size();
-  mesh_msg->mesh_blocks.reserve(mesh_indices.size());
-
-  for (const BlockIndex& block_index : mesh_indices) {
-    Mesh::Ptr mesh = mesh_layer->getMeshPtrByIndex(block_index);
-
-    voxblox_msgs::MinimalMeshBlock mesh_block;
-    mesh_block.index[0] = block_index.x();
-    mesh_block.index[1] = block_index.y();
-    mesh_block.index[2] = block_index.z();
-
-    for (size_t i = 0u; i < mesh->vertices.size(); i += 3u) {
-      voxblox_msgs::MinimalTriangle triangle;
-
-      for (size_t local_vert_idx = 0u; local_vert_idx < 3; ++local_vert_idx) {
-        const size_t global_vert_idx = local_vert_idx + i;
-
-        // 0.5 is because mesh verticies can lie outside the block. We only
-        // strictly need one additional voxel of space (as opposed to one block
-        // given here), but communicating how many voxels there are per block
-        // adds some more coupling.
-        Point normalized_verticies =
-            0.5f *
-            (mesh_layer->block_size_inv() * mesh->vertices[global_vert_idx] -
-             block_index.cast<FloatingPoint>());
-
-        triangle.x[local_vert_idx] =
-            static_cast<uint16_t>(65535.0f * normalized_verticies.x());
-        triangle.y[local_vert_idx] =
-            static_cast<uint16_t>(65535.0f * normalized_verticies.y());
-        triangle.z[local_vert_idx] =
-            static_cast<uint16_t>(65535.0f * normalized_verticies.z());
+      if (color_mode != kNormals) {
+        const std_msgs::ColorRGBA color_msg =
+            getVertexColor(mesh, color_mode, i);
+        mesh_block.r.push_back(255 * color_msg.r);
+        mesh_block.g.push_back(255 * color_msg.g);
+        mesh_block.b.push_back(255 * color_msg.b);
       }
-
-      mesh_block.triangles.push_back(triangle);
     }
 
     mesh_msg->mesh_blocks.push_back(mesh_block);

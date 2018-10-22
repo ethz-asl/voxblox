@@ -163,9 +163,6 @@ class TsdfServer {
   // Whether to save the latest mesh message sent (for inheriting classes).
   bool cache_mesh_;
 
-  // Whether to use the bandwidth saving but more limited minimal_mesh
-  bool minimal_mesh_;
-
   // Whether to enable ICP corrections. Every pointcloud coming in will attempt
   // to be matched up to the existing structure using ICP. Requires the initial
   // guess from odometry to already be very good.
