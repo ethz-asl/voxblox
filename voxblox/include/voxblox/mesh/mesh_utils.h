@@ -172,10 +172,6 @@ inline void createConnectedMesh(
   if (connected_mesh->hasNormals()) {
     CHECK_EQ(connected_mesh->vertices.size(), connected_mesh->normals.size());
   }
-
-  // The number of vertices should now be less or equal the amount of triangle
-  // indices, since we merged some of the vertices.
-  CHECK_LE(connected_mesh->vertices.size(), connected_mesh->indices.size());
 }
 
 inline void createConnectedMesh(
