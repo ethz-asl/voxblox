@@ -35,8 +35,11 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
     mesh.vertices.reserve(mesh_block.x.size());
     mesh.indices.reserve(mesh_block.x.size());
 
-    // translate vertex data
+    // translate vertex data from message to voxblox mesh
     for (size_t i = 0; i < mesh_block.x.size(); ++i) {
+      // Each vertex is given as its distance from the blocks origin in units of
+      // (2*block_size), see mesh_vis.h for the slightly convoluted
+      // justification of the 2.
       constexpr float point_conv_factor =
           2.0f / std::numeric_limits<uint16_t>::max();
       const float mesh_x =
@@ -80,11 +83,14 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
 
       } else {
         // reconstruct normals coloring
-        color.r = 255.0f * (mesh.normals[i].x() * 0.5 + 0.5);
-        color.g = 255.0f * (mesh.normals[i].y() * 0.5 + 0.5);
-        color.b = 255.0f * (mesh.normals[i].z() * 0.5 + 0.5);
+        color.r = std::numeric_limits<uint8_t>::max() *
+                  (mesh.normals[i].x() * 0.5f + 0.5f);
+        color.g = std::numeric_limits<uint8_t>::max() *
+                  (mesh.normals[i].y() * 0.5f + 0.5f);
+        color.b = std::numeric_limits<uint8_t>::max() *
+                  (mesh.normals[i].z() * 0.5f + 0.5f);
       }
-      color.a = 255;
+      color.a = std::numeric_limits<uint8_t>::max();
       mesh.colors.push_back(color);
     }
 
@@ -135,7 +141,8 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
                           connected_mesh.normals[i].y(),
                           connected_mesh.normals[i].z());
 
-      constexpr float color_conv_factor = 1.0f / 255.0f;
+      constexpr float color_conv_factor =
+          1.0f / std::numeric_limits<uint8_t>::max();
       ogre_object->colour(
           color_conv_factor * static_cast<float>(connected_mesh.colors[i].r),
           color_conv_factor * static_cast<float>(connected_mesh.colors[i].g),

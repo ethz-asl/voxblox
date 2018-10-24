@@ -100,7 +100,8 @@ inline void createConnectedMesh(
         CHECK_LT(old_vertex_idx, old_to_new_indices.size());
         old_to_new_indices[old_vertex_idx] = it->second;
 
-        // Add all normals (needed for soft-shading)
+        // Add all normals (this will average them once they are renormalized
+        // later)
         connected_mesh->normals[it->second] += mesh->normals[old_vertex_idx];
       }
 
@@ -174,7 +175,7 @@ inline void createConnectedMesh(
 
   // The number of vertices should now be less or equal the amount of triangle
   // indices, since we merged some of the vertices.
-  // CHECK_LE(connected_mesh->vertices.size(), connected_mesh->indices.size());
+  CHECK_LE(connected_mesh->vertices.size(), connected_mesh->indices.size());
 }
 
 inline void createConnectedMesh(
@@ -184,20 +185,6 @@ inline void createConnectedMesh(
   meshes.push_back(Mesh::ConstPtr(&mesh, [](Mesh const*) {}));
   createConnectedMesh(meshes, connected_mesh,
                       approximate_vertex_proximity_threshold);
-}
-
-inline void smoothMesh(Mesh* mesh) {
-  for (size_t i = 0; i < mesh->indices.size(); i += 3) {
-    voxblox::Point average_point = (mesh->vertices[mesh->indices[i]] +
-                                    mesh->vertices[mesh->indices[i + 1]] +
-                                    mesh->vertices[mesh->indices[i + 2]]) /
-                                   3.0f;
-    voxblox::Point delta_point =
-        (average_point - mesh->vertices[mesh->indices[i]]).array() *
-        mesh->normals[mesh->indices[i]].array().abs();
-
-    mesh->vertices[mesh->indices[i]] += delta_point;
-  }
 }
 
 };  // namespace voxblox
