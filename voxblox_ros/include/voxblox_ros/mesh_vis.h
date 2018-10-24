@@ -160,14 +160,23 @@ inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
       mesh_block.b.reserve(mesh->vertices.size());
     }
     for (size_t i = 0u; i < mesh->vertices.size(); ++i) {
-      // 0.5 is because mesh verticies can lie outside the block. We only
-      // strictly need one additional voxel of space (as opposed to one block
-      // given here), but communicating how many voxels there are per block
-      // adds some more coupling.
-      Point normalized_verticies =
+      // We convert from an absolute global frame to a normalized local frame.
+      // Each vertex is given as its distance from the blocks origin in units of
+      // (2*block_size). This results in all points obtaining a value in the
+      // range 0 to 1. To enforce this 0 to 1 range we technically only need to
+      // divide by (block_size + voxel_size). The + voxel_size comes from the
+      // way marching cubes allows the mesh to interpolate between this and a
+      // neighboring block. We instead divide by (block_size + block_size) as
+      // the mesh layer has no knowledge of how many voxels are inside a block.
+      const Point normalized_verticies =
           0.5f * (mesh_layer->block_size_inv() * mesh->vertices[i] -
                   block_index.cast<FloatingPoint>());
 
+      // check all points are in range [0, 1.0]
+      CHECK_LE(normalized_verticies.squaredNorm(), 1.0f);
+      CHECK((normalized_verticies.array() >= 0.0).all());
+
+      // convert to uint16_t fixed point representation
       mesh_block.x.push_back(std::numeric_limits<uint16_t>::max() *
                              normalized_verticies.x());
       mesh_block.y.push_back(std::numeric_limits<uint16_t>::max() *
@@ -178,9 +187,12 @@ inline void generateVoxbloxMeshMsg(const MeshLayer::Ptr& mesh_layer,
       if (color_mode != kNormals) {
         const std_msgs::ColorRGBA color_msg =
             getVertexColor(mesh, color_mode, i);
-        mesh_block.r.push_back(255 * color_msg.r);
-        mesh_block.g.push_back(255 * color_msg.g);
-        mesh_block.b.push_back(255 * color_msg.b);
+        mesh_block.r.push_back(std::numeric_limits<uint8_t>::max() *
+                               color_msg.r);
+        mesh_block.g.push_back(std::numeric_limits<uint8_t>::max() *
+                               color_msg.g);
+        mesh_block.b.push_back(std::numeric_limits<uint8_t>::max() *
+                               color_msg.b);
       }
     }
 
