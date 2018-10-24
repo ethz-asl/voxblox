@@ -7,7 +7,6 @@
 #include <rviz/visualization_manager.h>
 
 #include "voxblox_rviz_plugin/voxblox_mesh_display.h"
-#include "voxblox_rviz_plugin/voxblox_mesh_visual.h"
 
 namespace voxblox_rviz_plugin {
 
