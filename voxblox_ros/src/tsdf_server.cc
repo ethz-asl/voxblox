@@ -109,7 +109,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
-  mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
   surface_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
           "surface_pointcloud", 1, true);
@@ -126,6 +125,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                     pointcloud_queue_size_);
   pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size_,
                                   &TsdfServer::insertPointcloud, this);
+
+  mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
 
   // Publishing/subscribing to a layer from another node (when using this as
   // a library, for example within a planner).
@@ -513,13 +514,16 @@ void TsdfServer::updateMesh() {
   generate_mesh_timer.Stop();
 
   timing::Timer publish_mesh_timer("mesh/publish");
+
   voxblox_msgs::Mesh mesh_msg;
   generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
+
   if (cache_mesh_) {
     cached_mesh_msg_ = mesh_msg;
   }
+
   publish_mesh_timer.Stop();
 
   if (publish_pointclouds_) {
@@ -548,6 +552,7 @@ bool TsdfServer::generateMesh() {
   generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
+
   publish_mesh_timer.Stop();
 
   if (!mesh_filename_.empty()) {
