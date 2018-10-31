@@ -28,6 +28,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   // First set all in inner sphere to free.
   HierarchicalIndexMap block_voxel_list;
   timing::Timer sphere_timer("esdf/clear_radius/get_sphere");
+  LOG(INFO) << "Clear sphere radius: " << config_.clear_sphere_radius;
   utils::getAndAllocateSphereAroundPoint(position, config_.clear_sphere_radius,
                                          esdf_layer_, &block_voxel_list);
   sphere_timer.Stop();
@@ -42,6 +43,12 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
       // We can clear unobserved or hallucinated voxels.
       if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
+        if (esdf_voxel.hallucinated) {
+          // If this was hallucinated before, RAISE its neighbors!
+          GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+              kv.first, voxel_index, voxels_per_side_);
+          raise_.push(global_index);
+        }
         esdf_voxel.distance = config_.default_distance_m;
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
@@ -173,6 +180,13 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           open_.push(global_index, esdf_voxel.distance);
         } else {
           // Not in the fixed band. Just copy the sign.
+          // One more corner case: flipping the hallucinated sign!
+          if (esdf_voxel.hallucinated &&
+              signum(esdf_voxel.distance) < signum(tsdf_voxel.distance)) {
+            raise_.push(global_index);
+            num_raise++;
+          }
+
           esdf_voxel.distance =
               signum(tsdf_voxel.distance) * (config_.default_distance_m);
           esdf_voxel.fixed = false;
