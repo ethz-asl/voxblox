@@ -279,7 +279,9 @@ inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
 inline bool visualizeFreeEsdfVoxels(const EsdfVoxel& voxel,
                                     const Point& /*coord*/, float min_distance,
                                     double* intensity) {
-  if (voxel.observed && voxel.distance >= min_distance) {
+  if (voxel.observed && !voxel.hallucinated && !voxel.fixed &&
+      voxel.parent ==
+          Eigen::Vector3i::Zero()) {  // voxel.distance >= min_distance) {
     *intensity = voxel.distance;
     return true;
   }

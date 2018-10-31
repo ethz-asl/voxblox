@@ -28,7 +28,6 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   // First set all in inner sphere to free.
   HierarchicalIndexMap block_voxel_list;
   timing::Timer sphere_timer("esdf/clear_radius/get_sphere");
-  LOG(INFO) << "Clear sphere radius: " << config_.clear_sphere_radius;
   utils::getAndAllocateSphereAroundPoint(position, config_.clear_sphere_radius,
                                          esdf_layer_, &block_voxel_list);
   sphere_timer.Stop();
@@ -78,11 +77,11 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
         updated_blocks_.insert(kv.first);
-      } else if (!esdf_voxel.in_queue) {
-        GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-            kv.first, voxel_index, voxels_per_side_);
-        open_.push(global_index, esdf_voxel.distance);
-      }
+      } /* else if (!esdf_voxel.in_queue) {
+         GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+             kv.first, voxel_index, voxels_per_side_);
+         open_.push(global_index, esdf_voxel.distance);
+       } */
     }
   }
 
@@ -171,6 +170,11 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       // If there was nothing there before:
       if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
         // Two options: ESDF is in the fixed truncation band, or outside.
+        /* if (esdf_voxel.hallucinated) {
+          raise_.push(global_index);
+          esdf_voxel.distance =
+              signum(tsdf_voxel.distance) * (config_.default_distance_m + 1);
+        } */
         if (tsdf_fixed) {
           // In fixed band, just add and lock it.
           esdf_voxel.distance = tsdf_voxel.distance;
@@ -180,13 +184,6 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           open_.push(global_index, esdf_voxel.distance);
         } else {
           // Not in the fixed band. Just copy the sign.
-          // One more corner case: flipping the hallucinated sign!
-          if (esdf_voxel.hallucinated &&
-              signum(esdf_voxel.distance) < signum(tsdf_voxel.distance)) {
-            raise_.push(global_index);
-            num_raise++;
-          }
-
           esdf_voxel.distance =
               signum(tsdf_voxel.distance) * (config_.default_distance_m);
           esdf_voxel.fixed = false;
@@ -511,6 +508,7 @@ bool EsdfIntegrator::updateVoxelFromNeighbors(const GlobalIndex& global_index) {
       if (std::abs(neighbor_voxel->distance) < std::abs(voxel->distance)) {
         voxel->distance =
             neighbor_voxel->distance + signum(voxel->distance) * distance;
+        voxel->parent = -(neighbor_index - global_index).cast<int>();
         return true;
       }
     }
