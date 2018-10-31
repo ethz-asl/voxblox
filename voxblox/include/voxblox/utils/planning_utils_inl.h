@@ -89,6 +89,7 @@ void fillSphereAroundPoint(const Point& center, const FloatingPoint radius,
       if (!voxel.observed || new_distance < voxel.distance) {
         voxel.distance = new_distance;
         voxel.observed = true;
+        voxel.hallucinated = true;
         voxel.fixed = true;
         block_ptr->updated() = true;
         block_ptr->has_data() = true;
