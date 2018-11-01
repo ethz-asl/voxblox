@@ -46,7 +46,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
           // If this was hallucinated before, RAISE its neighbors!
           GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
               kv.first, voxel_index, voxels_per_side_);
-          raise_.push(global_index);
+          // raise_.push(global_index);
         }
         esdf_voxel.distance = config_.default_distance_m;
         esdf_voxel.observed = true;
@@ -170,12 +170,12 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
 
       const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
       // If there was nothing there before:
-      if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
+      if (!esdf_voxel.observed) {
         // Two options: ESDF is in the fixed truncation band, or outside.
         /* if (esdf_voxel.hallucinated) {
           raise_.push(global_index);
           esdf_voxel.distance =
-              signum(tsdf_voxel.distance) * (config_.default_distance_m + 1);
+              signum(tsdf_voxel.distance) * (config_.default_distance_m);
         } */
         if (tsdf_fixed) {
           // In fixed band, just add and lock it.
@@ -191,10 +191,10 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           esdf_voxel.fixed = false;
 
           if (incremental) {
-            if (updateVoxelFromNeighbors(global_index)) {
+            /* if (updateVoxelFromNeighbors(global_index)) {
               esdf_voxel.in_queue = true;
               open_.push(global_index, esdf_voxel.distance);
-            }
+            } */
           }
         }
         // No matter what, basically, the parent is reset.
@@ -267,6 +267,14 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
             raise_.push(global_index);
             num_raise++;
           }
+        } else if (std::abs(tsdf_voxel.distance) >
+                   std::abs(esdf_voxel.distance)) {
+          // ONE more case: if the ESDF is closer to the surface than the TSDF
+          // says it should be.
+          esdf_voxel.distance = tsdf_voxel.distance;
+          esdf_voxel.parent.setZero();
+          raise_.push(global_index);
+          num_raise++;
         }
         // Otherwise we just don't care. Not fixed voxels that match the right
         // sign can be whatever value that they want to be.
