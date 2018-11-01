@@ -168,12 +168,42 @@ TEST_P(ClearSphereTest, EsdfIntegrators) {
   io::SaveLayer(tsdf_layer, "esdf_clear2b.voxblox", true);
   io::SaveLayer(esdf_layer, "esdf_clear2b.voxblox", false);
 
+  // Main test: compare every voxel in ESDF and TSDF. No voxel in ESDF may be
+  // closer to surface than the TSDF if it exists in the TSDF.
+  BlockIndexList block_list;
+  tsdf_layer.getAllAllocatedBlocks(&block_list);
+  size_t vps = tsdf_layer.voxels_per_side();
+  size_t num_voxels_per_block = vps * vps * vps;
+  for (const BlockIndex& block_index : block_list) {
+    const Block<TsdfVoxel>& tsdf_block =
+        tsdf_layer.getBlockByIndex(block_index);
+    ASSERT_TRUE(esdf_layer.hasBlock(block_index));
+    const Block<EsdfVoxel>& esdf_block =
+        esdf_layer.getBlockByIndex(block_index);
+
+    for (size_t linear_index = 0u; linear_index < num_voxels_per_block;
+         ++linear_index) {
+      const TsdfVoxel& tsdf_voxel =
+          tsdf_block.getVoxelByLinearIndex(linear_index);
+      const EsdfVoxel& esdf_voxel =
+          esdf_block.getVoxelByLinearIndex(linear_index);
+
+      if (tsdf_voxel.weight < 1e-6 && esdf_voxel.observed) {
+        EXPECT_TRUE(esdf_voxel.hallucinated);
+      }
+      if (tsdf_voxel.weight > 1e-6 &&
+          std::abs(tsdf_voxel.distance) < esdf_config.min_distance_m) {
+        EXPECT_EQ(signum(tsdf_voxel.distance), signum(esdf_voxel.distance));
+        EXPECT_LE(std::abs(tsdf_voxel.distance), std::abs(esdf_voxel.distance));
+      }
+    }
+  }
   io::SaveLayer(*tsdf_gt_, "esdf_clear_gt.voxblox", true);
   io::SaveLayer(*esdf_gt_, "esdf_clear_gt.voxblox", false);
 }
 
 INSTANTIATE_TEST_CASE_P(VoxelSizes, ClearSphereTest,
-                        ::testing::Values(0.1f /*, 0.2f, 0.3f, 0.4f, 0.5f*/));
+                        ::testing::Values(0.1f, 0.2f));
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
