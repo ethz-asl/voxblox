@@ -119,7 +119,7 @@ inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
       getTsdfIntegratorConfigFromRosParam(nh_private);
 
   esdf_integrator_config.min_distance_m =
-      tsdf_integrator_config.default_truncation_distance;
+      tsdf_integrator_config.default_truncation_distance / 2.0;
 
   nh_private.param("esdf_euclidean_distance",
                    esdf_integrator_config.full_euclidean_distance,

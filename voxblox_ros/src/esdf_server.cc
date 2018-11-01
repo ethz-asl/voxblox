@@ -56,7 +56,7 @@ void EsdfServer::setupRos() {
                     clear_sphere_for_planning_);
   nh_private_.param("publish_esdf_map", publish_esdf_map_, publish_esdf_map_);
 
-  // Special output for traversible voxels. Publishes all voxels with distance
+  // Special output for traversable voxels. Publishes all voxels with distance
   // at least traversibility radius.
   nh_private_.param("publish_traversable", publish_traversable_,
                     publish_traversable_);
