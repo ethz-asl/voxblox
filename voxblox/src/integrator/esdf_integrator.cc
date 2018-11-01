@@ -51,6 +51,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_voxel.distance = config_.default_distance_m;
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
+        esdf_voxel.parent.setZero();
         updated_blocks_.insert(kv.first);
       }
     }
@@ -76,12 +77,13 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_voxel.distance = -config_.default_distance_m;
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
+        esdf_voxel.parent.setZero();
         updated_blocks_.insert(kv.first);
-      } /* else if (!esdf_voxel.in_queue) {
-         GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-             kv.first, voxel_index, voxels_per_side_);
-         open_.push(global_index, esdf_voxel.distance);
-       } */
+      } else if (!esdf_voxel.in_queue) {
+        GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+            kv.first, voxel_index, voxels_per_side_);
+        open_.push(global_index, esdf_voxel.distance);
+      }
     }
   }
 
