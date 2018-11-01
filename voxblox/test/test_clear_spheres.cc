@@ -149,13 +149,16 @@ TEST_P(ClearSphereTest, EsdfIntegrators) {
 
   io::SaveLayer(tsdf_layer, "esdf_clear1b.voxblox", true);
   io::SaveLayer(esdf_layer, "esdf_clear1b.voxblox", false);
-  i = 4;
+  i = 2;
 
   esdf_integrator.addNewRobotPosition(poses_[i].getPosition());
 
   io::SaveLayer(tsdf_layer, "esdf_clear2a.voxblox", true);
   io::SaveLayer(esdf_layer, "esdf_clear2a.voxblox", false);
 
+  ptcloud.clear();
+  colors.clear();
+  ptcloud_C.clear();
   world_.getPointcloudFromTransform(poses_[i], depth_camera_resolution_,
                                     fov_h_rad_, max_dist_, &ptcloud, &colors);
   transformPointcloud(poses_[i].inverse(), ptcloud, &ptcloud_C);
