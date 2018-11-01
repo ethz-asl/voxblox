@@ -42,6 +42,11 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
       // We can clear unobserved or hallucinated voxels.
       if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
+        if (esdf_voxel.hallucinated) {
+          GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+              kv.first, voxel_index, voxels_per_side_);
+          raise_.push(global_index);
+        }
         esdf_voxel.distance = config_.default_distance_m;
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
@@ -164,7 +169,10 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
 
       const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
       // If there was nothing there before:
-      if (!esdf_voxel.observed) {
+      if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
+        if (esdf_voxel.hallucinated) {
+          raise_.push(global_index);
+        }
         if (tsdf_fixed) {
           // In fixed band, just add and lock it.
           esdf_voxel.distance = tsdf_voxel.distance;
@@ -255,15 +263,15 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
             raise_.push(global_index);
             num_raise++;
           }
-        } else if (std::abs(tsdf_voxel.distance) >
-                   std::abs(esdf_voxel.distance)) {
-          // ONE more case: if the ESDF is closer to the surface than the TSDF
-          // says it should be.
-          esdf_voxel.distance = tsdf_voxel.distance;
-          esdf_voxel.parent.setZero();
-          raise_.push(global_index);
-          num_raise++;
-        }
+        } /* else if (std::abs(tsdf_voxel.distance) >
+                    std::abs(esdf_voxel.distance)) {
+           // ONE more case: if the ESDF is closer to the surface than the TSDF
+           // says it should be.
+           esdf_voxel.distance = tsdf_voxel.distance;
+           esdf_voxel.parent.setZero();
+           raise_.push(global_index);
+           num_raise++;
+         } */
         // Otherwise we just don't care. Not fixed voxels that match the right
         // sign can be whatever value that they want to be.
       }
@@ -451,7 +459,7 @@ void EsdfIntegrator::processOpenSet() {
             num_flipped++;
             neighbor_voxel->distance = potential_distance;
             // Also update parent.
-            neighbor_voxel->parent.setZero();
+            neighbor_voxel->parent = new_parent;
             // Push into the queue if necessary.
             if (config_.multi_queue || !neighbor_voxel->in_queue) {
               open_.push(neighbor_index, neighbor_voxel->distance);
@@ -463,7 +471,7 @@ void EsdfIntegrator::processOpenSet() {
             neighbor_voxel->distance =
                 signum(neighbor_voxel->distance) * distance;
             // Also update parent.
-            neighbor_voxel->parent.setZero();
+            neighbor_voxel->parent = new_parent;
             // Push into the queue if necessary.
             if (config_.multi_queue || !neighbor_voxel->in_queue) {
               open_.push(neighbor_index, neighbor_voxel->distance);
