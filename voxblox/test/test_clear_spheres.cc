@@ -168,12 +168,13 @@ TEST_P(ClearSphereTest, EsdfIntegrators) {
   io::SaveLayer(tsdf_layer, "esdf_clear2b.voxblox", true);
   io::SaveLayer(esdf_layer, "esdf_clear2b.voxblox", false);
 
-  // Main test: compare every voxel in ESDF and TSDF. No voxel in ESDF may be
-  // closer to surface than the TSDF if it exists in the TSDF.
+  // Main test: compare every voxel in ESDF and TSDF. Those within truncation
+  // distance should match TSDF and not be hallucinated.
   BlockIndexList block_list;
   tsdf_layer.getAllAllocatedBlocks(&block_list);
   size_t vps = tsdf_layer.voxels_per_side();
   size_t num_voxels_per_block = vps * vps * vps;
+
   for (const BlockIndex& block_index : block_list) {
     const Block<TsdfVoxel>& tsdf_block =
         tsdf_layer.getBlockByIndex(block_index);
@@ -192,12 +193,15 @@ TEST_P(ClearSphereTest, EsdfIntegrators) {
         EXPECT_TRUE(esdf_voxel.hallucinated);
       }
       if (tsdf_voxel.weight > 1e-6 &&
-          std::abs(tsdf_voxel.distance) < esdf_config.min_distance_m) {
+          std::abs(tsdf_voxel.distance) <= esdf_config.min_distance_m) {
+        EXPECT_TRUE(esdf_voxel.observed);
+        EXPECT_FALSE(esdf_voxel.hallucinated);
         EXPECT_EQ(signum(tsdf_voxel.distance), signum(esdf_voxel.distance));
-        EXPECT_LE(std::abs(tsdf_voxel.distance), std::abs(esdf_voxel.distance));
+        EXPECT_NEAR(tsdf_voxel.distance, esdf_voxel.distance, 1e-3);
       }
     }
   }
+
   io::SaveLayer(*tsdf_gt_, "esdf_clear_gt.voxblox", true);
   io::SaveLayer(*esdf_gt_, "esdf_clear_gt.voxblox", false);
 }
