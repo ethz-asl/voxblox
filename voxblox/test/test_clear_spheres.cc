@@ -207,7 +207,7 @@ TEST_P(ClearSphereTest, EsdfIntegrators) {
 }
 
 INSTANTIATE_TEST_CASE_P(VoxelSizes, ClearSphereTest,
-                        ::testing::Values(0.1f /*, 0.2f*/));
+                        ::testing::Values(0.1f, 0.2f));
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
