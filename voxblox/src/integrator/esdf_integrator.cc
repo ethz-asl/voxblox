@@ -263,15 +263,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
             raise_.push(global_index);
             num_raise++;
           }
-        } /* else if (std::abs(tsdf_voxel.distance) >
-                    std::abs(esdf_voxel.distance)) {
-           // ONE more case: if the ESDF is closer to the surface than the TSDF
-           // says it should be.
-           esdf_voxel.distance = tsdf_voxel.distance;
-           esdf_voxel.parent.setZero();
-           raise_.push(global_index);
-           num_raise++;
-         } */
+        }
         // Otherwise we just don't care. Not fixed voxels that match the right
         // sign can be whatever value that they want to be.
       }
