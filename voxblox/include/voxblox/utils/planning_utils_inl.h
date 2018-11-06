@@ -20,7 +20,7 @@ void getSphereAroundPoint(const Layer<VoxelType>& layer, const Point& center,
 
   const GlobalIndex center_index =
       getGridIndexFromPoint<GlobalIndex>(center, voxel_size_inv);
-  FloatingPoint radius_in_voxels = radius / voxel_size;
+  const FloatingPoint radius_in_voxels = radius / voxel_size;
 
   for (FloatingPoint x = -radius_in_voxels; x <= radius_in_voxels; x++) {
     for (FloatingPoint y = -radius_in_voxels; y <= radius_in_voxels; y++) {
