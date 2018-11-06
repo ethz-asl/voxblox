@@ -42,9 +42,15 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
       EsdfVoxel& esdf_voxel = block_ptr->getVoxelByVoxelIndex(voxel_index);
       // We can clear unobserved or hallucinated voxels.
       if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
+        if (esdf_voxel.hallucinated) {
+          GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+              kv.first, voxel_index, voxels_per_side_);
+          raise_.push(global_index);
+        }
         esdf_voxel.distance = config_.default_distance_m;
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
+        esdf_voxel.parent.setZero();
         updated_blocks_.insert(kv.first);
       }
     }
@@ -70,6 +76,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         esdf_voxel.distance = -config_.default_distance_m;
         esdf_voxel.observed = true;
         esdf_voxel.hallucinated = true;
+        esdf_voxel.parent.setZero();
         updated_blocks_.insert(kv.first);
       } else if (!esdf_voxel.in_queue) {
         GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
@@ -163,7 +170,9 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
       // If there was nothing there before:
       if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
-        // Two options: ESDF is in the fixed truncation band, or outside.
+        if (esdf_voxel.hallucinated) {
+          raise_.push(global_index);
+        }
         if (tsdf_fixed) {
           // In fixed band, just add and lock it.
           esdf_voxel.distance = tsdf_voxel.distance;
@@ -442,7 +451,7 @@ void EsdfIntegrator::processOpenSet() {
             num_flipped++;
             neighbor_voxel->distance = potential_distance;
             // Also update parent.
-            neighbor_voxel->parent.setZero();
+            neighbor_voxel->parent = new_parent;
             // Push into the queue if necessary.
             if (config_.multi_queue || !neighbor_voxel->in_queue) {
               open_.push(neighbor_index, neighbor_voxel->distance);
@@ -454,7 +463,7 @@ void EsdfIntegrator::processOpenSet() {
             neighbor_voxel->distance =
                 signum(neighbor_voxel->distance) * distance;
             // Also update parent.
-            neighbor_voxel->parent.setZero();
+            neighbor_voxel->parent = new_parent;
             // Push into the queue if necessary.
             if (config_.multi_queue || !neighbor_voxel->in_queue) {
               open_.push(neighbor_index, neighbor_voxel->distance);
@@ -497,6 +506,7 @@ bool EsdfIntegrator::updateVoxelFromNeighbors(const GlobalIndex& global_index) {
       if (std::abs(neighbor_voxel->distance) < std::abs(voxel->distance)) {
         voxel->distance =
             neighbor_voxel->distance + signum(voxel->distance) * distance;
+        voxel->parent = -(neighbor_index - global_index).cast<int>();
         return true;
       }
     }

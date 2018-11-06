@@ -18,26 +18,27 @@ void getSphereAroundPoint(const Layer<VoxelType>& layer, const Point& center,
   float voxel_size_inv = 1.0 / layer.voxel_size();
   int voxels_per_side = layer.voxels_per_side();
 
-  for (voxblox::FloatingPoint x = -radius; x <= radius; x += voxel_size) {
-    for (voxblox::FloatingPoint y = -radius; y <= radius; y += voxel_size) {
-      for (voxblox::FloatingPoint z = -radius; z <= radius; z += voxel_size) {
-        Point point(x, y, z);
+  const GlobalIndex center_index =
+      getGridIndexFromPoint<GlobalIndex>(center, voxel_size_inv);
+  const FloatingPoint radius_in_voxels = radius / voxel_size;
+
+  for (FloatingPoint x = -radius_in_voxels; x <= radius_in_voxels; x++) {
+    for (FloatingPoint y = -radius_in_voxels; y <= radius_in_voxels; y++) {
+      for (FloatingPoint z = -radius_in_voxels; z <= radius_in_voxels; z++) {
+        Point point_voxel_space(x, y, z);
 
         // check if point is inside the spheres radius
-        if (point.norm() <= radius) {
-          // convert to global coordinate
-          point += center;
-
-          // Get the global voxel index.
-          GlobalIndex global_index =
-              getGridIndexFromPoint<GlobalIndex>(point, voxel_size_inv);
+        if (point_voxel_space.norm() <= radius_in_voxels) {
+          GlobalIndex voxel_offset_index =
+              Eigen::floor(point_voxel_space.array()).cast<LongIndexElement>();
 
           // Get the block and voxel indices from this.
           BlockIndex block_index;
           VoxelIndex voxel_index;
 
           getBlockAndVoxelIndexFromGlobalVoxelIndex(
-              global_index, voxels_per_side, &block_index, &voxel_index);
+              voxel_offset_index + center_index, voxels_per_side, &block_index,
+              &voxel_index);
           (*block_voxel_list)[block_index].push_back(voxel_index);
         }
       }
@@ -88,6 +89,7 @@ void fillSphereAroundPoint(const Point& center, const FloatingPoint radius,
       if (!voxel.observed || new_distance < voxel.distance) {
         voxel.distance = new_distance;
         voxel.observed = true;
+        voxel.hallucinated = true;
         voxel.fixed = true;
         block_ptr->updated() = true;
         block_ptr->has_data() = true;
