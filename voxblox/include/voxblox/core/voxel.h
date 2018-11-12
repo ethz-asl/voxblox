@@ -19,14 +19,18 @@ struct EsdfVoxel {
   float distance = 0.0f;
 
   bool observed = false;
-  // Whether the voxel was copied from the TSDF (false) or created from a pose
-  // or some other source (true). This member is not serialized!!!
+  /**
+   * Whether the voxel was copied from the TSDF (false) or created from a pose
+   * or some other source (true). This member is not serialized!!!
+   */
   bool hallucinated = false;
   bool in_queue = false;
   bool fixed = false;
 
-  // Relative direction toward parent. If itself, then either uninitialized
-  // or in the fixed frontier.
+  /**
+   * Relative direction toward parent. If itself, then either uninitialized
+   * or in the fixed frontier.
+   */
   Eigen::Vector3i parent = Eigen::Vector3i::Zero();
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -42,7 +46,7 @@ struct IntensityVoxel {
   float weight = 0.0f;
 };
 
-// Used for serialization only.
+/// Used for serialization only.
 namespace voxel_types {
 const std::string kNotSerializable = "not_serializable";
 const std::string kTsdf = "tsdf";
