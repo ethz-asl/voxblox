@@ -1,0 +1,49 @@
+html {
+    background: #333;
+    color: #333;
+    font-family: 'Palatino', serif;
+    font-size: 18px;
+    line-height: 24px;
+    text-align: center;
+    padding: 0px 50px 0px 50px;
+}
+#container {
+    background: white;
+    margin: 25px auto 100px auto;
+    padding: 50px 50px;
+    text-align: left;
+}
+a {
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+.msg-title {
+    margin-bottom: 40px;
+    border-bottom: 1px solid #333;
+    padding: 10px 10px 10px 0px;
+}
+.filename {
+    padding: 5px; 
+    background-color: #eee; 
+    border: 1px solid #333;
+}
+.fancy-msg {
+    width: auto;
+    font-size: 14px;
+    line-height: 16px;
+    border: 1px solid #333;
+    padding: 10px; 
+    margin-bottom: 20px;
+}
+
+.raw-msg {
+    font-family: monospace;
+    width: auto;
+    font-size: 14px;
+    line-height: 16px;
+    padding: 5px; 
+    border: 1px solid #333;
+    margin-bottom: 20px;
+}

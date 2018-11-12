@@ -1,0 +1,6 @@
+<map id="voxblox::Object" name="voxblox::Object">
+<area shape="rect" id="node2" href="$classvoxblox_1_1Cube.html" title="voxblox::Cube" alt="" coords="5,80,112,107"/>
+<area shape="rect" id="node3" href="$classvoxblox_1_1Cylinder.html" title="voxblox::Cylinder" alt="" coords="136,80,259,107"/>
+<area shape="rect" id="node4" href="$classvoxblox_1_1PlaneObject.html" title="voxblox::PlaneObject" alt="" coords="283,80,429,107"/>
+<area shape="rect" id="node5" href="$classvoxblox_1_1Sphere.html" title="voxblox::Sphere" alt="" coords="454,80,570,107"/>
+</map>

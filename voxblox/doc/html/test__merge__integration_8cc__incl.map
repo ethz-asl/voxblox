@@ -1,0 +1,26 @@
+<map id="test_merge_integration.cc" name="test_merge_integration.cc">
+<area shape="rect" id="node5" href="$block_8h.html" title="voxblox/core/block.h" alt="" coords="2454,512,2597,539"/>
+<area shape="rect" id="node25" href="$voxel_8h.html" title="voxblox/core/voxel.h" alt="" coords="2098,765,2241,792"/>
+<area shape="rect" id="node28" href="$layer_8h.html" title="voxblox/core/layer.h" alt="" coords="1509,348,1648,375"/>
+<area shape="rect" id="node34" href="$merge__integration_8h.html" title="voxblox/integrator\l/merge_integration.h" alt="" coords="2290,169,2430,211"/>
+<area shape="rect" id="node36" href="$layer__io_8h.html" title="voxblox/io/layer_io.h" alt="" coords="1120,266,1261,293"/>
+<area shape="rect" id="node38" href="$mesh__ply_8h.html" title="voxblox/io/mesh_ply.h" alt="" coords="904,430,1056,457"/>
+<area shape="rect" id="node42" href="$sdf__ply_8h.html" title="voxblox/io/sdf_ply.h" alt="" coords="935,87,1073,114"/>
+<area shape="rect" id="node44" href="$simulation__world_8h.html" title="voxblox/simulation\l/simulation_world.h" alt="" coords="3233,169,3367,211"/>
+<area shape="rect" id="node48" href="$layer__test__utils_8h.html" title="voxblox/test/layer\l_test_utils.h" alt="" coords="2017,80,2143,121"/>
+<area shape="rect" id="node49" href="$evaluation__utils_8h.html" title="voxblox/utils/evaluation\l_utils.h" alt="" coords="2169,259,2327,300"/>
+<area shape="rect" id="node50" href="$layer__utils_8h.html" title="voxblox/utils/layer\l_utils.h" alt="" coords="449,259,575,300"/>
+<area shape="rect" id="node10" href="$common_8h.html" title="voxblox/core/common.h" alt="" coords="2055,929,2217,956"/>
+<area shape="rect" id="node22" href="$block__inl_8h.html" title="voxblox/core/block\l_inl.h" alt="" coords="2571,587,2701,628"/>
+<area shape="rect" id="node23" href="$voxel__utils_8h.html" title="voxblox/utils/voxel\l_utils.h" alt="" coords="2587,676,2717,717"/>
+<area shape="rect" id="node24" href="$color_8h.html" title="voxblox/core/color.h" alt="" coords="2224,847,2363,874"/>
+<area shape="rect" id="node29" href="$block__hash_8h.html" title="voxblox/core/block\l_hash.h" alt="" coords="733,840,864,881"/>
+<area shape="rect" id="node31" href="$layer__inl_8h.html" title="voxblox/core/layer\l_inl.h" alt="" coords="1511,423,1639,464"/>
+<area shape="rect" id="node35" href="$interpolator_8h.html" title="voxblox/interpolator\l/interpolator.h" alt="" coords="1757,259,1891,300"/>
+<area shape="rect" id="node37" href="$layer__io__inl_8h.html" title="voxblox/io/layer_io\l_inl.h" alt="" coords="1232,423,1363,464"/>
+<area shape="rect" id="node39" href="$mesh__layer_8h.html" title="voxblox/mesh/mesh_layer.h" alt="" coords="771,683,957,710"/>
+<area shape="rect" id="node41" href="$mesh_8h.html" title="voxblox/mesh/mesh.h" alt="" coords="966,765,1117,792"/>
+<area shape="rect" id="node43" href="$mesh__integrator_8h.html" title="voxblox/mesh/mesh_integrator.h" alt="" coords="1624,177,1835,203"/>
+<area shape="rect" id="node46" href="$objects_8h.html" title="voxblox/simulation\l/objects.h" alt="" coords="2925,259,3056,300"/>
+<area shape="rect" id="node47" href="$simulation__world__inl_8h.html" title="voxblox/simulation\l/simulation_world_inl.h" alt="" coords="2403,423,2557,464"/>
+</map>

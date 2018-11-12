@@ -17,7 +17,7 @@ namespace voxblox {
 
 static const FloatingPoint kUnitCubeDiagonalLength = std::sqrt(3.0);
 
-// Merges layers, when the voxel or block size differs resampling occurs.
+/// Merges layers, when the voxel or block size differs resampling occurs.
 template <typename VoxelType>
 void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
                            Layer<VoxelType>* layer_B) {
@@ -54,8 +54,10 @@ void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
   }
 }
 
-// Performs a 3D transformation on layer A before merging it. See
-// transformLayer for details
+/**
+ * Performs a 3D transformation on layer A before merging it. See
+ * transformLayer for details
+ */
 template <typename VoxelType>
 void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
                            const Transformation& T_B_A,
@@ -73,8 +75,10 @@ void mergeLayerAintoLayerB(const Layer<VoxelType>& layer_A,
   mergeLayerAintoLayerB(layer_A_transformed, layer_B);
 }
 
-// copies the information stored in layer_in into layer_out resampling the
-// data so that it fits the voxel and block size of the output layer
+/**
+ * copies the information stored in layer_in into layer_out resampling the
+ * data so that it fits the voxel and block size of the output layer
+ */
 template <typename VoxelType>
 void resampleLayer(const Layer<VoxelType>& layer_in,
                    Layer<VoxelType>* layer_out) {
@@ -82,10 +86,12 @@ void resampleLayer(const Layer<VoxelType>& layer_in,
   transformLayer(layer_in, Transformation(), layer_out);
 }
 
-// Similar to transformLayer in functionality, however the system only makes
-// use of the forward transform and nearest neighbor interpolation. This will
-// result in artifacts and other issues in the result, however it should be
-// several orders of magnitude faster.
+/**
+ * Similar to transformLayer in functionality, however the system only makes
+ * use of the forward transform and nearest neighbor interpolation. This will
+ * result in artifacts and other issues in the result, however it should be
+ * several orders of magnitude faster.
+ */
 template <typename VoxelType>
 void naiveTransformLayer(const Layer<VoxelType>& layer_in,
                          const Transformation& T_out_in,
@@ -132,9 +138,11 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
   }
 }
 
-// Performs a 3D transform on the input layer and writes the results to the
-// output layer. During the transformation resampling occurs so that the voxel
-// and block size of the input and output layer can differ.
+/**
+ * Performs a 3D transform on the input layer and writes the results to the
+ * output layer. During the transformation resampling occurs so that the voxel
+ * and block size of the input and output layer can differ.
+ */
 template <typename VoxelType>
 void transformLayer(const Layer<VoxelType>& layer_in,
                     const Transformation& T_out_in,
@@ -217,13 +225,15 @@ typedef std::pair<voxblox::Layer<voxblox::TsdfVoxel>::Ptr,
     AlignedLayerAndErrorLayer;
 typedef std::vector<AlignedLayerAndErrorLayer> AlignedLayerAndErrorLayers;
 
-// This function will align layer B to layer A, transforming and interpolating
-// layer B into voxel grid A for every transformation in `transforms_A_B` and
-// evaluate them. If `aligned_layers_and_error_layers` is set, this function
-// returns a vector containing the aligned layer_B and an error layer for every
-// transformation. The error layer contains the absolute SDF error for every
-// voxel of the comparison between layer_A and aligned layer_B. This function
-// currently only supports SDF type layers, like TsdfVoxel and EsdfVoxel.
+/**
+ * This function will align layer B to layer A, transforming and interpolating
+ * layer B into voxel grid A for every transformation in `transforms_A_B` and
+ * evaluate them. If `aligned_layers_and_error_layers` is set, this function
+ * returns a vector containing the aligned layer_B and an error layer for every
+ * transformation. The error layer contains the absolute SDF error for every
+ * voxel of the comparison between layer_A and aligned layer_B. This function
+ * currently only supports SDF type layers, like TsdfVoxel and EsdfVoxel.
+ */
 template <typename VoxelType>
 void evaluateLayerRmseAtPoses(
     const utils::VoxelEvaluationMode& voxel_evaluation_mode,
