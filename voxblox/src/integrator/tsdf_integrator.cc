@@ -50,8 +50,8 @@ TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
 
 TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
                                        Layer<TsdfVoxel>* layer)
-    : config_(config), layer_(layer) {
-  DCHECK(layer_);
+    : config_(config) {
+  CHECK_NOTNULL(layer_);
 
   setLayer(layer);
 
@@ -66,7 +66,7 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
 }
 
 void TsdfIntegratorBase::setLayer(Layer<TsdfVoxel>* layer) {
-  DCHECK(layer);
+  CHECK_NOTNULL(layer);
 
   layer_ = layer;
 
