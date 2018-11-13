@@ -76,6 +76,7 @@ This graph shows which files directly or indirectly include this file:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacevoxblox"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox.html">voxblox</a></td></tr>
+<tr class="memdesc:namespacevoxblox"><td class="mdescLeft">&#160;</td><td class="mdescRight">These classes allocate a fixed size array and index it with a hash that is masked so that only its first N bits are non zero. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacevoxblox_1_1io"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html">voxblox::io</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -92,27 +93,33 @@ Enumerations</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a99b2a500d9e764d536f7d06f4437cdd8"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:a99b2a500d9e764d536f7d06f4437cdd8"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a99b2a500d9e764d536f7d06f4437cdd8">voxblox::io::convertLayerToMesh</a> (const Layer&lt; VoxelType &gt; &amp;layer, const MeshIntegratorConfig &amp;mesh_config, <a class="el" href="structvoxblox_1_1Mesh.html">voxblox::Mesh</a> *mesh, const bool connected_mesh=true, const FloatingPoint vertex_proximity_threshold=1e-10)</td></tr>
+<tr class="memdesc:a99b2a500d9e764d536f7d06f4437cdd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts the layer to a mesh by extracting its ISO surface using marching cubes.  <a href="namespacevoxblox_1_1io.html#a99b2a500d9e764d536f7d06f4437cdd8">More...</a><br /></td></tr>
 <tr class="separator:a99b2a500d9e764d536f7d06f4437cdd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a501daa1d8f0289ff3fd28b2cb056875e"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:a501daa1d8f0289ff3fd28b2cb056875e"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a501daa1d8f0289ff3fd28b2cb056875e">voxblox::io::convertLayerToMesh</a> (const Layer&lt; VoxelType &gt; &amp;layer, <a class="el" href="structvoxblox_1_1Mesh.html">voxblox::Mesh</a> *mesh, const bool connected_mesh=true, const FloatingPoint vertex_proximity_threshold=1e-10)</td></tr>
 <tr class="separator:a501daa1d8f0289ff3fd28b2cb056875e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7d0568927343a09374c70ab4b2bb462"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:ab7d0568927343a09374c70ab4b2bb462"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#ab7d0568927343a09374c70ab4b2bb462">voxblox::io::convertVoxelGridToPointCloud</a> (const Layer&lt; VoxelType &gt; &amp;layer, const float sdf_color_range, const float sdf_max_value, <a class="el" href="structvoxblox_1_1Mesh.html">voxblox::Mesh</a> *point_cloud)</td></tr>
+<tr class="memdesc:ab7d0568927343a09374c70ab4b2bb462"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function converts all voxels with positive weight/observed into points colored by a color map based on the SDF value.  <a href="namespacevoxblox_1_1io.html#ab7d0568927343a09374c70ab4b2bb462">More...</a><br /></td></tr>
 <tr class="separator:ab7d0568927343a09374c70ab4b2bb462"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a660181da1e9ed768c455c2d366c83dcb"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:a660181da1e9ed768c455c2d366c83dcb"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a660181da1e9ed768c455c2d366c83dcb">voxblox::io::convertVoxelGridToPointCloud</a> (const Layer&lt; VoxelType &gt; &amp;layer, const float sdf_color_range, <a class="el" href="structvoxblox_1_1Mesh.html">voxblox::Mesh</a> *point_cloud)</td></tr>
 <tr class="separator:a660181da1e9ed768c455c2d366c83dcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a810bf4da8ac151407c9f24336ede73ce"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:a810bf4da8ac151407c9f24336ede73ce"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a810bf4da8ac151407c9f24336ede73ce">voxblox::io::getColorFromVoxel</a> (const VoxelType &amp;voxel, const float sdf_color_range, const float sdf_max_value, Color *color)</td></tr>
+<tr class="memdesc:a810bf4da8ac151407c9f24336ede73ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert a voxel to a colored point.  <a href="namespacevoxblox_1_1io.html#a810bf4da8ac151407c9f24336ede73ce">More...</a><br /></td></tr>
 <tr class="separator:a810bf4da8ac151407c9f24336ede73ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d26be7f867be63b0a28fbb38fdac917"><td class="memTemplParams" colspan="2">template&lt;&gt; </td></tr>
 <tr class="memitem:a0d26be7f867be63b0a28fbb38fdac917"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a0d26be7f867be63b0a28fbb38fdac917">voxblox::io::getColorFromVoxel</a> (const TsdfVoxel &amp;voxel, const float sdf_color_range, const float sdf_max_value, Color *color)</td></tr>
+<tr class="memdesc:a0d26be7f867be63b0a28fbb38fdac917"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert a voxel to a colored point.  <a href="namespacevoxblox_1_1io.html#a0d26be7f867be63b0a28fbb38fdac917">More...</a><br /></td></tr>
 <tr class="separator:a0d26be7f867be63b0a28fbb38fdac917"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a612186d47d97b45ea17e17e191683d7e"><td class="memTemplParams" colspan="2">template&lt;&gt; </td></tr>
 <tr class="memitem:a612186d47d97b45ea17e17e191683d7e"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a612186d47d97b45ea17e17e191683d7e">voxblox::io::getColorFromVoxel</a> (const EsdfVoxel &amp;voxel, const float sdf_color_range, const float sdf_max_value, Color *color)</td></tr>
+<tr class="memdesc:a612186d47d97b45ea17e17e191683d7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert a voxel to a colored point.  <a href="namespacevoxblox_1_1io.html#a612186d47d97b45ea17e17e191683d7e">More...</a><br /></td></tr>
 <tr class="separator:a612186d47d97b45ea17e17e191683d7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4d1194b1e481f97ffba45435f386467"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:af4d1194b1e481f97ffba45435f386467"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#af4d1194b1e481f97ffba45435f386467">voxblox::io::outputLayerAsPly</a> (const Layer&lt; VoxelType &gt; &amp;layer, const std::string &amp;filename, PlyOutputTypes type, const float sdf_color_range=0.3f, const float max_sdf_value_to_output=0.3f)</td></tr>
+<tr class="memdesc:af4d1194b1e481f97ffba45435f386467"><td class="mdescLeft">&#160;</td><td class="mdescRight">Output the layer to ply file.  <a href="namespacevoxblox_1_1io.html#af4d1194b1e481f97ffba45435f386467">More...</a><br /></td></tr>
 <tr class="separator:af4d1194b1e481f97ffba45435f386467"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
@@ -121,7 +128,7 @@ Functions</h2></td></tr>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

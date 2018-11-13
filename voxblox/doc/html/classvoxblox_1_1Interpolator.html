@@ -32,17 +32,22 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>Interpolates voxels to give distances and gradients.  
+ <a href="classvoxblox_1_1Interpolator.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="interpolator_8h_source.html">interpolator.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a2a66e8d55d3fbba93698516cb8e5a040"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html#a2a66e8d55d3fbba93698516cb8e5a040">getAdaptiveDistanceAndGradient</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;pos, <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a> *distance, <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> *grad) const</td></tr>
+<tr class="memdesc:a2a66e8d55d3fbba93698516cb8e5a040"><td class="mdescLeft">&#160;</td><td class="mdescRight">This tries to use whatever information is available to interpolate the distance and gradient &ndash; if only one side is available, for instance, this will still estimate a 1-sided gradient.  <a href="#a2a66e8d55d3fbba93698516cb8e5a040">More...</a><br /></td></tr>
 <tr class="separator:a2a66e8d55d3fbba93698516cb8e5a040"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0db1bfa325dff22567f43247590139e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html#a0db1bfa325dff22567f43247590139e7">getDistance</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;pos, <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a> *distance, bool interpolate=false) const</td></tr>
 <tr class="separator:a0db1bfa325dff22567f43247590139e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4aef533e4aca31cb464e871822a6ff7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html#ac4aef533e4aca31cb464e871822a6ff7">getGradient</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;pos, <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> *grad, const bool interpolate=false) const</td></tr>
 <tr class="separator:ac4aef533e4aca31cb464e871822a6ff7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0dfc303cbab76a016832f042f16f916"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html#ac0dfc303cbab76a016832f042f16f916">getNearestDistanceAndWeight</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;pos, <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a> *distance, float *weight) const</td></tr>
+<tr class="memdesc:ac0dfc303cbab76a016832f042f16f916"><td class="mdescLeft">&#160;</td><td class="mdescRight">Without interpolation.  <a href="#ac0dfc303cbab76a016832f042f16f916">More...</a><br /></td></tr>
 <tr class="separator:ac0dfc303cbab76a016832f042f16f916"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae62792a8f3274b6ca83ab0d395c85b97"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html#ae62792a8f3274b6ca83ab0d395c85b97">getVoxel</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;pos, VoxelType *voxel, bool interpolate=false) const</td></tr>
 <tr class="separator:ae62792a8f3274b6ca83ab0d395c85b97"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -74,6 +79,7 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a4a55808ec02c10cdff5913b34ed0643e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html#a4a55808ec02c10cdff5913b34ed0643e">getNearestVoxel</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;pos, VoxelType *voxel) const</td></tr>
 <tr class="separator:a4a55808ec02c10cdff5913b34ed0643e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d0833793f129aa31c1ec9b99bb7cc3c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html#a9d0833793f129aa31c1ec9b99bb7cc3c">getQVector</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;voxel_pos, const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;pos, const <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a> voxel_size_inv, <a class="el" href="namespacevoxblox.html#ab52abd6e248c669a8326ddba59b6e1ec">InterpVector</a> *q_vector) const</td></tr>
+<tr class="memdesc:a9d0833793f129aa31c1ec9b99bb7cc3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Q vector from <a href="http://spie.org/samples/PM159.pdf">http://spie.org/samples/PM159.pdf</a> Relates the interpolation distance of any arbitrary point inside a voxel to the values of the voxel corners.  <a href="#a9d0833793f129aa31c1ec9b99bb7cc3c">More...</a><br /></td></tr>
 <tr class="separator:a9d0833793f129aa31c1ec9b99bb7cc3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a510dfc86e6b377f27d57dc3f87313c95"><td class="memTemplParams" colspan="2">template&lt;&gt; </td></tr>
 <tr class="memitem:a510dfc86e6b377f27d57dc3f87313c95"><td class="memTemplItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html#a510dfc86e6b377f27d57dc3f87313c95">getRed</a> (const <a class="el" href="structvoxblox_1_1TsdfVoxel.html">TsdfVoxel</a> &amp;voxel)</td></tr>
@@ -129,8 +135,9 @@ Private Attributes</h2></td></tr>
 <div class="textblock"><h3>template&lt;typename VoxelType&gt;<br />
 class voxblox::Interpolator&lt; VoxelType &gt;</h3>
 
+<p>Interpolates voxels to give distances and gradients. </p>
 
-<p class="definition">Definition at line <a class="el" href="interpolator_8h_source.html#l00013">13</a> of file <a class="el" href="interpolator_8h_source.html">interpolator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="interpolator_8h_source.html#l00016">16</a> of file <a class="el" href="interpolator_8h_source.html">interpolator.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aae6ed1740ebdc32bf547a617fda404e8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aae6ed1740ebdc32bf547a617fda404e8">&#9670;&nbsp;</a></span>Interpolator()</h2>
@@ -196,6 +203,9 @@ template&lt;typename VoxelType &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>This tries to use whatever information is available to interpolate the distance and gradient &ndash; if only one side is available, for instance, this will still estimate a 1-sided gradient. </p>
+<p>Should give the same results as <a class="el" href="classvoxblox_1_1Interpolator.html#ac4aef533e4aca31cb464e871822a6ff7">getGradient()</a> and <a class="el" href="classvoxblox_1_1Interpolator.html#a0db1bfa325dff22567f43247590139e7">getDistance()</a> if all neighbors are filled. </p>
 
 <p class="definition">Definition at line <a class="el" href="interpolator__inl_8h_source.html#l00067">67</a> of file <a class="el" href="interpolator__inl_8h_source.html">interpolator_inl.h</a>.</p>
 
@@ -605,6 +615,8 @@ template&lt;typename VoxelType &gt; </div>
       </table>
 </div><div class="memdoc">
 
+<p>Without interpolation. </p>
+
 <p class="definition">Definition at line <a class="el" href="interpolator__inl_8h_source.html#l00341">341</a> of file <a class="el" href="interpolator__inl_8h_source.html">interpolator_inl.h</a>.</p>
 
 </div>
@@ -696,6 +708,8 @@ template&lt;typename VoxelType &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Q vector from <a href="http://spie.org/samples/PM159.pdf">http://spie.org/samples/PM159.pdf</a> Relates the interpolation distance of any arbitrary point inside a voxel to the values of the voxel corners. </p>
 
 <p class="definition">Definition at line <a class="el" href="interpolator__inl_8h_source.html#l00190">190</a> of file <a class="el" href="interpolator__inl_8h_source.html">interpolator_inl.h</a>.</p>
 
@@ -1272,7 +1286,7 @@ template&lt;typename VoxelType&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="interpolator_8h_source.html#l00084">84</a> of file <a class="el" href="interpolator_8h_source.html">interpolator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="interpolator_8h_source.html#l00091">91</a> of file <a class="el" href="interpolator_8h_source.html">interpolator.h</a>.</p>
 
 </div>
 </div>
@@ -1290,7 +1304,7 @@ template&lt;typename VoxelType&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="interpolator_8h_source.html#l00017">17</a> of file <a class="el" href="interpolator_8h_source.html">interpolator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="interpolator_8h_source.html#l00020">20</a> of file <a class="el" href="interpolator_8h_source.html">interpolator.h</a>.</p>
 
 </div>
 </div>
@@ -1304,7 +1318,7 @@ template&lt;typename VoxelType&gt; </div>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

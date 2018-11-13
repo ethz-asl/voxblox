@@ -31,6 +31,9 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>A special type of layer just for containing the mesh.  
+ <a href="classvoxblox_1_1MeshLayer.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
@@ -43,8 +46,10 @@ Public Types</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a4335a1e177e22b04e833bb1533931415"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structvoxblox_1_1Mesh.html#a2b59d0e9bc8cf76cf02b629559e88b27">Mesh::Ptr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#a4335a1e177e22b04e833bb1533931415">allocateMeshPtrByCoordinates</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;coords)</td></tr>
+<tr class="memdesc:a4335a1e177e22b04e833bb1533931415"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a mesh by the coordinates it if already exists, otherwise allocates a new one.  <a href="#a4335a1e177e22b04e833bb1533931415">More...</a><br /></td></tr>
 <tr class="separator:a4335a1e177e22b04e833bb1533931415"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf06efb7c56c39cb652b663b9c7a29aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structvoxblox_1_1Mesh.html#a2b59d0e9bc8cf76cf02b629559e88b27">Mesh::Ptr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#acf06efb7c56c39cb652b663b9c7a29aa">allocateMeshPtrByIndex</a> (const <a class="el" href="namespacevoxblox.html#a670cb0f354a5e86bc564b1b9375768b0">BlockIndex</a> &amp;index)</td></tr>
+<tr class="memdesc:acf06efb7c56c39cb652b663b9c7a29aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a mesh by the mesh index it if already exists, otherwise allocates a new one.  <a href="#acf06efb7c56c39cb652b663b9c7a29aa">More...</a><br /></td></tr>
 <tr class="separator:acf06efb7c56c39cb652b663b9c7a29aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6e0fa2e6c0cfbe8681db3086894c93c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structvoxblox_1_1Mesh.html#a2b59d0e9bc8cf76cf02b629559e88b27">Mesh::Ptr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#aa6e0fa2e6c0cfbe8681db3086894c93c">allocateNewBlock</a> (const <a class="el" href="namespacevoxblox.html#a670cb0f354a5e86bc564b1b9375768b0">BlockIndex</a> &amp;index)</td></tr>
 <tr class="separator:aa6e0fa2e6c0cfbe8681db3086894c93c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -55,18 +60,22 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa242a8b3d26f9bff89f81fc8d0d8b9fc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#aa242a8b3d26f9bff89f81fc8d0d8b9fc">block_size_inv</a> () const</td></tr>
 <tr class="separator:aa242a8b3d26f9bff89f81fc8d0d8b9fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80bc147fe558065ef314354f87046388"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#a80bc147fe558065ef314354f87046388">clear</a> ()</td></tr>
+<tr class="memdesc:a80bc147fe558065ef314354f87046388"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes ALL parts of the mesh.  <a href="#a80bc147fe558065ef314354f87046388">More...</a><br /></td></tr>
 <tr class="separator:a80bc147fe558065ef314354f87046388"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb350bb91c7c38765d7e74b474671375"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#adb350bb91c7c38765d7e74b474671375">clearDistantMesh</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;center, const double max_distance)</td></tr>
 <tr class="separator:adb350bb91c7c38765d7e74b474671375"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42252a79c848b60a5421a2f4e04ab3db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevoxblox.html#a670cb0f354a5e86bc564b1b9375768b0">BlockIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#a42252a79c848b60a5421a2f4e04ab3db">computeBlockIndexFromCoordinates</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;coords) const</td></tr>
+<tr class="memdesc:a42252a79c848b60a5421a2f4e04ab3db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Coord to mesh index.  <a href="#a42252a79c848b60a5421a2f4e04ab3db">More...</a><br /></td></tr>
 <tr class="separator:a42252a79c848b60a5421a2f4e04ab3db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8615c7777946ad62e3f043334bbdcbe1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#a8615c7777946ad62e3f043334bbdcbe1">getAllAllocatedMeshes</a> (<a class="el" href="namespacevoxblox.html#ab6a2a9c55d969e553791db1f7472a8f3">BlockIndexList</a> *meshes) const</td></tr>
 <tr class="separator:a8615c7777946ad62e3f043334bbdcbe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19f5d8252558e29ecd4504fab344f502"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#a19f5d8252558e29ecd4504fab344f502">getAllUpdatedMeshes</a> (<a class="el" href="namespacevoxblox.html#ab6a2a9c55d969e553791db1f7472a8f3">BlockIndexList</a> *meshes) const</td></tr>
 <tr class="separator:a19f5d8252558e29ecd4504fab344f502"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1314d7737505ef6f7a8a6551fdc8cc2d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#a1314d7737505ef6f7a8a6551fdc8cc2d">getConnectedMesh</a> (<a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a> *connected_mesh, const <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a> approximate_vertex_proximity_threshold=1e-10) const</td></tr>
+<tr class="memdesc:a1314d7737505ef6f7a8a6551fdc8cc2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a connected mesh by merging close vertices and removing triangles with zero surface area.  <a href="#a1314d7737505ef6f7a8a6551fdc8cc2d">More...</a><br /></td></tr>
 <tr class="separator:a1314d7737505ef6f7a8a6551fdc8cc2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af384ed7d1160ca52df9b81fb73446f9b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#af384ed7d1160ca52df9b81fb73446f9b">getMesh</a> (<a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a> *combined_mesh) const</td></tr>
+<tr class="memdesc:af384ed7d1160ca52df9b81fb73446f9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get mesh from mesh layer.  <a href="#af384ed7d1160ca52df9b81fb73446f9b">More...</a><br /></td></tr>
 <tr class="separator:af384ed7d1160ca52df9b81fb73446f9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d09451d34c82214f2d232e8e1e85c8c"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html#a8d09451d34c82214f2d232e8e1e85c8c">getMeshByIndex</a> (const <a class="el" href="namespacevoxblox.html#a670cb0f354a5e86bc564b1b9375768b0">BlockIndex</a> &amp;index) const</td></tr>
 <tr class="separator:a8d09451d34c82214f2d232e8e1e85c8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -106,8 +115,10 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a571846545d48581870af922f02379ae0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00021">21</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<div class="textblock"><p>A special type of layer just for containing the mesh. </p>
+<p>Same general interface as a layer of blocks, but only contains a single thing, not a set of voxels. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00023">23</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a4ccbdbf29143d184b53e5ba3ec333ac5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ccbdbf29143d184b53e5ba3ec333ac5">&#9670;&nbsp;</a></span>ConstPtr</h2>
@@ -121,7 +132,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00026">26</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00028">28</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -137,7 +148,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00027">27</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00029">29</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -166,7 +177,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00029">29</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00031">31</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -193,7 +204,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00031">31</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00033">33</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -222,7 +233,9 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00095">95</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p>Gets a mesh by the coordinates it if already exists, otherwise allocates a new one. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00101">101</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -250,7 +263,9 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00075">75</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p>Gets a mesh by the mesh index it if already exists, otherwise allocates a new one. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00079">79</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -278,7 +293,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00106">106</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00111">111</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -306,7 +321,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00117">117</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00122">122</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -333,7 +348,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00272">272</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00282">282</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -360,7 +375,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00274">274</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00284">284</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -387,7 +402,9 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00270">270</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p>Deletes ALL parts of the mesh. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00280">280</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -425,7 +442,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00127">127</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00132">132</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -453,7 +470,9 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00100">100</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p>Coord to mesh index. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00106">106</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -481,7 +500,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00139">139</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00144">144</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -509,7 +528,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00148">148</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00153">153</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -547,7 +566,10 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00251">251</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p>Get a connected mesh by merging close vertices and removing triangles with zero surface area. </p>
+<p>If you only would like to connect vertices, make sure that the proximity threhsold &lt;&lt;&lt; voxel size. If you would like to simplify the mesh, chose a threshold greater or near the voxel size until you reached the level of simpliciation desired. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00260">260</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -575,7 +597,10 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00160">160</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p>Get mesh from mesh layer. </p>
+<p>NOTE: The triangles and vertices in this mesh are distinct, hence, this will not produce a connected mesh. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00167">167</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -603,7 +628,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00034">34</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00036">36</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -631,7 +656,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00043">43</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00045">45</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -659,7 +684,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00084">84</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00088">88</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -687,7 +712,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00089">89</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00093">93</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -715,7 +740,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00052">52</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00054">54</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -743,7 +768,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00063">63</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00065">65</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -770,7 +795,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00268">268</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00277">277</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -798,7 +823,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00121">121</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00126">126</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -826,7 +851,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00123">123</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00128">128</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -851,7 +876,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00277">277</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00287">287</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -875,7 +900,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00280">280</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00290">290</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -899,7 +924,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00282">282</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00292">292</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -915,7 +940,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00025">25</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__layer_8h_source.html#l00027">27</a> of file <a class="el" href="mesh__layer_8h_source.html">mesh_layer.h</a>.</p>
 
 </div>
 </div>
@@ -928,7 +953,7 @@ Private Attributes</h2></td></tr>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

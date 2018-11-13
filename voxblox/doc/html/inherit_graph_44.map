@@ -1,7 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classvoxblox_1_1Object.html" title="voxblox::Object" alt="" coords="5,81,119,108"/>
+<area shape="rect" id="node1" href="$classvoxblox_1_1Object.html" title="Base class for simulator objects. " alt="" coords="5,81,119,108"/>
 <area shape="rect" id="node2" href="$classvoxblox_1_1Cube.html" title="voxblox::Cube" alt="" coords="187,5,293,32"/>
 <area shape="rect" id="node3" href="$classvoxblox_1_1Cylinder.html" title="voxblox::Cylinder" alt="" coords="179,56,301,83"/>
-<area shape="rect" id="node4" href="$classvoxblox_1_1PlaneObject.html" title="voxblox::PlaneObject" alt="" coords="167,107,313,133"/>
+<area shape="rect" id="node4" href="$classvoxblox_1_1PlaneObject.html" title="Requires normal being passed in to ALREADY BE NORMALIZED!!!! " alt="" coords="167,107,313,133"/>
 <area shape="rect" id="node5" href="$classvoxblox_1_1Sphere.html" title="voxblox::Sphere" alt="" coords="182,157,298,184"/>
 </map>

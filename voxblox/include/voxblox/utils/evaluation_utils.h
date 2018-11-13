@@ -49,11 +49,11 @@ VoxelEvaluationResult computeVoxelError(
     const VoxelType& voxel_gt, const VoxelType& voxel_test,
     const VoxelEvaluationMode evaluation_mode, FloatingPoint* error);
 
-// Returns true if the voxel has been observed.
+/// Returns true if the voxel has been observed.
 template <typename VoxelType>
 bool isObservedVoxel(const VoxelType& voxel);
 
-// Allow this class to be templated on all kinds of voxels.
+/// Allow this class to be templated on all kinds of voxels.
 template <typename VoxelType>
 FloatingPoint getVoxelSdf(const VoxelType& voxel);
 
@@ -63,10 +63,12 @@ void setVoxelSdf(const FloatingPoint sdf, VoxelType* voxel);
 template <typename VoxelType>
 void setVoxelWeight(const FloatingPoint weight, VoxelType* voxel);
 
-// Evaluate a test layer vs a ground truth layer. The comparison is symmetrical
-// unless the VoxelEvaluationMode is set to ignore the voxels of one of the two
-// layers behind the surface. The parameter 'evaluation_result' and
-// 'error_layer' can be a nullptr.
+/**
+ * Evaluate a test layer vs a ground truth layer. The comparison is symmetrical
+ * unless the VoxelEvaluationMode is set to ignore the voxels of one of the two
+ * layers behind the surface. The parameter 'evaluation_result' and
+ * 'error_layer' can be a nullptr.
+ */
 template <typename VoxelType>
 FloatingPoint evaluateLayersRmse(
     const Layer<VoxelType>& layer_gt, const Layer<VoxelType>& layer_test,
@@ -181,8 +183,10 @@ FloatingPoint evaluateLayersRmse(
   return evaluation_details.rmse;
 }
 
-// Overload for convenient RMSE calculation. Per default this function does not
-// evaluate errors behind the test surface.
+/**
+ * Overload for convenient RMSE calculation. Per default this function does not
+ * evaluate errors behind the test surface.
+ */
 template <typename VoxelType>
 FloatingPoint evaluateLayersRmse(const Layer<VoxelType>& layer_gt,
                                  const Layer<VoxelType>& layer_test) {

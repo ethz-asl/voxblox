@@ -120,7 +120,7 @@ Protected Attributes</h2></td></tr>
 <div class="textblock"><p>Base class to the simple, merged and fast TSDF integrators. </p>
 <p>The integrator takes in a pointcloud + pose and uses this information to update the TSDF information in the given TSDF layer. Note most functions in this class state if they are thread safe. Unless explicitly stated otherwise, this thread safety is based on the assumption that any pointers passed to the functions point to objects that are guaranteed to not be accessed by other threads. </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00049">49</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00051">51</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a4d050137d5d3b667567cf586553ea83d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4d050137d5d3b667567cf586553ea83d">&#9670;&nbsp;</a></span>TsdfIntegratorBase()</h2>
@@ -271,7 +271,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns a CONST ref of the config. </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00097">97</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00099">99</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -524,7 +524,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00145">145</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00147">147</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -548,7 +548,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00150">150</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00152">152</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -572,7 +572,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00138">138</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00140">140</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -596,7 +596,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00140">140</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00142">142</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -623,7 +623,7 @@ Protected Attributes</h2></td></tr>
 <p>We need to prevent simultaneous access to the voxels in the map. </p>
 <p>We could put a single mutex on the map or on the blocks, but as voxel updating is the most expensive operation in integration and most voxels are close together, both strategies would bottleneck the system. We could make a mutex per voxel, but this is too ram heavy as one mutex = 40 bytes. Because of this we create an array that is indexed by the first n bits of the voxels hash. Assuming a uniform hash distribution, this means the chance of two threads needing the same lock for unrelated voxels is (num_threads / (2^n)). For 8 threads and 12 bits this gives 0.2%. </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00170">170</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00172">172</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -639,7 +639,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00052">52</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00054">54</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -665,7 +665,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Temporary block storage, used to hold blocks that need to be created while integrating a new pointcloud. </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00157">157</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00159">159</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -689,7 +689,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00152">152</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00154">154</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -713,7 +713,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00143">143</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00145">145</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -737,7 +737,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00148">148</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00150">150</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -761,7 +761,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00144">144</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00146">146</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -785,7 +785,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00149">149</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00151">151</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -799,7 +799,7 @@ Protected Attributes</h2></td></tr>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

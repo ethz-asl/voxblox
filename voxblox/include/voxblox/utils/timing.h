@@ -106,13 +106,15 @@ class Accumulator {
 struct TimerMapValue {
   TimerMapValue() {}
 
-  // Create an accumulator with specified window size.
+  /// Create an accumulator with specified window size.
   Accumulator<double, double, 50> acc_;
 };
 
-// A class that has the timer interface but does nothing. Swapping this in in
-// place of the Timer class (say with a typedef) should allow one to disable
-// timing. Because all of the functions are inline, they should just disappear.
+/**
+ * A class that has the timer interface but does nothing. Swapping this in in
+ * place of the Timer class (say with a typedef) should allow one to disable
+ * timing. Because all of the functions are inline, they should just disappear.
+ */
 class DummyTimer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -131,8 +133,8 @@ class Timer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Timer(size_t handle, bool constructStopped = false);
-  Timer(std::string const& tag, bool constructStopped = false);
+  explicit Timer(size_t handle, bool constructStopped = false);
+  explicit Timer(std::string const& tag, bool constructStopped = false);
   ~Timer();
 
   void Start();
