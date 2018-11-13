@@ -89,9 +89,9 @@ inline Color randomColor() {
 
   color.a = 255;
 
-  color.r = rand_r() % 256;
-  color.b = rand_r() % 256;
-  color.g = rand_r() % 256;
+  color.r = rand() % 256;
+  color.b = rand() % 256;
+  color.g = rand() % 256;
 
   return color;
 }

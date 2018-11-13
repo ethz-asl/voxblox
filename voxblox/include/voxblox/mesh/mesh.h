@@ -30,6 +30,9 @@
 
 namespace voxblox {
 
+/**
+ * Holds the vertex, normals, color and triangle index information of a mesh.
+ */
 struct Mesh {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
