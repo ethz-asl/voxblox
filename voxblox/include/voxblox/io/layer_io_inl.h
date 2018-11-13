@@ -102,10 +102,13 @@ bool LoadBlocksFromFile(
 
 template <typename VoxelType>
 bool LoadBlocksFromStream(
-    const size_t num_blocks, typename Layer<VoxelType>::BlockMergingStrategy strategy,
+    const size_t num_blocks,
+    typename Layer<VoxelType>::BlockMergingStrategy strategy,
     std::fstream* proto_file_ptr, Layer<VoxelType>* layer_ptr,
     uint32_t* tmp_byte_offset_ptr) {
+  CHECK_NOTNULL(proto_file_ptr);
   CHECK_NOTNULL(layer_ptr);
+  CHECK_NOTNULL(tmp_byte_offset_ptr);
   // Read all blocks and add them to the layer.
   for (uint32_t block_idx = 0u; block_idx < num_blocks; ++block_idx) {
     BlockProto block_proto;
