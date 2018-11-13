@@ -9,6 +9,9 @@
 
 namespace voxblox {
 
+/**
+ * Interpolates voxels to give distances and gradients
+ */
 template <typename VoxelType>
 class Interpolator {
  public:
@@ -27,14 +30,16 @@ class Interpolator {
   bool getVoxel(const Point& pos, VoxelType* voxel,
                 bool interpolate = false) const;
 
-  // This tries to use whatever information is available to interpolate the
-  // distance and gradient -- if only one side is available, for instance,
-  // this will still estimate a 1-sided gradient. Should give the same results
-  // as getGradient() and getDistance() if all neighbors are filled.
+  /**
+   * This tries to use whatever information is available to interpolate the
+   * distance and gradient -- if only one side is available, for instance,
+   * this will still estimate a 1-sided gradient. Should give the same results
+   * as getGradient() and getDistance() if all neighbors are filled.
+   */
   bool getAdaptiveDistanceAndGradient(const Point& pos, FloatingPoint* distance,
                                       Point* grad) const;
 
-  // Without interpolation.
+  /// Without interpolation.
   bool getNearestDistanceAndWeight(const Point& pos, FloatingPoint* distance,
                                    float* weight) const;
 
@@ -42,9 +47,11 @@ class Interpolator {
   bool setIndexes(const Point& pos, BlockIndex* block_index,
                   InterpIndexes* voxel_indexes) const;
 
-  // Q vector from http://spie.org/samples/PM159.pdf
-  // Relates the interpolation distance of any arbitrary point inside a voxel
-  // to the values of the voxel corners.
+  /**
+   * Q vector from http://spie.org/samples/PM159.pdf
+   * Relates the interpolation distance of any arbitrary point inside a voxel
+   * to the values of the voxel corners.
+   */
   void getQVector(const Point& voxel_pos, const Point& pos,
                   const FloatingPoint voxel_size_inv,
                   InterpVector* q_vector) const;

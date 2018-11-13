@@ -16,8 +16,10 @@
 
 namespace voxblox {
 
-// A special type of layer just for containing the mesh. Same general interface
-// as a layer of blocks, but only contains a single thing, not a set of voxels.
+/**
+ * A special type of layer just for containing the mesh. Same general interface
+ * as a layer of blocks, but only contains a single thing, not a set of voxels.
+ */
 class MeshLayer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -70,8 +72,10 @@ class MeshLayer {
     }
   }
 
-  // Gets a mesh by the mesh index it if already exists,
-  // otherwise allocates a new one.
+  /**
+   * Gets a mesh by the mesh index it if already exists,
+   * otherwise allocates a new one.
+   */
   inline typename Mesh::Ptr allocateMeshPtrByIndex(const BlockIndex& index) {
     typename MeshMap::iterator it = mesh_map_.find(index);
     if (it != mesh_map_.end()) {
@@ -90,19 +94,20 @@ class MeshLayer {
     return getMeshPtrByIndex(computeBlockIndexFromCoordinates(coords));
   }
 
-  // Gets a mesh by the coordinates it if already exists,
-  // otherwise allocates a new one.
+  /**
+   * Gets a mesh by the coordinates it if already exists,
+   * otherwise allocates a new one.
+   */
   inline typename Mesh::Ptr allocateMeshPtrByCoordinates(const Point& coords) {
     return allocateMeshPtrByIndex(computeBlockIndexFromCoordinates(coords));
   }
 
-  // Coord to mesh index.
+  /// Coord to mesh index.
   inline BlockIndex computeBlockIndexFromCoordinates(
       const Point& coords) const {
     return getGridIndexFromPoint<BlockIndex>(coords, block_size_inv_);
   }
 
-  // Pure virtual function -- inheriting class MUST overwrite.
   typename Mesh::Ptr allocateNewBlock(const BlockIndex& index) {
     auto insert_status = mesh_map_.insert(std::make_pair(
         index, std::shared_ptr<Mesh>(new Mesh(
@@ -155,8 +160,10 @@ class MeshLayer {
     }
   }
 
-  // Get mesh from mesh layer. NOTE: The triangles and vertices in this mesh are
-  // distinct, hence, this will not produce a connected mesh.
+  /**
+   * Get mesh from mesh layer. NOTE: The triangles and vertices in this mesh are
+   * distinct, hence, this will not produce a connected mesh.
+   */
   void getMesh(Mesh* combined_mesh) const {
     CHECK_NOTNULL(combined_mesh);
 
@@ -243,11 +250,13 @@ class MeshLayer {
     CHECK_EQ(combined_mesh->vertices.size(), combined_mesh->indices.size());
   }
 
-  // Get a connected mesh by merging close vertices and removing triangles with
-  // zero surface area. If you only would like to connect vertices, make sure
-  // that the proximity threhsold <<< voxel size. If you would like to simplify
-  // the mesh, chose a threshold greater or near the voxel size until you
-  // reached the level of simpliciation desired.
+  /**
+   * Get a connected mesh by merging close vertices and removing triangles with
+   * zero surface area. If you only would like to connect vertices, make sure
+   * that the proximity threhsold <<< voxel size. If you would like to simplify
+   * the mesh, chose a threshold greater or near the voxel size until you
+   * reached the level of simpliciation desired.
+   */
   void getConnectedMesh(
       Mesh* connected_mesh,
       const FloatingPoint approximate_vertex_proximity_threshold =
@@ -266,7 +275,8 @@ class MeshLayer {
   }
 
   size_t getNumberOfAllocatedMeshes() const { return mesh_map_.size(); }
-  // Deletes ALL parts of the mesh.
+
+  /// Deletes ALL parts of the mesh.
   void clear() { mesh_map_.clear(); }
 
   FloatingPoint block_size() const { return block_size_; }
