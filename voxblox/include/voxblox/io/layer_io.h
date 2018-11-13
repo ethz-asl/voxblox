@@ -26,6 +26,12 @@ bool LoadBlocksFromFile(
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
     bool multiple_layer_support, Layer<VoxelType>* layer_ptr);
 
+template <typename VoxelType>
+bool LoadBlocksFromStream(
+    const size_t num_blocks, typename Layer<VoxelType>::BlockMergingStrategy strategy,
+    std::fstream* proto_file_ptr, Layer<VoxelType>* layer_ptr,
+    uint32_t* tmp_byte_offset_ptr);
+
 // Unlike LoadBlocks above, this actually allocates the layer as well.
 // By default loads without multiple layer support (i.e., only checks the first
 // layer in the file).

@@ -260,6 +260,9 @@ class Layer {
   bool saveSubsetToFile(const std::string& file_path,
                         BlockIndexList blocks_to_include,
                         bool include_all_blocks, bool clear_file = true) const;
+  bool saveBlocksToStream(bool include_all_blocks,
+                          BlockIndexList blocks_to_include,
+                          std::fstream* outfile_ptr) const;
   bool addBlockFromProto(const BlockProto& block_proto,
                          BlockMergingStrategy strategy);
 
