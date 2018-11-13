@@ -27,6 +27,9 @@ $(function() {
 <div class="title">voxblox Namespace Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>These classes allocate a fixed size array and index it with a hash that is masked so that only its first N bits are non zero.  
+<a href="#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -50,8 +53,10 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvoxblox_1_1AnyIndexHashMapType.html">AnyIndexHashMapType</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashArray.html">ApproxHashArray</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Basic container, give in an index and get the element that was stored there.  <a href="classvoxblox_1_1ApproxHashArray.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html">ApproxHashSet</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acts as a fast and thread safe set, with the serious limitation of both false-negatives and false positives being possible.  <a href="classvoxblox_1_1ApproxHashSet.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Block.html">Block</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An nxnxn container holding VoxelType.  <a href="classvoxblox_1_1Block.html#details">More...</a><br /></td></tr>
@@ -91,6 +96,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvoxblox_1_1IntensityVoxel.html">IntensityVoxel</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Interpolator.html">Interpolator</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interpolates voxels to give distances and gradients.  <a href="classvoxblox_1_1Interpolator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1InverseGrayscaleColorMap.html">InverseGrayscaleColorMap</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -107,23 +113,28 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvoxblox_1_1LongIndexHashMapType.html">LongIndexHashMapType</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MarchingCubes.html">MarchingCubes</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs the marching cubes algorithm to generate a mesh layer from a TSDF.  <a href="classvoxblox_1_1MarchingCubes.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MergedTsdfIntegrator.html">MergedTsdfIntegrator</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Uses ray bundling to improve integration speed, points which lie in the same voxel are "merged" into a single point.  <a href="classvoxblox_1_1MergedTsdfIntegrator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Holds the vertex, normals, color and triangle index information of a mesh.  <a href="structvoxblox_1_1Mesh.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html">MeshIntegrator</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Integrates a TSDF layer to incrementally update a mesh layer using marching cubes.  <a href="classvoxblox_1_1MeshIntegrator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvoxblox_1_1MeshIntegratorConfig.html">MeshIntegratorConfig</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshLayer.html">MeshLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A special type of layer just for containing the mesh.  <a href="classvoxblox_1_1MeshLayer.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Neighborhood.html">Neighborhood</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1NeighborhoodLookupTables.html">NeighborhoodLookupTables</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Object.html">Object</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base class for simulator objects.  <a href="classvoxblox_1_1Object.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1OccupancyIntegrator.html">OccupancyIntegrator</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Integrates a pointcloud into an occupancy layer by raycasting the points and updating all the voxels the rays pass through.  <a href="classvoxblox_1_1OccupancyIntegrator.html#details">More...</a><br /></td></tr>
@@ -136,6 +147,7 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1Plane.html">Plane</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1PlaneObject.html">PlaneObject</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Requires normal being passed in to ALREADY BE NORMALIZED!!!!  <a href="classvoxblox_1_1PlaneObject.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1RainbowColorMap.html">RainbowColorMap</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -287,6 +299,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:a970df089c955a010413599b7d1c2a590"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function assumes PRE-SCALED coordinates, where one unit = one voxel size.  <a href="#a970df089c955a010413599b7d1c2a590">More...</a><br /></td></tr>
 <tr class="separator:a970df089c955a010413599b7d1c2a590"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa096739156e735d85f8baf301561430"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox.html#aaa096739156e735d85f8baf301561430">convertMeshLayerToMesh</a> (const <a class="el" href="classvoxblox_1_1MeshLayer.html">MeshLayer</a> &amp;mesh_layer, <a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a> *mesh, const bool connected_mesh=true, const <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a> vertex_proximity_threshold=1e-10)</td></tr>
+<tr class="memdesc:aaa096739156e735d85f8baf301561430"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generates a mesh from the mesh layer.  <a href="#aaa096739156e735d85f8baf301561430">More...</a><br /></td></tr>
 <tr class="separator:aaa096739156e735d85f8baf301561430"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4af310b497275845dcc8c85cbd4eb16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox.html#ae4af310b497275845dcc8c85cbd4eb16">createConnectedMesh</a> (const <a class="el" href="namespacevoxblox.html#a3d118b2e8e58dfcbb55df45ecb336ce3">AlignedVector</a>&lt; <a class="el" href="structvoxblox_1_1Mesh.html#adad2e8a75eaee6a6eb95757494fc878c">Mesh::ConstPtr</a> &gt; &amp;meshes, <a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a> *connected_mesh, const <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a> approximate_vertex_proximity_threshold=1e-10)</td></tr>
 <tr class="separator:ae4af310b497275845dcc8c85cbd4eb16"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -384,6 +397,7 @@ Functions</h2></td></tr>
 <tr class="memitem:a5a98e8d366284532345e6006e90aabdd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox.html#a5a98e8d366284532345e6006e90aabdd">outputMeshAsPly</a> (const std::string &amp;filename, const <a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a> &amp;mesh)</td></tr>
 <tr class="separator:a5a98e8d366284532345e6006e90aabdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c99ad7a670d648a122e8323e1f941bb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox.html#a2c99ad7a670d648a122e8323e1f941bb">outputMeshLayerAsPly</a> (const std::string &amp;filename, const <a class="el" href="classvoxblox_1_1MeshLayer.html">MeshLayer</a> &amp;mesh_layer)</td></tr>
+<tr class="memdesc:a2c99ad7a670d648a122e8323e1f941bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default behaviour is to simplify the mesh.  <a href="#a2c99ad7a670d648a122e8323e1f941bb">More...</a><br /></td></tr>
 <tr class="separator:a2c99ad7a670d648a122e8323e1f941bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa8155685aaec52e5d73d1f29abad290"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox.html#afa8155685aaec52e5d73d1f29abad290">outputMeshLayerAsPly</a> (const std::string &amp;filename, const bool connected_mesh, const <a class="el" href="classvoxblox_1_1MeshLayer.html">MeshLayer</a> &amp;mesh_layer)</td></tr>
 <tr class="separator:afa8155685aaec52e5d73d1f29abad290"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -428,7 +442,16 @@ Variables</h2></td></tr>
 <tr class="memitem:ab4abdc1c0bfb99a4e464a16f7f972e42"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox.html#ab4abdc1c0bfb99a4e464a16f7f972e42">kUnitCubeDiagonalLength</a> = std::sqrt(3.0)</td></tr>
 <tr class="separator:ab4abdc1c0bfb99a4e464a16f7f972e42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Typedef Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>These classes allocate a fixed size array and index it with a hash that is masked so that only its first N bits are non zero. </p>
+<p>This can be thought of as a fast rough approximation of a hash table. There are several advantages and some very significant disadvantages Advantages-</p><ul>
+<li>Simple and blazing fast lockless thread-safe approximate sets</li>
+<li>Can be used to provide more fine grain locking of blocks for threading then simply locking the entire layer Disadvantages-</li>
+<li>Highly inefficient use of memory (allocates 2^N elements)</li>
+<li>Cannot discern between two different elements with the same hash</li>
+<li>If the hash of two elements have the same first N elements of their hash, only one can be stored. </li>
+</ul>
+</div><h2 class="groupheader">Typedef Documentation</h2>
 <a id="a9fd7856c3041aa4c44b8fcf1b1719293"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9fd7856c3041aa4c44b8fcf1b1719293">&#9670;&nbsp;</a></span>AlignedDeque</h2>
 
@@ -1224,7 +1247,7 @@ template&lt;size_t size&gt; </div>
 <tr><td class="fieldname"><a id="a17cfdfe432976217d48c99733e6167c7ae250345d92c29e0a7d8d215ac3b67997"></a>kFast&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00028">28</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00030">30</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -1343,6 +1366,15 @@ template&lt;typename Type , typename... Arguments&gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Generates a mesh from the mesh layer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">connected_mesh</td><td>if true veracities will be shared between triangles </td></tr>
+    <tr><td class="paramname">vertex_proximity_threshold</td><td>verticies that are within the specified thershold distance will be merged together, simplifying the mesh. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 <p class="definition">Definition at line <a class="el" href="mesh__ply_8cc_source.html#l00027">27</a> of file <a class="el" href="mesh__ply_8cc_source.html">mesh_ply.cc</a>.</p>
 
@@ -2592,6 +2624,8 @@ template&lt;typename VoxelType &gt; </div>
       </table>
 </div><div class="memdoc">
 
+<p>Default behaviour is to simplify the mesh. </p>
+
 <p class="definition">Definition at line <a class="el" href="mesh__ply_8cc_source.html#l00040">40</a> of file <a class="el" href="mesh__ply_8cc_source.html">mesh_ply.cc</a>.</p>
 
 </div>
@@ -2627,6 +2661,12 @@ template&lt;typename VoxelType &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">connected_mesh</td><td>if true veracities will be shared between triangles </td></tr>
+  </table>
+  </dd>
+</dl>
 
 <p class="definition">Definition at line <a class="el" href="mesh__ply_8cc_source.html#l00046">46</a> of file <a class="el" href="mesh__ply_8cc_source.html">mesh_ply.cc</a>.</p>
 
@@ -3012,7 +3052,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00034">34</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00036">36</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -3028,7 +3068,7 @@ template&lt;typename VoxelType &gt; </div>
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= {{ <span class="stringliteral">&quot;simple&quot;</span>,</div><div class="line">                                  <span class="stringliteral">&quot;merged&quot;</span>,</div><div class="line">                                  <span class="stringliteral">&quot;fast&quot;</span>}}</div></div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00037">37</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00039">39</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -3062,7 +3102,7 @@ template&lt;typename VoxelType &gt; </div>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

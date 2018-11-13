@@ -71,6 +71,7 @@ This graph shows which files directly or indirectly include this file:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacevoxblox"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox.html">voxblox</a></td></tr>
+<tr class="memdesc:namespacevoxblox"><td class="mdescLeft">&#160;</td><td class="mdescRight">These classes allocate a fixed size array and index it with a hash that is masked so that only its first N bits are non zero. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacevoxblox_1_1io"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html">voxblox::io</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -79,21 +80,27 @@ Namespaces</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:ae2bc498fe69573d9775dc73d636b9544"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:ae2bc498fe69573d9775dc73d636b9544"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#ae2bc498fe69573d9775dc73d636b9544">voxblox::io::LoadBlocksFromFile</a> (const std::string &amp;file_path, typename Layer&lt; VoxelType &gt;::BlockMergingStrategy strategy, Layer&lt; VoxelType &gt; *layer_ptr)</td></tr>
+<tr class="memdesc:ae2bc498fe69573d9775dc73d636b9544"><td class="mdescLeft">&#160;</td><td class="mdescRight">By default, loads blocks without multiple layer support.  <a href="namespacevoxblox_1_1io.html#ae2bc498fe69573d9775dc73d636b9544">More...</a><br /></td></tr>
 <tr class="separator:ae2bc498fe69573d9775dc73d636b9544"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99cd3ed6a797eb896555cb0bb318a4b0"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:a99cd3ed6a797eb896555cb0bb318a4b0"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a99cd3ed6a797eb896555cb0bb318a4b0">voxblox::io::LoadBlocksFromFile</a> (const std::string &amp;file_path, typename Layer&lt; VoxelType &gt;::BlockMergingStrategy strategy, bool multiple_layer_support, Layer&lt; VoxelType &gt; *layer_ptr)</td></tr>
+<tr class="memdesc:a99cd3ed6a797eb896555cb0bb318a4b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">By default, loads blocks without multiple layer support.  <a href="namespacevoxblox_1_1io.html#a99cd3ed6a797eb896555cb0bb318a4b0">More...</a><br /></td></tr>
 <tr class="separator:a99cd3ed6a797eb896555cb0bb318a4b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f05073e94b0699caefe03976244bf72"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:a8f05073e94b0699caefe03976244bf72"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a8f05073e94b0699caefe03976244bf72">voxblox::io::LoadLayer</a> (const std::string &amp;file_path, typename Layer&lt; VoxelType &gt;::Ptr *layer_ptr)</td></tr>
+<tr class="memdesc:a8f05073e94b0699caefe03976244bf72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unlike LoadBlocks, this actually allocates the layer as well.  <a href="namespacevoxblox_1_1io.html#a8f05073e94b0699caefe03976244bf72">More...</a><br /></td></tr>
 <tr class="separator:a8f05073e94b0699caefe03976244bf72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a032bfb82e52e8e7faac2930b8b8e37"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:a9a032bfb82e52e8e7faac2930b8b8e37"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a9a032bfb82e52e8e7faac2930b8b8e37">voxblox::io::LoadLayer</a> (const std::string &amp;file_path, const bool multiple_layer_support, typename Layer&lt; VoxelType &gt;::Ptr *layer_ptr)</td></tr>
+<tr class="memdesc:a9a032bfb82e52e8e7faac2930b8b8e37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unlike LoadBlocks, this actually allocates the layer as well.  <a href="namespacevoxblox_1_1io.html#a9a032bfb82e52e8e7faac2930b8b8e37">More...</a><br /></td></tr>
 <tr class="separator:a9a032bfb82e52e8e7faac2930b8b8e37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad2f237c4a29346ecc2235c1c320d5c6b"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:ad2f237c4a29346ecc2235c1c320d5c6b"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#ad2f237c4a29346ecc2235c1c320d5c6b">voxblox::io::SaveLayer</a> (const Layer&lt; VoxelType &gt; &amp;layer, const std::string &amp;file_path, bool clear_file=true)</td></tr>
+<tr class="memdesc:ad2f237c4a29346ecc2235c1c320d5c6b"><td class="mdescLeft">&#160;</td><td class="mdescRight">By default, clears (truncates) the output file.  <a href="namespacevoxblox_1_1io.html#ad2f237c4a29346ecc2235c1c320d5c6b">More...</a><br /></td></tr>
 <tr class="separator:ad2f237c4a29346ecc2235c1c320d5c6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63c977c42b1b0960af7e6099d1714803"><td class="memTemplParams" colspan="2">template&lt;typename VoxelType &gt; </td></tr>
 <tr class="memitem:a63c977c42b1b0960af7e6099d1714803"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacevoxblox_1_1io.html#a63c977c42b1b0960af7e6099d1714803">voxblox::io::SaveLayerSubset</a> (const Layer&lt; VoxelType &gt; &amp;layer, const std::string &amp;file_path, const BlockIndexList &amp;blocks_to_include, bool include_all_blocks)</td></tr>
+<tr class="memdesc:a63c977c42b1b0960af7e6099d1714803"><td class="mdescLeft">&#160;</td><td class="mdescRight">Saves only some parts of the layer to the file. Clears the file by default.  <a href="namespacevoxblox_1_1io.html#a63c977c42b1b0960af7e6099d1714803">More...</a><br /></td></tr>
 <tr class="separator:a63c977c42b1b0960af7e6099d1714803"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
@@ -102,7 +109,7 @@ Functions</h2></td></tr>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

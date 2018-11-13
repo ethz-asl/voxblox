@@ -132,9 +132,9 @@ Additional Inherited Members</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>An integrator that prioritizes speed over everything else. </p>
-<p>Rays are cast from the pointcloud to the sensor origin. If a ray intersects max_consecutive_ray_collisions voxels in a row that have already been updated by other rays from the same cloud, it is terminated early. This results in a large reduction in the number of freespace updates and greatly improves runtime while ensuring all voxels receive at least a minimum number of updates. Speed is further enhanced through limiting the number of rays cast from each voxel as set by start_voxel_subsampling_factor and use of the <a class="el" href="classvoxblox_1_1ApproxHashSet.html">ApproxHashSet</a>. Up to an order of magnitude faster then the other integrators for small voxels. </p>
+<p>Rays are cast from the pointcloud to the sensor origin. If a ray intersects max_consecutive_ray_collisions voxels in a row that have already been updated by other rays from the same cloud, it is terminated early. This results in a large reduction in the number of freespace updates and greatly improves runtime while ensuring all voxels receive at least a minimum number of updates. Speed is further enhanced through limiting the number of rays cast from each voxel as set by start_voxel_subsampling_factor and use of the <a class="el" href="classvoxblox_1_1ApproxHashSet.html" title="Acts as a fast and thread safe set, with the serious limitation of both false-negatives and false pos...">ApproxHashSet</a>. Up to an order of magnitude faster then the other integrators for small voxels. </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00259">259</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00261">261</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a64efb74aca83eee393b9aaed81409d91"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a64efb74aca83eee393b9aaed81409d91">&#9670;&nbsp;</a></span>FastTsdfIntegrator()</h2>
@@ -170,7 +170,7 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00263">263</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00265">265</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -306,7 +306,7 @@ Additional Inherited Members</h2></td></tr>
 
 <p>only needs to zero the above 8mb of memory once every 10,000 scans (uses an additional 80,000 bytes) </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00293">293</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00295">295</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +332,7 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Used in terminating the integration early if it exceeds a time limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00313">313</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00315">315</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -359,7 +359,7 @@ Additional Inherited Members</h2></td></tr>
 <p>Two approximate sets are used below. </p>
 <p>The limitations of these sets are outlined in <a class="el" href="approx__hash__array_8h.html">approx_hash_array.h</a>, but in brief they are thread safe and very fast, but have a small chance of returning false positives and false negatives. As rejecting a ray or integrating an uninformative ray are not very harmful operations this trade-off works well in this integrator. uses 2^20 bytes (8 megabytes) of ram per tester A testers false negative rate is inversely proportional to its size </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00288">288</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00290">290</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -386,7 +386,7 @@ Additional Inherited Members</h2></td></tr>
 <p>Voxel start locations are added to this set before ray casting. </p>
 <p>The ray casting only occurs if no ray has been cast from this location for this scan. </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00301">301</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00303">303</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -413,7 +413,7 @@ Additional Inherited Members</h2></td></tr>
 <p>This set records which voxels a scans rays have passed through. </p>
 <p>If a ray moves through max_consecutive_ray_collisions voxels in a row that have already been seen this scan, it is deemed to be adding no new information and the casting stops. </p>
 
-<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00310">310</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tsdf__integrator_8h_source.html#l00312">312</a> of file <a class="el" href="tsdf__integrator_8h_source.html">tsdf_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -427,7 +427,7 @@ Additional Inherited Members</h2></td></tr>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

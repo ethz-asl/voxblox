@@ -30,6 +30,9 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>Performs the marching cubes algorithm to generate a mesh layer from a TSDF.  
+ <a href="classvoxblox_1_1MarchingCubes.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -46,6 +49,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a8cd94277823d3959bde9116ddbd870b6"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MarchingCubes.html#a8cd94277823d3959bde9116ddbd870b6">interpolateEdgeVertices</a> (const Eigen::Matrix&lt; <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a>, 3, 8 &gt; &amp;vertex_coords, const Eigen::Matrix&lt; <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a>, 8, 1 &gt; &amp;vertex_sdf, Eigen::Matrix&lt; <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a>, 3, 12 &gt; *edge_coords)</td></tr>
 <tr class="separator:a8cd94277823d3959bde9116ddbd870b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8682842ac972d5316c978ac644d458f7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MarchingCubes.html#a8682842ac972d5316c978ac644d458f7">interpolateVertex</a> (const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;vertex1, const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;vertex2, float sdf1, float sdf2)</td></tr>
+<tr class="memdesc:a8682842ac972d5316c978ac644d458f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs linear interpolation on two cube corners to find the approximate zero crossing (surface) value.  <a href="#a8682842ac972d5316c978ac644d458f7">More...</a><br /></td></tr>
 <tr class="separator:a8682842ac972d5316c978ac644d458f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adbb48ecb506b6af54876b556aa128b24"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MarchingCubes.html#adbb48ecb506b6af54876b556aa128b24">meshCube</a> (const Eigen::Matrix&lt; <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a>, 3, 8 &gt; &amp;vertex_coordinates, const Eigen::Matrix&lt; <a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a>, 8, 1 &gt; &amp;vertex_sdf, <a class="el" href="namespacevoxblox.html#a2a106bfa663d26e7879dfc800cc587c0">TriangleVector</a> *triangles)</td></tr>
 <tr class="separator:adbb48ecb506b6af54876b556aa128b24"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -60,8 +64,10 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:ae7c11d6bab7e53e1767d20cf11c55ba5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00030">30</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<div class="textblock"><p>Performs the marching cubes algorithm to generate a mesh layer from a TSDF. </p>
+<p>Implementation taken from Open Chisel <a href="https://github.com/personalrobotics/OpenChisel">https://github.com/personalrobotics/OpenChisel</a> </p>
+
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00035">35</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a5285ee731aead5952111123a331bd28c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5285ee731aead5952111123a331bd28c">&#9670;&nbsp;</a></span>MarchingCubes()</h2>
@@ -86,7 +92,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00037">37</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00042">42</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -113,7 +119,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00038">38</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00043">43</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -142,7 +148,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00110">110</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00115">115</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -186,7 +192,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00122">122</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00127">127</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -236,7 +242,9 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00142">142</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p>Performs linear interpolation on two cube corners to find the approximate zero crossing (surface) value. </p>
+
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00149">149</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -280,7 +288,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00040">40</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00045">45</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -330,7 +338,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00067">67</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00072">72</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -355,7 +363,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= {{0, 1}, {1, 2}, {2, 3}, {3, 0},</div><div class="line">                                             {4, 5}, {5, 6}, {6, 7}, {7, 4},</div><div class="line">                                             {0, 4}, {1, 5}, {2, 6}, {3, 7}}</div></div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00035">35</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00040">40</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -379,7 +387,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00034">34</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="marching__cubes_8h_source.html#l00039">39</a> of file <a class="el" href="marching__cubes_8h_source.html">marching_cubes.h</a>.</p>
 
 </div>
 </div>
@@ -393,7 +401,7 @@ Static Public Attributes</h2></td></tr>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

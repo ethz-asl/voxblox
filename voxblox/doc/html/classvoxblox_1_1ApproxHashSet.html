@@ -30,6 +30,9 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>Acts as a fast and thread safe set, with the serious limitation of both false-negatives and false positives being possible.  
+ <a href="classvoxblox_1_1ApproxHashSet.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -37,18 +40,21 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9c5c74b877f6f13a3abf527a033d6e3e"><td class="memItemLeft" align="right" valign="top">EIGEN_MAKE_ALIGNED_OPERATOR_NEW&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html#a9c5c74b877f6f13a3abf527a033d6e3e">ApproxHashSet</a> ()</td></tr>
 <tr class="separator:a9c5c74b877f6f13a3abf527a033d6e3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15dc03d74eb003c37afadb073fa50166"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html#a15dc03d74eb003c37afadb073fa50166">isHashCurrentlyPresent</a> (const size_t &amp;hash)</td></tr>
+<tr class="memdesc:a15dc03d74eb003c37afadb073fa50166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if an element with the same hash is currently in the set, false otherwise.  <a href="#a15dc03d74eb003c37afadb073fa50166">More...</a><br /></td></tr>
 <tr class="separator:a15dc03d74eb003c37afadb073fa50166"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a225cb1adf0e415cd84c891b7f64c0bbd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html#a225cb1adf0e415cd84c891b7f64c0bbd">isHashCurrentlyPresent</a> (const IndexType &amp;index, size_t *hash)</td></tr>
 <tr class="separator:a225cb1adf0e415cd84c891b7f64c0bbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a972398b438336721c570da7866053aca"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html#a972398b438336721c570da7866053aca">isHashCurrentlyPresent</a> (const IndexType &amp;index)</td></tr>
 <tr class="separator:a972398b438336721c570da7866053aca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cc43075192919e83a3f4aaaecb2bac1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html#a2cc43075192919e83a3f4aaaecb2bac1">replaceHash</a> (const size_t &amp;hash)</td></tr>
+<tr class="memdesc:a2cc43075192919e83a3f4aaaecb2bac1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if it replaced the element in the masked_hash's with the hash of the given element.  <a href="#a2cc43075192919e83a3f4aaaecb2bac1">More...</a><br /></td></tr>
 <tr class="separator:a2cc43075192919e83a3f4aaaecb2bac1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a015a3829d1f10ae807d20ffd0e9e0295"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html#a015a3829d1f10ae807d20ffd0e9e0295">replaceHash</a> (const IndexType &amp;index, size_t *hash)</td></tr>
 <tr class="separator:a015a3829d1f10ae807d20ffd0e9e0295"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94b083472c3bcd1f051e779b95944098"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html#a94b083472c3bcd1f051e779b95944098">replaceHash</a> (const IndexType &amp;index)</td></tr>
 <tr class="separator:a94b083472c3bcd1f051e779b95944098"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f164e77047da072f7810ccc75393021"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1ApproxHashSet.html#a5f164e77047da072f7810ccc75393021">resetApproxSet</a> ()</td></tr>
+<tr class="memdesc:a5f164e77047da072f7810ccc75393021"><td class="mdescLeft">&#160;</td><td class="mdescRight">If unmasked_bits is large, the array takes a lot of memory, this makes clearing it slow.  <a href="#a5f164e77047da072f7810ccc75393021">More...</a><br /></td></tr>
 <tr class="separator:a5f164e77047da072f7810ccc75393021"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
@@ -71,8 +77,10 @@ Static Private Attributes</h2></td></tr>
 <div class="textblock"><h3>template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexType, typename IndexTypeHasher&gt;<br />
 class voxblox::ApproxHashSet&lt; unmasked_bits, full_reset_threshold, IndexType, IndexTypeHasher &gt;</h3>
 
+<p>Acts as a fast and thread safe set, with the serious limitation of both false-negatives and false positives being possible. </p>
+<p>A false positive occurs if two different elements have the same hash, and the other element was already added to the set. A false negative occurs if an element was removed to add another element with the same masked hash. The chance of this happening is inversely proportional to 2^unmasked_bits. Uses at least (2^unmasked_bits + full_reset_threshold) * sizeof(StoreElement) bytes of ram. Note that the reset function is not thread safe. </p>
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00070">70</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00076">76</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a9c5c74b877f6f13a3abf527a033d6e3e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9c5c74b877f6f13a3abf527a033d6e3e">&#9670;&nbsp;</a></span>ApproxHashSet()</h2>
@@ -99,7 +107,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00074">74</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00080">80</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -130,7 +138,10 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00090">90</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p>Returns true if an element with the same hash is currently in the set, false otherwise. </p>
+<p>Note due to the masking of bits, many elements that were previously inserted into the <a class="el" href="classvoxblox_1_1ApproxHashSet.html" title="Acts as a fast and thread safe set, with the serious limitation of both false-negatives and false pos...">ApproxHashSet</a> have been overwritten by other values. </p>
+
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00097">97</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -170,7 +181,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00096">96</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00103">103</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -200,7 +211,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00102">102</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00109">109</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -230,7 +241,12 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00114">114</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p>Returns true if it replaced the element in the masked_hash's with the hash of the given element. </p>
+<p>Returns false if this hash was already there and no replacement was needed. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<br />
+THIS IS THE MOST EXPENSIVE FUNCTION IN ALL OF VOXBLOX. PROILE AND TEST AFTER EVEN THE MOST SUPERFICIAL CHANGE. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!<br />
+Also note that while the below layout of ifs and variables may not appear the most efficient the compiler seems to do some black magic with it that makes it come out ahead of other formulations. </p>
+
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00125">125</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -270,7 +286,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00125">125</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00136">136</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -300,7 +316,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00131">131</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00142">142</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -329,7 +345,10 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00142">142</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p>If unmasked_bits is large, the array takes a lot of memory, this makes clearing it slow. </p>
+<p>However offsetting which bin hashes are placed into has the same effect. Once we run out of room to offset by (determined by full_reset_threshold) we clear the memory). This function is not thread safe. </p>
+
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00155">155</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -356,7 +375,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00160">160</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00173">173</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -382,7 +401,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00165">165</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00178">178</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +427,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00162">162</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00175">175</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -434,7 +453,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00163">163</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00176">176</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -460,7 +479,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div><div class="line">      (1 &lt;&lt; unmasked_bits) + full_reset_threshold</div></div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00158">158</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="approx__hash__array_8h_source.html#l00171">171</a> of file <a class="el" href="approx__hash__array_8h_source.html">approx_hash_array.h</a>.</p>
 
 </div>
 </div>
@@ -473,7 +492,7 @@ template&lt;size_t unmasked_bits, size_t full_reset_threshold, typename IndexTyp
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

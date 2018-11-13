@@ -1,13 +1,13 @@
 <map id="tsdf_map.cc" name="tsdf_map.cc">
-<area shape="rect" id="node2" href="$tsdf__map_8h.html" title="voxblox/core/tsdf_map.h" alt="" coords="496,80,661,107"/>
-<area shape="rect" id="node6" href="$common_8h.html" title="voxblox/core/common.h" alt="" coords="705,751,866,777"/>
-<area shape="rect" id="node17" href="$layer_8h.html" title="voxblox/core/layer.h" alt="" coords="907,155,1045,181"/>
-<area shape="rect" id="node27" href="$voxel_8h.html" title="voxblox/core/voxel.h" alt="" coords="455,587,598,613"/>
-<area shape="rect" id="node21" href="$block_8h.html" title="voxblox/core/block.h" alt="" coords="661,326,803,353"/>
-<area shape="rect" id="node29" href="$block__hash_8h.html" title="voxblox/core/block\l_hash.h" alt="" coords="1037,661,1168,703"/>
-<area shape="rect" id="node31" href="$layer__inl_8h.html" title="voxblox/core/layer\l_inl.h" alt="" coords="1371,229,1499,271"/>
-<area shape="rect" id="node24" href="$block__inl_8h.html" title="voxblox/core/block\l_inl.h" alt="" coords="448,408,579,449"/>
-<area shape="rect" id="node25" href="$voxel__utils_8h.html" title="voxblox/utils/voxel\l_utils.h" alt="" coords="521,497,652,539"/>
-<area shape="rect" id="node26" href="$color_8h.html" title="voxblox/core/color.h" alt="" coords="584,669,723,695"/>
-<area shape="rect" id="node39" href="$protobuf__utils_8h.html" title="voxblox/utils/protobuf\l_utils.h" alt="" coords="1305,319,1452,360"/>
+<area shape="rect" id="node2" href="$tsdf__map_8h.html" title="voxblox/core/tsdf_map.h" alt="" coords="1480,80,1645,107"/>
+<area shape="rect" id="node7" href="$common_8h.html" title="voxblox/core/common.h" alt="" coords="1682,751,1843,777"/>
+<area shape="rect" id="node18" href="$layer_8h.html" title="voxblox/core/layer.h" alt="" coords="1600,155,1739,181"/>
+<area shape="rect" id="node27" href="$voxel_8h.html" title="voxblox/core/voxel.h" alt="" coords="1522,587,1665,613"/>
+<area shape="rect" id="node21" href="$block_8h.html" title="voxblox/core/block.h" alt="" coords="1943,326,2086,353"/>
+<area shape="rect" id="node29" href="$block__hash_8h.html" title="voxblox/core/block\l_hash.h" alt="" coords="1335,661,1465,703"/>
+<area shape="rect" id="node31" href="$layer__inl_8h.html" title="voxblox/core/layer\l_inl.h" alt="" coords="901,229,1029,271"/>
+<area shape="rect" id="node24" href="$block__inl_8h.html" title="voxblox/core/block\l_inl.h" alt="" coords="2069,408,2200,449"/>
+<area shape="rect" id="node25" href="$voxel__utils_8h.html" title="voxblox/utils/voxel\l_utils.h" alt="" coords="1901,497,2032,539"/>
+<area shape="rect" id="node26" href="$color_8h.html" title="voxblox/core/color.h" alt="" coords="1625,669,1764,695"/>
+<area shape="rect" id="node39" href="$protobuf__utils_8h.html" title="voxblox/utils/protobuf\l_utils.h" alt="" coords="699,319,845,360"/>
 </map>

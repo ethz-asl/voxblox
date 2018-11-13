@@ -29,6 +29,9 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>Integrates a TSDF layer to incrementally update a mesh layer using marching cubes.  
+ <a href="classvoxblox_1_1MeshIntegrator.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -40,14 +43,17 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6da24ede0a8e6bd55d04512d209f951b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#a6da24ede0a8e6bd55d04512d209f951b">extractMeshOnBorder</a> (const <a class="el" href="classvoxblox_1_1Block.html">Block</a>&lt; VoxelType &gt; &amp;block, const <a class="el" href="namespacevoxblox.html#a2c9d5fca3f2bd513c7a9c6a036e19345">VoxelIndex</a> &amp;index, const <a class="el" href="namespacevoxblox.html#a0c9f3cab2910024e06fc5bfe9adb99b9">Point</a> &amp;coords, <a class="el" href="namespacevoxblox.html#adb874cd6023e625dd1fc2d48272f5f4d">VertexIndex</a> *next_mesh_index, <a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a> *mesh)</td></tr>
 <tr class="separator:a6da24ede0a8e6bd55d04512d209f951b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9618b323ea5972475aaf610bd615c834"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#a9618b323ea5972475aaf610bd615c834">generateMesh</a> (bool only_mesh_updated_blocks, bool clear_updated_flag)</td></tr>
+<tr class="memdesc:a9618b323ea5972475aaf610bd615c834"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generates mesh from the tsdf layer.  <a href="#a9618b323ea5972475aaf610bd615c834">More...</a><br /></td></tr>
 <tr class="separator:a9618b323ea5972475aaf610bd615c834"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a539a91c7df439f8f898c25ec48713928"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#a539a91c7df439f8f898c25ec48713928">generateMeshBlocksFunction</a> (const <a class="el" href="namespacevoxblox.html#ab6a2a9c55d969e553791db1f7472a8f3">BlockIndexList</a> &amp;all_tsdf_blocks, bool clear_updated_flag, <a class="el" href="classvoxblox_1_1ThreadSafeIndex.html">ThreadSafeIndex</a> *index_getter)</td></tr>
 <tr class="separator:a539a91c7df439f8f898c25ec48713928"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e82b34cb011dd16144ffa42c090f1b8"><td class="memItemLeft" align="right" valign="top">EIGEN_MAKE_ALIGNED_OPERATOR_NEW void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#a8e82b34cb011dd16144ffa42c090f1b8">initFromSdfLayer</a> (const <a class="el" href="classvoxblox_1_1Layer.html">Layer</a>&lt; VoxelType &gt; &amp;sdf_layer)</td></tr>
 <tr class="separator:a8e82b34cb011dd16144ffa42c090f1b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2768aae3e10f3dc5a95b03f7e241e8a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#ae2768aae3e10f3dc5a95b03f7e241e8a">MeshIntegrator</a> (const <a class="el" href="structvoxblox_1_1MeshIntegratorConfig.html">MeshIntegratorConfig</a> &amp;config, <a class="el" href="classvoxblox_1_1Layer.html">Layer</a>&lt; VoxelType &gt; *sdf_layer, <a class="el" href="classvoxblox_1_1MeshLayer.html">MeshLayer</a> *mesh_layer)</td></tr>
+<tr class="memdesc:ae2768aae3e10f3dc5a95b03f7e241e8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use this constructor in case you would like to modify the layer during mesh extraction, i.e.  <a href="#ae2768aae3e10f3dc5a95b03f7e241e8a">More...</a><br /></td></tr>
 <tr class="separator:ae2768aae3e10f3dc5a95b03f7e241e8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5775861860fa13c36e7415bf644c502a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#a5775861860fa13c36e7415bf644c502a">MeshIntegrator</a> (const <a class="el" href="structvoxblox_1_1MeshIntegratorConfig.html">MeshIntegratorConfig</a> &amp;config, const <a class="el" href="classvoxblox_1_1Layer.html">Layer</a>&lt; VoxelType &gt; &amp;sdf_layer, <a class="el" href="classvoxblox_1_1MeshLayer.html">MeshLayer</a> *mesh_layer)</td></tr>
+<tr class="memdesc:a5775861860fa13c36e7415bf644c502a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This constructor will not allow you to modify the layer, i.e.  <a href="#a5775861860fa13c36e7415bf644c502a">More...</a><br /></td></tr>
 <tr class="separator:a5775861860fa13c36e7415bf644c502a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec8eb453d8839aa561c0e30b6299de47"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#aec8eb453d8839aa561c0e30b6299de47">updateMeshColor</a> (const <a class="el" href="classvoxblox_1_1Block.html">Block</a>&lt; VoxelType &gt; &amp;block, <a class="el" href="structvoxblox_1_1Mesh.html">Mesh</a> *mesh)</td></tr>
 <tr class="separator:aec8eb453d8839aa561c0e30b6299de47"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -69,6 +75,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a73843c4d8334a9b2bf3000f080d2ada3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classvoxblox_1_1Layer.html">Layer</a>&lt; VoxelType &gt; *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#a73843c4d8334a9b2bf3000f080d2ada3">sdf_layer_const_</a></td></tr>
 <tr class="separator:a73843c4d8334a9b2bf3000f080d2ada3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9d0ccd49a8ed83f228067146a6e104c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvoxblox_1_1Layer.html">Layer</a>&lt; VoxelType &gt; *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#ab9d0ccd49a8ed83f228067146a6e104c">sdf_layer_mutable_</a></td></tr>
+<tr class="memdesc:ab9d0ccd49a8ed83f228067146a6e104c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Having both a const and a mutable pointer to the layer allows this integrator to work both with a const layer (in case you don't want to clear the updated flag) and mutable layer (in case you do want to clear the updated flag).  <a href="#ab9d0ccd49a8ed83f228067146a6e104c">More...</a><br /></td></tr>
 <tr class="separator:ab9d0ccd49a8ed83f228067146a6e104c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a581f33200bc94279251b1a178826de28"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevoxblox.html#a69a49f8f7c4d44b7d31daab36e4bc7dc">FloatingPoint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvoxblox_1_1MeshIntegrator.html#a581f33200bc94279251b1a178826de28">voxel_size_</a></td></tr>
 <tr class="separator:a581f33200bc94279251b1a178826de28"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -83,8 +90,9 @@ Protected Attributes</h2></td></tr>
 <div class="textblock"><h3>template&lt;typename VoxelType&gt;<br />
 class voxblox::MeshIntegrator&lt; VoxelType &gt;</h3>
 
+<p>Integrates a TSDF layer to incrementally update a mesh layer using marching cubes. </p>
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00055">55</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00059">59</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae2768aae3e10f3dc5a95b03f7e241e8a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae2768aae3e10f3dc5a95b03f7e241e8a">&#9670;&nbsp;</a></span>MeshIntegrator() <span class="overload">[1/2]</span></h2>
@@ -128,7 +136,10 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00071">71</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p>Use this constructor in case you would like to modify the layer during mesh extraction, i.e. </p>
+<p>modify the updated flag. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00077">77</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -174,7 +185,10 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00090">90</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p>This constructor will not allow you to modify the layer, i.e. </p>
+<p>clear the updated flag. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00098">98</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -215,7 +229,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00163">163</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00171">171</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -273,7 +287,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00240">240</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00248">248</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -331,7 +345,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00269">269</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00277">277</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -371,7 +385,9 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00111">111</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p>Generates mesh from the tsdf layer. </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00119">119</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -417,7 +433,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00142">142</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00150">150</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -447,7 +463,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00059">59</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00063">63</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -487,7 +503,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00339">339</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00347">347</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -517,7 +533,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00218">218</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00226">226</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -544,7 +560,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00376">376</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00386">386</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -570,7 +586,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00381">381</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00391">391</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -596,7 +612,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00362">362</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00370">370</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -622,7 +638,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00384">384</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00394">394</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -648,7 +664,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00371">371</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00381">381</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -674,7 +690,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00369">369</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00379">379</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -700,7 +716,9 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00368">368</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p>Having both a const and a mutable pointer to the layer allows this integrator to work both with a const layer (in case you don't want to clear the updated flag) and mutable layer (in case you do want to clear the updated flag). </p>
+
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00378">378</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -726,7 +744,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00374">374</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00384">384</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -752,7 +770,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00379">379</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00389">389</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -778,7 +796,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00375">375</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00385">385</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -804,7 +822,7 @@ template&lt;typename VoxelType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00380">380</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="mesh__integrator_8h_source.html#l00390">390</a> of file <a class="el" href="mesh__integrator_8h_source.html">mesh_integrator.h</a>.</p>
 
 </div>
 </div>
@@ -817,7 +835,7 @@ template&lt;typename VoxelType &gt; </div>
 <hr size="1"><div style="align: right;">
 <a href="http://wiki.ros.org/voxblox">voxblox</a><br />
 Author(s): Helen Oleynikova <helen.oleynikova@mavt.ethz.ch>, Marius Fehr <marius.fehr@mavt.ethz.ch></br />
-<small>autogenerated on Mon Nov 12 2018 18:18:02</small>
+<small>autogenerated on Tue Nov 13 2018 09:18:52</small>
 </div>
 </body>
 </html>

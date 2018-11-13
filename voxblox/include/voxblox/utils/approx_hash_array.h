@@ -114,9 +114,8 @@ class ApproxHashSet {
    * Returns true if it replaced the element in the masked_hash's with the hash
    * of the given element.
    * Returns false if this hash was already there and no replacement was needed.
-   * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
    * THIS IS THE MOST EXPENSIVE FUNCTION IN ALL OF VOXBLOX.
-   * PROILE AND TEST AFTER EVEN THE MOST SUPERFICIAL CHANGE.
+   * PROILE AND TEST AFTER EVEN THE MOST SUPERFICIAL CHANGE
    * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
    * Also note that while the below layout of ifs and variables may not appear
    * the most efficient the compiler seems to do some black magic with it that
