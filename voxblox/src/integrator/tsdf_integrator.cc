@@ -51,7 +51,6 @@ TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
 TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
                                        Layer<TsdfVoxel>* layer)
     : config_(config) {
-  CHECK_NOTNULL(layer);
 
   setLayer(layer);
 
