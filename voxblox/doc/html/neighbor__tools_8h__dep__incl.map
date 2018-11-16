@@ -1,8 +1,0 @@
-<map id="neighbor_tools.h" name="neighbor_tools.h">
-<area shape="rect" id="node2" href="$esdf__integrator_8h.html" title="esdf_integrator.h" alt="" coords="260,80,379,107"/>
-<area shape="rect" id="node7" href="$neighbor__tools_8cc.html" title="neighbor_tools.cc" alt="" coords="403,80,527,107"/>
-<area shape="rect" id="node3" href="$esdf__integrator_8cc.html" title="esdf_integrator.cc" alt="" coords="5,155,132,181"/>
-<area shape="rect" id="node4" href="$test__clear__spheres_8cc.html" title="test_clear_spheres.cc" alt="" coords="156,155,307,181"/>
-<area shape="rect" id="node5" href="$test__sdf__integrators_8cc.html" title="test_sdf_integrators.cc" alt="" coords="331,155,486,181"/>
-<area shape="rect" id="node6" href="$tsdf__to__esdf_8cc.html" title="tsdf_to_esdf.cc" alt="" coords="510,155,622,181"/>
-</map>
