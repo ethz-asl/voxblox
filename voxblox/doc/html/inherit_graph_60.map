@@ -1,6 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classvoxblox_1_1TsdfIntegratorBase.html" title="Base class to the simple, merged and fast TSDF integrators. " alt="" coords="5,56,192,83"/>
-<area shape="rect" id="node2" href="$classvoxblox_1_1FastTsdfIntegrator.html" title="An integrator that prioritizes speed over everything else. " alt="" coords="248,5,431,32"/>
-<area shape="rect" id="node3" href="$classvoxblox_1_1MergedTsdfIntegrator.html" title="Uses ray bundling to improve integration speed, points which lie in the same voxel are &quot;merged&quot; into ..." alt="" coords="240,56,439,83"/>
-<area shape="rect" id="node4" href="$classvoxblox_1_1SimpleTsdfIntegrator.html" title="Basic TSDF integrator. " alt="" coords="241,107,437,133"/>
-</map>

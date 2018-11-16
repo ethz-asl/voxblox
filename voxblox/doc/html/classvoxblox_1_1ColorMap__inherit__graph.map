@@ -1,7 +1,0 @@
-<map id="voxblox::ColorMap" name="voxblox::ColorMap">
-<area shape="rect" id="node2" href="$classvoxblox_1_1GrayscaleColorMap.html" title="voxblox::GrayscaleColorMap" alt="" coords="201,5,392,32"/>
-<area shape="rect" id="node3" href="$classvoxblox_1_1InverseGrayscaleColorMap.html" title="voxblox::InverseGrayscale\lColorMap" alt="" coords="208,57,385,98"/>
-<area shape="rect" id="node4" href="$classvoxblox_1_1InverseRainbowColorMap.html" title="voxblox::InverseRainbowColorMap" alt="" coords="184,123,409,149"/>
-<area shape="rect" id="node5" href="$classvoxblox_1_1IronbowColorMap.html" title="voxblox::IronbowColorMap" alt="" coords="208,173,385,200"/>
-<area shape="rect" id="node6" href="$classvoxblox_1_1RainbowColorMap.html" title="voxblox::RainbowColorMap" alt="" coords="205,224,388,251"/>
-</map>

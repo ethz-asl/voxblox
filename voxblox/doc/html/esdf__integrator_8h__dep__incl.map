@@ -1,6 +1,0 @@
-<map id="esdf_integrator.h" name="esdf_integrator.h">
-<area shape="rect" id="node2" href="$esdf__integrator_8cc.html" title="esdf_integrator.cc" alt="" coords="5,80,132,107"/>
-<area shape="rect" id="node3" href="$test__clear__spheres_8cc.html" title="test_clear_spheres.cc" alt="" coords="156,80,307,107"/>
-<area shape="rect" id="node4" href="$test__sdf__integrators_8cc.html" title="test_sdf_integrators.cc" alt="" coords="331,80,486,107"/>
-<area shape="rect" id="node5" href="$tsdf__to__esdf_8cc.html" title="tsdf_to_esdf.cc" alt="" coords="510,80,622,107"/>
-</map>

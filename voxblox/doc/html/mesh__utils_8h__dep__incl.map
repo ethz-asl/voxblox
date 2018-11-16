@@ -1,9 +1,0 @@
-<map id="mesh_utils.h" name="mesh_utils.h">
-<area shape="rect" id="node2" href="$mesh__layer_8h.html" title="mesh_layer.h" alt="" coords="46,80,146,107"/>
-<area shape="rect" id="node3" href="$mesh__ply_8h.html" title="mesh_ply.h" alt="" coords="183,155,273,181"/>
-<area shape="rect" id="node4" href="$sdf__ply_8h.html" title="sdf_ply.h" alt="" coords="59,229,133,256"/>
-<area shape="rect" id="node8" href="$mesh__integrator_8h.html" title="mesh_integrator.h" alt="" coords="33,155,159,181"/>
-<area shape="rect" id="node6" href="$test__merge__integration_8cc.html" title="test_merge_integration.cc" alt="" coords="113,304,285,331"/>
-<area shape="rect" id="node7" href="$mesh__ply_8cc.html" title="mesh_ply.cc" alt="" coords="236,229,332,256"/>
-<area shape="rect" id="node5" href="$sdf__ply_8cc.html" title="sdf_ply.cc" alt="" coords="5,304,88,331"/>
-</map>

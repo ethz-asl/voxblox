@@ -1,8 +1,0 @@
-<map id="layer_utils.h" name="layer_utils.h">
-<area shape="rect" id="node2" href="$layer__utils_8cc.html" title="layer_utils.cc" alt="" coords="5,80,104,107"/>
-<area shape="rect" id="node3" href="$test__clear__spheres_8cc.html" title="test_clear_spheres.cc" alt="" coords="129,80,279,107"/>
-<area shape="rect" id="node4" href="$test__layer_8cc.html" title="test_layer.cc" alt="" coords="303,80,401,107"/>
-<area shape="rect" id="node5" href="$test__layer__utils_8cc.html" title="test_layer_utils.cc" alt="" coords="425,80,553,107"/>
-<area shape="rect" id="node6" href="$test__merge__integration_8cc.html" title="test_merge_integration.cc" alt="" coords="578,80,750,107"/>
-<area shape="rect" id="node7" href="$test__sdf__integrators_8cc.html" title="test_sdf_integrators.cc" alt="" coords="775,80,929,107"/>
-</map>

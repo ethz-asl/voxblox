@@ -1,7 +1,0 @@
-<map id="simulation_world.h" name="simulation_world.h">
-<area shape="rect" id="node2" href="$simulation__world_8cc.html" title="simulation_world.cc" alt="" coords="5,80,143,107"/>
-<area shape="rect" id="node3" href="$test__clear__spheres_8cc.html" title="test_clear_spheres.cc" alt="" coords="167,80,317,107"/>
-<area shape="rect" id="node4" href="$test__layer__utils_8cc.html" title="test_layer_utils.cc" alt="" coords="342,80,470,107"/>
-<area shape="rect" id="node5" href="$test__merge__integration_8cc.html" title="test_merge_integration.cc" alt="" coords="495,80,667,107"/>
-<area shape="rect" id="node6" href="$test__sdf__integrators_8cc.html" title="test_sdf_integrators.cc" alt="" coords="691,80,846,107"/>
-</map>
