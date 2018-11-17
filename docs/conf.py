@@ -35,7 +35,7 @@ exhale_args = {
     "doxygenStripFromPath": "..",
     "createTreeView": True,
     "exhaleExecutesDoxygen": True,
-    "exhaleUseDoxyfile": True
+    "exhaleUseDoxyfile": True,
     "pageLevelConfigMeta": ":github_url: https://github.com/ethz-asl/voxblox"
 }
 
