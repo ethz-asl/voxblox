@@ -7,7 +7,8 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 extensions = [
     # there may be others here already, e.g. 'sphinx.ext.mathjax'
     'breathe',
-    'exhale'
+    'exhale',
+    'sphinx.ext.autosectionlabel'
 ]
 
 # Setup the breathe extension
@@ -17,7 +18,7 @@ breathe_default_project = "voxblox"
 # Setup the exhale extension
 exhale_args = {
     # These arguments are required
-    "verboseBuild": True,
+    "verboseBuild": False,
     "containmentFolder": "./api",
     "rootFileName": "library_root.rst",
     "rootFileTitle": "Library API",

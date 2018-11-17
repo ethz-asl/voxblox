@@ -53,7 +53,8 @@
 
 namespace voxblox {
 
-/** A class that performs point matching in an ICP like fashion to align a
+/**
+ * A class that performs point matching in an ICP like fashion to align a
  * pointcloud with the existing TSDF information. Note the process is slightly
  * different to traditional ICP:\n
  * 1) A "mini batch" of points is selected and the transform that gives the
@@ -75,11 +76,13 @@ class ICP {
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     bool refine_roll_pitch = false;
-    /** Number of points used in each alignment step. To allow simple threading
-       the ICP process is split up into a large number of separate alignments
-       performed on small pointclouds. This parameter dictates how many points
-       are used in each "mini batch". The result are then combined weighting
-       them by an estimate of the information gained by the alignment.*/
+    /**
+     *  Number of points used in each alignment step. To allow simple threading
+     *   the ICP process is split up into a large number of separate alignments
+     *  performed on small pointclouds. This parameter dictates how many points
+     *  are used in each "mini batch". The result are then combined weighting
+     *  them by an estimate of the information gained by the alignment.
+     */
     int mini_batch_size = 20;
     /**
      * Ratio of points that must lie within the truncation distance of an
