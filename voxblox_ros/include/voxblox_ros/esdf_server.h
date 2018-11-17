@@ -38,8 +38,10 @@ class EsdfServer : public TsdfServer {
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
-  // Call updateMesh if you want everything updated; call this specifically
-  // if you don't want the mesh or visualization.
+  /**
+   * Call updateMesh if you want everything updated; call this specifically
+   * if you don't want the mesh or visualization.
+   */
   void updateEsdf();
   // Update the ESDF all at once; clear the existing map.
   void updateEsdfBatch(bool full_euclidean = false);
@@ -61,15 +63,18 @@ class EsdfServer : public TsdfServer {
   float getTraversabilityRadius() const;
   void setTraversabilityRadius(float traversability_radius);
 
-  // These are for enabling or disabling incremental update of the ESDF. Use
-  // carefully.
+  /**
+   * These are for enabling or disabling incremental update of the ESDF. Use
+   * carefully.
+   */
   void disableIncrementalUpdate() { incremental_update_ = false; }
   void enableIncrementalUpdate() { incremental_update_ = true; }
 
   virtual void clear();
 
  protected:
-  // Sets up publishing and subscribing. Should only be called from constructor.
+  /// Sets up publishing and subscribing. Should only be called from
+  /// constructor.
   void setupRos();
 
   // Publish markers for visualization.
@@ -77,13 +82,13 @@ class EsdfServer : public TsdfServer {
   ros::Publisher esdf_slice_pub_;
   ros::Publisher traversable_pub_;
 
-  // Publish the complete map for other nodes to consume.
+  /// Publish the complete map for other nodes to consume.
   ros::Publisher esdf_map_pub_;
 
-  // Subscriber to subscribe to another node generating the map.
+  /// Subscriber to subscribe to another node generating the map.
   ros::Subscriber esdf_map_sub_;
 
-  // Services.
+  /// Services.
   ros::ServiceServer generate_esdf_srv_;
 
   bool clear_sphere_for_planning_;

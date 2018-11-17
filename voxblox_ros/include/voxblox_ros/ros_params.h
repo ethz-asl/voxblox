@@ -15,8 +15,10 @@ inline TsdfMap::Config getTsdfMapConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   TsdfMap::Config tsdf_config;
 
-  // Workaround for OS X on mac mini not having specializations for float
-  // for some reason.
+  /**
+   * Workaround for OS X on mac mini not having specializations for float
+   * for some reason.
+   */
   double voxel_size = tsdf_config.tsdf_voxel_size;
   int voxels_per_side = tsdf_config.tsdf_voxels_per_side;
   nh_private.param("tsdf_voxel_size", voxel_size, voxel_size);

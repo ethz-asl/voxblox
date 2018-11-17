@@ -16,14 +16,17 @@
 
 #include "voxblox_ros/conversions.h"
 
-// This file contains a set of functions to visualize layers as pointclouds
-// (or marker arrays) based on a passed-in function. It also offers some
-// specializations of functions as samples.
+/**
+ * This file contains a set of functions to visualize layers as pointclouds
+ * (or marker arrays) based on a passed-in function. It also offers some
+ * specializations of functions as samples.
+ */
 
 namespace voxblox {
 
-// Shortcut the placeholders namespace, since otherwise it chooses the boost
-// placeholders which are in the global namespace (thanks boost!).
+/** Shortcut the placeholders namespace, since otherwise it chooses the boost
+ * placeholders which are in the global namespace (thanks boost!).
+ */
 namespace ph = std::placeholders;
 
 /// This is a fancy alias to be able to template functions.
@@ -31,19 +34,23 @@ template <typename VoxelType>
 using ShouldVisualizeVoxelColorFunctionType = std::function<bool(
     const VoxelType& voxel, const Point& coord, Color* color)>;
 
-// For intensities values, such as distances, which are mapped to a color only
-// by the subscriber.
+/**
+ * For intensities values, such as distances, which are mapped to a color only
+ * by the subscriber.
+ */
 template <typename VoxelType>
 using ShouldVisualizeVoxelIntensityFunctionType = std::function<bool(
     const VoxelType& voxel, const Point& coord, double* intensity)>;
 
-// For boolean checks -- either a voxel is visualized or it is not.
-// This is used for occupancy bricks, for instance.
+/**
+ * For boolean checks -- either a voxel is visualized or it is not.
+ * This is used for occupancy bricks, for instance.
+ */
 template <typename VoxelType>
 using ShouldVisualizeVoxelFunctionType =
     std::function<bool(const VoxelType& voxel, const Point& coord)>;  // NOLINT;
 
-// Template function to visualize a colored pointcloud.
+/// Template function to visualize a colored pointcloud.
 template <typename VoxelType>
 void createColorPointcloudFromLayer(
     const Layer<VoxelType>& layer,
@@ -83,7 +90,7 @@ void createColorPointcloudFromLayer(
   }
 }
 
-// Template function to visualize an intensity pointcloud.
+/// Template function to visualize an intensity pointcloud.
 template <typename VoxelType>
 void createColorPointcloudFromLayer(
     const Layer<VoxelType>& layer,
@@ -166,7 +173,7 @@ void createOccupancyBlocksFromLayer(
   marker_array->markers.push_back(block_marker);
 }
 
-// Short-hand functions for visualizing different types of voxels.
+// /Short-hand functions for visualizing different types of voxels.
 inline bool visualizeNearSurfaceTsdfVoxels(const TsdfVoxel& voxel,
                                            const Point& /*coord*/,
                                            double surface_distance,
@@ -297,20 +304,25 @@ inline bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
 
 // All functions that can be used directly for TSDF voxels.
 
-// Create a pointcloud based on the TSDF voxels near the surface.
-// The RGB color is determined by the color of the TSDF voxel.
+/**
+ * Create a pointcloud based on the TSDF voxels near the surface.
+ * The RGB color is determined by the color of the TSDF voxel.
+ */
 inline void createSurfacePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer, std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
-                       surface_distance, ph::_3),
+      layer,
+      std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
+                surface_distance, ph::_3),
       pointcloud);
 }
 
-// Create a pointcloud based on all the TSDF voxels.
-// The RGB color is determined by the color of the TSDF voxel.
+/**
+ * Create a pointcloud based on all the TSDF voxels.
+ * The RGB color is determined by the color of the TSDF voxel.
+ */
 inline void createPointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer,
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
@@ -319,8 +331,10 @@ inline void createPointcloudFromTsdfLayer(
                                             pointcloud);
 }
 
-// Create a pointcloud based on all the TSDF voxels.
-// The intensity is determined based on the distance to the surface.
+/**
+ * Create a pointcloud based on all the TSDF voxels.
+ * The intensity is determined based on the distance to the surface.
+ */
 inline void createDistancePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer,
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
@@ -329,15 +343,18 @@ inline void createDistancePointcloudFromTsdfLayer(
       layer, &visualizeDistanceIntensityTsdfVoxels, pointcloud);
 }
 
-// Create a pointcloud based on the TSDF voxels near the surface.
-// The intensity is determined based on the distance to the surface.
+/**
+ * Create a pointcloud based on the TSDF voxels near the surface.
+ * The intensity is determined based on the distance to the surface.
+ */
 inline void createSurfaceDistancePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer, std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
-                       ph::_2, surface_distance, ph::_3),
+      layer,
+      std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
+                ph::_2, surface_distance, ph::_3),
       pointcloud);
 }
 
