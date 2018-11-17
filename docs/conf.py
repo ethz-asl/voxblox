@@ -7,9 +7,6 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-html_theme_options = {
-    'logo_only': True
-}
 html_logo = "logo.gif"
 
 extensions = [
@@ -17,6 +14,13 @@ extensions = [
     'exhale',
     'sphinx.ext.autosectionlabel'
 ]
+
+project = u'voxblox'
+master_doc = 'index'
+
+html_theme_options = {
+    'logo_only': True
+}
 
 # Setup the breathe extension
 breathe_projects = {"voxblox": "./doxyoutput/xml"}
@@ -32,6 +36,7 @@ exhale_args = {
     "createTreeView": True,
     "exhaleExecutesDoxygen": True,
     "exhaleUseDoxyfile": True
+    "pageLevelConfigMeta": ":github_url: https://github.com/ethz-asl/voxblox"
 }
 
 # Tell sphinx what the primary language being documented is.
