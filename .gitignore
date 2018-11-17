@@ -49,8 +49,6 @@ mesh_results
 autolintc
 
 # Documentation
-voxblox/docs/_build
-# wherever you told breathe_projects to look
-voxblox/docs/doxyoutput
-# wherever you told Exhale containmentFolder is
-voxblox/docs/api
+docs/_build
+docs/doxyoutput
+docs/api
