@@ -152,6 +152,17 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
   }
 
   // Serialize blocks.
+  saveBlocksToStream(include_all_blocks, blocks_to_include, &outfile);
+  
+  outfile.close();
+  return true;
+}
+
+template <typename VoxelType>
+bool Layer<VoxelType>::saveBlocksToStream(bool include_all_blocks,
+                                          BlockIndexList blocks_to_include,
+                                          std::fstream* outfile_ptr) const {
+  CHECK_NOTNULL(outfile_ptr);
   for (const BlockMapPair& pair : block_map_) {
     bool write_block_to_file = include_all_blocks;
     if (!write_block_to_file) {
@@ -165,14 +176,12 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
       BlockProto block_proto;
       pair.second->getProto(&block_proto);
 
-      if (!utils::writeProtoMsgToStream(block_proto, &outfile)) {
+      if (!utils::writeProtoMsgToStream(block_proto, outfile_ptr)) {
         LOG(ERROR) << "Could not write block message.";
-        outfile.close();
         return false;
       }
     }
   }
-  outfile.close();
   return true;
 }
 
