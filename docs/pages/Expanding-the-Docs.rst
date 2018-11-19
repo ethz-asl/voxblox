@@ -53,5 +53,5 @@ To use the same approach on another project perform the following:
 3. Modify the index.rst to fit your new project.
 4. Change the contents of the pages folder to your projects ``.md`` and ``.rst`` files.
 5. Add ``docs/_build``, ``docs/doxyoutput`` and ``docs/api`` to your ``.gitignore`` file (for building locally).
-5. Push the changes to github.
-6. Create a new project on readthedocs.io and in advanced settings set the ``Requirements file`` path to ``docs/requirements.txt``.
+6. Push the changes to github.
+7. Create a new project on readthedocs.io and in advanced settings set the ``Requirements file`` path to ``docs/requirements.txt``.
