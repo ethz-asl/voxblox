@@ -22,16 +22,10 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 .. toctree::
    :maxdepth: 3
    :caption: Table of Contents
+   :glob:
 
-   pages/Example-Outputs
-   pages/Performance
-   pages/Installation
-   pages/Running-Voxblox
-   pages/The-Voxblox-Node
-   pages/Using-Voxblox-for-Planning
-   pages/How-Does-ESDF-Generation-Work
-   pages/Transformations
-   pages/Modifying-and-Contributing
+   pages/*
+
    api/library_root
 
 Paper and Video

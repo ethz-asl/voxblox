@@ -1,5 +1,7 @@
 import os
 
+name = 'voxblox'
+
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 if not on_rtd:  # only import and set the theme if we're building docs locally
@@ -9,22 +11,22 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 
 html_logo = "logo.gif"
 
-extensions = [
-    'breathe',
-    'exhale',
-    'sphinx.ext.autosectionlabel'
-]
-
-project = u'voxblox'
-master_doc = 'index'
-
-html_theme_options = {
-    'logo_only': True
+source_parsers = {
+    '.md': 'recommonmark.parser.CommonMarkParser',
 }
 
+extensions = [
+    'breathe', 'exhale', 'sphinx.ext.autosectionlabel', 'recommonmark'
+]
+
+project = name
+master_doc = 'index'
+
+html_theme_options = {'logo_only': True}
+
 # Setup the breathe extension
-breathe_projects = {"voxblox": "./doxyoutput/xml"}
-breathe_default_project = "voxblox"
+breathe_projects = {"project": "./doxyoutput/xml"}
+breathe_default_project = "project"
 
 # Setup the exhale extension
 exhale_args = {
@@ -36,8 +38,10 @@ exhale_args = {
     "createTreeView": True,
     "exhaleExecutesDoxygen": True,
     "exhaleUseDoxyfile": True,
-    "pageLevelConfigMeta": ":github_url: https://github.com/ethz-asl/voxblox"
+    "pageLevelConfigMeta": ":github_url: https://github.com/ethz-asl/" + name
 }
+
+source_suffix = ['.rst', '.md']
 
 # Tell sphinx what the primary language being documented is.
 primary_domain = 'cpp'
