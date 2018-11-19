@@ -16,32 +16,20 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
 
 ![example_gif](http://i.imgur.com/2wLztFm.gif)
 
-# Table of Contents
+# Documentation
+* All voxblox documentation can be found on [our readthedocs page](https://voxblox.readthedocs.io/en/latest/index.html)
+
+## Table of Contents
 * [Paper and Video](#paper-and-video)
 * [Credits](#credits)
-* [Example Outputs](https://github.com/ethz-asl/voxblox/wiki/Example-Outputs)
-* [Performance](https://github.com/ethz-asl/voxblox/wiki/Performance)
-* [Installation](https://github.com/ethz-asl/voxblox/wiki/Installation)
-* [Running Voxblox](https://github.com/ethz-asl/voxblox/wiki/Running-Voxblox)
-* [Voxblox Node (TSDF Server, ESDF Server)](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node)
-  * [Published and Subscribed Topics](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#published-and-subscribed-topics)
-  * [Services](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#services)
-  * [Parameters](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node#parameters)
-    * [General Parameters](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#general-parameters)
-    * [TSDF Integrator Parameters](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#tsdf-integrator-parameters)
-    * [Fast TSDF Integrator Specific Parameters](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#fast-tsdf-integrator-specific-parameters)
-    * [ESDF Integrator Parameters](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#esdf-integrator-parameters)
-    * [ICP Refinement Parameters](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#icp-refinement-parameters)
-    * [Input Transform Parameters](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#input-transform-parameters)
-    * [Output Parameters](https://github.com/ethz-asl/voxblox/wiki/The-Voxblox-Node/#output-parameters)
-* [Using Voxblox for Planning](https://github.com/ethz-asl/voxblox/wiki/Using-Voxblox-for-Planning)
-* [Transformations in Voxblox](https://github.com/ethz-asl/voxblox/wiki/Transformations)
-* [Contributing to Voxblox](https://github.com/ethz-asl/voxblox/wiki/Modifying-And-Contributing/#contributing-to-voxblox)
-    * [Code style](https://github.com/ethz-asl/voxblox/wiki/Modifying-And-Contributing/#code-style)
-    * [Setting up the linter](https://github.com/ethz-asl/voxblox/wiki/Modifying-And-Contributing/#setting-up-the-linter)
-* [Modifying Voxblox](https://github.com/ethz-asl/voxblox/wiki/Modifying-And-Contributing/#modifying-voxblox)
-  * [Serialization](https://github.com/ethz-asl/voxblox/wiki/Modifying-And-Contributing/#serialization)
-    * [How to add your own voxel/layer type](https://github.com/ethz-asl/voxblox/wiki/Modifying-And-Contributing/#how-to-add-your-own-voxel-layer-type)
+* [Example Outputs](https://voxblox.readthedocs.io/en/latest/pages/Example-Outputs.html)
+* [Performance](https://voxblox.readthedocs.io/en/latest/pages/Performance.html)
+* [Installation](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)
+* [Running Voxblox](https://voxblox.readthedocs.io/en/latest/pages/Running-Voxblox.html)
+* [Using Voxblox for Planning](https://voxblox.readthedocs.io/en/latest/pages/Using-Voxblox-for-Planning.html)
+* [Transformations in Voxblox](https://voxblox.readthedocs.io/en/latest/pages/Transformations.html)
+* [Contributing to Voxblox](https://voxblox.readthedocs.io/en/latest/pages/Modifying-and-Contributing.html)
+* [Library API](https://voxblox.readthedocs.io/en/latest/api/library_root.html)
 
 # Paper and Video
 A video showing sample output from voxblox can be seen [here](https://www.youtube.com/watch?v=PlqT5zNsvwM).
