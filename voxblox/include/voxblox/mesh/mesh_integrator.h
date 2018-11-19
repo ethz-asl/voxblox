@@ -51,6 +51,10 @@ struct MeshIntegratorConfig {
   size_t integrator_threads = std::thread::hardware_concurrency();
 };
 
+/**
+ * Integrates a TSDF layer to incrementally update a mesh layer using marching
+ * cubes.
+ */
 template <typename VoxelType>
 class MeshIntegrator {
  public:
@@ -66,8 +70,10 @@ class MeshIntegrator {
     voxels_per_side_inv_ = 1.0 / voxels_per_side_;
   }
 
-  // Use this constructor in case you would like to modify the layer during mesh
-  // extraction, i.e. modify the updated flag.
+  /**
+   * Use this constructor in case you would like to modify the layer during mesh
+   * extraction, i.e. modify the updated flag.
+   */
   MeshIntegrator(const MeshIntegratorConfig& config,
                  Layer<VoxelType>* sdf_layer, MeshLayer* mesh_layer)
       : config_(config),
@@ -85,8 +91,10 @@ class MeshIntegrator {
     }
   }
 
-  // This constructor will not allow you to modify the layer, i.e. clear the
-  // updated flag.
+  /**
+   * This constructor will not allow you to modify the layer, i.e. clear the
+   * updated flag.
+   */
   MeshIntegrator(const MeshIntegratorConfig& config,
                  const Layer<VoxelType>& sdf_layer, MeshLayer* mesh_layer)
       : config_(config),
@@ -107,7 +115,7 @@ class MeshIntegrator {
     }
   }
 
-  // Generates mesh for the tsdf layer.
+  /// Generates mesh from the tsdf layer.
   void generateMesh(bool only_mesh_updated_blocks, bool clear_updated_flag) {
     CHECK(!clear_updated_flag || (sdf_layer_mutable_ != nullptr))
         << "If you would like to modify the updated flag in the blocks, please "
@@ -361,10 +369,12 @@ class MeshIntegrator {
  protected:
   MeshIntegratorConfig config_;
 
-  // Having both a const and a mutable pointer to the layer allows this
-  // integrator to work both with a const layer (in case you don't want to clear
-  // the updated flag) and mutable layer (in case you do want to clear the
-  // updated flag).
+  /**
+   * Having both a const and a mutable pointer to the layer allows this
+   * integrator to work both with a const layer (in case you don't want to clear
+   * the updated flag) and mutable layer (in case you do want to clear the
+   * updated flag).
+   */
   Layer<VoxelType>* sdf_layer_mutable_;
   const Layer<VoxelType>* sdf_layer_const_;
 

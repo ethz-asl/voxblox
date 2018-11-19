@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_CORE_IO_PLY_WRITER_H_
-#define VOXBLOX_CORE_IO_PLY_WRITER_H_
+#ifndef VOXBLOX_IO_PLY_WRITER_H_
+#define VOXBLOX_IO_PLY_WRITER_H_
 
 #include <fstream>  // NOLINT
 #include <string>
@@ -11,8 +11,10 @@
 namespace voxblox {
 
 namespace io {
-// For reference on the format, see:
-//  http://paulbourke.net/dataformats/ply/
+/**
+ * Writes a mesh to a .ply file. For reference on the format, see:
+ *  http://paulbourke.net/dataformats/ply/
+ */
 class PlyWriter {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -112,4 +114,4 @@ class PlyWriter {
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_IO_PLY_WRITER_H_
+#endif  // VOXBLOX_IO_PLY_WRITER_H_

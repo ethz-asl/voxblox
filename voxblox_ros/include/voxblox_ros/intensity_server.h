@@ -2,8 +2,8 @@
 #define VOXBLOX_ROS_INTENSITY_SERVER_H_
 
 #include <cv_bridge/cv_bridge.h>
-#include <memory>
 #include <sensor_msgs/Image.h>
+#include <memory>
 
 #include <voxblox/core/voxel.h>
 #include <voxblox/integrator/intensity_integrator.h>
@@ -27,18 +27,19 @@ class IntensityServer : public TsdfServer {
   void intensityImageCallback(const sensor_msgs::ImageConstPtr& image);
 
  protected:
-  // Subscriber for intensity images.
+  /// Subscriber for intensity images.
   ros::Subscriber intensity_image_sub_;
 
   // Publish markers for visualization.
   ros::Publisher intensity_pointcloud_pub_;
   ros::Publisher intensity_mesh_pub_;
 
-  // Parameters of the incoming UNDISTORTED intensity images.
+  /// Parameters of the incoming UNDISTORTED intensity images.
   double focal_length_px_;
 
-  // How much to subsample the image by (not proper downsampling, just
-  // subsampling).
+  /** How much to subsample the image by (not proper downsampling, just
+   * subsampling).
+   */
   int subsample_factor_;
 
   // Intensity layer, integrator, and color maps, all related to storing

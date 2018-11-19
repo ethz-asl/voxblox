@@ -31,14 +31,23 @@
 
 namespace voxblox {
 
+/**
+ * Generates a mesh from the mesh layer.
+ * @param connected_mesh if true veracities will be shared between triangles
+ * @param vertex_proximity_threshold verticies that are within the specified
+ * thershold distance will be merged together, simplifying the mesh.
+ */
 bool convertMeshLayerToMesh(
     const MeshLayer& mesh_layer, Mesh* mesh, const bool connected_mesh = true,
     const FloatingPoint vertex_proximity_threshold = 1e-10);
 
-// Default behaviour is to simplify the mesh.
+/// Default behaviour is to simplify the mesh.
 bool outputMeshLayerAsPly(const std::string& filename,
                           const MeshLayer& mesh_layer);
 
+/**
+ * @param connected_mesh if true veracities will be shared between triangles
+ */
 bool outputMeshLayerAsPly(const std::string& filename,
                           const bool connected_mesh,
                           const MeshLayer& mesh_layer);

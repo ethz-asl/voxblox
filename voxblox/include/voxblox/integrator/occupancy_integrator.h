@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <vector>
 
-#include <Eigen/Core>
 #include <glog/logging.h>
+#include <Eigen/Core>
 
 #include "voxblox/core/block_hash.h"
 #include "voxblox/core/layer.h"
@@ -14,7 +14,10 @@
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
-
+/**
+ * Integrates a pointcloud into an occupancy layer by raycasting the points and
+ * updating all the voxels the rays pass through.
+ */
 class OccupancyIntegrator {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -8,9 +8,11 @@
 
 namespace voxblox {
 
-// Returns true if there is a valid distance (intersection with the surface),
-// false otherwise (no known space, no surface boundary, etc.).
-// VoxelType must have a distance defined.
+/**
+ * Returns true if there is a valid distance (intersection with the surface),
+ * false otherwise (no known space, no surface boundary, etc.).
+ * VoxelType must have a distance defined.
+ */
 template <typename VoxelType>
 bool getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
                                 const Point& ray_origin,

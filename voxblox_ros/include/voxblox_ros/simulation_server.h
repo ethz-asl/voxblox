@@ -34,25 +34,25 @@ class SimulationServer {
 
   virtual ~SimulationServer() {}
 
-  // Runs all of the below functions in the correct order:
+  /// Runs all of the below functions in the correct order:
   void run();
 
-  // Creates a new world, and prepares ground truth SDF(s).
+  /// Creates a new world, and prepares ground truth SDF(s).
   virtual void prepareWorld() = 0;
 
-  // Generates a SDF by generating random poses and putting them into an SDF.
+  /// Generates a SDF by generating random poses and putting them into an SDF.
   void generateSDF();
 
-  // Evaluate errors...
+  /// Evaluate errors...
   void evaluate();
 
-  // Visualize results. :)
+  /// Visualize results. :)
   void visualize();
 
  protected:
   void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
 
-  // Convenience function to generate valid viewpoints.
+  /// Convenience function to generate valid viewpoints.
   bool generatePlausibleViewpoint(FloatingPoint min_distance, Point* ray_origin,
                                   Point* ray_direction) const;
 
