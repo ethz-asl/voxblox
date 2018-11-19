@@ -40,14 +40,3 @@ Compile::
 
 	cd ~/catkin_ws/src/
 	catkin build voxblox_ros
-
-If you wish to compile the online docs locally (not needed unless you wish to play with how your doxygen comments are rendered) you will need the following additional dependencies::
-
-	sudo apt-get install python-pip doxygen
-	pip install sphinx exhale breath sphinx_rtd_theme --user
-
-
-The html documentation can then be compiled by::
-
-	cd ~/catkin_ws/src/voxblox/voxblox/docs
-	make html
