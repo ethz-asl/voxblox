@@ -15,19 +15,21 @@
 
 namespace voxblox {
 
-// Small class that can be used by multiple threads that need mutually exclusive
-// indexes to the same array, while still covering all elements.
-// The class attempts to ensure that the points are read in an order that gives
-// good coverage over the pointcloud very quickly. This is so that the
-// integrator can be terminated before all points have been read (due to time
-// constraints) and still capture most of the geometry.
+/**
+ * Small class that can be used by multiple threads that need mutually exclusive
+ * indexes to the same array, while still covering all elements.
+ * The class attempts to ensure that the points are read in an order that gives
+ * good coverage over the pointcloud very quickly. This is so that the
+ * integrator can be terminated before all points have been read (due to time
+ * constraints) and still capture most of the geometry.
+ */
 class ThreadSafeIndex {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   explicit ThreadSafeIndex(size_t number_of_points);
 
-  // returns true if index is valid, false otherwise
+  /// returns true if index is valid, false otherwise
   bool getNextIndex(size_t* idx);
 
   void reset();
@@ -39,19 +41,25 @@ class ThreadSafeIndex {
   const size_t number_of_points_;
   const size_t number_of_groups_;
 
-  static constexpr size_t num_bits = 10;  // 1024 bins
+  /// 1024 bins
+  static constexpr size_t num_bits = 10;
   static constexpr size_t step_size_ = 1 << num_bits;
   static constexpr size_t bit_mask_ = step_size_ - 1;
 
-  // Lookup table for the order points in a group should be read in. This is
-  // simply a list from 0 to 1023 where each number has had the order of its
-  // bits reversed.
+  /**
+   * Lookup table for the order points in a group should be read in. This is
+   * simply a list from 0 to 1023 where each number has had the order of its
+   * bits reversed.
+   */
   static const std::array<size_t, step_size_> offset_lookup_;
 };
 
-// This class assumes PRE-SCALED coordinates, where one unit = one voxel size.
-// The indices are also returned in this scales coordinate system, which should
-// map to voxel indices.
+/**
+ * Generates the indexes of all voxels a given ray will pass through. This class
+ * assumes PRE-SCALED coordinates, where one unit = one voxel size. The indices
+ * are also returned in this scales coordinate system, which should map to voxel
+ * indexes.
+ */
 class RayCaster {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -65,7 +73,7 @@ class RayCaster {
 
   RayCaster(const Point& start_scaled, const Point& end_scaled);
 
-  // returns false if ray terminates at ray_index, true otherwise
+  /// returns false if ray terminates at ray_index, true otherwise
   bool nextRayIndex(GlobalIndex* ray_index);
 
  private:
@@ -80,9 +88,11 @@ class RayCaster {
   uint current_step_;
 };
 
-// This function assumes PRE-SCALED coordinates, where one unit = one voxel
-// size. The indices are also returned in this scales coordinate system, which
-// should map to voxel indices.
+/**
+ * This function assumes PRE-SCALED coordinates, where one unit = one voxel
+ * size. The indices are also returned in this scales coordinate system, which
+ * should map to voxel indices.
+ */
 inline void castRay(const Point& start_scaled, const Point& end_scaled,
                     AlignedVector<GlobalIndex>* indices) {
   CHECK_NOTNULL(indices);
@@ -95,8 +105,10 @@ inline void castRay(const Point& start_scaled, const Point& end_scaled,
   }
 }
 
-// Takes start and end in WORLD COORDINATES, does all pre-scaling and
-// sorting into hierarhical index.
+/**
+ * Takes start and end in WORLD COORDINATES, does all pre-scaling and
+ * sorting into hierarhical index.
+ */
 inline void getHierarchicalIndexAlongRay(
     const Point& start, const Point& end, size_t voxels_per_side,
     FloatingPoint voxel_size, FloatingPoint truncation_distance,

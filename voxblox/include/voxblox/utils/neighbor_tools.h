@@ -6,7 +6,7 @@
 
 namespace voxblox {
 
-// Define what connectivity you want to have in the voxels.
+/// Define what connectivity you want to have in the voxels.
 enum Connectivity : unsigned int {
   kSix = 6u,
   kEighteen = 18u,
@@ -20,15 +20,19 @@ class NeighborhoodLookupTables {
   typedef Eigen::Matrix<IndexElement, 3, Connectivity::kTwentySix> IndexOffsets;
   typedef Eigen::Matrix<float, 1, Connectivity::kTwentySix> Distances;
 
-  // Stores the distances to the 6, 18, and 26 neighborhood, in that order.
-  // These distances need to be scaled by the voxel distance to get metric
-  // distances.
+  /*
+   * Stores the distances to the 6, 18, and 26 neighborhood, in that order.
+   * These distances need to be scaled by the voxel distance to get metric
+   * distances.
+   */
   static const Distances kDistances;
 
-  // Lookup table for the offsets between a index and its 6, 18, and 26
-  // neighborhood, in that order. These two offset tables are the same except
-  // for the type, this saves casting the offset when used with either global
-  // index (long) or local index (int) in the neighborhood lookup.
+  /*
+   * Lookup table for the offsets between a index and its 6, 18, and 26
+   * neighborhood, in that order. These two offset tables are the same except
+   * for the type, this saves casting the offset when used with either global
+   * index (long) or local index (int) in the neighborhood lookup.
+   */
   static const IndexOffsets kOffsets;
   static const LongIndexOffsets kLongOffsets;
 };
@@ -38,7 +42,7 @@ class Neighborhood : public NeighborhoodLookupTables {
  public:
   typedef Eigen::Matrix<LongIndexElement, 3, kConnectivity> IndexMatrix;
 
-  // Get the global index of all (6, 18, or 26) neighbors of the input index.
+  /// Get the global index of all (6, 18, or 26) neighbors of the input index.
   static void getFromGlobalIndex(const GlobalIndex& global_index,
                                  IndexMatrix* neighbors) {
     CHECK_NOTNULL(neighbors);
@@ -47,10 +51,12 @@ class Neighborhood : public NeighborhoodLookupTables {
     }
   }
 
-  // Get the block idx and local voxel index of a neighbor voxel. The neighbor
-  // voxel is defined by providing a direction. The main purpose of this
-  // function is to solve the cross-block indexing that happens when looking up
-  // neighbors at the block boundaries.
+  /**
+   * Get the block idx and local voxel index of a neighbor voxel. The neighbor
+   * voxel is defined by providing a direction. The main purpose of this
+   * function is to solve the cross-block indexing that happens when looking up
+   * neighbors at the block boundaries.
+   */
   static void getFromBlockAndVoxelIndexAndDirection(
       const BlockIndex& block_index, const VoxelIndex& voxel_index,
       const SignedIndex& direction, const size_t voxels_per_side,
@@ -75,10 +81,12 @@ class Neighborhood : public NeighborhoodLookupTables {
     }
   }
 
-  // Get the hierarchical indices (block idx, local voxel index) for all
-  // neighbors (6, 18, or 26 neighborhood) of a hierarcical index. This function
-  // solves the cross-block indexing that happens when looking up neighbors at
-  // the block boundary.
+  /**
+   * Get the hierarchical indices (block idx, local voxel index) for all
+   * neighbors (6, 18, or 26 neighborhood) of a hierarcical index. This function
+   * solves the cross-block indexing that happens when looking up neighbors at
+   * the block boundary.
+   */
   static void getFromBlockAndVoxelIndex(
       const BlockIndex& block_index, const VoxelIndex& voxel_index,
       const size_t voxels_per_side, AlignedVector<VoxelKey>* neighbors_ptr) {
@@ -93,7 +101,7 @@ class Neighborhood : public NeighborhoodLookupTables {
     }
   }
 
-  // Get the signed offset between the global indices of two voxels.
+  /// Get the signed offset between the global indices of two voxels.
   static SignedIndex getOffsetBetweenVoxels(const BlockIndex& start_block_index,
                                             const VoxelIndex& start_voxel_index,
                                             const BlockIndex& end_block_index,

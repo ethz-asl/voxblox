@@ -9,11 +9,13 @@
 
 namespace voxblox {
 
-// Combines all given meshes into a single mesh with connected verticies. Also
-// removes triangles with zero surface area. If you only would like to connect
-// vertices, make sure that the proximity threhsold <<< voxel size. If you would
-// like to simplify the mesh, chose a threshold greater or near the voxel size
-// until you reached the level of simpliciation desired.
+/**
+ * Combines all given meshes into a single mesh with connected verticies. Also
+ * removes triangles with zero surface area. If you only would like to connect
+ * vertices, make sure that the proximity threhsold <<< voxel size. If you would
+ * like to simplify the mesh, chose a threshold greater or near the voxel size
+ * until you reached the level of simpliciation desired.
+ */
 inline void createConnectedMesh(
     const AlignedVector<Mesh::ConstPtr>& meshes, Mesh* connected_mesh,
     const FloatingPoint approximate_vertex_proximity_threshold = 1e-10) {
