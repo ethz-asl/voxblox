@@ -6,8 +6,8 @@ namespace voxblox {
 
 // clang-format off
 const NeighborhoodLookupTables::Distances NeighborhoodLookupTables::kDistances = [] {
-  constexpr float sqrt_2 = std::sqrt(2);
-  constexpr float sqrt_3 = std::sqrt(3);
+  const float sqrt_2 = std::sqrt(2);
+  const float sqrt_3 = std::sqrt(3);
   Distances distance_matrix;
   distance_matrix <<  1.f, 1.f, 1.f, 1.f, 1.f, 1.f,
 
