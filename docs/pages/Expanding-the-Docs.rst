@@ -16,7 +16,7 @@ The html documentation can then be compiled by::
 	cd ~/catkin_ws/src/voxblox/voxblox/docs
 	make html
 
-this will generate a folder ``docs/_build`` with the homepage of the website located at ``docs/_build/html/index.html``.
+this will generate a folder ``docs/_build`` with the homepage of the website located at ``docs/_build/html/index.html``. Note that while sphinx will fire off literally hundreds of warnings they can usually be ignored.
 
 Adding a Page
 =============
