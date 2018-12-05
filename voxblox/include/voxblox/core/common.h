@@ -62,13 +62,10 @@ typedef AlignedVector<LongIndex> LongIndexVector;
 typedef LongIndexVector GlobalIndexVector;
 
 struct Color;
-typedef uint32_t Label;
-typedef uint32_t LabelConfidence;
 
 // Pointcloud types for external interface.
 typedef AlignedVector<Point> Pointcloud;
 typedef AlignedVector<Color> Colors;
-typedef AlignedVector<Label> Labels;
 
 // For triangle meshing/vertex access.
 typedef size_t VertexIndex;
