@@ -1,0 +1,2 @@
+- builder: sphinx           # specify document generator. e.g) doxygen, epidoc, sphinx
+  sphinx_root_dir: a      # document directory

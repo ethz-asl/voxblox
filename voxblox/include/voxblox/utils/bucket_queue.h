@@ -8,10 +8,12 @@
 
 #include "voxblox/core/common.h"
 
-// Bucketed priority queue, mostly following L. Yatziv et al in
-// O(N) Implementation of the Fast Marching Algorithm, though skipping the
-// circular aspect (don't care about a bit more memory used for this).
-
+namespace voxblox {
+/**
+ * Bucketed priority queue, mostly following L. Yatziv et al in
+ * O(N) Implementation of the Fast Marching Algorithm, though skipping the
+ * circular aspect (don't care about a bit more memory used for this).
+ */
 template <typename T>
 class BucketQueue {
  public:
@@ -26,7 +28,7 @@ class BucketQueue {
     buckets_.resize(num_buckets_);
   }
 
-  // WARNING: will CLEAR THE QUEUE!
+  /// WARNING: will CLEAR THE QUEUE!
   void setNumBuckets(int num_buckets, double max_val) {
     max_val_ = max_val;
     num_buckets_ = num_buckets;
@@ -90,10 +92,10 @@ class BucketQueue {
   double max_val_;
   voxblox::AlignedVector<voxblox::AlignedQueue<T>> buckets_;
 
-  // Speed up retrivals.
+  /// Speeds up retrivals.
   int last_bucket_index_;
-  // This is also to speed up empty checks.
+  /// This is also to speed up empty checks.
   size_t num_elements_;
 };
-
+}  // namespace voxblox
 #endif  // VOXBLOX_UTILS_BUCKET_QUEUE_H_

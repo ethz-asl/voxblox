@@ -9,6 +9,9 @@
 namespace voxblox {
 namespace test {
 
+/**
+ * Holds functions for comparing layers, blocks, voxels, etc for testing
+ */
 template <typename VoxelType>
 class LayerTest {
  public:

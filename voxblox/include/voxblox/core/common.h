@@ -62,13 +62,10 @@ typedef AlignedVector<LongIndex> LongIndexVector;
 typedef LongIndexVector GlobalIndexVector;
 
 struct Color;
-typedef uint32_t Label;
-typedef uint32_t LabelConfidence;
 
 // Pointcloud types for external interface.
 typedef AlignedVector<Point> Pointcloud;
 typedef AlignedVector<Color> Colors;
-typedef AlignedVector<Label> Labels;
 
 // For triangle meshing/vertex access.
 typedef size_t VertexIndex;
@@ -142,15 +139,17 @@ struct Color {
 };
 
 // Constants used across the library.
-constexpr FloatingPoint kEpsilon = 1e-6;  // Used for coordinates.
-constexpr float kFloatEpsilon = 1e-6;     // Used for weights.
+constexpr FloatingPoint kEpsilon = 1e-6; /**< Used for coordinates. */
+constexpr float kFloatEpsilon = 1e-6;    /**< Used for weights. */
 
 // Grid <-> point conversion functions.
 
-// NOTE: Due the limited accuracy of the FloatingPoint type, this
-// function doesn't always compute the correct grid index for coordinates
-// near the grid cell boundaries. Use the safer `getGridIndexFromOriginPoint` if
-// the origin point is available.
+/**
+ * NOTE: Due the limited accuracy of the FloatingPoint type, this
+ * function doesn't always compute the correct grid index for coordinates
+ * near the grid cell boundaries. Use the safer `getGridIndexFromOriginPoint` if
+ * the origin point is available.
+ */
 template <typename IndexType>
 inline IndexType getGridIndexFromPoint(const Point& point,
                                        const FloatingPoint grid_size_inv) {
@@ -159,9 +158,11 @@ inline IndexType getGridIndexFromPoint(const Point& point,
                    std::floor(point.z() * grid_size_inv + kEpsilon));
 }
 
-// NOTE: Due the limited accuracy of the FloatingPoint type, this
-// function doesn't always compute the correct grid index for coordinates
-// near the grid cell boundaries.
+/**
+ * NOTE: Due the limited accuracy of the FloatingPoint type, this
+ * function doesn't always compute the correct grid index for coordinates
+ * near the grid cell boundaries.
+ */
 template <typename IndexType>
 inline IndexType getGridIndexFromPoint(const Point& scaled_point) {
   return IndexType(std::floor(scaled_point.x() + kEpsilon),
@@ -169,10 +170,12 @@ inline IndexType getGridIndexFromPoint(const Point& scaled_point) {
                    std::floor(scaled_point.z() + kEpsilon));
 }
 
-// NOTE: This function is safer than `getGridIndexFromPoint`, because it assumes
-// we pass in not an arbitrary point in the grid cell, but the ORIGIN. This way
-// we can avoid the floating point precision issue that arrises for calls to
-// `getGridIndexFromPoint`for arbitrary points near the border of the grid cell.
+/**
+ * NOTE: This function is safer than `getGridIndexFromPoint`, because it assumes
+ * we pass in not an arbitrary point in the grid cell, but the ORIGIN. This way
+ * we can avoid the floating point precision issue that arrises for calls to
+ * `getGridIndexFromPoint`for arbitrary points near the border of the grid cell.
+ */
 template <typename IndexType>
 inline IndexType getGridIndexFromOriginPoint(
     const Point& point, const FloatingPoint grid_size_inv) {
@@ -197,9 +200,11 @@ inline Point getOriginPointFromGridIndex(const IndexType& idx,
                static_cast<FloatingPoint>(idx.z()) * grid_size);
 }
 
-// Conversions between Block + Voxel index and GlobalVoxelIndex.
-// Note that this takes int VOXELS_PER_SIDE, and the individual block conversion
-// takes voxels per side inverse.
+/**
+ * Converts between Block + Voxel index and GlobalVoxelIndex.
+ * Note that this takes int VOXELS_PER_SIDE, and
+ * getBlockIndexFromGlobalVoxelIndex takes voxels per side inverse.
+ */
 inline GlobalIndex getGlobalVoxelIndexFromBlockAndVoxelIndex(
     const BlockIndex& block_index, const VoxelIndex& voxel_index,
     int voxels_per_side) {
@@ -220,6 +225,11 @@ inline BlockIndex getBlockIndexFromGlobalVoxelIndex(
 
 inline bool isPowerOfTwo(int x) { return (x & (x - 1)) == 0; }
 
+/**
+ * Converts from a global voxel index to the index inside a block.
+ * NOTE: assumes that voxels_per_side is a power of 2 and uses a bitwise and as
+ * a computationally cheap substitute for the modulus operator
+ */
 inline VoxelIndex getLocalFromGlobalVoxelIndex(
     const GlobalIndex& global_voxel_idx, const int voxels_per_side) {
   // add a big number to the index to make it positive
@@ -227,8 +237,6 @@ inline VoxelIndex getLocalFromGlobalVoxelIndex(
 
   CHECK(isPowerOfTwo(voxels_per_side));
 
-  // assume that voxels_per_side is a power of 2 and uses a bitwise and as a
-  // computationally cheap substitute for the modulus operator
   return VoxelIndex((global_voxel_idx.x() + offset) & (voxels_per_side - 1),
                     (global_voxel_idx.y() + offset) & (voxels_per_side - 1),
                     (global_voxel_idx.z() + offset) & (voxels_per_side - 1));

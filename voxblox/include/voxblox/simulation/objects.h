@@ -11,8 +11,11 @@
 // Heavily inspired by @mfehr's OccupancyGridGenerator.
 namespace voxblox {
 
-// Base class for objects.
 // Should this be full virtual?
+/**
+ * Base class for simulator objects. Each object allows an exact ground-truth
+ * sdf to be created for it.
+ */
 class Object {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -26,12 +29,12 @@ class Object {
       : center_(center), type_(type), color_(color) {}
   virtual ~Object() {}
 
-  // Map-building accessors.
+  /// Map-building accessors.
   virtual FloatingPoint getDistanceToPoint(const Point& point) const = 0;
 
   Color getColor() const { return color_; }
 
-  // Raycasting accessors.
+  /// Raycasting accessors.
   virtual bool getRayIntersection(const Point& ray_origin,
                                   const Point& ray_direction,
                                   FloatingPoint max_dist,
@@ -200,7 +203,7 @@ class Cube : public Object {
   Point size_;
 };
 
-// Requires normal being passed in to ALREADY BE NORMALIZED!!!!
+/// Requires normal being passed in to ALREADY BE NORMALIZED!!!!
 class PlaneObject : public Object {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

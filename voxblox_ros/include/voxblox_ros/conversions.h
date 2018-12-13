@@ -98,10 +98,12 @@ void serializeLayerAsMsg(
     voxblox_msgs::Layer* msg,
     const MapDerializationAction& action = MapDerializationAction::kUpdate);
 
-// Returns true if could parse the data into the existing layer (all parameters
-// are compatible), false otherwise.
-// This function will use the deserialization action suggested by the layer
-// message.
+/**
+ * Returns true if could parse the data into the existing layer (all parameters
+ * are compatible), false otherwise.
+ * This function will use the deserialization action suggested by the layer
+ * message.
+ */
 template <typename VoxelType>
 bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
                            Layer<VoxelType>* layer);

@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H
-#define VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H
+#ifndef VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H_
+#define VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H_
 
 #include <OGRE/OgreManualObject.h>
 
@@ -8,7 +8,7 @@
 
 namespace voxblox_rviz_plugin {
 
-// Visualizes a single voxblox_msgs::Mesh message.
+/// Visualizes a single voxblox_msgs::Mesh message.
 class VoxbloxMeshVisual {
  public:
   VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
@@ -17,7 +17,7 @@ class VoxbloxMeshVisual {
 
   void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg);
 
-  // Set the coordinate frame pose.
+  /// Set the coordinate frame pose.
   void setFramePosition(const Ogre::Vector3& position);
   void setFrameOrientation(const Ogre::Quaternion& orientation);
 
@@ -33,4 +33,4 @@ class VoxbloxMeshVisual {
 
 }  // namespace voxblox_rviz_plugin
 
-#endif  // VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H
+#endif  // VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H_
