@@ -19,21 +19,22 @@ inline void recolorVoxbloxMeshMsgByIntensity(
 
   // Go over all the blocks in the mesh.
   for (voxblox_msgs::MeshBlock& mesh_block : mesh_msg->mesh_blocks) {
-    // Go over all the triangles in the mesh.
-    for (voxblox_msgs::Triangle& triangle : mesh_block.triangles) {
-      // Look up triangles in the thermal layer.
-      for (size_t local_vert_idx = 0u; local_vert_idx < 3; ++local_vert_idx) {
-        const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(
-            Point(triangle.x[local_vert_idx], triangle.y[local_vert_idx],
-                  triangle.z[local_vert_idx]));
-        if (voxel != nullptr && voxel->weight > 0.0) {
-          float intensity = voxel->intensity;
-          Color new_color = color_map->colorLookup(intensity);
-          triangle.r[local_vert_idx] = new_color.r;
-          triangle.g[local_vert_idx] = new_color.g;
-          triangle.b[local_vert_idx] = new_color.b;
-          triangle.a[local_vert_idx] = new_color.a;
-        }
+    // Look up verticies in the thermal layer.
+    for (size_t vert_idx = 0u; vert_idx < mesh_block.x.size(); ++vert_idx) {
+      // only needed if color information was originally missing
+      mesh_block.r.resize(mesh_block.x.size());
+      mesh_block.g.resize(mesh_block.x.size());
+      mesh_block.b.resize(mesh_block.x.size());
+
+      const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(
+          Point(mesh_block.x[vert_idx], mesh_block.y[vert_idx],
+                mesh_block.z[vert_idx]));
+      if (voxel != nullptr && voxel->weight > 0.0) {
+        float intensity = voxel->intensity;
+        Color new_color = color_map->colorLookup(intensity);
+        mesh_block.r[vert_idx] = new_color.r;
+        mesh_block.g[vert_idx] = new_color.g;
+        mesh_block.b[vert_idx] = new_color.b;
       }
     }
   }

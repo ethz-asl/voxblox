@@ -12,9 +12,15 @@
 
 namespace voxblox {
 
+/**
+ * Performs deco hashing on block indexes. Based on recommendations of
+ * "Investigating the impact of Suboptimal Hashing Functions" by L. Buckley et
+ * al.
+ */
 struct AnyIndexHash {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+  /// number was arbitrarily chosen with no good justification
   static constexpr size_t sl = 17191;
   static constexpr size_t sl2 = sl * sl;
 
@@ -44,7 +50,7 @@ typedef typename AnyIndexHashMapType<IndexSet>::type HierarchicalIndexSet;
 
 typedef typename HierarchicalIndexMap::value_type HierarchicalIndex;
 
-// Hash map for large index values.
+/// Hash for large index values, see AnyIndexHash.
 struct LongIndexHash {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

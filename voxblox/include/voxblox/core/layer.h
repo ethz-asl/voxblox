@@ -15,6 +15,10 @@
 
 namespace voxblox {
 
+/**
+ * A 3D information layer, containing data of type VoxelType stored in blocks.
+ * This class contains functions for manipulating and accessing these blocks.
+ */
 template <typename VoxelType>
 class Layer {
  public:
@@ -38,10 +42,10 @@ class Layer {
     voxels_per_side_inv_ = 1.0f / static_cast<FloatingPoint>(voxels_per_side_);
   }
 
-  // Create the layer from protobuf layer header.
+  /// Create the layer from protobuf layer header.
   explicit Layer(const LayerProto& proto);
 
-  // Deep copy constructor.
+  /// Deep copy constructor.
   explicit Layer(const Layer& other);
 
   virtual ~Layer() {}
@@ -83,8 +87,10 @@ class Layer {
     }
   }
 
-  // Gets a block by the block index it if already exists,
-  // otherwise allocates a new one.
+  /**
+   *  Gets a block by the block index it if already exists, otherwise allocates
+   * a new one.
+   */
   inline typename BlockType::Ptr allocateBlockPtrByIndex(
       const BlockIndex& index) {
     typename BlockHashMap::iterator it = block_map_.find(index);
@@ -104,16 +110,20 @@ class Layer {
     return getBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
   }
 
-  // Gets a block by the coordinates it if already exists,
-  // otherwise allocates a new one.
+  /**
+   * Gets a block by the coordinates it if already exists,
+   * otherwise allocates a new one.
+   */
   inline typename BlockType::Ptr allocateBlockPtrByCoordinates(
       const Point& coords) {
     return allocateBlockPtrByIndex(computeBlockIndexFromCoordinates(coords));
   }
 
-  // IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
-  // function doesn't always compute the correct block index for coordinates
-  // near the block boundaries.
+  /**
+   * IMPORTANT NOTE: Due the limited accuracy of the FloatingPoint type, this
+   * function doesn't always compute the correct block index for coordinates
+   * near the block boundaries.
+   */
   inline BlockIndex computeBlockIndexFromCoordinates(
       const Point& coords) const {
     return getGridIndexFromPoint<BlockIndex>(coords, block_size_inv_);
@@ -156,8 +166,7 @@ class Layer {
     block_map_.erase(computeBlockIndexFromCoordinates(coords));
   }
 
-  void removeDistantBlocks(const Point& center,
-                           const double max_distance) {
+  void removeDistantBlocks(const Point& center, const double max_distance) {
     AlignedVector<BlockIndex> needs_erasing;
     for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
          block_map_) {
@@ -198,8 +207,10 @@ class Layer {
     return block_map_.count(block_index) > 0;
   }
 
-  // Get a pointer to the voxel if its corresponding block is allocated and a
-  // nullptr otherwise.
+  /**
+   * Get a pointer to the voxel if its corresponding block is allocated and a
+   * nullptr otherwise.
+   */
   inline const VoxelType* getVoxelPtrByGlobalIndex(
       const GlobalIndex& global_voxel_index) const {
     const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
@@ -260,6 +271,9 @@ class Layer {
   bool saveSubsetToFile(const std::string& file_path,
                         BlockIndexList blocks_to_include,
                         bool include_all_blocks, bool clear_file = true) const;
+  bool saveBlocksToStream(bool include_all_blocks,
+                          BlockIndexList blocks_to_include,
+                          std::fstream* outfile_ptr) const;
   bool addBlockFromProto(const BlockProto& block_proto,
                          BlockMergingStrategy strategy);
 

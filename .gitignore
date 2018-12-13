@@ -47,3 +47,8 @@ mesh_results
 
 # Tools
 autolintc
+
+# Documentation
+docs/_build
+docs/doxyoutput
+docs/api

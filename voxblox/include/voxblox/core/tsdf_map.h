@@ -3,6 +3,7 @@
 
 #include <glog/logging.h>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "voxblox/core/common.h"
@@ -10,7 +11,10 @@
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
-
+/**
+ * Map holding a Truncated Signed Distance Field Layer. Contains functions for
+ * interacting with the layer and getting gradient and distance information.
+ */
 class TsdfMap {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -30,13 +34,12 @@ class TsdfMap {
     block_size_ = config.tsdf_voxel_size * config.tsdf_voxels_per_side;
   }
 
-  // Creates a new TsdfMap based on a COPY of this layer.
+  /// Creates a new TsdfMap based on a COPY of this layer.
   explicit TsdfMap(const Layer<TsdfVoxel>& layer)
       : TsdfMap(aligned_shared<Layer<TsdfVoxel>>(layer)) {}
 
-  // Creates a new TsdfMap that contains this layer.
-  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer)
-      : tsdf_layer_(layer) {
+  /// Creates a new TsdfMap that contains this layer.
+  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer) : tsdf_layer_(layer) {
     if (!layer) {
       /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
        * This is idiomatic when wrapping C++ code for Python, especially with
@@ -67,17 +70,17 @@ class TsdfMap {
   template <typename MatrixType>
   using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
 
-  /* Extract all voxels on a slice plane that is parallel to one of the
-   * axis-aligned planes.
-   * free_plane_index specifies the free coordinate (zero-based; x, y, z order)
-   * free_plane_val specifies the plane intercept coordinate along that axis
+  /**
+   *  Extract all voxels on a slice plane that is parallel to one of the
+   * axis-aligned planes. free_plane_index specifies the free coordinate
+   * (zero-based; x, y, z order) free_plane_val specifies the plane intercept
+   * coordinate along that axis
    */
   unsigned int coordPlaneSliceGetDistanceWeight(
       unsigned int free_plane_index, double free_plane_val,
       EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
       Eigen::Ref<Eigen::VectorXd> distances,
-      Eigen::Ref<Eigen::VectorXd> weights,
-      unsigned int max_points) const;
+      Eigen::Ref<Eigen::VectorXd> weights, unsigned int max_points) const;
 
  protected:
   FloatingPoint block_size_;

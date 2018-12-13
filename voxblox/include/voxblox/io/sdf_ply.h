@@ -24,31 +24,49 @@ enum PlyOutputTypes {
   kSdfIsosurfaceConnected
 };
 
-// Convert a voxel to a colored point. The sdf_color_range determines the range
-// that is covered by the rainbow colors. All absolute distance values that
-// exceed this range will receive tha max/min color of the rainbow range. The
-// sdf_max_value determines if a point is generated for this value or not. Only
-// SDF values within this max value result in a colored point.
+/**
+ * Convert a voxel to a colored point. The sdf_color_range determines the range
+ * that is covered by the rainbow colors. All absolute distance values that
+ * exceed this range will receive tha max/min color of the rainbow range. The
+ * sdf_max_value determines if a point is generated for this value or not. Only
+ * SDF values within this max value result in a colored point.
+ */
 template <typename VoxelType>
 bool getColorFromVoxel(const VoxelType& voxel, const float sdf_color_range,
                        const float sdf_max_value, Color* color);
 
+/**
+ * Convert a voxel to a colored point. The sdf_color_range determines the range
+ * that is covered by the rainbow colors. All absolute distance values that
+ * exceed this range will receive tha max/min color of the rainbow range. The
+ * sdf_max_value determines if a point is generated for this value or not. Only
+ * SDF values within this max value result in a colored point.
+ */
 template <>
 bool getColorFromVoxel(const TsdfVoxel& voxel, const float sdf_color_range,
                        const float sdf_max_value, Color* color);
 
+/**
+ * Convert a voxel to a colored point. The sdf_color_range determines the range
+ * that is covered by the rainbow colors. All absolute distance values that
+ * exceed this range will receive tha max/min color of the rainbow range. The
+ * sdf_max_value determines if a point is generated for this value or not. Only
+ * SDF values within this max value result in a colored point.
+ */
 template <>
 bool getColorFromVoxel(const EsdfVoxel& voxel, const float sdf_color_range,
                        const float sdf_max_value, Color* color);
 
-// This function converts all voxels with positive weight/observed into points
-// colored by a color map based on the SDF value. The parameter sdf_color_range
-// is used to determine the range of the rainbow color map which is used to
-// visualize the SDF values. If an SDF value is outside this range, it will be
-// truncated to the limits of the range. sdf_max_value determines if a point is
-// generated for this value or not. Only SDF values within this max value result
-// in a colored point. If this threshold is set to a negative value, all points
-// will be generated independent of the SDF value.
+/**
+ * This function converts all voxels with positive weight/observed into points
+ * colored by a color map based on the SDF value. The parameter sdf_color_range
+ * is used to determine the range of the rainbow color map which is used to
+ * visualize the SDF values. If an SDF value is outside this range, it will be
+ * truncated to the limits of the range. sdf_max_value determines if a point is
+ * generated for this value or not. Only SDF values within this max value result
+ * in a colored point. If this threshold is set to a negative value, all points
+ * will be generated independent of the SDF value.
+ */
 template <typename VoxelType>
 bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
                                   const float sdf_color_range,
@@ -99,10 +117,12 @@ bool convertVoxelGridToPointCloud(const Layer<VoxelType>& layer,
       layer, sdf_color_range, kInvalidSdfMaxValue, point_cloud);
 }
 
-// Converts the layer to a mesh by extracting its ISO surface using marching
-// cubes. This function returns false if the mesh is empty. The mesh can either
-// be extracted as a set of distinct triangles, or the function can try to
-// connect all identical vertices to create a connected mesh.
+/**
+ * Converts the layer to a mesh by extracting its ISO surface using marching
+ * cubes. This function returns false if the mesh is empty. The mesh can either
+ * be extracted as a set of distinct triangles, or the function can try to
+ * connect all identical vertices to create a connected mesh.
+ */
 template <typename VoxelType>
 bool convertLayerToMesh(
     const Layer<VoxelType>& layer, const MeshIntegratorConfig& mesh_config,
@@ -137,10 +157,12 @@ bool convertLayerToMesh(
                             vertex_proximity_threshold);
 }
 
-// Output the layer to ply file. Depending on the ply output type, this either
-// exports all voxel centers colored by th SDF values or extracts the ISO
-// surface as mesh. The parameter sdf_color_range is used to color the points
-// for modes that use an SDF-based point cloud coloring function.
+/**
+ * Output the layer to ply file. Depending on the ply output type, this either
+ * exports all voxel centers colored by th SDF values or extracts the ISO
+ * surface as mesh. The parameter sdf_color_range is used to color the points
+ * for modes that use an SDF-based point cloud coloring function.
+ */
 template <typename VoxelType>
 bool outputLayerAsPly(const Layer<VoxelType>& layer,
                       const std::string& filename, PlyOutputTypes type,

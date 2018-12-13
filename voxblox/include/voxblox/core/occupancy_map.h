@@ -10,7 +10,7 @@
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
-
+/// Map holding an Occupancy Layer, inspired by Octomap.
 class OccupancyMap {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -156,6 +156,11 @@ catkin_add_gtest(test_bucket_queue
 )
 target_link_libraries(test_bucket_queue ${PROJECT_NAME})
 
+catkin_add_gtest(test_clear_spheres
+  test/test_clear_spheres.cc
+)
+target_link_libraries(test_clear_spheres ${PROJECT_NAME})
+
 ##########
 # EXPORT #
 ##########
