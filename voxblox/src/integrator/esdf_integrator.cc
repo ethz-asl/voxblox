@@ -327,7 +327,9 @@ void EsdfIntegrator::processRaiseSet() {
       if (config_.full_euclidean_distance) {
         Point voxel_parent_direction =
             neighbor_voxel->parent.cast<FloatingPoint>().normalized();
-        voxel_parent_direction = Eigen::round(voxel_parent_direction.array());
+        voxel_parent_direction = Point(std::round(voxel_parent_direction.x()),
+                                       std::round(voxel_parent_direction.y()),
+                                       std::round(voxel_parent_direction.z()));
         is_neighbors_parent =
             (voxel_parent_direction.cast<int>() == -direction);
       }
