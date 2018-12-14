@@ -104,7 +104,8 @@ void SimulationWorld::getPointcloudFromViewpoint(
         }
       }
       if (ray_valid) {
-        if (ray_intersect.array().isNaN().any()) {
+        if (std::isnan(ray_intersect.x()) || std::isnan(ray_intersect.y()) ||
+            std::isnan(ray_intersect.z())) {
           LOG(ERROR) << "Simulation ray intersect is NaN!";
           continue;
         }
@@ -172,7 +173,8 @@ void SimulationWorld::getNoisyPointcloudFromViewpoint(
         }
       }
       if (ray_valid) {
-        if (ray_intersect.array().isNaN().any()) {
+        if (std::isnan(ray_intersect.x()) || std::isnan(ray_intersect.y()) ||
+            std::isnan(ray_intersect.z())) {
           LOG(ERROR) << "Simulation ray intersect is NaN!";
           continue;
         }
