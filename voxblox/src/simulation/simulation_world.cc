@@ -69,8 +69,11 @@ void SimulationWorld::getPointcloudFromViewpoint(
   // Calculate transformation between nominal camera view direction and our
   // view direction. Nominal view is positive x direction.
   const Point nominal_view_direction(1.0, 0.0, 0.0);
-  const Rotation ray_rotation(Eigen::Quaternion<FloatingPoint>::FromTwoVectors(
-      nominal_view_direction, view_direction));
+  Eigen::Quaternion<FloatingPoint> rotation_quaternion =
+      Eigen::Quaternion<FloatingPoint>::FromTwoVectors(nominal_view_direction,
+                                                       view_direction);
+  rotation_quaternion.normalize();
+  const Rotation ray_rotation(rotation_quaternion);
 
   // Now actually iterate over all pixels.
   for (int u = -camera_res.x() / 2; u < camera_res.x() / 2; ++u) {
@@ -101,6 +104,11 @@ void SimulationWorld::getPointcloudFromViewpoint(
         }
       }
       if (ray_valid) {
+        if (std::isnan(ray_intersect.x()) || std::isnan(ray_intersect.y()) ||
+            std::isnan(ray_intersect.z())) {
+          LOG(ERROR) << "Simulation ray intersect is NaN!";
+          continue;
+        }
         ptcloud->push_back(ray_intersect);
         colors->push_back(ray_color);
       }
@@ -165,6 +173,11 @@ void SimulationWorld::getNoisyPointcloudFromViewpoint(
         }
       }
       if (ray_valid) {
+        if (std::isnan(ray_intersect.x()) || std::isnan(ray_intersect.y()) ||
+            std::isnan(ray_intersect.z())) {
+          LOG(ERROR) << "Simulation ray intersect is NaN!";
+          continue;
+        }
         // Apply noise now!
         FloatingPoint noise = getNoise(noise_sigma);
         ray_dist += noise;

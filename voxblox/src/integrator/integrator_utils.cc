@@ -193,6 +193,13 @@ bool RayCaster::nextRayIndex(GlobalIndex* ray_index) {
 
 void RayCaster::setupRayCaster(const Point& start_scaled,
                                const Point& end_scaled) {
+  if (std::isnan(start_scaled.x()) || std::isnan(start_scaled.y()) ||
+      std::isnan(start_scaled.z()) || std::isnan(end_scaled.x()) ||
+      std::isnan(end_scaled.y()) || std::isnan(end_scaled.z())) {
+    ray_length_in_steps_ = 0;
+    return;
+  }
+
   curr_index_ = getGridIndexFromPoint<GlobalIndex>(start_scaled);
   const GlobalIndex end_index = getGridIndexFromPoint<GlobalIndex>(end_scaled);
   const GlobalIndex diff_index = end_index - curr_index_;
@@ -217,13 +224,15 @@ void RayCaster::setupRayCaster(const Point& start_scaled,
   Ray distance_to_boundaries(corrected_step.cast<FloatingPoint>() -
                              start_scaled_shifted);
 
-  t_to_next_boundary_ =
-      Ray((std::abs(ray_scaled.x()) < 0.0) ? 2.0 : distance_to_boundaries.x() /
-                                                       ray_scaled.x(),
-          (std::abs(ray_scaled.y()) < 0.0) ? 2.0 : distance_to_boundaries.y() /
-                                                       ray_scaled.y(),
-          (std::abs(ray_scaled.z()) < 0.0) ? 2.0 : distance_to_boundaries.z() /
-                                                       ray_scaled.z());
+  t_to_next_boundary_ = Ray((std::abs(ray_scaled.x()) < 0.0)
+                                ? 2.0
+                                : distance_to_boundaries.x() / ray_scaled.x(),
+                            (std::abs(ray_scaled.y()) < 0.0)
+                                ? 2.0
+                                : distance_to_boundaries.y() / ray_scaled.y(),
+                            (std::abs(ray_scaled.z()) < 0.0)
+                                ? 2.0
+                                : distance_to_boundaries.z() / ray_scaled.z());
 
   // Distance to cross one grid cell along the ray in t.
   // Same as absolute inverse value of delta_coord.

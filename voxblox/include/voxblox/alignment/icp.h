@@ -53,23 +53,68 @@
 
 namespace voxblox {
 
+/**
+ * A class that performs point matching in an ICP like fashion to align a
+ * pointcloud with the existing TSDF information. Note the process is slightly
+ * different to traditional ICP:\n
+ * 1) A "mini batch" of points is selected and the transform that gives the
+ * minimum least squares error for their alignment is found.\n
+ * 2) The "information" contained in this alignment is estimated and used to
+ * fuse this refined transform with the initial guess.\n
+ * 3) The process is repeated with a new mini batch of points until all points
+ * in the pointcloud have been used.\n
+ * This scheme does not really iterate and uses the TSDF distances instead of
+ * building a kdtree. Both choices limit the capture region and so so assumes
+ * the initial guess is reasonably accurate. However, these limitations allow
+ * efficient correspondence estimation and parallelization, allowing efficient
+ * real time performance.
+ */
 class ICP {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  /// Contains all the information needed to setup the ICP class.
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     bool refine_roll_pitch = false;
+    /**
+     *  Number of points used in each alignment step. To allow simple threading
+     *   the ICP process is split up into a large number of separate alignments
+     *  performed on small pointclouds. This parameter dictates how many points
+     *  are used in each "mini batch". The result are then combined weighting
+     *  them by an estimate of the information gained by the alignment.
+     */
     int mini_batch_size = 20;
+    /**
+     * Ratio of points that must lie within the truncation distance of an
+     * allocated voxel
+     */
     FloatingPoint min_match_ratio = 0.8;
+    /// Ratio of points used in the ICP matching
     FloatingPoint subsample_keep_ratio = 0.5;
+    /**
+     * Weighting applied to the translational component of the initial guess.
+     * Very roughly corresponds to the inverse covariance of the initial guess
+     * multiplied by the variance in a measured points accuracy.
+     */
     FloatingPoint inital_translation_weighting = 100.0;
+    /**
+     * Weighting applied to the rotational component of the initial guess.
+     * See inital_translation_weighting for further details
+     */
     FloatingPoint inital_rotation_weighting = 100.0;
     size_t num_threads = std::thread::hardware_concurrency();
   };
 
+  /**
+   * A normal member taking two arguments and returning an integer value.
+   * @param config struct holding all relevant ICP parameters.
+   */
   explicit ICP(const Config& config);
 
-  // returns number of successful mini batches
+  /**
+   * Runs the ICP method to align the points with the tsdf_layer.
+   * @return the number of mini batches that were successful.
+   */
   size_t runICP(const Layer<TsdfVoxel>& tsdf_layer, const Pointcloud& points,
                 const Transformation& inital_T_tsdf_sensor,
                 Transformation* refined_T_tsdf_sensor,
@@ -82,6 +127,15 @@ class ICP {
  private:
   typedef Transformation::Vector6 Vector6;
 
+  /**
+   * Calculates the rotation that will give the least mean-squared error
+   * in aligning two sets of matched points. Assumes the pointclouds have the
+   * same mean.
+   * @param dim dimensionality of the alignment. dim = 2 performs yaw only
+   * alignment, dim = 3 performs full 3 dof alignment, all other values are
+   * invalid.
+   * @return true if a valid rotation matrix was calculated, false otherwise.
+   */
   template <size_t dim>
   static bool getRotationFromMatchedPoints(const PointsMatrix& src_demean,
                                            const PointsMatrix& tgt_demean,
@@ -118,23 +172,48 @@ class ICP {
     return Rotation::isValidRotationMatrix(rotation_matrix);
   }
 
+  /**
+   * Finds transform between a set of matching points that minimizes the
+   * least mean-squared error.
+   * @return true if T_tsdf_sensor was successfully estimated, false otherwise.
+   */
   static bool getTransformFromMatchedPoints(const PointsMatrix& src,
                                             const PointsMatrix& tgt,
                                             const bool refine_roll_pitch,
                                             Transformation* T_tsdf_sensor);
 
+  /**
+   * A measure that vaguely indicates the amount of information a point
+   *  contributes to the alignment estimate. The result can be taken as an
+   * approximation of the Hessian, "Normalized" as the uncertainty in the points
+   * is not used in its computation. Note this cannot be used as an absolute
+   * estimate of alignment quality as even highly self-similar environments will
+   * report sub-millimeter errors due to the baked in assumption that all
+   * correspondences are correct.
+   * @param info_vector vector representing the information over the 6-dof pose.
+   * The points information is added to the information existing in this vector.
+   */
   static void addNormalizedPointInfo(const Point& point,
                                      const Point& normalized_point_normal,
                                      Vector6* info_vector);
 
+  /// Generates a set of matching points from a pointcloud and tsdf layer.
   void matchPoints(const Pointcloud& points, const size_t start_idx,
                    const Transformation& T_tsdf_sensor, PointsMatrix* src,
                    PointsMatrix* tgt, Vector6* info_vector);
 
+  /**
+   * Performs one mini batch step and gives the refined transform.
+   * @return true if a valid transform was generated
+   */
   bool stepICP(const Pointcloud& points, const size_t start_idx,
                const Transformation& inital_T_tsdf_sensor,
                Transformation* refined_T_tsdf_sensor, Vector6* info_vector);
 
+  /**
+   * A thread safe function that will continually process points until the
+   * alignment is finished. Called by runICP.
+   */
   void runThread(const Pointcloud& points,
                  Transformation* current_T_tsdf_sensor,
                  Vector6* base_info_vector, size_t* num_updates);

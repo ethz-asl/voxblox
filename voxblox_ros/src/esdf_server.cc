@@ -22,7 +22,8 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
       clear_sphere_for_planning_(false),
       publish_esdf_map_(false),
       publish_traversable_(false),
-      traversability_radius_(1.0) {
+      traversability_radius_(1.0),
+      incremental_update_(true) {
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
@@ -55,7 +56,7 @@ void EsdfServer::setupRos() {
                     clear_sphere_for_planning_);
   nh_private_.param("publish_esdf_map", publish_esdf_map_, publish_esdf_map_);
 
-  // Special output for traversible voxels. Publishes all voxels with distance
+  // Special output for traversable voxels. Publishes all voxels with distance
   // at least traversibility radius.
   nh_private_.param("publish_traversable", publish_traversable_,
                     publish_traversable_);
@@ -103,7 +104,8 @@ bool EsdfServer::generateEsdfCallback(
 
 void EsdfServer::updateMesh() {
   // Also update the ESDF now, if there's any blocks in the TSDF.
-  if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+  if (incremental_update_ &&
+      tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = false;
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   }
@@ -187,11 +189,8 @@ void EsdfServer::updateEsdf() {
 
 void EsdfServer::updateEsdfBatch(bool full_euclidean) {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
-    if (full_euclidean) {
-      esdf_integrator_->updateFromTsdfLayerBatchFullEuclidean();
-    } else {
-      esdf_integrator_->updateFromTsdfLayerBatch();
-    }
+    esdf_integrator_->setFullEuclidean(full_euclidean);
+    esdf_integrator_->updateFromTsdfLayerBatch();
   }
 }
 
@@ -230,8 +229,7 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
     ROS_ERROR_THROTTLE(10, "Got an invalid ESDF map message!");
   } else {
     ROS_INFO_ONCE("Got an ESDF map from ROS topic!");
-    publishAllUpdatedEsdfVoxels();
-    publishSlices();
+    publishPointclouds();
   }
 }
 

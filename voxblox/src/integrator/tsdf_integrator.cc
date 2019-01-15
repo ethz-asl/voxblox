@@ -5,6 +5,45 @@
 
 namespace voxblox {
 
+TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
+    const std::string& integrator_type_name,
+    const TsdfIntegratorBase::Config& config, Layer<TsdfVoxel>* layer) {
+  CHECK(!integrator_type_name.empty());
+
+  int integrator_type = 1;
+  for (const std::string& valid_integrator_type_name :
+       kTsdfIntegratorTypeNames) {
+    if (integrator_type_name == valid_integrator_type_name) {
+      return create(static_cast<TsdfIntegratorType>(integrator_type), config,
+                    layer);
+    }
+    ++integrator_type;
+  }
+  LOG(FATAL) << "Unknown TSDF integrator type: " << integrator_type_name;
+}
+
+TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
+    const TsdfIntegratorType integrator_type,
+    const TsdfIntegratorBase::Config& config, Layer<TsdfVoxel>* layer) {
+  CHECK_NOTNULL(layer);
+  switch (integrator_type) {
+    case TsdfIntegratorType::kSimple:
+      return TsdfIntegratorBase::Ptr(new SimpleTsdfIntegrator(config, layer));
+      break;
+    case TsdfIntegratorType::kMerged:
+      return TsdfIntegratorBase::Ptr(new MergedTsdfIntegrator(config, layer));
+      break;
+    case TsdfIntegratorType::kFast:
+      return TsdfIntegratorBase::Ptr(new FastTsdfIntegrator(config, layer));
+      break;
+    default:
+      LOG(FATAL) << "Unknown TSDF integrator type: "
+                 << static_cast<int>(integrator_type);
+      break;
+  }
+  return TsdfIntegratorBase::Ptr();
+}
+
 // Note many functions state if they are thread safe. Unless explicitly stated
 // otherwise, this thread safety is based on the assumption that any pointers
 // passed to the functions point to objects that are guaranteed to not be
@@ -12,16 +51,8 @@ namespace voxblox {
 
 TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
                                        Layer<TsdfVoxel>* layer)
-    : config_(config), layer_(layer) {
-  DCHECK(layer_);
-
-  voxel_size_ = layer_->voxel_size();
-  block_size_ = layer_->block_size();
-  voxels_per_side_ = layer_->voxels_per_side();
-
-  voxel_size_inv_ = 1.0 / voxel_size_;
-  block_size_inv_ = 1.0 / block_size_;
-  voxels_per_side_inv_ = 1.0 / voxels_per_side_;
+    : config_(config) {
+  setLayer(layer);
 
   if (config_.integrator_threads == 0) {
     LOG(WARNING) << "Automatic core count failed, defaulting to 1 threads";
@@ -31,6 +62,20 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
   if (config_.allow_clear && !config_.voxel_carving_enabled) {
     config_.allow_clear = false;
   }
+}
+
+void TsdfIntegratorBase::setLayer(Layer<TsdfVoxel>* layer) {
+  CHECK_NOTNULL(layer);
+
+  layer_ = layer;
+
+  voxel_size_ = layer_->voxel_size();
+  block_size_ = layer_->block_size();
+  voxels_per_side_ = layer_->voxels_per_side();
+
+  voxel_size_inv_ = 1.0 / voxel_size_;
+  block_size_inv_ = 1.0 / block_size_;
+  voxels_per_side_inv_ = 1.0 / voxels_per_side_;
 }
 
 // Thread safe.

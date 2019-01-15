@@ -14,7 +14,10 @@
 #include "voxblox/io/layer_io.h"
 
 namespace voxblox {
-
+/**
+ * Map holding a Euclidean Signed Distance Field Layer. Contains functions for
+ * interacting with the layer and getting gradient and distance information.
+ */
 class EsdfMap {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -35,11 +38,11 @@ class EsdfMap {
     block_size_ = config.esdf_voxel_size * config.esdf_voxels_per_side;
   }
 
-  // Creates a new EsdfMap based on a COPY of this layer.
+  /// Creates a new EsdfMap based on a COPY of this layer.
   explicit EsdfMap(const Layer<EsdfVoxel>& layer)
       : EsdfMap(aligned_shared<Layer<EsdfVoxel>>(layer)) {}
 
-  // Creates a new EsdfMap that contains this layer.
+  /// Creates a new EsdfMap that contains this layer.
   explicit EsdfMap(Layer<EsdfVoxel>::Ptr layer)
       : esdf_layer_(layer), interpolator_(CHECK_NOTNULL(esdf_layer_.get())) {
     block_size_ = layer->block_size();
@@ -53,11 +56,13 @@ class EsdfMap {
   FloatingPoint block_size() const { return block_size_; }
   FloatingPoint voxel_size() const { return esdf_layer_->voxel_size(); }
 
-  // Specific accessor functions for esdf maps.
-  // Returns true if the point exists in the map AND is observed.
-  // These accessors use Vector3d and doubles explicitly rather than
-  // FloatingPoint to have a standard, cast-free interface to planning
-  // functions.
+  /**
+   * Specific accessor functions for esdf maps.
+   * Returns true if the point exists in the map AND is observed.
+   * These accessors use Vector3d and doubles explicitly rather than
+   * FloatingPoint to have a standard, cast-free interface to planning
+   * functions.
+   */
   bool getDistanceAtPosition(const Eigen::Vector3d& position,
                              double* distance) const;
   bool getDistanceAtPosition(const Eigen::Vector3d& position, bool interpolate,
@@ -99,10 +104,12 @@ class EsdfMap {
   unsigned int coordPlaneSliceGetCount(unsigned int free_plane_index,
                                        double free_plane_val) const;
 
-  // Extract all voxels on a slice plane that is parallel to one of the
-  // axis-aligned planes.
-  // free_plane_index specifies the free coordinate (zero-based; x, y, z order)
-  // free_plane_val specifies the plane intercept coordinate along that axis
+  /**
+   * Extract all voxels on a slice plane that is parallel to one of the
+   * axis-aligned planes. free_plane_index specifies the free coordinate
+   * (zero-based; x, y, z order) free_plane_val specifies the plane intercept
+   * coordinate along that axis
+   */
   unsigned int coordPlaneSliceGetDistance(
       unsigned int free_plane_index, double free_plane_val,
       EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
