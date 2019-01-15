@@ -452,7 +452,8 @@ void TsdfServer::publishTsdfSurfacePoints() {
   const float surface_distance_thresh =
       tsdf_map_->getTsdfLayer().voxel_size() * 0.75;
   createSurfacePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(),
-                                       surface_distance_thresh, &pointcloud);
+                                       surface_distance_thresh, &pointcloud,
+                                       mesh_integrator_->config().min_weight);
 
   pointcloud.header.frame_id = world_frame_;
   surface_pointcloud_pub_.publish(pointcloud);

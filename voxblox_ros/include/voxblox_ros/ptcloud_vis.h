@@ -177,10 +177,10 @@ void createOccupancyBlocksFromLayer(
 inline bool visualizeNearSurfaceTsdfVoxels(const TsdfVoxel& voxel,
                                            const Point& /*coord*/,
                                            double surface_distance,
-                                           Color* color) {
+                                           Color* color,
+                                           const float min_weight = 1e-4) {
   CHECK_NOTNULL(color);
-  constexpr float kMinWeight = 0;
-  if (voxel.weight > kMinWeight &&
+  if (voxel.weight > min_weight &&
       std::abs(voxel.distance) < surface_distance) {
     *color = voxel.color;
     return true;
@@ -310,12 +310,13 @@ inline bool visualizeOccupiedOccupancyVoxels(const OccupancyVoxel& voxel,
  */
 inline void createSurfacePointcloudFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, double surface_distance,
-    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>* pointcloud,
+    const float min_weight = 1e-4) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer,
       std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
-                surface_distance, ph::_3),
+                surface_distance, ph::_3, min_weight),
       pointcloud);
 }
 
