@@ -9,6 +9,9 @@
 namespace voxblox {
 namespace test {
 
+/**
+ * Holds functions for comparing layers, blocks, voxels, etc for testing
+ */
 template <typename VoxelType>
 class LayerTest {
  public:
@@ -79,8 +82,8 @@ class LayerTest {
 };
 
 template <typename VoxelType>
-void LayerTest<VoxelType>::CompareVoxel(const VoxelType& voxel_A,
-                                        const VoxelType& voxel_B) const {
+void LayerTest<VoxelType>::CompareVoxel(const VoxelType& /* voxel_A */,
+                                        const VoxelType& /* voxel_B */) const {
   LOG(FATAL) << "Not implemented for this voxel type!";
 }
 
@@ -120,6 +123,13 @@ void LayerTest<TsdfVoxel>::CompareVoxel(const TsdfVoxel& voxel_A,
   EXPECT_EQ(voxel_A.color.g, voxel_B.color.g);
   EXPECT_EQ(voxel_A.color.b, voxel_B.color.b);
   EXPECT_EQ(voxel_A.color.a, voxel_B.color.a);
+}
+
+template <>
+void LayerTest<IntensityVoxel>::CompareVoxel(
+    const IntensityVoxel& voxel_A, const IntensityVoxel& voxel_B) const {
+  EXPECT_NEAR(voxel_A.intensity, voxel_B.intensity, kTolerance);
+  EXPECT_NEAR(voxel_A.weight, voxel_B.weight, kTolerance);
 }
 
 template <typename VoxelType>
@@ -196,6 +206,14 @@ inline void fillVoxelWithTestData(size_t x, size_t y, size_t z,
   CHECK_NOTNULL(voxel);
   voxel->probability_log = x * y * 0.66 + z;
   voxel->observed = true;
+}
+
+template <>
+inline void fillVoxelWithTestData(size_t x, size_t y, size_t z,
+                                  IntensityVoxel* voxel) {
+  CHECK_NOTNULL(voxel);
+  voxel->intensity = x * y * 0.66 + z;
+  voxel->weight = y * z * 0.33 + x;
 }
 
 }  // namespace test

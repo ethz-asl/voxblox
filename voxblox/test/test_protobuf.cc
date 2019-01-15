@@ -36,6 +36,7 @@ class ProtobufTest : public ::testing::Test,
 typedef ProtobufTest<TsdfVoxel> ProtobufTsdfTest;
 typedef ProtobufTest<EsdfVoxel> ProtobufEsdfTest;
 typedef ProtobufTest<OccupancyVoxel> ProtobufOccupancyTest;
+typedef ProtobufTest<IntensityVoxel> ProtobufIntensityTest;
 
 TEST_F(ProtobufTsdfTest, BlockSerialization) {
   BlockIndexList block_index_list;
@@ -126,6 +127,38 @@ TEST_F(ProtobufEsdfTest, LayerSerialization) {
 
   // Create from LayerProto header.
   Layer<EsdfVoxel> layer_from_proto(proto_layer);
+
+  // Remove all blocks for comparison.
+  layer_->removeAllBlocks();
+
+  CompareLayers(*layer_, layer_from_proto);
+}
+
+TEST_F(ProtobufIntensityTest, BlockSerialization) {
+  BlockIndexList block_index_list;
+  layer_->getAllAllocatedBlocks(&block_index_list);
+  for (const BlockIndex& index : block_index_list) {
+    Block<IntensityVoxel>::Ptr block = layer_->getBlockPtrByIndex(index);
+    ASSERT_NE(block.get(), nullptr);
+
+    // Convert to BlockProto.
+    BlockProto proto_block;
+    block->getProto(&proto_block);
+
+    // Create from BlockProto.
+    Block<IntensityVoxel> block_from_proto(proto_block);
+
+    CompareBlocks(*block, block_from_proto);
+  }
+}
+
+TEST_F(ProtobufIntensityTest, LayerSerialization) {
+  // Convert to LayerProto.
+  LayerProto proto_layer;
+  layer_->getProto(&proto_layer);
+
+  // Create from LayerProto header.
+  Layer<IntensityVoxel> layer_from_proto(proto_layer);
 
   // Remove all blocks for comparison.
   layer_->removeAllBlocks();

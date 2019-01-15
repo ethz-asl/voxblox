@@ -13,7 +13,8 @@ namespace voxblox {
 namespace utils {
 
 template <typename VoxelType>
-bool isSameVoxel(const VoxelType& voxel_A, const VoxelType& voxel_B) {
+bool isSameVoxel(const VoxelType& /* voxel_A */,
+                 const VoxelType& /* voxel_B */) {
   LOG(FATAL) << "Not implemented for this voxel type!";
   return false;
 }
@@ -116,9 +117,11 @@ bool isSameVoxel(const EsdfVoxel& voxel_A, const EsdfVoxel& voxel_B);
 template <>
 bool isSameVoxel(const OccupancyVoxel& voxel_A, const OccupancyVoxel& voxel_B);
 
-// This function will shift all the blocks such that the new grid origin will be
-// close to the centroid of all allocated blocks. The new_layer_origin is the
-// origin of the new grid expressed in the old grids coordinate frame.
+/**
+ * This function will shift all the blocks such that the new grid origin will be
+ * close to the centroid of all allocated blocks. The new_layer_origin is the
+ * origin of the new grid expressed in the old grids coordinate frame.
+ */
 template <typename VoxelType>
 void centerBlocksOfLayer(Layer<VoxelType>* layer, Point* new_layer_origin) {
   CHECK_NOTNULL(layer);

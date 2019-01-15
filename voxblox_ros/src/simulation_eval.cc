@@ -15,8 +15,8 @@ class SimulationServerImpl : public voxblox::SimulationServer {
     world_.addObject(std::unique_ptr<Object>(
         new Sphere(Point(0.0, 0.0, 2.0), 2.0, Color::Red())));
 
-    world_.addObject(std::unique_ptr<Object>(
-        new PlaneObject(Point(-2.0, -4.0, 2.0), Point(0, 1, 0), Color::White())));
+    world_.addObject(std::unique_ptr<Object>(new PlaneObject(
+        Point(-2.0, -4.0, 2.0), Point(0, 1, 0), Color::White())));
 
     world_.addObject(std::unique_ptr<Object>(
         new PlaneObject(Point(4.0, 0.0, 0.0), Point(-1, 0, 0), Color::Pink())));

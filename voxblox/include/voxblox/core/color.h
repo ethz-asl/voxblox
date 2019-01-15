@@ -7,9 +7,11 @@ namespace voxblox {
 
 // Color maps.
 
-// The input h is on a scale between 0.0 and 1.0.
+/**
+ * Maps an input h from a value between 0.0 and 1.0 into a rainbow. Copied from
+ * OctomapProvider in octomap.
+ */
 inline Color rainbowColorMap(double h) {
-  // Directly from OctomapProvider in octomap.
   Color color;
   color.a = 255;
   // blend over HSV-values (more colors)
@@ -70,12 +72,13 @@ inline Color rainbowColorMap(double h) {
   return color;
 }
 
+/// Maps an input h from a value between 0.0 and 1.0 into a grayscale color.
 inline Color grayColorMap(double h) {
   Color color;
   color.a = 255;
 
   color.r = round(h * 255);
-  color.b = 128;
+  color.b = color.r;
   color.g = color.r;
 
   return color;

@@ -41,6 +41,7 @@ inline void colorMsgToVoxblox(const std_msgs::ColorRGBA& color_msg,
 inline void pointcloudToPclXYZRGB(
     const Pointcloud& ptcloud, const Colors& colors,
     pcl::PointCloud<pcl::PointXYZRGB>* ptcloud_pcl) {
+  CHECK_NOTNULL(ptcloud_pcl);
   ptcloud_pcl->clear();
   ptcloud_pcl->reserve(ptcloud.size());
   for (size_t i = 0; i < ptcloud.size(); ++i) {
@@ -59,6 +60,7 @@ inline void pointcloudToPclXYZRGB(
 
 inline void pointcloudToPclXYZ(const Pointcloud& ptcloud,
                                pcl::PointCloud<pcl::PointXYZ>* ptcloud_pcl) {
+  CHECK_NOTNULL(ptcloud_pcl);
   ptcloud_pcl->clear();
   ptcloud_pcl->reserve(ptcloud.size());
   for (size_t i = 0; i < ptcloud.size(); ++i) {
@@ -71,6 +73,24 @@ inline void pointcloudToPclXYZ(const Pointcloud& ptcloud,
   }
 }
 
+inline void pointcloudToPclXYZI(const Pointcloud& ptcloud,
+                                const std::vector<float>& intensities,
+                                pcl::PointCloud<pcl::PointXYZI>* ptcloud_pcl) {
+  CHECK_NOTNULL(ptcloud_pcl);
+  CHECK_EQ(ptcloud.size(), intensities.size());
+  ptcloud_pcl->clear();
+  ptcloud_pcl->reserve(ptcloud.size());
+  for (size_t i = 0; i < ptcloud.size(); ++i) {
+    pcl::PointXYZI point;
+    point.x = ptcloud[i].x();
+    point.y = ptcloud[i].y();
+    point.z = ptcloud[i].z();
+    point.intensity = intensities[i];
+
+    ptcloud_pcl->push_back(point);
+  }
+}
+
 // Declarations
 template <typename VoxelType>
 void serializeLayerAsMsg(
@@ -78,10 +98,12 @@ void serializeLayerAsMsg(
     voxblox_msgs::Layer* msg,
     const MapDerializationAction& action = MapDerializationAction::kUpdate);
 
-// Returns true if could parse the data into the existing layer (all parameters
-// are compatible), false otherwise.
-// This function will use the deserialization action suggested by the layer
-// message.
+/**
+ * Returns true if could parse the data into the existing layer (all parameters
+ * are compatible), false otherwise.
+ * This function will use the deserialization action suggested by the layer
+ * message.
+ */
 template <typename VoxelType>
 bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
                            Layer<VoxelType>* layer);

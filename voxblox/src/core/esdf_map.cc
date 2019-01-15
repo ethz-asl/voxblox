@@ -4,7 +4,12 @@ namespace voxblox {
 
 bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
                                     double* distance) const {
-  constexpr bool interpolate = false;
+  constexpr bool interpolate = true;
+  return getDistanceAtPosition(position, interpolate, distance);
+}
+
+bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
+                                    bool interpolate, double* distance) const {
   FloatingPoint distance_fp;
   bool success = interpolator_.getDistance(position.cast<FloatingPoint>(),
                                            &distance_fp, interpolate);
@@ -17,9 +22,16 @@ bool EsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
 bool EsdfMap::getDistanceAndGradientAtPosition(
     const Eigen::Vector3d& position, double* distance,
     Eigen::Vector3d* gradient) const {
+  constexpr bool interpolate = true;
+  return getDistanceAndGradientAtPosition(position, interpolate, distance,
+                                          gradient);
+}
+
+bool EsdfMap::getDistanceAndGradientAtPosition(
+    const Eigen::Vector3d& position, bool interpolate, double* distance,
+    Eigen::Vector3d* gradient) const {
   FloatingPoint distance_fp = 0.0;
   Point gradient_fp = Point::Zero();
-  bool interpolate = true;
   bool use_adaptive = false;
   bool success = false;
   if (use_adaptive) {
@@ -50,10 +62,9 @@ bool EsdfMap::isObserved(const Eigen::Vector3d& position) const {
   return false;
 }
 
-/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
- * Python bindings. std::exceptions are bound to Python exceptions by pybind11,
- * allowing them to be handled in Python code idiomatically.
- */
+// NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
+// Python bindings. std::exceptions are bound to Python exceptions by pybind11,
+// allowing them to be handled in Python code idiomatically.
 void EsdfMap::batchGetDistanceAtPosition(
     EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
     Eigen::Ref<Eigen::VectorXd> distances,
@@ -71,10 +82,9 @@ void EsdfMap::batchGetDistanceAtPosition(
   }
 }
 
-/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
- * Python bindings. std::exceptions are bound to Python exceptions by pybind11,
- * allowing them to be handled in Python code idiomatically.
- */
+// NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
+// Python bindings. std::exceptions are bound to Python exceptions by pybind11,
+// allowing them to be handled in Python code idiomatically.
 void EsdfMap::batchGetDistanceAndGradientAtPosition(
     EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
     Eigen::Ref<Eigen::VectorXd> distances,
@@ -101,10 +111,9 @@ void EsdfMap::batchGetDistanceAndGradientAtPosition(
   }
 }
 
-/* NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
- * Python bindings. std::exceptions are bound to Python exceptions by pybind11,
- * allowing them to be handled in Python code idiomatically.
- */
+// NOTE(mereweth@jpl.nasa.gov) - this function is a convenience function for
+// Python bindings. std::exceptions are bound to Python exceptions by pybind11,
+// allowing them to be handled in Python code idiomatically.
 void EsdfMap::batchIsObserved(
     EigenDRef<const Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
     Eigen::Ref<Eigen::VectorXi> observed) const {
@@ -132,15 +141,8 @@ unsigned int EsdfMap::coordPlaneSliceGetDistance(
   bool did_all_fit = true;
   unsigned int count = 0;
 
-  /* TODO(mereweth@jpl.nasa.gov) - store min/max index (per axis) allocated in
-   * Layer This extra bookeeping will make this much faster
-   * // Iterate over all blocks corresponding to slice plane
-   * Point on_slice_plane(0, 0, 0);
-   * on_slice_plane(free_plane_index) = free_plane_val;
-   * BlockIndex block_index =
-   *   esdf_layer_->computeBlockIndexFromCoordinates(on_slice_plane);
-   */
-
+  // TODO(mereweth@jpl.nasa.gov) - store min/max index (per axis) allocated in
+  // Layer This extra bookeeping will make this much faster
   for (const BlockIndex& index : blocks) {
     // Iterate over all voxels in said blocks.
     const Block<EsdfVoxel>& block = esdf_layer_->getBlockByIndex(index);

@@ -27,6 +27,11 @@
 
 namespace voxblox {
 
+/**
+ * Performs the marching cubes algorithm to generate a mesh layer from a TSDF.
+ * Implementation taken from Open Chisel
+ * https://github.com/personalrobotics/OpenChisel
+ */
 class MarchingCubes {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -137,8 +142,10 @@ class MarchingCubes {
     }
   }
 
-  // Performs linear interpolation on two cube corners to find the approximate
-  // zero crossing (surface) value.
+  /**
+   * Performs linear interpolation on two cube corners to find the approximate
+   * zero crossing (surface) value.
+   */
   static inline Point interpolateVertex(const Point& vertex1,
                                         const Point& vertex2, float sdf1,
                                         float sdf2) {
