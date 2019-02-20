@@ -79,6 +79,8 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   nh_private.param("max_weight", max_weight, max_weight);
   nh_private.param("use_const_weight", integrator_config.use_const_weight,
                    integrator_config.use_const_weight);
+  nh_private.param("use_weight_dropoff", integrator_config.use_weight_dropoff,
+                   integrator_config.use_weight_dropoff);
   nh_private.param("allow_clear", integrator_config.allow_clear,
                    integrator_config.allow_clear);
   nh_private.param("start_voxel_subsampling_factor",
@@ -95,6 +97,12 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
                    integrator_config.max_integration_time_s);
   nh_private.param("anti_grazing", integrator_config.enable_anti_grazing,
                    integrator_config.enable_anti_grazing);
+  nh_private.param("use_sparsity_compensation_factor",
+                   integrator_config.use_sparsity_compensation_factor,
+                   integrator_config.use_sparsity_compensation_factor);
+  nh_private.param("sparsity_compensation_factor",
+                   integrator_config.sparsity_compensation_factor,
+                   integrator_config.sparsity_compensation_factor);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);

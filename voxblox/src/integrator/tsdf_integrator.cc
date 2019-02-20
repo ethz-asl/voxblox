@@ -183,7 +183,7 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
   // Compute updated weight in case we use weight dropoff. It's easier here
   // that in getVoxelWeight as here we have the actual SDF for the voxel
   // already computed.
-  const FloatingPoint dropoff_epsilon = voxel_size_;
+  const FloatingPoint dropoff_epsilon = 0.0;
   if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
     updated_weight = weight * (config_.default_truncation_distance + sdf) /
                      (config_.default_truncation_distance - dropoff_epsilon);
