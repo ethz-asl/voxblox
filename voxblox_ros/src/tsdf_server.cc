@@ -37,21 +37,9 @@ void TsdfServer::getServerConfigFromRosParam(
 
   // Mesh settings.
   nh_private.param("mesh_filename", mesh_filename_, mesh_filename_);
-  std::string color_mode("color");
+  std::string color_mode("");
   nh_private.param("color_mode", color_mode, color_mode);
-  if (color_mode == "color" || color_mode == "colors") {
-    color_mode_ = ColorMode::kColor;
-  } else if (color_mode == "height") {
-    color_mode_ = ColorMode::kHeight;
-  } else if (color_mode == "normals") {
-    color_mode_ = ColorMode::kNormals;
-  } else if (color_mode == "lambert") {
-    color_mode_ = ColorMode::kLambert;
-  } else if (color_mode == "lambert_color") {
-    color_mode_ = ColorMode::kLambertColor;
-  } else {  // Default case is gray.
-    color_mode_ = ColorMode::kGray;
-  }
+  color_mode_ = getColorModeFromString(color_mode);
 
   // Color map for intensity pointclouds.
   std::string intensity_colormap("rainbow");
