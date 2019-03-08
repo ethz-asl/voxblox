@@ -49,6 +49,18 @@ struct MeshIntegratorConfig {
   float min_weight = 1e-4;
 
   size_t integrator_threads = std::thread::hardware_concurrency();
+
+  inline std::string print() const {
+    std::stringstream ss;
+    // clang-format off
+    ss << "================== Mesh Integrator Config ====================\n";
+    ss << " - use_color:                 " << use_color << "\n";
+    ss << " - min_weight:                " << min_weight << "\n";
+    ss << " - integrator_threads:        " << integrator_threads << "\n";
+    ss << "==============================================================\n";
+    // clang-format on
+    return ss.str();
+  }
 };
 
 /**

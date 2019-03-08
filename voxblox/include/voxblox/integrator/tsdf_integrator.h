@@ -66,6 +66,9 @@ class TsdfIntegratorBase {
     bool use_weight_dropoff = true;
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
+
+    bool voxel_carving_ignores_voxels_near_surface = false;
+
     size_t integrator_threads = std::thread::hardware_concurrency();
 
     /// merge integrator specific
@@ -79,6 +82,8 @@ class TsdfIntegratorBase {
     int clear_checks_every_n_frames = 1;
     /// fast integrator specific
     float max_integration_time_s = std::numeric_limits<float>::max();
+
+    std::string print() const;
   };
 
   TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer);
