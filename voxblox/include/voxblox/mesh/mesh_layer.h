@@ -276,6 +276,21 @@ class MeshLayer {
 
   size_t getNumberOfAllocatedMeshes() const { return mesh_map_.size(); }
 
+  inline size_t getMemorySize() const {
+    size_t size_bytes = 0u;
+
+    // Calculate size of members
+    size_bytes += sizeof(block_size_);
+    size_bytes += sizeof(block_size_inv_);
+
+    // Calculate size of mesh blocks
+    for (const auto& idx_mesh_pair : mesh_map_) {
+      CHECK(idx_mesh_pair.second);
+      size_bytes += idx_mesh_pair.second->getMemorySize();
+    }
+    return size_bytes;
+  }
+
   /// Deletes ALL parts of the mesh.
   void clear() { mesh_map_.clear(); }
 
