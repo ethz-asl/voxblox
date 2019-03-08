@@ -19,6 +19,7 @@ TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
     ++integrator_type;
   }
   LOG(FATAL) << "Unknown TSDF integrator type: " << integrator_type_name;
+  return TsdfIntegratorBase::Ptr();
 }
 
 TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
@@ -51,7 +52,6 @@ TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
 TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
                                        Layer<TsdfVoxel>* layer)
     : config_(config) {
-
   setLayer(layer);
 
   if (config_.integrator_threads == 0) {
@@ -221,8 +221,23 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
   if (std::abs(sdf) < config_.default_truncation_distance) {
     tsdf_voxel->color = Color::blendTwoColors(
         tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+  } else if (config_.voxel_carving_ignores_voxels_near_surface) {
+    // If a clearing ray is passing a voxel, the only constraint it should be
+    // able to enforce on that voxel is that it is in free space, and
+    // therefore not interfering with the direct line of sight. It shouldn't
+    // contribute to the weighted average of the SDF, since the projective
+    // distance to the surface is always overestimating the real, euclidean
+    // distance and the further away we are from the observed surface the
+    // worse it gets. However, this does not fully solve the problem, because
+    // due to the discretization of the voxel grid, the clearing ray could be
+    // grazing a voxel that actually lies just within the boundaries of the
+    // surface without actually crossing the surface.
+    if (tsdf_voxel->distance > 0.0 &&
+        tsdf_voxel->distance < config_.default_truncation_distance &&
+        tsdf_voxel->weight > 0.0) {
+      return;
+    }
   }
-
   tsdf_voxel->distance =
       (new_sdf > 0.0) ? std::min(config_.default_truncation_distance, new_sdf)
                       : std::max(-config_.default_truncation_distance, new_sdf);
@@ -604,6 +619,35 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   timing::Timer insertion_timer("inserting_missed_blocks");
   updateLayerWithStoredBlocks();
   insertion_timer.Stop();
+}
+
+std::string TsdfIntegratorBase::Config::print() const {
+  std::stringstream ss;
+  // clang-format off
+  ss << "================== TSDF Integrator Config ====================\n";
+  ss << " General: \n";
+  ss << " - default_truncation_distance:               " << default_truncation_distance << "\n";
+  ss << " - max_weight:                                " << max_weight << "\n";
+  ss << " - voxel_carving_enabled:                     " << voxel_carving_enabled << "\n";
+  ss << " - min_ray_length_m:                          " << min_ray_length_m << "\n";
+  ss << " - max_ray_length_m:                          " << max_ray_length_m << "\n";
+  ss << " - use_const_weight:                          " << use_const_weight << "\n";
+  ss << " - allow_clear:                               " << allow_clear << "\n";
+  ss << " - use_weight_dropoff:                        " << use_weight_dropoff << "\n";
+  ss << " - use_sparsity_compensation_factor:          " << use_sparsity_compensation_factor << "\n";
+  ss << " - sparsity_compensation_factor:              "  << sparsity_compensation_factor << "\n";
+  ss << " - voxel_carving_ignores_voxels_near_surface: " << voxel_carving_ignores_voxels_near_surface << "\n";
+  ss << " - integrator_threads:                        " << integrator_threads << "\n";
+  ss << " MergedTsdfIntegrator: \n";
+  ss << " - enable_anti_grazing:                       " << enable_anti_grazing << "\n";
+  ss << " FastTsdfIntegrator: \n";
+  ss << " - start_voxel_subsampling_factor:            " << start_voxel_subsampling_factor << "\n";
+  ss << " - max_consecutive_ray_collisions:            " << max_consecutive_ray_collisions << "\n";
+  ss << " - clear_checks_every_n_frames:               " << clear_checks_every_n_frames << "\n";
+  ss << " - max_integration_time_s:                    " << max_integration_time_s << "\n";
+  ss << "==============================================================\n";
+  // clang-format on
+  return ss.str();
 }
 
 }  // namespace voxblox

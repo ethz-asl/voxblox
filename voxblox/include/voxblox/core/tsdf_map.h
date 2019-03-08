@@ -26,6 +26,8 @@ class TsdfMap {
 
     FloatingPoint tsdf_voxel_size = 0.2;
     size_t tsdf_voxels_per_side = 16u;
+
+    std::string print() const;
   };
 
   explicit TsdfMap(const Config& config)
