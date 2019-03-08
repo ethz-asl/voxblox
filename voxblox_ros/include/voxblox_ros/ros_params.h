@@ -103,6 +103,9 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   nh_private.param("sparsity_compensation_factor",
                    integrator_config.sparsity_compensation_factor,
                    integrator_config.sparsity_compensation_factor);
+  nh_private.param("voxel_carving_ignores_voxels_near_surface",
+                   integrator_config.voxel_carving_ignores_voxels_near_surface,
+                   integrator_config.voxel_carving_ignores_voxels_near_surface);
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
