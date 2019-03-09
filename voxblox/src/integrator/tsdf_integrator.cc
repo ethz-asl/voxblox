@@ -281,13 +281,15 @@ void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const bool freespace_points) {
   timing::Timer integrate_timer("integrate/simple");
   CHECK_EQ(points_C.size(), colors.size());
-  ThreadSafeIndex index_getter(points_C.size());
+
+  std::unique_ptr<ThreadSafeIndex> index_getter(
+      ThreadSafeIndexFactory::get(config_.integration_order_mode, points_C));
 
   std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&SimpleTsdfIntegrator::integrateFunction,
                                      this, T_G_C, points_C, colors,
-                                     freespace_points, &index_getter);
+                                     freespace_points, index_getter.get());
   }
 
   for (std::thread& thread : integration_threads) {
@@ -352,9 +354,10 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   // cleared.
   LongIndexHashMapType<AlignedVector<size_t>>::type clear_map;
 
-  ThreadSafeIndex index_getter(points_C.size());
+  std::unique_ptr<ThreadSafeIndex> index_getter(
+      ThreadSafeIndexFactory::get(config_.integration_order_mode, points_C));
 
-  bundleRays(T_G_C, points_C, freespace_points, &index_getter, &voxel_map,
+  bundleRays(T_G_C, points_C, freespace_points, index_getter.get(), &voxel_map,
              &clear_map);
 
   integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, false,
@@ -539,10 +542,10 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 
     const Point origin = T_G_C.getPosition();
     const Point point_G = T_G_C * point_C;
-    // Checks to see if another ray in this scan has already started 'close' to
-    // this location. If it has then we skip ray casting this point. We measure
-    // if a start location is 'close' to another points by inserting the point
-    // into a set of voxels. This voxel set has a resolution
+    // Checks to see if another ray in this scan has already started 'close'
+    // to this location. If it has then we skip ray casting this point. We
+    // measure if a start location is 'close' to another points by inserting
+    // the point into a set of voxels. This voxel set has a resolution
     // start_voxel_subsampling_factor times higher then the voxel size.
     GlobalIndex global_voxel_idx;
     global_voxel_idx = getGridIndexFromPoint<GlobalIndex>(
@@ -562,10 +565,10 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     Block<TsdfVoxel>::Ptr block = nullptr;
     BlockIndex block_idx;
     while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-      // Check if the current voxel has been seen by any ray cast this scan. If
-      // it has increment the consecutive_ray_collisions counter, otherwise
-      // reset it. If the counter reaches a threshold we stop casting as the ray
-      // is deemed to be contributing too little new information.
+      // Check if the current voxel has been seen by any ray cast this scan.
+      // If it has increment the consecutive_ray_collisions counter, otherwise
+      // reset it. If the counter reaches a threshold we stop casting as the
+      // ray is deemed to be contributing too little new information.
       if (!voxel_observed_approx_set_.replaceHash(global_voxel_idx)) {
         ++consecutive_ray_collisions;
       } else {
@@ -601,13 +604,14 @@ void FastTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
     voxel_observed_approx_set_.resetApproxSet();
   }
 
-  ThreadSafeIndex index_getter(points_C.size());
+  std::unique_ptr<ThreadSafeIndex> index_getter(
+      ThreadSafeIndexFactory::get(config_.integration_order_mode, points_C));
 
   std::list<std::thread> integration_threads;
   for (size_t i = 0; i < config_.integrator_threads; ++i) {
     integration_threads.emplace_back(&FastTsdfIntegrator::integrateFunction,
                                      this, T_G_C, points_C, colors,
-                                     freespace_points, &index_getter);
+                                     freespace_points, index_getter.get());
   }
 
   for (std::thread& thread : integration_threads) {

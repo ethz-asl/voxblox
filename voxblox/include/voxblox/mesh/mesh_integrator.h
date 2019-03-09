@@ -145,13 +145,14 @@ class MeshIntegrator {
       mesh_layer_->allocateMeshPtrByIndex(block_index);
     }
 
-    ThreadSafeIndex index_getter(all_tsdf_blocks.size());
+    std::unique_ptr<ThreadSafeIndex> index_getter(
+        new MixedThreadSafeIndex(all_tsdf_blocks.size()));
 
     std::list<std::thread> integration_threads;
     for (size_t i = 0; i < config_.integrator_threads; ++i) {
       integration_threads.emplace_back(
           &MeshIntegrator::generateMeshBlocksFunction, this, all_tsdf_blocks,
-          clear_updated_flag, &index_getter);
+          clear_updated_flag, index_getter.get());
     }
 
     for (std::thread& thread : integration_threads) {
