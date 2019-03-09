@@ -71,6 +71,10 @@ class TsdfIntegratorBase {
 
     size_t integrator_threads = std::thread::hardware_concurrency();
 
+    /// Mode of the ThreadSafeIndex, determines the integration order of the
+    /// rays. Options: "mixed", "sorted"
+    std::string integration_order_mode = "mixed";
+
     /// merge integrator specific
     bool enable_anti_grazing = false;
 
