@@ -102,7 +102,7 @@ class TsdfIntegratorBase {
 
  protected:
   /// Thread safe.
-  bool isPointValid(const Point& point_C, const bool freespace_point,
+  inline bool isPointValid(const Point& point_C, const bool freespace_point,
                     bool* is_clearing) const {
     DCHECK(is_clearing != nullptr);
     const FloatingPoint ray_distance = point_C.norm();
