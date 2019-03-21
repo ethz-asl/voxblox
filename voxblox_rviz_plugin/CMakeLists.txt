@@ -38,7 +38,7 @@ set(HEADER_FILES include/voxblox_rviz_plugin/voxblox_mesh_display.h include/voxb
 set(SRC_FILES src/voxblox_mesh_display.cc src/voxblox_mesh_visual.cc )
 
 cs_add_library(${PROJECT_NAME}
-  ${SRC_FILES} 
+  ${SRC_FILES}
   ${HEADER_FILES}
   ${MOC_FILES}
 )
@@ -46,6 +46,14 @@ cs_add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   ${QT_LIBRARIES}
 )
+
+install(
+  FILES plugin_description.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+install(
+  DIRECTORY icons/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/icons)
 
 ##########
 # EXPORT #
