@@ -47,6 +47,11 @@ target_link_libraries(${PROJECT_NAME}
   ${QT_LIBRARIES}
 )
 
+
+##########
+# EXPORT #
+##########
+
 install(
   FILES plugin_description.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
@@ -55,8 +60,5 @@ install(
   DIRECTORY icons/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/icons)
 
-##########
-# EXPORT #
-##########
 cs_install()
 cs_export()
