@@ -166,8 +166,7 @@ inline MeshIntegratorConfig getMeshIntegratorConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   MeshIntegratorConfig mesh_integrator_config;
 
-  nh_private.param("mesh_min_weight",
-                   mesh_integrator_config.min_weight,
+  nh_private.param("mesh_min_weight", mesh_integrator_config.min_weight,
                    mesh_integrator_config.min_weight);
   nh_private.param("mesh_use_color", mesh_integrator_config.use_color,
                    mesh_integrator_config.use_color);
