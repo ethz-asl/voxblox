@@ -197,6 +197,13 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   }
 }
 
+// Check if all coordinates in the point are finite
+template<typename Point>
+bool isPointFinite(const Point& point) {
+    return std::isfinite(point.x) && std::isfinite(point.y) &&
+           std::isfinite(point.z);
+}
+
 void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
     const Transformation& T_G_C, const bool is_freespace_pointcloud) {
@@ -204,10 +211,13 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
   // Horrible hack fix to fix color parsing colors in PCL.
   bool color_pointcloud = false;
+  bool has_intensity = false;
   for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
     if (pointcloud_msg->fields[d].name == std::string("rgb")) {
       pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
       color_pointcloud = true;
+    } else if (pointcloud_msg->fields[d].name == std::string("intensity")) {
+      has_intensity = true;
     }
   }
 
@@ -223,9 +233,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
-          !std::isfinite(pointcloud_pcl.points[i].y) ||
-          !std::isfinite(pointcloud_pcl.points[i].z)) {
+      if (!isPointFinite(pointcloud_pcl.points[i])) {
         continue;
       }
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
@@ -235,16 +243,14 @@ void TsdfServer::processPointCloudMessageAndInsert(
           Color(pointcloud_pcl.points[i].r, pointcloud_pcl.points[i].g,
                 pointcloud_pcl.points[i].b, pointcloud_pcl.points[i].a));
     }
-  } else {
+  } else if (has_intensity) {
     pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
     points_C.reserve(pointcloud_pcl.size());
     colors.reserve(pointcloud_pcl.size());
     for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-      if (!std::isfinite(pointcloud_pcl.points[i].x) ||
-          !std::isfinite(pointcloud_pcl.points[i].y) ||
-          !std::isfinite(pointcloud_pcl.points[i].z)) {
+      if (!isPointFinite(pointcloud_pcl.points[i])) {
         continue;
       }
       points_C.push_back(Point(pointcloud_pcl.points[i].x,
@@ -252,6 +258,21 @@ void TsdfServer::processPointCloudMessageAndInsert(
                                pointcloud_pcl.points[i].z));
       colors.push_back(
           color_map_->colorLookup(pointcloud_pcl.points[i].intensity));
+    }
+  } else {
+    pcl::PointCloud<pcl::PointXYZ> pointcloud_pcl;
+    // pointcloud_pcl is modified below:
+    pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
+    points_C.reserve(pointcloud_pcl.size());
+    colors.reserve(pointcloud_pcl.size());
+    for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+      if (!isPointFinite(pointcloud_pcl.points[i])) {
+        continue;
+      }
+      points_C.push_back(Point(pointcloud_pcl.points[i].x,
+                               pointcloud_pcl.points[i].y,
+                               pointcloud_pcl.points[i].z));
+      colors.push_back(color_map_->colorLookup(0));
     }
   }
   ptcloud_timer.Stop();
