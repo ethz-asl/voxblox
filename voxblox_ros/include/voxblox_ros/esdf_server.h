@@ -53,6 +53,9 @@ class EsdfServer : public TsdfServer {
   inline std::shared_ptr<const EsdfMap> getEsdfMapPtr() const {
     return esdf_map_;
   }
+  inline const EsdfIntegrator* getEsdfIntegratorPtr() const {
+    return CHECK_NOTNULL(esdf_integrator_.get());
+  }
 
   bool getClearSphere() const { return clear_sphere_for_planning_; }
   void setClearSphere(bool clear_sphere_for_planning) {

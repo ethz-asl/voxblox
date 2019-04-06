@@ -25,9 +25,9 @@ class SimulationWorld {
 
   /**
    * Convenience functions for setting up bounded areas.
-   * Ground level can also be used for ceiling. ;)
    */
   void addGroundLevel(FloatingPoint height);
+  void addCeilingLevel(FloatingPoint height);
 
   /**
    * Add 4 walls (infinite planes) bounding the space. In case this is not the

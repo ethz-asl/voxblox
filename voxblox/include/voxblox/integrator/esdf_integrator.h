@@ -152,6 +152,8 @@ class EsdfIntegrator {
     config_.full_euclidean_distance = full_euclidean;
   }
 
+  inline const Config& getConfig() const { return config_; }
+
  protected:
   Config config_;
 
