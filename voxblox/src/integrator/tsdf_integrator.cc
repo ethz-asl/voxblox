@@ -51,6 +51,7 @@ TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
 TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
                                        Layer<TsdfVoxel>* layer)
     : config_(config) {
+  num_observed_voxels_.store(0u);
 
   setLayer(layer);
 
@@ -183,6 +184,10 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
 
   // Lookup the mutex that is responsible for this voxel and lock it
   std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
+
+  if (tsdf_voxel->weight < 1e-6) {
+    num_observed_voxels_++;
+  }
 
   const float new_weight = tsdf_voxel->weight + updated_weight;
 

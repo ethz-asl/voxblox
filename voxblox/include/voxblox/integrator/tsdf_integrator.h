@@ -100,10 +100,14 @@ class TsdfIntegratorBase {
 
   void setLayer(Layer<TsdfVoxel>* layer);
 
+  inline uint64_t getNumObservedVoxels() const {
+    return num_observed_voxels_.load();
+  }
+
  protected:
   /// Thread safe.
   inline bool isPointValid(const Point& point_C, const bool freespace_point,
-                    bool* is_clearing) const {
+                           bool* is_clearing) const {
     DCHECK(is_clearing != nullptr);
     const FloatingPoint ray_distance = point_C.norm();
     if (ray_distance < config_.min_ray_length_m) {
@@ -188,6 +192,9 @@ class TsdfIntegratorBase {
    * (num_threads / (2^n)). For 8 threads and 12 bits this gives 0.2%.
    */
   ApproxHashArray<12, std::mutex, GlobalIndex, LongIndexHash> mutexes_;
+
+  /// Counts the number of voxels that have been observed.
+  std::atomic_uint64_t num_observed_voxels_;
 };
 
 /// Creates a TSDF integrator of the desired type.
