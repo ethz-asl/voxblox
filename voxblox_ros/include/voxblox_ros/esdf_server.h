@@ -21,7 +21,8 @@ class EsdfServer : public TsdfServer {
              const EsdfMap::Config& esdf_config,
              const EsdfIntegrator::Config& esdf_integrator_config,
              const TsdfMap::Config& tsdf_config,
-             const TsdfIntegratorBase::Config& tsdf_integrator_config);
+             const TsdfIntegratorBase::Config& tsdf_integrator_config,
+             const MeshIntegratorConfig& mesh_config);
   virtual ~EsdfServer() {}
 
   bool generateEsdfCallback(std_srvs::Empty::Request& request,     // NOLINT

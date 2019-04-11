@@ -69,12 +69,14 @@ void TsdfServer::getServerConfigFromRosParam(
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
     : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
-                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
+                 getTsdfIntegratorConfigFromRosParam(nh_private),
+                 getMeshIntegratorConfigFromRosParam(nh_private)) {}
 
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private,
                        const TsdfMap::Config& config,
-                       const TsdfIntegratorBase::Config& integrator_config)
+                       const TsdfIntegratorBase::Config& integrator_config,
+                       const MeshIntegratorConfig& mesh_config)
     : nh_(nh),
       nh_private_(nh_private),
       verbose_(true),
@@ -159,10 +161,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     tsdf_integrator_.reset(new SimpleTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
   }
-
-  MeshIntegratorConfig mesh_config;
-  nh_private_.param("mesh_min_weight", mesh_config.min_weight,
-                    mesh_config.min_weight);
 
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
