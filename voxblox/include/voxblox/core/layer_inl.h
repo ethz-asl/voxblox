@@ -53,7 +53,9 @@ void Layer<VoxelType>::getProto(LayerProto* proto) const {
 template <typename VoxelType>
 Layer<VoxelType>::Layer(const Layer& other) {
   voxel_size_ = other.voxel_size_;
+  voxel_size_inv_ = other.voxel_size_inv_;
   voxels_per_side_ = other.voxels_per_side_;
+  voxels_per_side_inv_ = other.voxels_per_side_inv_;
   block_size_ = other.block_size_;
   block_size_inv_ = other.block_size_inv_;
 
