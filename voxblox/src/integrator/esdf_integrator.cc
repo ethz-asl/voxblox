@@ -221,8 +221,10 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
                   signum(tsdf_voxel.distance) * config_.default_distance_m;
             }
             esdf_voxel.parent.setZero();
+            raise_.push(global_index);
             esdf_voxel.in_queue = true;
             open_.push(global_index, esdf_voxel.distance);
+            num_raise++;
             num_lower++;
           } else if ((esdf_voxel.distance > 0 &&
                       tsdf_voxel.distance - config_.min_diff_m >
