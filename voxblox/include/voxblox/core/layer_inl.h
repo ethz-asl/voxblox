@@ -31,6 +31,7 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
 
   // Derived config parameter.
   CHECK_GT(proto.voxel_size(), 0.0);
+  voxel_size_inv_ = 1.0 / voxel_size_;
   block_size_ = voxel_size_ * voxels_per_side_;
   CHECK_GT(block_size_, 0.0);
   block_size_inv_ = 1.0 / block_size_;
