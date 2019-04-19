@@ -35,7 +35,7 @@ void TsdfServer::getServerConfigFromRosParam(
 
   nh_private.param("verbose", verbose_, verbose_);
 
-  // Mesh settings.
+    // Mesh settings.
   nh_private.param("mesh_filename", mesh_filename_, mesh_filename_);
   std::string color_mode("");
   nh_private.param("color_mode", color_mode, color_mode);
@@ -91,6 +91,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       publish_slices_(false),
       publish_pointclouds_(false),
       publish_tsdf_map_(false),
+      publish_map_incremental_(false),
       cache_mesh_(false),
       enable_icp_(false),
       accumulate_icp_corrections_(true),
@@ -125,8 +126,10 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_map_sub_ = nh_private_.subscribe("tsdf_map_in", 1,
                                         &TsdfServer::tsdfMapCallback, this);
   nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
+  nh_private_.param("publish_map_incremental", publish_map_incremental_, publish_map_incremental_);
 
-  if (use_freespace_pointcloud_) {
+
+    if (use_freespace_pointcloud_) {
     // points that are not inside an object, but may also not be on a surface.
     // These will only be used to mark freespace beyond the truncation distance.
     freespace_pointcloud_sub_ =
@@ -464,7 +467,7 @@ void TsdfServer::publishSlices() {
 
 void TsdfServer::publishMap(const bool reset_remote_map) {
   if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = false;
+    const bool only_updated = publish_map_incremental_;
     timing::Timer publish_map_timer("map/publish_tsdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
@@ -635,7 +638,7 @@ void TsdfServer::tsdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
   if (!success) {
     ROS_ERROR_THROTTLE(10, "Got an invalid TSDF map message!");
   } else {
-    ROS_INFO_ONCE("Got an TSDF map from ROS topic!");
+    ROS_INFO_ONCE("Got a TSDF map from ROS topic!");
     if (publish_tsdf_info_) {
       publishAllUpdatedTsdfVoxels();
     }
