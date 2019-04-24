@@ -81,8 +81,8 @@ void SimulationWorld::getPointcloudFromViewpoint(
   const Rotation ray_rotation(rotation_quaternion);
 
   // Now actually iterate over all pixels.
-  for (int u = -camera_res.x() / 2; u < camera_res.x() / 2; ++u) {
-    for (int v = -camera_res.y() / 2; v < camera_res.y() / 2; ++v) {
+  for (int u = -camera_res.x() / 2; u <= camera_res.x() / 2; ++u) {
+    for (int v = -camera_res.y() / 2; v <= camera_res.y() / 2; ++v) {
       Point ray_camera_direction =
           Point(1.0, u / focal_length, v / focal_length);
       Point ray_direction =
