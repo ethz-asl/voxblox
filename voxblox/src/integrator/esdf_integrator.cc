@@ -199,51 +199,48 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       } else {
         // If this voxel DID exist before.
         // There are three main options:
-        // (1) lower: esdf or tsdf is fixed, and tsdf is closer to surface than
+        // (1) raise: esdf or tsdf is fixed, and tsdf is further from surface
+        // than it used to be, or if tsdf isn't fixed by esdf is.
+        // (2) lower: esdf or tsdf is fixed, and tsdf is closer to surface than
         // it used to be.
-        // (2) raise: esdf or tsdf is fixed, and tsdf is further from surface
-        // than it used to be.
         // (3) sign flip: tsdf and esdf have different signs, otherwise the
         // lower and raise rules apply as above.
-        if (tsdf_fixed || esdf_voxel.fixed) {
-          if ((esdf_voxel.distance > 0 &&
-               tsdf_voxel.distance + config_.min_diff_m <
-                   esdf_voxel.distance) ||
-              (esdf_voxel.distance <= 0 &&
-               tsdf_voxel.distance - config_.min_diff_m >
-                   esdf_voxel.distance)) {
-            // Lower.
-            esdf_voxel.fixed = tsdf_fixed;
-            if (esdf_voxel.fixed) {
-              esdf_voxel.distance = tsdf_voxel.distance;
-            } else {
-              esdf_voxel.distance =
-                  signum(tsdf_voxel.distance) * config_.default_distance_m;
-            }
-            esdf_voxel.parent.setZero();
-            esdf_voxel.in_queue = true;
-            open_.push(global_index, esdf_voxel.distance);
-            num_lower++;
-          } else if ((esdf_voxel.distance > 0 &&
-                      tsdf_voxel.distance - config_.min_diff_m >
-                          esdf_voxel.distance) ||
-                     (esdf_voxel.distance <= 0 &&
-                      tsdf_voxel.distance + config_.min_diff_m <
-                          esdf_voxel.distance)) {
-            // Raise.
-            esdf_voxel.fixed = tsdf_fixed;
-            if (esdf_voxel.fixed) {
-              esdf_voxel.distance = tsdf_voxel.distance;
-            } else {
-              esdf_voxel.distance =
-                  signum(tsdf_voxel.distance) * config_.default_distance_m;
-            }
-            esdf_voxel.parent.setZero();
-            raise_.push(global_index);
-            esdf_voxel.in_queue = true;
-            open_.push(global_index, esdf_voxel.distance);
-            num_raise++;
+        if ((!tsdf_fixed && esdf_voxel.fixed) ||
+            (esdf_voxel.distance > 0 &&
+             tsdf_voxel.distance - config_.min_diff_m > esdf_voxel.distance) ||
+            (esdf_voxel.distance <= 0 &&
+             tsdf_voxel.distance + config_.min_diff_m < esdf_voxel.distance)) {
+          // Raise.
+          esdf_voxel.fixed = tsdf_fixed;
+          if (esdf_voxel.fixed) {
+            esdf_voxel.distance = tsdf_voxel.distance;
+          } else {
+            esdf_voxel.distance =
+                signum(tsdf_voxel.distance) * config_.default_distance_m;
           }
+          esdf_voxel.parent.setZero();
+          raise_.push(global_index);
+          esdf_voxel.in_queue = true;
+          open_.push(global_index, esdf_voxel.distance);
+          num_raise++;
+        } else if ((esdf_voxel.distance > 0 &&
+                    tsdf_voxel.distance + config_.min_diff_m <
+                        esdf_voxel.distance) ||
+                   (esdf_voxel.distance <= 0 &&
+                    tsdf_voxel.distance - config_.min_diff_m >
+                        esdf_voxel.distance)) {
+          // Lower.
+          esdf_voxel.fixed = tsdf_fixed;
+          if (esdf_voxel.fixed) {
+            esdf_voxel.distance = tsdf_voxel.distance;
+          } else {
+            esdf_voxel.distance =
+                signum(tsdf_voxel.distance) * config_.default_distance_m;
+          }
+          esdf_voxel.parent.setZero();
+          esdf_voxel.in_queue = true;
+          open_.push(global_index, esdf_voxel.distance);
+          num_lower++;
         } else if (signum(tsdf_voxel.distance) != signum(esdf_voxel.distance)) {
           // This means ESDF was positive and TSDF is negative.
           // So lower.
