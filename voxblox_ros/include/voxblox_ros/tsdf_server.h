@@ -257,6 +257,13 @@ class TsdfServer {
 
   /// Current transform corrections from ICP.
   Transformation icp_corrected_transform_;
+
+  //Vinz Additions
+
+  std::queue<TsdfMap::Ptr>* queue_; 
+
+  void createNewlyOccupiedMap(TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map);
+
 };
 
 }  // namespace voxblox

@@ -78,36 +78,4 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
   return count;
 }
 
-void TsdfMap::CreateNewlyOccupiedMap(TsdfMap* old_reference_map) {
-
-  const size_t vps = tsdf_layer_->voxels_per_side();
-  const size_t num_voxels_per_block = vps * vps * vps;
-  const float distance_threshold = 0.05;
-
-  BlockIndexList blocks_new;
-  tsdf_layer_->getAllAllocatedBlocks(&blocks_new);
-
-  for (const BlockIndex& index : blocks_new) {
-    // Iterate over all voxels in said blocks.
-    const Block<TsdfVoxel>& block_new = tsdf_layer_->getBlockByIndex(index);
-
-    if (!block_new.has_data()) {
-      continue;
-    }
-
-    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
-         ++linear_index) {
-      const Point coord = block_new.computeCoordinatesFromLinearIndex(linear_index);
-      TsdfVoxel voxel_new = block_new.getVoxelByLinearIndex(linear_index);
-      if (std::abs(voxel_new.distance) < distance_threshold) {
-        const TsdfVoxel* voxel_old = old_reference_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
-        if (std::abs(voxel_old->distance) < distance_threshold) {
-          //delete voxel
-          voxel_new.weight = 0;
-        }
-      }
-    }
-  }  
-}
-
 }  // namespace voxblox
