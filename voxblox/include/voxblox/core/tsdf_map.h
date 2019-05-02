@@ -82,6 +82,10 @@ class TsdfMap {
       Eigen::Ref<Eigen::VectorXd> distances,
       Eigen::Ref<Eigen::VectorXd> weights, unsigned int max_points) const;
 
+  void CreateNewlyOccupiedMap(TsdfMap* old_reference_map);
+  
+  std::queue<TsdfMap*> queue_; 
+
  protected:
   FloatingPoint block_size_;
 
