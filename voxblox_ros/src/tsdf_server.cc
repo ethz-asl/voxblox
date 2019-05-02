@@ -471,6 +471,14 @@ void TsdfServer::publishAllUpdatedTsdfVoxels() {
 
   pointcloud.header.frame_id = world_frame_;
   tsdf_pointcloud_pub_.publish(pointcloud);
+
+  pcl::PointCloud<pcl::PointXYZI> pointcloud_newly_occupied;
+
+  createDistancePointcloudFromTsdfLayer(tsdf_map_newly_occupied_->getTsdfLayer(), &pointcloud_newly_occupied);
+
+  pointcloud.header.frame_id = world_frame_;
+  tsdf_newly_occupied_pointcloud_pub_.publish(pointcloud_newly_occupied);
+
 }
 
 void TsdfServer::publishTsdfSurfacePoints() {
