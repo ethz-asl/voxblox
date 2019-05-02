@@ -346,6 +346,23 @@ void TsdfServer::processPointCloudMessageAndInsert(
                                 max_block_distance_from_body_);
   block_remove_timer.Stop();
 
+  ROS_INFO("starting my part now");
+
+  TsdfMap* new_map = new TsdfMap(tsdf_map_->getTsdfLayer()); 
+
+  tsdf_map_->queue_.push(new_map);
+
+  while (tsdf_map_->queue_.size() > 5) {
+    //tsdf_map_->queue_.front()-> ~TsdfMap(); Do I need that?
+    tsdf_map_->queue_.pop();
+  }
+
+  if (tsdf_map_->queue_.size() == 5) {
+      tsdf_map_newly_occupied_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
+      tsdf_map_newly_occupied_->CreateNewlyOccupiedMap(tsdf_map_->queue_.front());
+      tsdf_map_->queue_.pop();
+  }
+
   // Callback for inheriting classes.
   newPoseCallback(T_G_C);
 }
