@@ -6,6 +6,44 @@
 
 namespace voxblox {
 
+void TsdfServer::createNewlyOccupiedMap(TsdfMap::Ptr current_map, 
+      TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map){
+  
+  Layer<TsdfVoxel>* current_layer = current_map->getTsdfLayerPtr();
+
+  const size_t vps = current_layer->voxels_per_side();
+  const size_t num_voxels_per_block = vps * vps * vps;
+  const float distance_threshold = 0.05;
+
+  BlockIndexList blocks_current;
+  current_layer->getAllAllocatedBlocks(&blocks_current);
+
+  for (const BlockIndex& index : blocks_current) {
+    // Iterate over all voxels in said blocks.
+    const Block<TsdfVoxel>& block_current = current_layer->getBlockByIndex(index);
+
+    if (!block_current.has_data()) {
+      continue;
+    }
+
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
+         ++linear_index) {
+      const Point coord = block_current.computeCoordinatesFromLinearIndex(linear_index);
+      const TsdfVoxel& voxel_current = block_current.getVoxelByLinearIndex(linear_index);
+      if (voxel_current.distance < distance_threshold) {
+        const TsdfVoxel* voxel_old = old_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
+        TsdfVoxel* voxel_newly_occupied = newly_occupied_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
+        if (voxel_old->distance < distance_threshold) {
+          //delete voxel in newly_occupied_map
+          voxel_newly_occupied->weight = 0;
+        } else {
+          voxel_newly_occupied->distance = abs(voxel_current.distance-voxel_old->distance);
+        }
+      }
+    }
+  }  
+}
+
 void TsdfServer::getServerConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   // Before subscribing, determine minimum time between messages.
@@ -348,19 +386,20 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
   ROS_INFO("starting my part now");
 
-  TsdfMap* new_map = new TsdfMap(tsdf_map_->getTsdfLayer()); 
+  std::shared_ptr<TsdfMap> new_map;
+  new_map.reset(new TsdfMap(tsdf_map_->getTsdfLayer())); 
 
-  tsdf_map_->queue_.push(new_map);
+  queue_->push(new_map);
 
-  while (tsdf_map_->queue_.size() > 5) {
-    //tsdf_map_->queue_.front()-> ~TsdfMap(); Do I need that?
-    tsdf_map_->queue_.pop();
+  while (queue_->size() > 5) {
+    //tsdf_map_->queue_->front()-> ~TsdfMap(); Do I need that?
+    queue_->pop();
   }
 
-  if (tsdf_map_->queue_.size() == 5) {
+  if (queue_->size() == 5) {
       tsdf_map_newly_occupied_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
-      tsdf_map_newly_occupied_->CreateNewlyOccupiedMap(tsdf_map_->queue_.front());
-      tsdf_map_->queue_.pop();
+      createNewlyOccupiedMap(tsdf_map_, queue_->front(), tsdf_map_newly_occupied_);
+      queue_->pop();
   }
 
   // Callback for inheriting classes.
