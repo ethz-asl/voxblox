@@ -33,6 +33,26 @@ namespace voxblox {
 
 constexpr float kDefaultMaxIntensity = 100.0;
 
+class Queue {
+  public:
+
+    Queue();
+
+    void push(TsdfMap::Ptr tsdf_map);
+    TsdfMap::Ptr front();
+    void pop();
+    int size();
+
+  private:
+
+    struct Member {
+      TsdfMap::Ptr tsdf_ptr;
+      Member* next; 
+    };
+    Member* last;
+    int queue_size;
+};
+
 class TsdfServer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -259,9 +279,8 @@ class TsdfServer {
   Transformation icp_corrected_transform_;
 
   //Vinz Additions
-
-  std::queue<TsdfMap::Ptr>* queue_; 
-
+  Queue queue_; 
+  bool newly_occupied_active_;
   void createNewlyOccupiedMap(TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map);
 
 };
