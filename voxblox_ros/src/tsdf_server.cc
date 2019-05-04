@@ -77,12 +77,9 @@ void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map,
         if (std::abs(voxel_old->distance) < distance_threshold) {
           //delete voxel in newly_occupied_map
           voxel_newly_occupied->weight = 0;
-          //voxel_newly_occupied->distance = 0;
-          //ROS_INFO("DELETED VOXEL");
+        } else {
+          voxel_newly_occupied->distance = std::abs(voxel_current.distance-voxel_old->distance);
         }
-         /*else {
-          voxel_newly_occupied->distance = abs(voxel_current.distance-voxel_old->distance);
-        }*/
       } else {
           voxel_newly_occupied->weight = 0;
       }
