@@ -41,7 +41,7 @@ int Queue::size() {
   return queue_size;
 }
 
-void TsdfServer::createNewlyOccupiedMap(TsdfMap::Ptr current_map, 
+void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map, 
       TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map){
   
   const size_t vps = current_map->getTsdfLayerPtr()->voxels_per_side();
@@ -66,10 +66,10 @@ void TsdfServer::createNewlyOccupiedMap(TsdfMap::Ptr current_map,
       //ROS_INFO("Going through voxel indexes");
       const Point coord = block_current.computeCoordinatesFromLinearIndex(linear_index);
       const TsdfVoxel& voxel_current = block_current.getVoxelByLinearIndex(linear_index);
+      TsdfVoxel* voxel_newly_occupied = newly_occupied_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
       if (std::abs(voxel_current.distance) < distance_threshold) {
         //ROS_INFO("current lower then threshold");
         const TsdfVoxel* voxel_old = old_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
-        TsdfVoxel* voxel_newly_occupied = newly_occupied_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
         if (voxel_old == nullptr) {
           //ROS_INFO("NULLPTR exception");
           continue;
@@ -77,11 +77,14 @@ void TsdfServer::createNewlyOccupiedMap(TsdfMap::Ptr current_map,
         if (std::abs(voxel_old->distance) < distance_threshold) {
           //delete voxel in newly_occupied_map
           voxel_newly_occupied->weight = 0;
+          //voxel_newly_occupied->distance = 0;
           //ROS_INFO("DELETED VOXEL");
         }
          /*else {
           voxel_newly_occupied->distance = abs(voxel_current.distance-voxel_old->distance);
         }*/
+      } else {
+          voxel_newly_occupied->weight = 0;
       }
     }
   }  

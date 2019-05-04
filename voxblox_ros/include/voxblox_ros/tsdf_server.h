@@ -281,7 +281,7 @@ class TsdfServer {
   //Vinz Additions
   Queue queue_; 
   bool newly_occupied_active_;
-  void createNewlyOccupiedMap(TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map);
+  void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map);
 
 };
 
