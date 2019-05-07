@@ -86,7 +86,7 @@ bool outputMeshAsPly(const std::string& filename, const Mesh& mesh) {
   }
   if (mesh.hasTriangles()) {
     stream << "element face " << mesh.indices.size() / 3 << std::endl;
-    stream << "property list uchar int vertex_index" << std::endl;
+    stream << "property list uchar int vertex_indices" << std::endl;  // pcl-1.7(ros::kinetic) breaks ply convention by not using "vertex_index"
   }
   stream << "end_header" << std::endl;
   size_t vert_idx = 0;

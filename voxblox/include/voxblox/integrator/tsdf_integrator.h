@@ -112,7 +112,23 @@ class TsdfIntegratorBase {
  protected:
   /// Thread safe.
   inline bool isPointValid(const Point& point_C, const bool freespace_point,
-                           bool* is_clearing) const;
+                    bool* is_clearing) const {
+    DCHECK(is_clearing != nullptr);
+    const FloatingPoint ray_distance = point_C.norm();
+    if (ray_distance < config_.min_ray_length_m) {
+      return false;
+    } else if (ray_distance > config_.max_ray_length_m) {
+      if (config_.allow_clear || freespace_point) {
+        *is_clearing = true;
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      *is_clearing = freespace_point;
+      return true;
+    }
+  }
 
   /**
    * Will return a pointer to a voxel located at global_voxel_idx in the tsdf
