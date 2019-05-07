@@ -8,6 +8,7 @@
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/mesh/mesh_integrator.h>
 
 namespace voxblox {
 
@@ -166,6 +167,18 @@ inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
   }
 
   return esdf_integrator_config;
+}
+
+inline MeshIntegratorConfig getMeshIntegratorConfigFromRosParam(
+    const ros::NodeHandle& nh_private) {
+  MeshIntegratorConfig mesh_integrator_config;
+
+  nh_private.param("mesh_min_weight", mesh_integrator_config.min_weight,
+                   mesh_integrator_config.min_weight);
+  nh_private.param("mesh_use_color", mesh_integrator_config.use_color,
+                   mesh_integrator_config.use_color);
+
+  return mesh_integrator_config;
 }
 
 }  // namespace voxblox
