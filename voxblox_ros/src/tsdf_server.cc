@@ -193,19 +193,13 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
         nh_private_.createTimer(ros::Duration(update_mesh_every_n_sec),
                                 &TsdfServer::updateMeshEvent, this);
   }
-
-  // Clear remote map just in case.
-  if (publish_tsdf_map_) {
-    constexpr bool kResetRemoteMap = true;
-    publishMap(true);
-  }
 }
 
 // Check if all coordinates in the point are finite
-template<typename Point>
+template <typename Point>
 bool isPointFinite(const Point& point) {
-    return std::isfinite(point.x) && std::isfinite(point.y) &&
-           std::isfinite(point.z);
+  return std::isfinite(point.x) && std::isfinite(point.y) &&
+         std::isfinite(point.z);
 }
 
 void TsdfServer::processPointCloudMessageAndInsert(
@@ -656,6 +650,8 @@ void TsdfServer::clear() {
 }
 
 void TsdfServer::tsdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  timing::Timer receive_map_timer("map/receive_tsdf");
+
   bool success =
       deserializeMsgToLayer<TsdfVoxel>(layer_msg, tsdf_map_->getTsdfLayerPtr());
 
