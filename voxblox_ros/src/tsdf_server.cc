@@ -485,7 +485,7 @@ void TsdfServer::publishSlices() {
 
 void TsdfServer::publishMap(const bool reset_remote_map) {
   if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = false;
+    const bool only_updated = !reset_remote_map;
     timing::Timer publish_map_timer("map/publish_tsdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
