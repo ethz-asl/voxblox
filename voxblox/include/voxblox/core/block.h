@@ -38,39 +38,16 @@ class Block {
 
   ~Block() {}
 
-  // Index calculations.
-  inline size_t computeLinearIndexFromVoxelIndex(
-      const VoxelIndex& index) const {
-    size_t linear_index = static_cast<size_t>(
-        index.x() +
-        voxels_per_side_ * (index.y() + index.z() * voxels_per_side_));
-
-    DCHECK(index.x() >= 0 && index.x() < static_cast<int>(voxels_per_side_));
-    DCHECK(index.y() >= 0 && index.y() < static_cast<int>(voxels_per_side_));
-    DCHECK(index.z() >= 0 && index.z() < static_cast<int>(voxels_per_side_));
-
-    DCHECK_LT(linear_index,
-              voxels_per_side_ * voxels_per_side_ * voxels_per_side_);
-    DCHECK_GE(linear_index, 0u);
-    return linear_index;
-  }
+  /// Index calculations.
+  size_t computeLinearIndexFromVoxelIndex(const VoxelIndex& index) const;
 
   /** NOTE: This function is dangerous, it will truncate the voxel index to an
    * index that is within this block if you pass a coordinate outside the range
    * of this block. Try not to use this function if there is an alternative to
    * directly address the voxels via precise integer indexing math.
    */
-  inline VoxelIndex computeTruncatedVoxelIndexFromCoordinates(
-      const Point& coords) const {
-    const IndexElement max_value = voxels_per_side_ - 1;
-    VoxelIndex voxel_index =
-        getGridIndexFromPoint<VoxelIndex>(coords - origin_, voxel_size_inv_);
-    // check is needed as getGridIndexFromPoint gives results that have a tiny
-    // chance of being outside the valid voxel range.
-    return VoxelIndex(std::max(std::min(voxel_index.x(), max_value), 0),
-                      std::max(std::min(voxel_index.y(), max_value), 0),
-                      std::max(std::min(voxel_index.z(), max_value), 0));
-  }
+  VoxelIndex computeTruncatedVoxelIndexFromCoordinates(
+      const Point& coords) const;
 
   /**
    * NOTE: This function is also dangerous, use in combination with
@@ -108,18 +85,7 @@ class Block {
     return origin_ + getCenterPointFromGridIndex(index, voxel_size_);
   }
 
-  inline VoxelIndex computeVoxelIndexFromLinearIndex(
-      size_t linear_index) const {
-    int rem = linear_index;
-    VoxelIndex result;
-    std::div_t div_temp = std::div(rem, voxels_per_side_ * voxels_per_side_);
-    rem = div_temp.rem;
-    result.z() = div_temp.quot;
-    div_temp = std::div(rem, voxels_per_side_);
-    result.y() = div_temp.quot;
-    result.x() = div_temp.rem;
-    return result;
-  }
+  VoxelIndex computeVoxelIndexFromLinearIndex(size_t linear_index) const;
 
   /// Accessors to actual blocks.
   inline const VoxelType& getVoxelByLinearIndex(size_t index) const {
@@ -173,21 +139,7 @@ class Block {
     return voxels_[computeLinearIndexFromVoxelIndex(index)];
   }
 
-  inline bool isValidVoxelIndex(const VoxelIndex& index) const {
-    if (index.x() < 0 ||
-        index.x() >= static_cast<IndexElement>(voxels_per_side_)) {
-      return false;
-    }
-    if (index.y() < 0 ||
-        index.y() >= static_cast<IndexElement>(voxels_per_side_)) {
-      return false;
-    }
-    if (index.z() < 0 ||
-        index.z() >= static_cast<IndexElement>(voxels_per_side_)) {
-      return false;
-    }
-    return true;
-  }
+  inline bool isValidVoxelIndex(const VoxelIndex& index) const;
 
   inline bool isValidLinearIndex(size_t index) const {
     if (index < 0 || index >= num_voxels_) {
