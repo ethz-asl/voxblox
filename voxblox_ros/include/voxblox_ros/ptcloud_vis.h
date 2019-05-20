@@ -276,8 +276,9 @@ inline bool visualizeDistanceIntensityEsdfVoxelsSlice(
 }
 
 inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
-                                        const Point& /*coord*/) {
-  if (voxel.weight > 1e-3 && voxel.distance <= 0) {
+                                        const Point& /*coord*/,
+                                        const float min_distance = 0.0) {
+  if (voxel.weight > 1e-3 && voxel.distance <= min_distance) {
     return true;
   }
   return false;
@@ -313,9 +314,8 @@ inline void createSurfacePointcloudFromTsdfLayer(
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
-                surface_distance, ph::_3),
+      layer, std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
+                       surface_distance, ph::_3),
       pointcloud);
 }
 
@@ -352,9 +352,8 @@ inline void createSurfaceDistancePointcloudFromTsdfLayer(
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
-                ph::_2, surface_distance, ph::_3),
+      layer, std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
+                       ph::_2, surface_distance, ph::_3),
       pointcloud);
 }
 
@@ -426,8 +425,10 @@ inline void createOccupancyBlocksFromTsdfLayer(
     const Layer<TsdfVoxel>& layer, const std::string& frame_id,
     visualization_msgs::MarkerArray* marker_array) {
   CHECK_NOTNULL(marker_array);
-  createOccupancyBlocksFromLayer<TsdfVoxel>(layer, &visualizeOccupiedTsdfVoxels,
-                                            frame_id, marker_array);
+  createOccupancyBlocksFromLayer<TsdfVoxel>(
+      layer, std::bind(visualizeOccupiedTsdfVoxels, std::placeholders::_1,
+                       std::placeholders::_2, layer.voxel_size()),
+      frame_id, marker_array);
 }
 
 inline void createOccupancyBlocksFromOccupancyLayer(
