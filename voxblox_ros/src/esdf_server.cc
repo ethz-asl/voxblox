@@ -34,12 +34,6 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                                             esdf_map_->getEsdfLayerPtr()));
 
   setupRos();
-
-  // Clear remote map just in case.
-  if (publish_esdf_map_) {
-    constexpr bool kResetRemoteMap = true;
-    publishMap(true);
-  }
 }
 
 void EsdfServer::setupRos() {
@@ -231,6 +225,8 @@ void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
 }
 
 void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  timing::Timer receive_map_timer("map/receive_esdf");
+
   bool success =
       deserializeMsgToLayer<EsdfVoxel>(layer_msg, esdf_map_->getEsdfLayerPtr());
 
