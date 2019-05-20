@@ -74,7 +74,7 @@ class TsdfServer {
   // Publishes all available pointclouds.
   virtual void publishPointclouds();
   // Publishes the complete map
-  virtual void publishMap(const bool reset_remote_map = false);
+  virtual void publishMap(bool reset_remote_map = false);
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
@@ -194,6 +194,7 @@ class TsdfServer {
 
   /// Subscriber settings.
   int pointcloud_queue_size_;
+  int num_subscribers_tsdf_map_;
 
   // Publish markers for visualization.
   ros::Publisher mesh_pub_;

@@ -35,7 +35,7 @@ class EsdfServer : public TsdfServer {
   virtual void updateMesh();
   virtual void publishPointclouds();
   virtual void newPoseCallback(const Transformation& T_G_C);
-  virtual void publishMap(const bool reset_remote_map = false);
+  virtual void publishMap(bool reset_remote_map = false);
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
@@ -97,6 +97,7 @@ class EsdfServer : public TsdfServer {
   bool publish_traversable_;
   float traversability_radius_;
   bool incremental_update_;
+  int num_subscribers_esdf_map_;
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
