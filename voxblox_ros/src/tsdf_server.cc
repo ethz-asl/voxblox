@@ -95,6 +95,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       enable_icp_(false),
       accumulate_icp_corrections_(true),
       pointcloud_queue_size_(1),
+      num_subscribers_tsdf_map_(0),
       transformer_(nh, nh_private) {
   getServerConfigFromRosParam(nh_private);
 
@@ -483,8 +484,15 @@ void TsdfServer::publishSlices() {
   tsdf_slice_pub_.publish(pointcloud);
 }
 
-void TsdfServer::publishMap(const bool reset_remote_map) {
-  if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
+void TsdfServer::publishMap(bool reset_remote_map) {
+  int subscribers = this->tsdf_map_pub_.getNumSubscribers();
+  if (subscribers > 0) {
+    if (num_subscribers_tsdf_map_ < subscribers) {
+      // Always reset the remote map and send all when a new subscriber
+      // subscribes. A bit of overhead for other subscribers, but better than
+      // inconsistent map states.
+      reset_remote_map = true;
+    }
     const bool only_updated = !reset_remote_map;
     timing::Timer publish_map_timer("map/publish_tsdf");
     voxblox_msgs::Layer layer_msg;
@@ -496,6 +504,7 @@ void TsdfServer::publishMap(const bool reset_remote_map) {
     this->tsdf_map_pub_.publish(layer_msg);
     publish_map_timer.Stop();
   }
+  num_subscribers_tsdf_map_ = subscribers;
 }
 
 void TsdfServer::publishPointclouds() {
