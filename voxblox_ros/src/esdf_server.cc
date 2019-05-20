@@ -34,6 +34,12 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                                             esdf_map_->getEsdfLayerPtr()));
 
   setupRos();
+
+  // Clear remote map just in case.
+  if (publish_esdf_map_) {
+    constexpr bool kResetRemoteMap = true;
+    publishMap(true);
+  }
 }
 
 void EsdfServer::setupRos() {

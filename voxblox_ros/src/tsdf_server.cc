@@ -193,6 +193,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
         nh_private_.createTimer(ros::Duration(update_mesh_every_n_sec),
                                 &TsdfServer::updateMeshEvent, this);
   }
+
+  // Clear remote map just in case.
+  if (publish_tsdf_map_) {
+    constexpr bool kResetRemoteMap = true;
+    publishMap(true);
+  }
 }
 
 // Check if all coordinates in the point are finite
