@@ -11,7 +11,12 @@
 
 namespace voxblox {
 
-/** An nxnxn container holding VoxelType. It is aware of its 3D position and
+namespace Update {
+/// State of which derived things still need to be updated.
+enum State { kMap, kMesh, kEsdf, kCount };
+}
+
+/** An n x n x n container holding VoxelType. It is aware of its 3D position and
  * contains functions for accessing voxels by position and index */
 template <typename VoxelType>
 class Block {
@@ -203,7 +208,7 @@ class Block {
   FloatingPoint block_size_inv_;
 
   /// Is set to true when data is updated.
-  std::atomic<bool> updated_;
+  std::bitset<Update::kCount> updated_;
 };
 
 }  // namespace voxblox
