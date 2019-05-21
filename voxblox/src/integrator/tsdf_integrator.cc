@@ -200,22 +200,6 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
   if (std::abs(sdf) < config_.default_truncation_distance) {
     tsdf_voxel->color = Color::blendTwoColors(
         tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
-  } else if (config_.voxel_carving_ignores_voxels_near_surface) {
-    // If a clearing ray is passing a voxel, the only constraint it should be
-    // able to enforce on that voxel is that it is in free space, and
-    // therefore not interfering with the direct line of sight. It shouldn't
-    // contribute to the weighted average of the SDF, since the projective
-    // distance to the surface is always overestimating the real, euclidean
-    // distance and the further away we are from the observed surface the
-    // worse it gets. However, this does not fully solve the problem, because
-    // due to the discretization of the voxel grid, the clearing ray could be
-    // grazing a voxel that actually lies just within the boundaries of the
-    // surface without actually crossing the surface.
-    if (tsdf_voxel->distance > 0.0 &&
-        tsdf_voxel->distance < config_.default_truncation_distance &&
-        tsdf_voxel->weight > 0.0) {
-      return;
-    }
   }
   tsdf_voxel->distance =
       (new_sdf > 0.0) ? std::min(config_.default_truncation_distance, new_sdf)
@@ -619,7 +603,6 @@ std::string TsdfIntegratorBase::Config::print() const {
   ss << " - use_weight_dropoff:                        " << use_weight_dropoff << "\n";
   ss << " - use_sparsity_compensation_factor:          " << use_sparsity_compensation_factor << "\n";
   ss << " - sparsity_compensation_factor:              "  << sparsity_compensation_factor << "\n";
-  ss << " - voxel_carving_ignores_voxels_near_surface: " << voxel_carving_ignores_voxels_near_surface << "\n";
   ss << " - integrator_threads:                        " << integrator_threads << "\n";
   ss << " MergedTsdfIntegrator: \n";
   ss << " - enable_anti_grazing:                       " << enable_anti_grazing << "\n";
