@@ -527,9 +527,6 @@ void TsdfServer::updateMesh() {
   if (verbose_) {
     ROS_INFO("Updating mesh.");
   }
-  if (publish_tsdf_map_) {
-    publishMap(false);
-  }
 
   timing::Timer generate_mesh_timer("mesh/update");
   constexpr bool only_mesh_updated_blocks = true;
@@ -550,7 +547,7 @@ void TsdfServer::updateMesh() {
 
   publish_mesh_timer.Stop();
 
-  if (publish_pointclouds_) {
+  if (publish_pointclouds_ && !publish_pointclouds_on_update_) {
     publishPointclouds();
   }
 }
