@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 2.8.12)
 project(voxblox)
 
 find_package(catkin_simple REQUIRED)
@@ -14,25 +14,17 @@ add_definitions(-std=c++11 -Wall -Wextra)
 # Otherwise use system protobuf.
 set(PROTO_DEFNS proto/voxblox/Block.proto
                 proto/voxblox/Layer.proto)
-set(ADDITIONAL_LIBRARIES "")
-
+set(PROTO_LIBRARIES "")
 find_package(protobuf_catkin QUIET)
 if (protobuf_catkin_FOUND)
-    message(STATUS "Using protobuf_catkin")
-    list(APPEND catkin_INCLUDE_DIRS ${protobuf_catkin_INCLUDE_DIRS})
-    list(APPEND catkin_LIBRARIES ${protobuf_catkin_LIBRARIES})
-    include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-    PROTOBUF_CATKIN_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
-    set(ADDITIONAL_LIBRARIES ${protobuf_catkin_LIBRARIES})
+  message(STATUS "Using protobuf_catkin")
+  PROTOBUF_CATKIN_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
+  set(PROTO_LIBRARIES ${protobuf_catkin_LIBRARIES})
 else()
   message(STATUS "Using system protobuf")
   find_package(Protobuf REQUIRED)
-  include_directories(${PROTOBUF_INCLUDE_DIRS})
-  include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
   PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
-  set(ADDITIONAL_LIBRARIES ${PROTOBUF_LIBRARY})
+  set(PROTO_LIBRARIES ${PROTOBUF_LIBRARIES})
 endif()
 
 ####################
@@ -78,12 +70,18 @@ set("${PROJECT_NAME}_SRCS"
 cs_add_library(${PROJECT_NAME}_proto
   ${PROTO_SRCS}
 )
-target_link_libraries(${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES})
+# Specify proto headers as public headers so we can install them later.
+set_target_properties(${PROJECT_NAME}_proto PROPERTIES PUBLIC_HEADER "${PROTO_HDRS}")
+# We need the binary folder in the include directories so we can find the proto
+# headers within this library and all dependent packages.
+target_include_directories(${PROJECT_NAME}_proto
+                           PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(${PROJECT_NAME}_proto ${PROTO_LIBRARIES})
 
 cs_add_library(${PROJECT_NAME}
   ${${PROJECT_NAME}_SRCS}
 )
-target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto)
 
 ############
 # BINARIES #
@@ -139,10 +137,10 @@ target_link_libraries(test_layer ${PROJECT_NAME})
 catkin_add_gtest(test_merge_integration
   test/test_merge_integration.cc
 )
-target_link_libraries(test_merge_integration ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(test_merge_integration ${PROJECT_NAME})
 
 catkin_add_gtest(test_layer_utils
- test/test_layer_utils.cc
+  test/test_layer_utils.cc
 )
 target_link_libraries(test_layer_utils ${PROJECT_NAME})
 
@@ -164,7 +162,13 @@ target_link_libraries(test_clear_spheres ${PROJECT_NAME})
 ##########
 # EXPORT #
 ##########
+
+# The proto headers are not installed automatically with cs_install,
+# we need to specify this here.
+install(TARGETS ${PROJECT_NAME}_proto
+        LIBRARY DESTINATION "lib"
+        PUBLIC_HEADER DESTINATION "include"
+)
 cs_install()
 cs_export(INCLUDE_DIRS include ${CMAKE_CURRENT_BINARY_DIR}
-          CFG_EXTRAS voxblox-extras.cmake
-          LIBRARIES ${ADDITIONAL_LIBRARIES})
+          CFG_EXTRAS voxblox-extras.cmake)

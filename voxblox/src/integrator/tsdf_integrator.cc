@@ -78,27 +78,6 @@ void TsdfIntegratorBase::setLayer(Layer<TsdfVoxel>* layer) {
   voxels_per_side_inv_ = 1.0 / voxels_per_side_;
 }
 
-// Thread safe.
-inline bool TsdfIntegratorBase::isPointValid(const Point& point_C,
-                                             const bool point_in_freespace,
-                                             bool* is_clearing) const {
-  DCHECK(is_clearing != nullptr);
-  const FloatingPoint ray_distance = point_C.norm();
-  if (ray_distance < config_.min_ray_length_m) {
-    return false;
-  } else if (ray_distance > config_.max_ray_length_m) {
-    if (config_.allow_clear || point_in_freespace) {
-      *is_clearing = true;
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    *is_clearing = point_in_freespace;
-    return true;
-  }
-}
-
 // Will return a pointer to a voxel located at global_voxel_idx in the tsdf
 // layer. Thread safe.
 // Takes in the last_block_idx and last_block to prevent unneeded map lookups.
