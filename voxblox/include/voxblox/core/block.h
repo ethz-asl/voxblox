@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <bitset>
 #include <memory>
 #include <vector>
 
@@ -167,12 +168,14 @@ class Block {
   FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
-  bool updated() const { return updated_; }
+  std::bitset<Update::kCount> updated() const { return updated_; }
 
-  std::atomic<bool>& updated() { return updated_; }
+  std::bitset<Update::kCount>& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
-  void set_updated(bool updated) { updated_ = updated; }
+  void set_updated(const std::bitset<Update::kCount>& updated) {
+    updated_ = updated;
+  }
   void set_has_data(bool has_data) { has_data_ = has_data; }
 
   // Serialization.
