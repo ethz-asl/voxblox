@@ -66,7 +66,12 @@ class TsdfIntegratorBase {
     bool use_weight_dropoff = true;
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
+
     size_t integrator_threads = std::thread::hardware_concurrency();
+
+    /// Mode of the ThreadSafeIndex, determines the integration order of the
+    /// rays. Options: "mixed", "sorted"
+    std::string integration_order_mode = "mixed";
 
     /// merge integrator specific
     bool enable_anti_grazing = false;
@@ -79,6 +84,8 @@ class TsdfIntegratorBase {
     int clear_checks_every_n_frames = 1;
     /// fast integrator specific
     float max_integration_time_s = std::numeric_limits<float>::max();
+
+    std::string print() const;
   };
 
   TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer);

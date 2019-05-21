@@ -59,6 +59,19 @@ struct Mesh {
   inline bool hasTriangles() const { return !indices.empty(); }
 
   inline size_t size() const { return vertices.size(); }
+  inline size_t getMemorySize() const {
+    size_t size_bytes = 0u;
+    size_bytes += sizeof(Pointcloud) + vertices.size() * sizeof(Point);
+    size_bytes += sizeof(Pointcloud) + normals.size() * sizeof(Point);
+    size_bytes += sizeof(Colors) + vertices.size() * sizeof(Color);
+    size_bytes +=
+        sizeof(VertexIndexList) + indices.size() * sizeof(VertexIndex);
+
+    size_bytes += sizeof(block_size);
+    size_bytes += sizeof(origin);
+    size_bytes += sizeof(updated);
+    return size_bytes;
+  }
 
   inline void clear() {
     vertices.clear();
