@@ -67,8 +67,6 @@ class TsdfIntegratorBase {
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
 
-    bool voxel_carving_ignores_voxels_near_surface = false;
-
     size_t integrator_threads = std::thread::hardware_concurrency();
 
     /// Mode of the ThreadSafeIndex, determines the integration order of the
