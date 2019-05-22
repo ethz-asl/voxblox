@@ -78,4 +78,15 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
   return count;
 }
 
+std::string TsdfMap::Config::print() const {
+  std::stringstream ss;
+  // clang-format off
+  ss << "====================== TSDF Map Config ========================\n";
+  ss << " - tsdf_voxel_size:               " << tsdf_voxel_size << "\n";
+  ss << " - tsdf_voxels_per_side:          " << tsdf_voxels_per_side << "\n";
+  ss << "==============================================================\n";
+  // clang-format on
+  return ss.str();
+}
+
 }  // namespace voxblox
