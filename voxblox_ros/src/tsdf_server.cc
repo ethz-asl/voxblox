@@ -125,7 +125,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "publish_map", &TsdfServer::publishTsdfMapCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
-  double update_mesh_every_n_sec = 0.0;
+  double update_mesh_every_n_sec = 1.0;
   nh_private_.param("update_mesh_every_n_sec", update_mesh_every_n_sec,
                     update_mesh_every_n_sec);
 
@@ -133,6 +133,16 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     update_mesh_timer_ =
         nh_private_.createTimer(ros::Duration(update_mesh_every_n_sec),
                                 &TsdfServer::updateMeshEvent, this);
+  }
+
+  double publish_map_every_n_sec = 1.0;
+  nh_private_.param("publish_map_every_n_sec", publish_map_every_n_sec,
+                    publish_map_every_n_sec);
+
+  if (publish_map_every_n_sec > 0.0) {
+    publish_map_timer_ =
+        nh_private_.createTimer(ros::Duration(publish_map_every_n_sec),
+                                &TsdfServer::publishMapEvent, this);
   }
 }
 
@@ -490,6 +500,9 @@ void TsdfServer::publishSlices() {
 }
 
 void TsdfServer::publishMap(bool reset_remote_map) {
+  if (!publish_tsdf_map_) {
+    return;
+  }
   int subscribers = this->tsdf_map_pub_.getNumSubscribers();
   if (subscribers > 0) {
     if (num_subscribers_tsdf_map_ < subscribers) {
@@ -652,6 +665,10 @@ bool TsdfServer::publishTsdfMapCallback(std_srvs::Empty::Request& /*request*/,
 
 void TsdfServer::updateMeshEvent(const ros::TimerEvent& /*event*/) {
   updateMesh();
+}
+
+void TsdfServer::publishMapEvent(const ros::TimerEvent& /*event*/) {
+  publishMap();
 }
 
 void TsdfServer::clear() {
