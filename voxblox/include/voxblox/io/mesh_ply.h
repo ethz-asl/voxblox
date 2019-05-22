@@ -46,7 +46,7 @@ bool outputMeshLayerAsPly(const std::string& filename,
                           const MeshLayer& mesh_layer);
 
 /**
- * @param connected_mesh if true veracities will be shared between triangles
+ * @param connected_mesh if true vertices will be shared between triangles
  */
 bool outputMeshLayerAsPly(const std::string& filename,
                           const bool connected_mesh,
