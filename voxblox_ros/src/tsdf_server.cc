@@ -1,5 +1,6 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
+#include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
 
 #include "voxblox_ros/tsdf_server.h"
@@ -208,53 +209,6 @@ void TsdfServer::getServerConfigFromRosParam(
   color_map_->setMaxValue(intensity_max_value);
 }
 
-// Check if all coordinates in the point are finite
-template <typename PCLPoint>
-bool isPointFinite(const PCLPoint& point) {
-  return std::isfinite(point.x) && std::isfinite(point.y) &&
-         std::isfinite(point.z);
-}
-
-template <typename PCLPoint>
-Color convertColor(const PCLPoint& point,
-                   const std::shared_ptr<ColorMap>& color_map);
-
-template <>
-Color convertColor(const pcl::PointXYZRGB& point,
-                   const std::shared_ptr<ColorMap>& /*color_map*/) {
-  return Color(point.r, point.g, point.b, point.a);
-}
-
-template <>
-Color convertColor(const pcl::PointXYZI& point,
-                   const std::shared_ptr<ColorMap>& color_map) {
-  return color_map->colorLookup(point.intensity);
-}
-
-template <>
-Color convertColor(const pcl::PointXYZ& /*point*/,
-                   const std::shared_ptr<ColorMap>& color_map) {
-  return color_map->colorLookup(0);
-}
-
-// Convert pointclouds of different types.
-template <typename PCLPoint>
-void convertPointcloud(const typename pcl::PointCloud<PCLPoint>& pointcloud_pcl,
-                       const std::shared_ptr<ColorMap>& color_map,
-                       Pointcloud* points_C, Colors* colors) {
-  points_C->reserve(pointcloud_pcl.size());
-  colors->reserve(pointcloud_pcl.size());
-  for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
-    if (!isPointFinite(pointcloud_pcl.points[i])) {
-      continue;
-    }
-    points_C->push_back(Point(pointcloud_pcl.points[i].x,
-                              pointcloud_pcl.points[i].y,
-                              pointcloud_pcl.points[i].z));
-    colors->emplace_back(
-        convertColor<PCLPoint>(pointcloud_pcl.points[i], color_map));
-  }
-}
 
 void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,

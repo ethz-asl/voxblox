@@ -13,8 +13,8 @@
 namespace voxblox {
 
 namespace Update {
-/// State of which derived things still need to be updated.
-enum State { kMap, kMesh, kEsdf, kCount };
+/// Status of which derived things still need to be updated.
+enum Status { kMap, kMesh, kEsdf, kCount };
 }
 
 /** An n x n x n container holding VoxelType. It is aware of its 3D position and

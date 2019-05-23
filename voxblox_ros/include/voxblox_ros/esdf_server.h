@@ -40,7 +40,9 @@ class EsdfServer : public TsdfServer {
 
   void updateEsdfEvent(const ros::TimerEvent& event);
 
-  /// Call this to update the ESDF based on latest state of the TSDF map.
+  /// Call this to update the ESDF based on latest state of the TSDF map,
+  /// considering only the newly updated parts of the TSDF map (checked with
+  /// the ESDF updated bit in Update::Status).
   void updateEsdf();
   /// Update the ESDF all at once; clear the existing map.
   void updateEsdfBatch(bool full_euclidean = false);
