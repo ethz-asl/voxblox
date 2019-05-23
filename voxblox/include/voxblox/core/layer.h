@@ -190,7 +190,7 @@ class Layer {
     }
   }
 
-  void getAllUpdatedBlocks(Update::State bit, BlockIndexList* blocks) const {
+  void getAllUpdatedBlocks(Update::Status bit, BlockIndexList* blocks) const {
     CHECK_NOTNULL(blocks);
     blocks->clear();
     for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
