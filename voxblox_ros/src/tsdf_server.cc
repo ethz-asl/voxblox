@@ -95,6 +95,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       enable_icp_(false),
       accumulate_icp_corrections_(true),
       pointcloud_queue_size_(1),
+      num_subscribers_tsdf_map_(0),
       transformer_(nh, nh_private) {
   getServerConfigFromRosParam(nh_private);
 
@@ -196,10 +197,10 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 }
 
 // Check if all coordinates in the point are finite
-template<typename Point>
+template <typename Point>
 bool isPointFinite(const Point& point) {
-    return std::isfinite(point.x) && std::isfinite(point.y) &&
-           std::isfinite(point.z);
+  return std::isfinite(point.x) && std::isfinite(point.y) &&
+         std::isfinite(point.z);
 }
 
 void TsdfServer::processPointCloudMessageAndInsert(
@@ -483,9 +484,16 @@ void TsdfServer::publishSlices() {
   tsdf_slice_pub_.publish(pointcloud);
 }
 
-void TsdfServer::publishMap(const bool reset_remote_map) {
-  if (this->tsdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = false;
+void TsdfServer::publishMap(bool reset_remote_map) {
+  int subscribers = this->tsdf_map_pub_.getNumSubscribers();
+  if (subscribers > 0) {
+    if (num_subscribers_tsdf_map_ < subscribers) {
+      // Always reset the remote map and send all when a new subscriber
+      // subscribes. A bit of overhead for other subscribers, but better than
+      // inconsistent map states.
+      reset_remote_map = true;
+    }
+    const bool only_updated = !reset_remote_map;
     timing::Timer publish_map_timer("map/publish_tsdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
@@ -496,6 +504,7 @@ void TsdfServer::publishMap(const bool reset_remote_map) {
     this->tsdf_map_pub_.publish(layer_msg);
     publish_map_timer.Stop();
   }
+  num_subscribers_tsdf_map_ = subscribers;
 }
 
 void TsdfServer::publishPointclouds() {
@@ -650,6 +659,8 @@ void TsdfServer::clear() {
 }
 
 void TsdfServer::tsdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  timing::Timer receive_map_timer("map/receive_tsdf");
+
   bool success =
       deserializeMsgToLayer<TsdfVoxel>(layer_msg, tsdf_map_->getTsdfLayerPtr());
 
