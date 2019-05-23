@@ -168,8 +168,8 @@ class Block {
   FloatingPoint block_size() const { return block_size_; }
 
   bool has_data() const { return has_data_; }
-  std::bitset<Update::kCount> updated() const { return updated_; }
 
+  const std::bitset<Update::kCount>& updated() const { return updated_; }
   std::bitset<Update::kCount>& updated() { return updated_; }
   bool& has_data() { return has_data_; }
 
