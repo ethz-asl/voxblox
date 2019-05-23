@@ -239,9 +239,9 @@ Output Parameters
 ``publish_esdf_map`` `false`
   Whether to publish the complete ESDF map periodically over ROS topics.
 ``publish_pointclouds`` `false`
-  If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated or whenever the map is updated if `publish_pointclouds_on_update` is set to true as well.
+  If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated or whenever there is new input pointcloud data if `publish_pointclouds_on_update` is set to true as well.
 ``publish_pointclouds_on_update`` `false`
-  Whether to publish pointclouds whenever the map gets new data (true) or whenever the mesh is updated (false).
+  Whether to publish pointclouds whenever the map gets new input pointcloud data (true) or whenever the mesh is updated (false).
 ``intensity_colormap`` `"rainbow"`
   If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are ``rainbow``, ``inverse_rainbow``, ``grayscale``, ``inverse_grayscale``, ``ironbow`` (thermal).
 ``intensity_max_value`` `100.0`
