@@ -10,20 +10,24 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
     : EsdfServer(nh, nh_private, getEsdfMapConfigFromRosParam(nh_private),
                  getEsdfIntegratorConfigFromRosParam(nh_private),
                  getTsdfMapConfigFromRosParam(nh_private),
-                 getTsdfIntegratorConfigFromRosParam(nh_private)) {}
+                 getTsdfIntegratorConfigFromRosParam(nh_private),
+                 getMeshIntegratorConfigFromRosParam(nh_private)) {}
 
 EsdfServer::EsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private,
                        const EsdfMap::Config& esdf_config,
                        const EsdfIntegrator::Config& esdf_integrator_config,
                        const TsdfMap::Config& tsdf_config,
-                       const TsdfIntegratorBase::Config& tsdf_integrator_config)
-    : TsdfServer(nh, nh_private, tsdf_config, tsdf_integrator_config),
+                       const TsdfIntegratorBase::Config& tsdf_integrator_config,
+                       const MeshIntegratorConfig& mesh_config)
+    : TsdfServer(nh, nh_private, tsdf_config, tsdf_integrator_config,
+                 mesh_config),
       clear_sphere_for_planning_(false),
       publish_esdf_map_(false),
       publish_traversable_(false),
       traversability_radius_(1.0),
-      incremental_update_(true) {
+      incremental_update_(true),
+      num_subscribers_esdf_map_(0) {
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
@@ -143,9 +147,16 @@ void EsdfServer::publishTraversable() {
   traversable_pub_.publish(pointcloud);
 }
 
-void EsdfServer::publishMap(const bool reset_remote_map) {
-  if (this->esdf_map_pub_.getNumSubscribers() > 0) {
-    const bool only_updated = false;
+void EsdfServer::publishMap(bool reset_remote_map) {
+  int subscribers = this->esdf_map_pub_.getNumSubscribers();
+  if (subscribers > 0) {
+    if (num_subscribers_esdf_map_ < subscribers) {
+      // Always reset the remote map and send all when a new subscriber
+      // subscribes. A bit of overhead for other subscribers, but better than
+      // inconsistent map states.
+      reset_remote_map = true;
+    }
+    const bool only_updated = !reset_remote_map;
     timing::Timer publish_map_timer("map/publish_esdf");
     voxblox_msgs::Layer layer_msg;
     serializeLayerAsMsg<EsdfVoxel>(this->esdf_map_->getEsdfLayer(),
@@ -156,7 +167,7 @@ void EsdfServer::publishMap(const bool reset_remote_map) {
     this->esdf_map_pub_.publish(layer_msg);
     publish_map_timer.Stop();
   }
-
+  num_subscribers_esdf_map_ = subscribers;
   TsdfServer::publishMap();
 }
 
@@ -222,6 +233,8 @@ void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
 }
 
 void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
+  timing::Timer receive_map_timer("map/receive_esdf");
+
   bool success =
       deserializeMsgToLayer<EsdfVoxel>(layer_msg, esdf_map_->getEsdfLayerPtr());
 
