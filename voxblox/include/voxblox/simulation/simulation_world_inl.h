@@ -12,7 +12,8 @@ namespace voxblox {
 
 template <typename VoxelType>
 void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
-                                           Layer<VoxelType>* layer) const {
+                                           Layer<VoxelType>* layer,
+                                           const bool voxel_carving) const {
   timing::Timer sim_timer("sim/generate_sdf");
 
   CHECK_NOTNULL(layer);
@@ -64,7 +65,11 @@ void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
 
       // Then update the thing.
       voxel_dist = std::max(voxel_dist, -max_dist);
-      setVoxel(voxel_dist, color, &voxel);
+      if (voxel_carving) {
+        setVoxel(voxel_dist, color, &voxel);
+      } else if (std::abs(voxel_dist) < max_dist) {
+        setVoxel(voxel_dist, color, &voxel);
+      }
     }
   }
 }

@@ -77,8 +77,8 @@ class SimulationWorld {
 
   // === Computing ground truth SDFs ===
   template <typename VoxelType>
-  void generateSdfFromWorld(FloatingPoint max_dist,
-                            Layer<VoxelType>* layer) const;
+  void generateSdfFromWorld(FloatingPoint max_dist, Layer<VoxelType>* layer,
+                            const bool voxel_carving = true) const;
 
   FloatingPoint getDistanceToPoint(const Point& coords,
                                    FloatingPoint max_dist) const;

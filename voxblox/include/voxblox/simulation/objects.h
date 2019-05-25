@@ -109,49 +109,84 @@ class Cube : public Object {
   Cube(const Point& center, const Point& size, const Color& color)
       : Object(center, Type::kCube, color), size_(size) {}
 
-  virtual FloatingPoint getDistanceToPoint(const Point& point) const {
+  // Adds orientation to the cube. q_O_W is the transformation that rotates a
+  // point from the simulation world (W) frame into the orientation frame of the
+  // object frame (O). In this frame (O), the cube is again aligned with the
+  // axes and therefore can be easily simulated.
+  Cube(const Point& center, const Point& size, const Rotation& q_O_W,
+       const Color& color)
+      : Object(center, Type::kCube, color),
+        size_(size),
+        q_O_W_(q_O_W),
+        orientation_set_(true) {}
+
+  virtual FloatingPoint getDistanceToPoint(const Point& point_W) const {
     // Solution from http://stackoverflow.com/questions/5254838/
     // calculating-distance-between-a-point-and-a-rectangular-box-nearest-point
 
+    Point point_O;
+    if (orientation_set_) {
+      point_O = q_O_W_.rotate(point_W);
+    } else {
+      // If the object has no orientation then the object frame (O) is equal to
+      // the world frame (W) and therefore point_O == point_W;
+      point_O = point_W;
+    }
+
     Point distance_vector = Point::Zero();
     distance_vector.x() =
-        std::max(std::max(center_.x() - size_.x() / 2.0 - point.x(), 0.0),
-                 point.x() - center_.x() - size_.x() / 2.0);
+        std::max(std::max(center_.x() - size_.x() / 2.0 - point_O.x(), 0.0),
+                 point_O.x() - center_.x() - size_.x() / 2.0);
     distance_vector.y() =
-        std::max(std::max(center_.y() - size_.y() / 2.0 - point.y(), 0.0),
-                 point.y() - center_.y() - size_.y() / 2.0);
+        std::max(std::max(center_.y() - size_.y() / 2.0 - point_O.y(), 0.0),
+                 point_O.y() - center_.y() - size_.y() / 2.0);
     distance_vector.z() =
-        std::max(std::max(center_.z() - size_.z() / 2.0 - point.z(), 0.0),
-                 point.z() - center_.z() - size_.z() / 2.0);
+        std::max(std::max(center_.z() - size_.z() / 2.0 - point_O.z(), 0.0),
+                 point_O.z() - center_.z() - size_.z() / 2.0);
 
     FloatingPoint distance = distance_vector.norm();
 
     // Basically 0... Means it's inside!
     if (distance < kEpsilon) {
-      distance_vector.x() = std::max(center_.x() - size_.x() / 2.0 - point.x(),
-                                     point.x() - center_.x() - size_.x() / 2.0);
-      distance_vector.y() = std::max(center_.y() - size_.y() / 2.0 - point.y(),
-                                     point.y() - center_.y() - size_.y() / 2.0);
-      distance_vector.z() = std::max(center_.z() - size_.z() / 2.0 - point.z(),
-                                     point.z() - center_.z() - size_.z() / 2.0);
+      distance_vector.x() =
+          std::max(center_.x() - size_.x() / 2.0 - point_O.x(),
+                   point_O.x() - center_.x() - size_.x() / 2.0);
+      distance_vector.y() =
+          std::max(center_.y() - size_.y() / 2.0 - point_O.y(),
+                   point_O.y() - center_.y() - size_.y() / 2.0);
+      distance_vector.z() =
+          std::max(center_.z() - size_.z() / 2.0 - point_O.z(),
+                   point_O.z() - center_.z() - size_.z() / 2.0);
       distance = distance_vector.maxCoeff();
     }
 
     return distance;
   }
 
-  virtual bool getRayIntersection(const Point& ray_origin,
-                                  const Point& ray_direction,
+  virtual bool getRayIntersection(const Point& ray_origin_W,
+                                  const Point& ray_direction_W,
                                   FloatingPoint max_dist,
-                                  Point* intersect_point,
+                                  Point* intersect_point_W,
                                   FloatingPoint* intersect_dist) const {
+    Point ray_origin_O;
+    Point ray_direction_O;
+    if (orientation_set_) {
+      ray_origin_O = q_O_W_.rotate(ray_origin_W);
+      ray_direction_O = q_O_W_.rotate(ray_direction_W);
+    } else {
+      // If the object has no orientation then the object frame (O) is equal to
+      // the world frame (W):;
+      ray_origin_O = ray_origin_W;
+      ray_direction_O = ray_direction_W;
+    }
+
     // Adapted from https://www.scratchapixel.com/lessons/3d-basic-rendering/
     // minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
     // Compute min and max limits in 3D.
 
     // Precalculate signs and inverse directions.
-    Point inv_dir(1.0 / ray_direction.x(), 1.0 / ray_direction.y(),
-                  1.0 / ray_direction.z());
+    Point inv_dir(1.0 / ray_direction_O.x(), 1.0 / ray_direction_O.y(),
+                  1.0 / ray_direction_O.z());
     Eigen::Vector3i ray_sign(inv_dir.x() < 0.0, inv_dir.y() < 0.0,
                              inv_dir.z() < 0.0);
 
@@ -160,22 +195,22 @@ class Cube : public Object {
     bounds[1] = center_ + size_ / 2.0;
 
     FloatingPoint tmin =
-        (bounds[ray_sign.x()].x() - ray_origin.x()) * inv_dir.x();
+        (bounds[ray_sign.x()].x() - ray_origin_O.x()) * inv_dir.x();
     FloatingPoint tmax =
-        (bounds[1 - ray_sign.x()].x() - ray_origin.x()) * inv_dir.x();
+        (bounds[1 - ray_sign.x()].x() - ray_origin_O.x()) * inv_dir.x();
     FloatingPoint tymin =
-        (bounds[ray_sign.y()].y() - ray_origin.y()) * inv_dir.y();
+        (bounds[ray_sign.y()].y() - ray_origin_O.y()) * inv_dir.y();
     FloatingPoint tymax =
-        (bounds[1 - ray_sign.y()].y() - ray_origin.y()) * inv_dir.y();
+        (bounds[1 - ray_sign.y()].y() - ray_origin_O.y()) * inv_dir.y();
 
     if ((tmin > tymax) || (tymin > tmax)) return false;
     if (tymin > tmin) tmin = tymin;
     if (tymax < tmax) tmax = tymax;
 
     FloatingPoint tzmin =
-        (bounds[ray_sign.z()].z() - ray_origin.z()) * inv_dir.z();
+        (bounds[ray_sign.z()].z() - ray_origin_O.z()) * inv_dir.z();
     FloatingPoint tzmax =
-        (bounds[1 - ray_sign.z()].z() - ray_origin.z()) * inv_dir.z();
+        (bounds[1 - ray_sign.z()].z() - ray_origin_O.z()) * inv_dir.z();
 
     if ((tmin > tzmax) || (tzmin > tmax)) return false;
     if (tzmin > tmin) tmin = tzmin;
@@ -194,13 +229,21 @@ class Cube : public Object {
     }
 
     *intersect_dist = t;
-    *intersect_point = ray_origin + ray_direction * t;
+    if (orientation_set_) {
+      *intersect_point_W =
+          q_O_W_.inverse().rotate(ray_origin_O + ray_direction_O * t);
+    } else {
+      *intersect_point_W = ray_origin_O + ray_direction_O * t;
+    }
 
     return true;
   }
 
  protected:
   Point size_;
+
+  voxblox::Rotation q_O_W_;
+  bool orientation_set_;
 };
 
 /// Requires normal being passed in to ALREADY BE NORMALIZED!!!!
