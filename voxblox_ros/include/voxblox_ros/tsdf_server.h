@@ -33,6 +33,26 @@ namespace voxblox {
 
 constexpr float kDefaultMaxIntensity = 100.0;
 
+class Queue {
+  public:
+
+    Queue();
+
+    void push(TsdfMap::Ptr tsdf_map);
+    TsdfMap::Ptr front();
+    void pop();
+    int size();
+
+  private:
+
+    struct Member {
+      TsdfMap::Ptr tsdf_ptr;
+      Member* next; 
+    };
+    Member* last;
+    int queue_size;
+};
+
 class TsdfServer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -199,6 +219,7 @@ class TsdfServer {
   // Publish markers for visualization.
   ros::Publisher mesh_pub_;
   ros::Publisher tsdf_pointcloud_pub_;
+  ros::Publisher tsdf_newly_occupied_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
@@ -227,6 +248,8 @@ class TsdfServer {
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
+  std::shared_ptr<TsdfMap> tsdf_map_newly_free_;
+  std::shared_ptr<TsdfMap> tsdf_map_newly_occupied_;
 
   /// ICP matcher
   std::shared_ptr<ICP> icp_;
@@ -255,6 +278,12 @@ class TsdfServer {
 
   /// Current transform corrections from ICP.
   Transformation icp_corrected_transform_;
+
+  //Vinz Additions
+  Queue queue_; 
+  bool newly_occupied_active_;
+  void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map);
+
 };
 
 }  // namespace voxblox

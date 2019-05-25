@@ -282,7 +282,13 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     }
 
     const Point origin = T_G_C.getPosition();
-    const Point point_G = T_G_C * point_C;
+    Point point_G = T_G_C * point_C;
+
+    //Vinz
+    if (point_G.z() < 0.2 || point_G.z() > 1.0) continue;
+    float radial_distance = point_G.norm();
+    if (radial_distance > 5.5 || radial_distance < 0.1) continue;
+    point_G.z()=0;
 
 //Vinz
 if (point_G.z() < 0.2 || point_G.z() > 1.0) continue;
