@@ -55,26 +55,18 @@ void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map,
     // Iterate over all voxels in said blocks.
     const Block<TsdfVoxel>& block_current = current_map->getTsdfLayerPtr()->getBlockByIndex(index);
 
-/*
-    if (!block_current.has_data()) {
-      ROS_INFO("NO DATA");
-      continue;
-    }
-*/
     for (size_t linear_index = 0; linear_index < num_voxels_per_block;
          ++linear_index) {
       //ROS_INFO("Going through voxel indexes");
       const Point coord = block_current.computeCoordinatesFromLinearIndex(linear_index);
       const TsdfVoxel& voxel_current = block_current.getVoxelByLinearIndex(linear_index);
       TsdfVoxel* voxel_newly_occupied = newly_occupied_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
-      if (std::abs(voxel_current.distance) < distance_threshold) {
-        //ROS_INFO("current lower then threshold");
+      if (std::abs(voxel_current.distance) < distance_threshold && voxel_current.weight != 0) {
         const TsdfVoxel* voxel_old = old_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
         if (voxel_old == nullptr) {
-          //ROS_INFO("NULLPTR exception");
           continue;
         }
-        if (std::abs(voxel_old->distance) < distance_threshold) {
+        if (std::abs(voxel_old->distance) < distance_threshold || voxel_old->weight == 0) {
           //delete voxel in newly_occupied_map
           voxel_newly_occupied->weight = 0;
         } else {
