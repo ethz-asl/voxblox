@@ -103,7 +103,7 @@ void EsdfIntegrator::updateFromTsdfLayerBatch() {
 
 void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   BlockIndexList tsdf_blocks;
-  tsdf_layer_->getAllUpdatedBlocks(&tsdf_blocks);
+  tsdf_layer_->getAllUpdatedBlocks(Update::kEsdf, &tsdf_blocks);
   tsdf_blocks.insert(tsdf_blocks.end(), updated_blocks_.begin(),
                      updated_blocks_.end());
   updated_blocks_.clear();
@@ -113,7 +113,9 @@ void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   if (clear_updated_flag) {
     for (const BlockIndex& block_index : tsdf_blocks) {
       if (tsdf_layer_->hasBlock(block_index)) {
-        tsdf_layer_->getBlockByIndex(block_index).updated() = false;
+        tsdf_layer_->getBlockByIndex(block_index)
+            .updated()
+            .reset(Update::kEsdf);
       }
     }
   }

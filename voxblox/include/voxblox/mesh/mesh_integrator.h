@@ -25,6 +25,8 @@
 
 #include <algorithm>
 #include <list>
+#include <memory>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -135,7 +137,7 @@ class MeshIntegrator {
         << "layer!";
     BlockIndexList all_tsdf_blocks;
     if (only_mesh_updated_blocks) {
-      sdf_layer_const_->getAllUpdatedBlocks(&all_tsdf_blocks);
+      sdf_layer_const_->getAllUpdatedBlocks(Update::kMesh, &all_tsdf_blocks);
     } else {
       sdf_layer_const_->getAllAllocatedBlocks(&all_tsdf_blocks);
     }
@@ -176,7 +178,7 @@ class MeshIntegrator {
       if (clear_updated_flag) {
         typename Block<VoxelType>::Ptr block =
             sdf_layer_mutable_->getBlockPtrByIndex(block_idx);
-        block->updated() = false;
+        block->updated().reset(Update::kMesh);
       }
     }
   }
