@@ -200,4 +200,20 @@ FloatingPoint SimulationWorld::getNoise(FloatingPoint noise_sigma) {
   return dist(generator_);
 }
 
+template <>
+void SimulationWorld::setVoxel(FloatingPoint dist, const Color& color,
+                               TsdfVoxel* voxel) const {
+  voxel->distance = static_cast<float>(dist);
+  voxel->color = color;
+  voxel->weight = 1.0f;  // Just to make sure it gets visualized/meshed/etc.
+}
+
+// Color ignored.
+template <>
+void SimulationWorld::setVoxel(FloatingPoint dist, const Color& /*color*/,
+                               EsdfVoxel* voxel) const {
+  voxel->distance = static_cast<float>(dist);
+  voxel->observed = true;
+}
+
 }  // namespace voxblox

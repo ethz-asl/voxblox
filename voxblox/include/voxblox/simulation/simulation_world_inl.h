@@ -74,22 +74,6 @@ void SimulationWorld::generateSdfFromWorld(FloatingPoint max_dist,
   }
 }
 
-template <>
-void SimulationWorld::setVoxel(FloatingPoint dist, const Color& color,
-                               TsdfVoxel* voxel) const {
-  voxel->distance = static_cast<float>(dist);
-  voxel->color = color;
-  voxel->weight = 1.0f;  // Just to make sure it gets visualized/meshed/etc.
-}
-
-// Color ignored.
-template <>
-void SimulationWorld::setVoxel(FloatingPoint dist, const Color& /*color*/,
-                               EsdfVoxel* voxel) const {
-  voxel->distance = static_cast<float>(dist);
-  voxel->observed = true;
-}
-
 }  // namespace voxblox
 
 #endif  // VOXBLOX_SIMULATION_SIMULATION_WORLD_INL_H_
