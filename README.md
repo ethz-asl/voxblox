@@ -13,6 +13,7 @@ Voxblox is a volumetric mapping library based mainly on Truncated Signed Distanc
  * Features an implementation of building Euclidean Signed Distance Fields (ESDFs, EDTs) directly from TSDFs.
 
 **If you're looking for skeletonization/sparse topology or planning applications, please refer to the [mav_voxblox_planning](https://github.com/ethz-asl/mav_voxblox_planning) repo.**
+**If you want to create ground truth maps from meshes or gazebo environments, please check out the [voxblox_ground_truth](https://github.com/ethz-asl/voxblox_ground_truth) pakage!**
 
 ![example_gif](http://i.imgur.com/2wLztFm.gif)
 
