@@ -62,6 +62,17 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
   if (config_.allow_clear && !config_.voxel_carving_enabled) {
     config_.allow_clear = false;
   }
+
+  CHECK_GT(config_.default_truncation_distance, 0.0);
+  CHECK_GT(config_.max_weight, 0.0);
+  CHECK_GT(config_.min_ray_length_m, 0.0);
+  CHECK_GT(config_.max_ray_length_m, 0.0);
+  if (config_.use_sparsity_compensation_factor) {
+    CHECK_GT(config_.sparsity_compensation_factor, 0.0);
+  }
+
+  CHECK_GT(config_.start_voxel_subsampling_factor, 0.0);
+  CHECK_GT(config_.start_voxel_subsampling_factor, 0.0);
 }
 
 void TsdfIntegratorBase::setLayer(Layer<TsdfVoxel>* layer) {
@@ -145,8 +156,20 @@ void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
   temp_block_map_.clear();
 }
 
+bool FastTsdfIntegrator::shouldAbortIntegration(
+    const GlobalIndex& global_voxel_idx, const bool is_in_truncation_distance) {
+  // Check if the current voxel has been seen by any ray cast this scan, if it
+  // is we stop casting as the ray is deemed to be contributing too little new
+  // information. We never abort inside the truncation distance.
+  if (!voxel_observed_approx_set_.replaceHash(global_voxel_idx) &&
+      !is_in_truncation_distance) {
+    return true;
+  }
+  return false;
+}
+
 // Updates tsdf_voxel. Thread safe.
-void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
+bool TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
                                          const Point& point_G,
                                          const GlobalIndex& global_voxel_idx,
                                          const Color& color, const float weight,
@@ -157,8 +180,16 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
       getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
 
   const float sdf = computeDistance(origin, point_G, voxel_center);
+  const bool is_in_truncation_distance =
+      sdf < config_.default_truncation_distance;
+
+  if (shouldAbortIntegration(global_voxel_idx, is_in_truncation_distance)) {
+    // Abort integration.
+    return false;
+  }
 
   float updated_weight = weight;
+
   // Compute updated weight in case we use weight dropoff. It's easier here
   // that in getVoxelWeight as here we have the actual SDF for the voxel
   // already computed.
@@ -175,10 +206,8 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
   // space parts of other rays which pass through the corresponding voxels.
   // This can be useful for creating a TSDF map from sparse sensor data (e.g.
   // visual features from a SLAM system). By default, this option is disabled.
-  if (config_.use_sparsity_compensation_factor) {
-    if (std::abs(sdf) < config_.default_truncation_distance) {
-      updated_weight *= config_.sparsity_compensation_factor;
-    }
+  if (config_.use_sparsity_compensation_factor && is_in_truncation_distance) {
+    updated_weight *= config_.sparsity_compensation_factor;
   }
 
   // Lookup the mutex that is responsible for this voxel and lock it
@@ -189,7 +218,7 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
   // it is possible to have weights very close to zero, due to the limited
   // precision of floating points dividing by this small value can cause nans
   if (new_weight < kFloatEpsilon) {
-    return;
+    return true;
   }
 
   const float new_sdf =
@@ -205,6 +234,8 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
       (new_sdf > 0.0) ? std::min(config_.default_truncation_distance, new_sdf)
                       : std::max(-config_.default_truncation_distance, new_sdf);
   tsdf_voxel->weight = std::min(config_.max_weight, new_weight);
+
+  return true;
 }
 
 // Thread safe.
@@ -528,25 +559,24 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     Block<TsdfVoxel>::Ptr block = nullptr;
     BlockIndex block_idx;
     while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-      // Check if the current voxel has been seen by any ray cast this scan.
-      // If it has increment the consecutive_ray_collisions counter, otherwise
-      // reset it. If the counter reaches a threshold we stop casting as the
-      // ray is deemed to be contributing too little new information.
-      if (!voxel_observed_approx_set_.replaceHash(global_voxel_idx)) {
-        ++consecutive_ray_collisions;
-      } else {
-        consecutive_ray_collisions = 0;
-      }
-      if (consecutive_ray_collisions > config_.max_consecutive_ray_collisions) {
-        break;
-      }
-
       TsdfVoxel* voxel =
           allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
 
       const float weight = getVoxelWeight(point_C);
 
-      updateTsdfVoxel(origin, point_G, global_voxel_idx, color, weight, voxel);
+      // Check if the current voxel has been seen by any ray cast this scan.
+      // If it has increment the consecutive_ray_collisions counter, otherwise
+      // reset it. If the counter reaches a threshold we stop casting as the
+      // ray is deemed to be contributing too little new information.
+      if (!updateTsdfVoxel(origin, point_G, global_voxel_idx, color, weight,
+                           voxel)) {
+        ++consecutive_ray_collisions;
+      } else {
+        consecutive_ray_collisions = 0u;
+      }
+      if (consecutive_ray_collisions > config_.max_consecutive_ray_collisions) {
+        break;
+      }
     }
   }
 }

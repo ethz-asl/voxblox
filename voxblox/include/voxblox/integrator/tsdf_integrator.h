@@ -108,9 +108,12 @@ class TsdfIntegratorBase {
   void setLayer(Layer<TsdfVoxel>* layer);
 
  protected:
+  virtual bool shouldAbortIntegration(const GlobalIndex& global_voxel_idx,
+                                      const bool is_in_truncation_distance) = 0;
+
   /// Thread safe.
   inline bool isPointValid(const Point& point_C, const bool freespace_point,
-                    bool* is_clearing) const {
+                           bool* is_clearing) const {
     DCHECK(is_clearing != nullptr);
     const FloatingPoint ray_distance = point_C.norm();
     if (ray_distance < config_.min_ray_length_m) {
@@ -150,7 +153,7 @@ class TsdfIntegratorBase {
   void updateLayerWithStoredBlocks();
 
   /// Updates tsdf_voxel, Thread safe.
-  void updateTsdfVoxel(const Point& origin, const Point& point_G,
+  bool updateTsdfVoxel(const Point& origin, const Point& point_G,
                        const GlobalIndex& global_voxel_index,
                        const Color& color, const float weight,
                        TsdfVoxel* tsdf_voxel);
@@ -227,6 +230,12 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
                          const Pointcloud& points_C, const Colors& colors,
                          const bool freespace_points,
                          ThreadSafeIndex* index_getter);
+
+ protected:
+  bool shouldAbortIntegration(const GlobalIndex& /*global_voxel_idx*/,
+                              const bool /*is_in_truncation_distance*/) {
+    return false;
+  }
 };
 
 /**
@@ -269,19 +278,24 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map);
+
+  bool shouldAbortIntegration(const GlobalIndex& /*global_voxel_idx*/,
+                              const bool /*is_in_truncation_distance*/) {
+    return false;
+  }
 };
 
 /**
  * An integrator that prioritizes speed over everything else. Rays are cast from
  * the pointcloud to the sensor origin. If a ray intersects
- * max_consecutive_ray_collisions voxels in a row that have already been updated
- * by other rays from the same cloud, it is terminated early. This results in a
- * large reduction in the number of freespace updates and greatly improves
- * runtime while ensuring all voxels receive at least a minimum number of
- * updates. Speed is further enhanced through limiting the number of rays cast
- * from each voxel as set by start_voxel_subsampling_factor and use of the
- * ApproxHashSet. Up to an order of magnitude faster then the other integrators
- * for small voxels.
+ * a voxel that has already been updated by other rays from the same cloud,
+ * it is terminated early, unless the ray is within the truncation distance.
+ * This results in a large reduction in the number of freespace updates and
+ * greatly improves runtime while ensuring all voxels receive at least a minimum
+ * number of updates. Speed is further enhanced through limiting the number of
+ * rays cast from each voxel as set by start_voxel_subsampling_factor and use of
+ * the ApproxHashSet. Up to an order of magnitude faster then the other
+ * integrators for small voxels.
  */
 class FastTsdfIntegrator : public TsdfIntegratorBase {
  public:
@@ -298,6 +312,10 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
                            const bool freespace_points = false);
+
+ protected:
+  bool shouldAbortIntegration(const GlobalIndex& global_voxel_idx,
+                              const bool is_in_truncation_distance);
 
  private:
   /**
@@ -329,9 +347,9 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
   /**
    * This set records which voxels a scans rays have passed through. If a ray
-   * moves through max_consecutive_ray_collisions voxels in a row that have
-   * already been seen this scan, it is deemed to be adding no new information
-   * and the casting stops.
+   * moves a voxel that has already been seen in this scan, it is deemed to be
+   * adding no new information and the casting stops, unless the ray is within
+   * its truncation distance.
    */
   ApproxHashSet<masked_bits_, full_reset_threshold_, GlobalIndex, LongIndexHash>
       voxel_observed_approx_set_;
