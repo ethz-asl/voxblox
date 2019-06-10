@@ -156,7 +156,7 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
 
   // Serialize blocks.
   saveBlocksToStream(include_all_blocks, blocks_to_include, &outfile);
-  
+
   outfile.close();
   return true;
 }
@@ -224,7 +224,7 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
         return false;
     }
     // Mark that this block has been updated.
-    block_map_[block_index]->updated() = true;
+    block_map_[block_index]->updated().set();
   } else {
     LOG(ERROR)
         << "The blocks from this protobuf are not compatible with this layer!";

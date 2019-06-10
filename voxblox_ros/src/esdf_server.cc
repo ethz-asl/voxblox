@@ -66,6 +66,16 @@ void EsdfServer::setupRos() {
                     publish_traversable_);
   nh_private_.param("traversability_radius", traversability_radius_,
                     traversability_radius_);
+
+  double update_esdf_every_n_sec = 1.0;
+  nh_private_.param("update_esdf_every_n_sec", update_esdf_every_n_sec,
+                    update_esdf_every_n_sec);
+
+  if (update_esdf_every_n_sec > 0.0) {
+    update_esdf_timer_ =
+        nh_private_.createTimer(ros::Duration(update_esdf_every_n_sec),
+                                &EsdfServer::updateEsdfEvent, this);
+  }
 }
 
 void EsdfServer::publishAllUpdatedEsdfVoxels() {
@@ -106,24 +116,8 @@ bool EsdfServer::generateEsdfCallback(
   return true;
 }
 
-void EsdfServer::updateMesh() {
-  // Also update the ESDF now, if there's any blocks in the TSDF.
-  if (incremental_update_ &&
-      tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
-    const bool clear_updated_flag_esdf = false;
-    esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
-  }
-  if (publish_pointclouds_) {
-    publishAllUpdatedEsdfVoxels();
-  }
-  if (publish_traversable_) {
-    publishTraversable();
-  }
-  if (publish_esdf_map_) {
-    publishMap();
-  }
-
-  TsdfServer::updateMesh();
+void EsdfServer::updateEsdfEvent(const ros::TimerEvent& /*event*/) {
+  updateEsdf();
 }
 
 void EsdfServer::publishPointclouds() {
@@ -148,6 +142,10 @@ void EsdfServer::publishTraversable() {
 }
 
 void EsdfServer::publishMap(bool reset_remote_map) {
+  if (!publish_esdf_map_) {
+    return;
+  }
+
   int subscribers = this->esdf_map_pub_.getNumSubscribers();
   if (subscribers > 0) {
     if (num_subscribers_esdf_map_ < subscribers) {
