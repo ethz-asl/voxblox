@@ -46,7 +46,7 @@ void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map,
   
   const size_t vps = current_map->getTsdfLayerPtr()->voxels_per_side();
   const size_t num_voxels_per_block = vps * vps * vps;
-  const float distance_threshold = 0.05;
+  const float distance_threshold = 0.2;
 
   BlockIndexList blocks_current;
   current_map->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks_current);
@@ -68,7 +68,8 @@ void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map,
         }
         if (std::abs(voxel_old->distance) < distance_threshold || voxel_old->weight == 0) {
           //delete voxel in newly_occupied_map
-          voxel_newly_occupied->weight = 0;
+          //voxel_newly_occupied->weight = 0;
+          voxel_newly_occupied->distance = std::abs(voxel_current.distance-voxel_old->distance);
         } else {
           voxel_newly_occupied->distance = std::abs(voxel_current.distance-voxel_old->distance);
         }
@@ -209,7 +210,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     freespace_pointcloud_sub_ =
         nh_.subscribe("freespace_pointcloud", pointcloud_queue_size_,
                       &TsdfServer::insertFreespacePointcloud, this);
-  }
+  } 
 
   if (enable_icp_) {
     icp_transform_pub_ = nh_private_.advertise<geometry_msgs::TransformStamped>(
