@@ -1,12 +1,74 @@
 #ifndef VOXBLOX_CORE_BLOCK_INL_H_
 #define VOXBLOX_CORE_BLOCK_INL_H_
 
+#include <algorithm>
 #include <vector>
 
 #include "./Block.pb.h"
 #include "voxblox/utils/voxel_utils.h"
 
 namespace voxblox {
+
+template <typename VoxelType>
+size_t Block<VoxelType>::computeLinearIndexFromVoxelIndex(
+    const VoxelIndex& index) const {
+  size_t linear_index = static_cast<size_t>(
+      index.x() +
+      voxels_per_side_ * (index.y() + index.z() * voxels_per_side_));
+
+  DCHECK(index.x() >= 0 && index.x() < static_cast<int>(voxels_per_side_));
+  DCHECK(index.y() >= 0 && index.y() < static_cast<int>(voxels_per_side_));
+  DCHECK(index.z() >= 0 && index.z() < static_cast<int>(voxels_per_side_));
+
+  DCHECK_LT(linear_index,
+            voxels_per_side_ * voxels_per_side_ * voxels_per_side_);
+  DCHECK_GE(linear_index, 0u);
+  return linear_index;
+}
+
+template <typename VoxelType>
+VoxelIndex Block<VoxelType>::computeTruncatedVoxelIndexFromCoordinates(
+    const Point& coords) const {
+  const IndexElement max_value = voxels_per_side_ - 1;
+  VoxelIndex voxel_index =
+      getGridIndexFromPoint<VoxelIndex>(coords - origin_, voxel_size_inv_);
+  // check is needed as getGridIndexFromPoint gives results that have a tiny
+  // chance of being outside the valid voxel range.
+  return VoxelIndex(std::max(std::min(voxel_index.x(), max_value), 0),
+                    std::max(std::min(voxel_index.y(), max_value), 0),
+                    std::max(std::min(voxel_index.z(), max_value), 0));
+}
+
+template <typename VoxelType>
+VoxelIndex Block<VoxelType>::computeVoxelIndexFromLinearIndex(
+    size_t linear_index) const {
+  int rem = linear_index;
+  VoxelIndex result;
+  std::div_t div_temp = std::div(rem, voxels_per_side_ * voxels_per_side_);
+  rem = div_temp.rem;
+  result.z() = div_temp.quot;
+  div_temp = std::div(rem, voxels_per_side_);
+  result.y() = div_temp.quot;
+  result.x() = div_temp.rem;
+  return result;
+}
+
+template <typename VoxelType>
+bool Block<VoxelType>::isValidVoxelIndex(const VoxelIndex& index) const {
+  if (index.x() < 0 ||
+      index.x() >= static_cast<IndexElement>(voxels_per_side_)) {
+    return false;
+  }
+  if (index.y() < 0 ||
+      index.y() >= static_cast<IndexElement>(voxels_per_side_)) {
+    return false;
+  }
+  if (index.z() < 0 ||
+      index.z() >= static_cast<IndexElement>(voxels_per_side_)) {
+    return false;
+  }
+  return true;
+}
 
 template <typename VoxelType>
 Block<VoxelType>::Block(const BlockProto& proto)
@@ -55,7 +117,7 @@ void Block<VoxelType>::mergeBlock(const Block<VoxelType>& other_block) {
     return;
   } else {
     has_data() = true;
-    updated() = true;
+    updated().set();
 
     for (IndexElement voxel_idx = 0;
          voxel_idx < static_cast<IndexElement>(num_voxels()); ++voxel_idx) {

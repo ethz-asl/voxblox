@@ -1,6 +1,6 @@
+#include "voxblox/integrator/tsdf_integrator.h"
 #include <iostream>
 #include <list>
-#include "voxblox/integrator/tsdf_integrator.h"
 
 namespace voxblox {
 
@@ -124,7 +124,7 @@ TsdfVoxel* TsdfIntegratorBase::allocateStorageAndGetVoxelPtr(
     }
   }
 
-  (*last_block)->updated() = true;
+  (*last_block)->updated().set();
 
   const VoxelIndex local_voxel_idx =
       getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
