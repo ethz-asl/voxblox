@@ -32,19 +32,19 @@ class EsdfServer : public TsdfServer {
   virtual void publishSlices();
   void publishTraversable();
 
-  virtual void updateMesh();
   virtual void publishPointclouds();
   virtual void newPoseCallback(const Transformation& T_G_C);
   virtual void publishMap(bool reset_remote_map = false);
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
-  /**
-   * Call updateMesh if you want everything updated; call this specifically
-   * if you don't want the mesh or visualization.
-   */
+  void updateEsdfEvent(const ros::TimerEvent& event);
+
+  /// Call this to update the ESDF based on latest state of the TSDF map,
+  /// considering only the newly updated parts of the TSDF map (checked with
+  /// the ESDF updated bit in Update::Status).
   void updateEsdf();
-  // Update the ESDF all at once; clear the existing map.
+  /// Update the ESDF all at once; clear the existing map.
   void updateEsdfBatch(bool full_euclidean = false);
 
   // Overwrites the layer with what's coming from the topic!
@@ -78,7 +78,7 @@ class EsdfServer : public TsdfServer {
   /// constructor.
   void setupRos();
 
-  // Publish markers for visualization.
+  /// Publish markers for visualization.
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher esdf_slice_pub_;
   ros::Publisher traversable_pub_;
@@ -91,6 +91,9 @@ class EsdfServer : public TsdfServer {
 
   /// Services.
   ros::ServiceServer generate_esdf_srv_;
+
+  /// Timers.
+  ros::Timer update_esdf_timer_;
 
   bool clear_sphere_for_planning_;
   bool publish_esdf_map_;
