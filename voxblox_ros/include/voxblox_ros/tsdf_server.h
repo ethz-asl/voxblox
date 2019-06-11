@@ -157,6 +157,7 @@ class TsdfServer {
   ros::Publisher mesh_pub_;
   ros::Publisher tsdf_pointcloud_pub_;
   ros::Publisher tsdf_newly_occupied_pointcloud_pub_;
+  ros::Publisher tsdf_newly_occupied_distance_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
@@ -253,6 +254,8 @@ class TsdfServer {
   std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
   std::shared_ptr<TsdfMap> tsdf_map_newly_free_;
   std::shared_ptr<TsdfMap> tsdf_map_newly_occupied_;
+  std::shared_ptr<TsdfMap> tsdf_map_newly_occupied_distance_;
+
 
   /// ICP matcher
   std::shared_ptr<ICP> icp_;
@@ -285,7 +288,7 @@ class TsdfServer {
   //Vinz Additions
   Queue queue_; 
   bool newly_occupied_active_;
-  void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map);
+  void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance );
 
 };
 

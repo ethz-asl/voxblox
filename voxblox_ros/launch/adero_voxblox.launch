@@ -4,6 +4,7 @@
   <node name="voxblox_node" pkg="voxblox_ros" type="tsdf_server" output="screen" args="-alsologtostderr" clear_params="true" >
     <remap from="pointcloud" to="/ifm3d/camera_left/cloud"/>
     <param name="publish_pointclouds" value="true" />
+    <param name="publish_pointclouds_on_update" value="true" />
     <param name="publish_slices" value="true" />
     <param name="slice_level" value="0.0" />
     <param name="publish_tsdf_info" value="true" />
@@ -19,7 +20,7 @@
     <param name="method" value="simple" />
     <param name="use_const_weight" value="false" />
     <param name="allow_clear" value="true" />
-    <param name="verbose" value="true" />
+    <param name="verbose" value="false" />
     <rosparam file="$(find voxblox_ros)/cfg/cow_and_lady.yaml"/>
     <param name="mesh_filename" value="" />
   </node>

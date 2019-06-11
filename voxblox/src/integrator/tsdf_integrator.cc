@@ -288,7 +288,8 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     //Vinz
     if (point_G.z() < 0.2 || point_G.z() > 1.0) continue;
     float radial_distance = point_G.norm();
-    if (radial_distance > 5.5 || radial_distance < 0.1) continue;
+    //TODO: Global frame is map: radial_distance not from base_foot
+    //if (radial_distance > 5.5 || radial_distance < 0.1) continue;
     point_G.z() = 0;
 
     RayCaster ray_caster(origin, point_G, is_clearing,

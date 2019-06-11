@@ -42,18 +42,19 @@ int Queue::size() {
   return queue_size;
 }
 
+
 void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map, 
-      TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map){
+      TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance){
   
   const size_t vps = current_map->getTsdfLayerPtr()->voxels_per_side();
   const size_t num_voxels_per_block = vps * vps * vps;
-  const float distance_threshold = 0.2;
+  const float distance_threshold = 0.1;
 
   BlockIndexList blocks_current;
   current_map->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks_current);
 
   for (const BlockIndex& index : blocks_current) {
-    // Iterate over all voxels in said blocks.
+    // Iterate over all voxels in current blocks.
     const Block<TsdfVoxel>& block_current = current_map->getTsdfLayerPtr()->getBlockByIndex(index);
 
     for (size_t linear_index = 0; linear_index < num_voxels_per_block;
@@ -62,19 +63,24 @@ void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map,
       const Point coord = block_current.computeCoordinatesFromLinearIndex(linear_index);
       const TsdfVoxel& voxel_current = block_current.getVoxelByLinearIndex(linear_index);
       TsdfVoxel* voxel_newly_occupied = newly_occupied_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
+      TsdfVoxel* voxel_newly_occupied_distance = newly_occupied_map_distance->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
+      const TsdfVoxel* voxel_old = old_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
+      if (voxel_old == nullptr) {
+        //ROS_INFO("NOM: voxel_old = nullptr");
+        voxel_newly_occupied->weight = 0;
+        voxel_newly_occupied_distance->weight = 0;
+        continue;
+      }
+
+      voxel_newly_occupied_distance->distance = voxel_current.distance - voxel_old->distance;
+
       if (std::abs(voxel_current.distance) < distance_threshold && voxel_current.weight != 0) {
-        const TsdfVoxel* voxel_old = old_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
-        if (voxel_old == nullptr) {
-          continue;
-        }
         if (std::abs(voxel_old->distance) < distance_threshold || voxel_old->weight == 0) {
           //delete voxel in newly_occupied_map
-          //voxel_newly_occupied->weight = 0;
-          voxel_newly_occupied->distance = std::abs(voxel_current.distance-voxel_old->distance);
-        } else {
-          voxel_newly_occupied->distance = std::abs(voxel_current.distance-voxel_old->distance);
+          voxel_newly_occupied->weight = 0;
         }
-      } else {
+      } 
+      else {
           voxel_newly_occupied->weight = 0;
       }
     }
@@ -123,6 +129,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                                               1, true);
   tsdf_newly_occupied_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_newly_occupied_slice",
+                                                              1, true);
+  tsdf_newly_occupied_distance_pointcloud_pub_ =
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_newly_occupied_distance_slice",
                                                               1, true);
   occupancy_marker_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
@@ -426,7 +435,8 @@ void TsdfServer::processPointCloudMessageAndInsert(
     newly_occupied_active_ = true;
     ROS_INFO("newly occupied active true");
     tsdf_map_newly_occupied_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
-    createNewlyOccupiedMap(tsdf_map_, queue_.front(), tsdf_map_newly_occupied_);
+    tsdf_map_newly_occupied_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
+    createNewlyOccupiedMap(tsdf_map_, queue_.front(), tsdf_map_newly_occupied_, tsdf_map_newly_occupied_distance_);
     queue_.pop();
   }
   ROS_INFO("finishing my part now");
@@ -555,17 +565,23 @@ void TsdfServer::publishTsdfOccupiedNodes() {
 
 void TsdfServer::publishSlices() {
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
-
+  
   createDistancePointcloudFromTsdfLayerSlice(tsdf_map_->getTsdfLayer(), 2,
                                              slice_level_, &pointcloud);
-
   pointcloud.header.frame_id = world_frame_;
   tsdf_slice_pub_.publish(pointcloud);
+
   pcl::PointCloud<pcl::PointXYZI> pointcloud_newly_occupied;
+  pcl::PointCloud<pcl::PointXYZI> pointcloud_newly_occupied_distance;
+
   if (newly_occupied_active_) {
     createDistancePointcloudFromTsdfLayerSlice(tsdf_map_newly_occupied_->getTsdfLayer(), 2, slice_level_, &pointcloud_newly_occupied);
     pointcloud_newly_occupied.header.frame_id = world_frame_;
     tsdf_newly_occupied_pointcloud_pub_.publish(pointcloud_newly_occupied);
+
+    createDistancePointcloudFromTsdfLayerSlice(tsdf_map_newly_occupied_distance_->getTsdfLayer(), 2, slice_level_, &pointcloud_newly_occupied_distance);
+    pointcloud_newly_occupied_distance.header.frame_id = world_frame_;
+    tsdf_newly_occupied_distance_pointcloud_pub_.publish(pointcloud_newly_occupied_distance);
   }
 }
 
