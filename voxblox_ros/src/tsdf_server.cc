@@ -42,6 +42,86 @@ int Queue::size() {
   return queue_size;
 }
 
+EuclideanClustering::EuclideanClustering(std::shared_ptr<TsdfMap> input_map){
+  input_map_ = input_map;
+  Layer<TsdfVoxel>& layer = input_map_->getTsdfLayer();
+  
+  BlockIndexList blocks;
+  input_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
+
+  for (const BlockIndex& index : blocks) {
+    const Block<TsdfVoxel>& block = input_map_->getTsdfLayerPtr()->getBlockByIndex(index);
+    if (block.origin().z() > layer.block_size()) {
+      layer.removeBlock(index);
+      continue;
+    }
+
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
+         ++linear_index) {
+      TsdfVoxel* voxel = block.getVoxelByLinearIndex(linear_index);
+      const Point voxel_coord = block.computeCoordinatesFromLinearIndex(linear_index);
+      if (voxel_coord.z() > block.voxel_size()/2) {
+        voxel->weight = 0;
+      }
+    }
+  }
+}
+
+Queue EuclideanClustering::extract_clusters() {
+
+  Layer<TsdfVoxel>& layer = input_map_->getTsdfLayer();
+  current_cluster_.clear();
+  Neighborhood neighborhood;
+  AlignedVector<VoxelKey>* neighbors_ptr;
+
+  BlockIndexList blocks;
+  input_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
+
+  for (const BlockIndex& index : blocks) {
+    const Block<TsdfVoxel>& block = input_map_->getTsdfLayerPtr()->getBlockByIndex(index);
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
+         ++linear_index) {
+      TsdfVoxel* voxel = block.getVoxelByLinearIndex(linear_index);
+      VoxelKey voxel_key (block, linear_index);
+      VoxelElement voxel_element = {voxel_key, false};
+      current_cluster_.push(voxel_element);
+      for (VoxelElement cluster_element : current_cluster_) {
+      neighborhood.getFromBlockAndVoxelIndex(current_cluster_element.voxel_key.first, current_cluster_element.voxel_key.second,
+                                              layer.voxels_per_side(), neighbors_ptr);
+      
+      for (VoxelKey neighbor_voxel_key : *neighbors_ptr) {
+        VoxelElement neighbor_voxel_element = 
+        if (neighbor_voxel_key) {
+          
+        }
+      }
+  }
+
+  for (VoxelElement current_voxel_element : input_list_) {
+    current_cluster_.push(current_voxel_element);
+    for (VoxelElement current_cluster_element : current_cluster_) {
+      neighborhood.getFromBlockAndVoxelIndex(current_cluster_element.voxel_key.first, current_cluster_element.voxel_key.second,
+                                              layer.voxels_per_side(), neighbors_ptr);
+
+      for (VoxelKey neighbor_voxel_key : *neighbors_ptr) {
+        VoxelElement neighbor_voxel_element = 
+        if (neighbor_voxel_key) {
+          
+        }
+      }
+
+
+
+    }
+      
+    }
+  }
+
+
+
+
+  return cluster_list_;
+}
 
 void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map, 
       TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance){
