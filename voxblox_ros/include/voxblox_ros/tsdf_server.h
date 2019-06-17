@@ -14,7 +14,6 @@
 #include <memory>
 #include <queue>
 #include <string>
-#include <forward_list>
 
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/tsdf_map.h>
@@ -54,25 +53,17 @@ class Queue {
     int queue_size;
 };
 
-class EuclideanClustering {
+class Clustering {
   public:
-
-    EuclideanClustering(std::shared_ptr<TsdfMap> input_map);
-    Queue extract_clusters();
-
-    struct VoxelElement {
-    VoxelKey voxel_key;
-    bool processed;
-    }
+    Clustering(const TsdfMap::Ptr input_map);
+    std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> extractClusters();
 
   private:
-
-    int min_cluster_size_ = 3;
+    float distance_threshold = 0.1;
     std::shared_ptr<TsdfMap> input_map_ ;
-    std::forward_list<voxel_element> input_list_ ;
-    std::forward_list<std::forward_list<cluster_element>> cluster_list_ ;
-    std::forward_list<voxel_element> current_cluster_ ;
-
+    Layer<TsdfVoxel>::Ptr layer_ ;
+    std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> cluster_list_ ;
+    std::shared_ptr<std::list<VoxelElement>> current_cluster_ ;
 };
 
 class TsdfServer {

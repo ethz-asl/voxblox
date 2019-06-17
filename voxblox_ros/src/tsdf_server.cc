@@ -42,84 +42,80 @@ int Queue::size() {
   return queue_size;
 }
 
-EuclideanClustering::EuclideanClustering(std::shared_ptr<TsdfMap> input_map){
-  input_map_ = input_map;
-  Layer<TsdfVoxel>& layer = input_map_->getTsdfLayer();
-  
+Clustering::Clustering(const TsdfMap::Ptr input_map) {
+  input_map_.reset(new TsdfMap(input_map->getTsdfLayer())); 
+  layer_.reset(input_map_->getTsdfLayerPtr());
+  const size_t vps = layer_->voxels_per_side();
+  const size_t num_voxels_per_block = vps * vps * vps;
+
   BlockIndexList blocks;
-  input_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
+  layer_->getAllAllocatedBlocks(&blocks);
 
   for (const BlockIndex& index : blocks) {
-    const Block<TsdfVoxel>& block = input_map_->getTsdfLayerPtr()->getBlockByIndex(index);
-    if (block.origin().z() > layer.block_size()) {
-      layer.removeBlock(index);
+    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
+    if (block.origin().z() > layer_->block_size()) {
+      layer_->removeBlock(index);
       continue;
     }
 
     for (size_t linear_index = 0; linear_index < num_voxels_per_block;
          ++linear_index) {
-      TsdfVoxel* voxel = block.getVoxelByLinearIndex(linear_index);
+      TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
       const Point voxel_coord = block.computeCoordinatesFromLinearIndex(linear_index);
-      if (voxel_coord.z() > block.voxel_size()/2) {
-        voxel->weight = 0;
+      if (voxel_coord.z() > block.voxel_size() / 2 || abs(voxel.distance) > distance_threshold) {
+        voxel.weight = 0;
       }
     }
   }
 }
 
-Queue EuclideanClustering::extract_clusters() {
-
-  Layer<TsdfVoxel>& layer = input_map_->getTsdfLayer();
-  current_cluster_.clear();
-  Neighborhood neighborhood;
+std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> Clustering::extractClusters() {
+  cluster_list_.reset(new std::list<std::shared_ptr<std::list<VoxelElement>>>);
+  cluster_list_->clear();
+  current_cluster_.reset(new std::list<VoxelElement>);
+  current_cluster_->clear();
   AlignedVector<VoxelKey>* neighbors_ptr;
+  const size_t vps = layer_->voxels_per_side();
+  const size_t num_voxels_per_block = vps * vps * vps;
+  
 
   BlockIndexList blocks;
-  input_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
+  layer_->getAllAllocatedBlocks(&blocks);
 
   for (const BlockIndex& index : blocks) {
-    const Block<TsdfVoxel>& block = input_map_->getTsdfLayerPtr()->getBlockByIndex(index);
+    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
     for (size_t linear_index = 0; linear_index < num_voxels_per_block;
          ++linear_index) {
-      TsdfVoxel* voxel = block.getVoxelByLinearIndex(linear_index);
-      VoxelKey voxel_key (block, linear_index);
-      VoxelElement voxel_element = {voxel_key, false};
-      current_cluster_.push(voxel_element);
-      for (VoxelElement cluster_element : current_cluster_) {
-      neighborhood.getFromBlockAndVoxelIndex(current_cluster_element.voxel_key.first, current_cluster_element.voxel_key.second,
-                                              layer.voxels_per_side(), neighbors_ptr);
-      
-      for (VoxelKey neighbor_voxel_key : *neighbors_ptr) {
-        VoxelElement neighbor_voxel_element = 
-        if (neighbor_voxel_key) {
+      TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
+      if (voxel.weight != 0) {
+        VoxelIndex voxel_index = block.computeVoxelIndexFromLinearIndex(linear_index);
+        VoxelKey voxel_key = std::make_pair (index, voxel_index);
+        Point voxel_coord = block.computeCoordinatesFromLinearIndex(linear_index);
+        VoxelElement voxel_element = {voxel_key, voxel_coord};
+        current_cluster_->push_back(voxel_element);
+        voxel.weight = 0;
+
+        for (VoxelElement cluster_element : *current_cluster_) {
+          Neighborhood<>::getFromBlockAndVoxelIndex(cluster_element.voxel_key.first, cluster_element.voxel_key.second,
+                                                  layer_->voxels_per_side(), neighbors_ptr);
           
+          for (VoxelKey neighbor_voxel_key : *neighbors_ptr) {
+            TsdfVoxel neighbor_voxel = block.getVoxelByVoxelIndex(neighbor_voxel_key.second);
+            if (neighbor_voxel.weight != 0) {
+              Block<TsdfVoxel>& neighbor_block = layer_->getBlockByIndex(neighbor_voxel_key.first);
+              Point neighbor_voxel_coord = neighbor_block.computeCoordinatesFromVoxelIndex(neighbor_voxel_key.second);
+              VoxelElement neighbor_voxel_element = {neighbor_voxel_key, neighbor_voxel_coord};
+              neighbor_voxel.weight = 0;
+              current_cluster_->push_back(neighbor_voxel_element);
+            }
+          }
         }
+      cluster_list_->push_back(current_cluster_);
+      current_cluster_.reset(new std::list<VoxelElement>);
+      current_cluster_->clear();
       }
-  }
-
-  for (VoxelElement current_voxel_element : input_list_) {
-    current_cluster_.push(current_voxel_element);
-    for (VoxelElement current_cluster_element : current_cluster_) {
-      neighborhood.getFromBlockAndVoxelIndex(current_cluster_element.voxel_key.first, current_cluster_element.voxel_key.second,
-                                              layer.voxels_per_side(), neighbors_ptr);
-
-      for (VoxelKey neighbor_voxel_key : *neighbors_ptr) {
-        VoxelElement neighbor_voxel_element = 
-        if (neighbor_voxel_key) {
-          
-        }
-      }
-
-
-
-    }
-      
     }
   }
-
-
-
-
   return cluster_list_;
 }
 
@@ -494,15 +490,10 @@ void TsdfServer::processPointCloudMessageAndInsert(
                                 max_block_distance_from_body_);
   block_remove_timer.Stop();
 
-  ROS_INFO("starting my part now");
+  //Vinz: starting my part now 
 
-  TsdfMap::Ptr new_map;
-
-  new_map.reset(new TsdfMap(tsdf_map_->getTsdfLayer())); 
-
-  /* tsdf_integrator_.reset(new SimpleTsdfIntegrator(
-        integrator_config, new_map->getTsdfLayerPtr()));
-  */
+  TsdfMap::Ptr new_map = new TsdfMap(tsdf_map_->getTsdfLayer());
+  //new_map.reset(new ); 
 
   queue_.push(new_map);
   newly_occupied_active_ = false;

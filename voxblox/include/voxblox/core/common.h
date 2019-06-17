@@ -38,6 +38,7 @@ inline std::shared_ptr<Type> aligned_shared(Arguments&&... arguments) {
 }
 
 // Types.
+
 typedef float FloatingPoint;
 typedef int IndexElement;
 typedef int64_t LongIndexElement;
@@ -60,6 +61,11 @@ typedef IndexVector BlockIndexList;
 typedef IndexVector VoxelIndexList;
 typedef AlignedVector<LongIndex> LongIndexVector;
 typedef LongIndexVector GlobalIndexVector;
+
+struct VoxelElement {
+  VoxelKey voxel_key;
+  Point coord;
+};
 
 struct Color;
 
