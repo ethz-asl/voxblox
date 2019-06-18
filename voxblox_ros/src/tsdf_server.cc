@@ -163,7 +163,7 @@ void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map,
   }  
 }
 
-std::pair<std::shared_ptr<std::list<VoxelElement>> Clustering::matchCommunClusters(std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> old_cluster_list) {
+std::pair<std::shared_ptr<std::list<VoxelElement>> Clustering::matchCommunClusters(std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> input_cluster_list) {
 
   /* define threshold
   start list of pairs
@@ -179,9 +179,55 @@ std::pair<std::shared_ptr<std::list<VoxelElement>> Clustering::matchCommunCluste
   if pair.second appears > 1 : merge clusters of pair.first and create one single pair;
   */
 
- //int cluster_match_threshold = 5; //number of voxels which need to have voted for a cluster for a match
-
-
+	int cluster_match_vote_threshold = 5; //number of voxels which need to have voted for a cluster for a match
+	std::list<std::pair<std::shared_ptr<std::list<VoxelElement>>, std::shared_ptr<std::list<VoxelElement>>>> matched_clusters_output;
+	matched_clusters_output.clear();
+	
+	int size = cluster_list_->size();
+	std::unique_ptr<int[]> vote_array(new int[size]);
+	for (int i = 0; i < size; i++) vote_array[i] = 0;
+	
+	for (std::shared_ptr<std::list<VoxelElement>> cluster : *input_cluster_list) {
+		for (VoxelElement voxel_element : *cluster) {
+			Point voxel_coord = voxel_element.coord;
+			int cluster_count = 0;
+			bool found = false;
+			for (std::shared_ptr<std::list<VoxelElement>> lookup_cluster : *cluster_list_) {
+				for (VoxelElement lookup_voxel_element : *lookup_cluster) {
+					if (lookup_voxel_element.coord == voxel_coord) { //Does they position necesseraly has to match precisely ?
+						vote_array[cluster_count] += 1;
+						found = true;
+						break;
+					}
+				}
+				if (found) break;
+				cluster_count += 1;
+			}
+		}
+		std::list<std::shared_ptr<std::list<VoxelElement>>> matched_clusters;
+		matched_clusters.clear();
+		int match_number = 0;
+		for (int i = 0; i < size; i++) {
+			if (vote_array[i] >= cluster_match_vote_threshold) {
+				std::shared_ptr<std::list<VoxelElement>> matched_cluster = *(cluster_list_->begin() + i);
+				matched_clusters.push_back(matched_cluster);
+			}
+		}
+		if (matched_clusters.size() == 0) continue;
+		std::shared_ptr<std::list<VoxelElement>> base_cluster = *matched_cluster.begin();
+		else if (matched_clusters.size > 1) {
+			for (int i = 1; i < matched_clusters.size(); i++) {
+				std::shared_ptr<std::list<VoxelElement>> additional_cluster = (matched_clusters.begin() + i);
+				for (VoxelElement voxel_element : *additional_cluster) {
+					base_cluster->push_back(voxel_element);
+				}
+				cluster_list_->erase(additional_cluster);
+			}
+		}
+		std::pair<std::shared_ptr<std::list<VoxelElement>>, std::shared_ptr<std::list<VoxelElement>>> cluster_pair = make_pair(cluster, base_cluster);
+		matched_clusters_output.push_back(cluster_pair);
+	}
+	return matched_clusters_output;
 }
 
 
