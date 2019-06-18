@@ -505,6 +505,10 @@ void TsdfServer::processPointCloudMessageAndInsert(
   if (queue_.size() == 5) {
     newly_occupied_active_ = true;
     ROS_INFO("newly occupied active true");
+    Clustering current_map_clustering(tsdf_map_);
+    std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> current_map_clusters current_map_clustering.extractClusters();
+    Clustering old_map_clustering(queue_.front());
+    std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> old_map_clusters old_map_clustering.extractClusters();
     tsdf_map_newly_occupied_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
     tsdf_map_newly_occupied_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
     createNewlyOccupiedMap(tsdf_map_, queue_.front(), tsdf_map_newly_occupied_, tsdf_map_newly_occupied_distance_);
