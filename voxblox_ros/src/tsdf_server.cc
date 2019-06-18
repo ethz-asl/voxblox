@@ -163,6 +163,28 @@ void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map,
   }  
 }
 
+std::pair<std::shared_ptr<std::list<VoxelElement>> Clustering::matchCommunClusters(std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> old_cluster_list) {
+
+  /* define threshold
+  start list of pairs
+  for cluster in input_cluster_list
+    for voxels in cluster
+      find voxel in cluster_list_ with same coord (and weight != 0)
+        if found: find cluster in cluster_list_ containing voxel with that coord
+          vote for that cluster
+    find cluster with votes above threshold
+    if #clusters > 1 : merge those two clusters 
+    create pair of clusters
+  
+  if pair.second appears > 1 : merge clusters of pair.first and create one single pair;
+  */
+
+ //int cluster_match_threshold = 5; //number of voxels which need to have voted for a cluster for a match
+
+
+}
+
+
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
     : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),

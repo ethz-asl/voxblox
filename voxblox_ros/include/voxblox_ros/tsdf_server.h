@@ -57,6 +57,7 @@ class Clustering {
   public:
     Clustering(const TsdfMap::Ptr input_map);
     std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> extractClusters();
+    std::pair<std::shared_ptr<std::list<VoxelElement>> matchCommunClusters(std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> input_cluster_list);
 
   private:
     float distance_threshold = 0.1;
