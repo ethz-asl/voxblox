@@ -170,6 +170,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                  getMeshIntegratorConfigFromRosParam(nh_private)) {}
 
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
+                       const ros::NodeHandle& nh_private)
+    : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
+                 getTsdfIntegratorConfigFromRosParam(nh_private),
+                 getMeshIntegratorConfigFromRosParam(nh_private)) {}
+
+TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private,
                        const TsdfMap::Config& config,
                        const TsdfIntegratorBase::Config& integrator_config,
