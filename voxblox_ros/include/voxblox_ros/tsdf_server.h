@@ -55,16 +55,19 @@ class Queue {
 
 class Clustering {
   public:
-    Clustering(const TsdfMap::Ptr input_map);
+    Clustering(const std::shared_ptr<TsdfMap>& input_map, ros::NodeHandle nh_private);
     std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> extractClusters();
-    std::pair<std::shared_ptr<std::list<VoxelElement>> matchCommunClusters(std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> input_cluster_list);
+    std::list<std::pair<std::shared_ptr<std::list<VoxelElement>>, std::shared_ptr<std::list<VoxelElement>>>> matchCommunClusters(std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> input_cluster_list);
+    void extractedClusterVisualiser(std::string word_frame);
 
   private:
     float distance_threshold = 0.1;
     std::shared_ptr<TsdfMap> input_map_ ;
     Layer<TsdfVoxel>::Ptr layer_ ;
     std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> cluster_list_ ;
-    std::shared_ptr<std::list<VoxelElement>> current_cluster_ ;
+    ros::Publisher clustered_pointcloud_pub_;
+    ros::NodeHandle nh_private_;
+    std::string world_frame_;
 };
 
 class TsdfServer {

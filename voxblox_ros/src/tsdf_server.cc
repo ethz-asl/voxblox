@@ -7,236 +7,6 @@
 
 namespace voxblox {
 
-Queue::Queue() {
-  last = nullptr;
-  queue_size = 0;
-}
-
-void Queue::push(TsdfMap::Ptr tsdf_map){
-  Member* new_member = new Member;
-  new_member->tsdf_ptr = tsdf_map;
-  new_member->next = last;
-  last = new_member;
-  queue_size++;
-}
-
-TsdfMap::Ptr Queue::front() {
-  Member* current = last;
-  while(current->next != nullptr) {
-    current = current->next;
-  }
-  return current->tsdf_ptr;
-}
-
-void Queue::pop() {
-  Member* current = last;
-  while(current->next->next != nullptr) {
-    current = current->next;
-  }
-  delete current->next;
-  current->next = nullptr;
-  queue_size--;
-}
-
-int Queue::size() {
-  return queue_size;
-}
-
-Clustering::Clustering(const TsdfMap::Ptr input_map) {
-  input_map_.reset(new TsdfMap(input_map->getTsdfLayer())); 
-  layer_.reset(input_map_->getTsdfLayerPtr());
-  const size_t vps = layer_->voxels_per_side();
-  const size_t num_voxels_per_block = vps * vps * vps;
-
-  BlockIndexList blocks;
-  layer_->getAllAllocatedBlocks(&blocks);
-
-  for (const BlockIndex& index : blocks) {
-    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
-    if (block.origin().z() > layer_->block_size()) {
-      layer_->removeBlock(index);
-      continue;
-    }
-
-    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
-         ++linear_index) {
-      TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
-      const Point voxel_coord = block.computeCoordinatesFromLinearIndex(linear_index);
-      if (voxel_coord.z() > block.voxel_size() / 2 || abs(voxel.distance) > distance_threshold) {
-        voxel.weight = 0;
-      }
-    }
-  }
-}
-
-std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> Clustering::extractClusters() {
-  cluster_list_.reset(new std::list<std::shared_ptr<std::list<VoxelElement>>>);
-  cluster_list_->clear();
-  current_cluster_.reset(new std::list<VoxelElement>);
-  current_cluster_->clear();
-  AlignedVector<VoxelKey>* neighbors_ptr;
-  const size_t vps = layer_->voxels_per_side();
-  const size_t num_voxels_per_block = vps * vps * vps;
-  
-
-  BlockIndexList blocks;
-  layer_->getAllAllocatedBlocks(&blocks);
-
-  for (const BlockIndex& index : blocks) {
-    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
-    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
-         ++linear_index) {
-      TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
-      if (voxel.weight != 0) {
-        VoxelIndex voxel_index = block.computeVoxelIndexFromLinearIndex(linear_index);
-        VoxelKey voxel_key = std::make_pair (index, voxel_index);
-        Point voxel_coord = block.computeCoordinatesFromLinearIndex(linear_index);
-        VoxelElement voxel_element = {voxel_key, voxel_coord};
-        current_cluster_->push_back(voxel_element);
-        voxel.weight = 0;
-
-        for (VoxelElement cluster_element : *current_cluster_) {
-          Neighborhood<>::getFromBlockAndVoxelIndex(cluster_element.voxel_key.first, cluster_element.voxel_key.second,
-                                                  layer_->voxels_per_side(), neighbors_ptr);
-          
-          for (VoxelKey neighbor_voxel_key : *neighbors_ptr) {
-            TsdfVoxel neighbor_voxel = block.getVoxelByVoxelIndex(neighbor_voxel_key.second);
-            if (neighbor_voxel.weight != 0) {
-              Block<TsdfVoxel>& neighbor_block = layer_->getBlockByIndex(neighbor_voxel_key.first);
-              Point neighbor_voxel_coord = neighbor_block.computeCoordinatesFromVoxelIndex(neighbor_voxel_key.second);
-              VoxelElement neighbor_voxel_element = {neighbor_voxel_key, neighbor_voxel_coord};
-              neighbor_voxel.weight = 0;
-              current_cluster_->push_back(neighbor_voxel_element);
-            }
-          }
-        }
-      cluster_list_->push_back(current_cluster_);
-      current_cluster_.reset(new std::list<VoxelElement>);
-      current_cluster_->clear();
-      }
-    }
-  }
-  return cluster_list_;
-}
-
-void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map, 
-      TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance){
-  
-  const size_t vps = current_map->getTsdfLayerPtr()->voxels_per_side();
-  const size_t num_voxels_per_block = vps * vps * vps;
-  const float distance_threshold = 0.1;
-
-  BlockIndexList blocks_current;
-  current_map->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks_current);
-
-  for (const BlockIndex& index : blocks_current) {
-    // Iterate over all voxels in current blocks.
-    const Block<TsdfVoxel>& block_current = current_map->getTsdfLayerPtr()->getBlockByIndex(index);
-
-    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
-         ++linear_index) {
-      //ROS_INFO("Going through voxel indexes");
-      const Point coord = block_current.computeCoordinatesFromLinearIndex(linear_index);
-      const TsdfVoxel& voxel_current = block_current.getVoxelByLinearIndex(linear_index);
-      TsdfVoxel* voxel_newly_occupied = newly_occupied_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
-      TsdfVoxel* voxel_newly_occupied_distance = newly_occupied_map_distance->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
-      const TsdfVoxel* voxel_old = old_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
-      if (voxel_old == nullptr) {
-        //ROS_INFO("NOM: voxel_old = nullptr");
-        voxel_newly_occupied->weight = 0;
-        voxel_newly_occupied_distance->weight = 0;
-        continue;
-      }
-
-      voxel_newly_occupied_distance->distance = voxel_current.distance - voxel_old->distance;
-
-      if (std::abs(voxel_current.distance) < distance_threshold && voxel_current.weight != 0) {
-        if (std::abs(voxel_old->distance) < distance_threshold || voxel_old->weight == 0) {
-          //delete voxel in newly_occupied_map
-          voxel_newly_occupied->weight = 0;
-        }
-      } 
-      else {
-          voxel_newly_occupied->weight = 0;
-      }
-    }
-  }  
-}
-
-std::pair<std::shared_ptr<std::list<VoxelElement>> Clustering::matchCommunClusters(std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> input_cluster_list) {
-
-  /* define threshold
-  start list of pairs
-  for cluster in input_cluster_list
-    for voxels in cluster
-      find voxel in cluster_list_ with same coord (and weight != 0)
-        if found: find cluster in cluster_list_ containing voxel with that coord
-          vote for that cluster
-    find cluster with votes above threshold
-    if #clusters > 1 : merge those two clusters 
-    create pair of clusters
-  
-  if pair.second appears > 1 : merge clusters of pair.first and create one single pair;
-  */
-
-	int cluster_match_vote_threshold = 5; //number of voxels which need to have voted for a cluster for a match
-	std::list<std::pair<std::shared_ptr<std::list<VoxelElement>>, std::shared_ptr<std::list<VoxelElement>>>> matched_clusters_output;
-	matched_clusters_output.clear();
-	
-	int size = cluster_list_->size();
-	std::unique_ptr<int[]> vote_array(new int[size]);
-	for (int i = 0; i < size; i++) vote_array[i] = 0;
-	
-	for (std::shared_ptr<std::list<VoxelElement>> cluster : *input_cluster_list) {
-		for (VoxelElement voxel_element : *cluster) {
-			Point voxel_coord = voxel_element.coord;
-			int cluster_count = 0;
-			bool found = false;
-			for (std::shared_ptr<std::list<VoxelElement>> lookup_cluster : *cluster_list_) {
-				for (VoxelElement lookup_voxel_element : *lookup_cluster) {
-					if (lookup_voxel_element.coord == voxel_coord) { //Does they position necesseraly has to match precisely ?
-						vote_array[cluster_count] += 1;
-						found = true;
-						break;
-					}
-				}
-				if (found) break;
-				cluster_count += 1;
-			}
-		}
-		std::list<std::shared_ptr<std::list<VoxelElement>>> matched_clusters;
-		matched_clusters.clear();
-		int match_number = 0;
-		for (int i = 0; i < size; i++) {
-			if (vote_array[i] >= cluster_match_vote_threshold) {
-				std::shared_ptr<std::list<VoxelElement>> matched_cluster = *(cluster_list_->begin() + i);
-				matched_clusters.push_back(matched_cluster);
-			}
-		}
-		if (matched_clusters.size() == 0) continue;
-		std::shared_ptr<std::list<VoxelElement>> base_cluster = *matched_cluster.begin();
-		else if (matched_clusters.size > 1) {
-			for (int i = 1; i < matched_clusters.size(); i++) {
-				std::shared_ptr<std::list<VoxelElement>> additional_cluster = (matched_clusters.begin() + i);
-				for (VoxelElement voxel_element : *additional_cluster) {
-					base_cluster->push_back(voxel_element);
-				}
-				cluster_list_->erase(additional_cluster);
-			}
-		}
-		std::pair<std::shared_ptr<std::list<VoxelElement>>, std::shared_ptr<std::list<VoxelElement>>> cluster_pair = make_pair(cluster, base_cluster);
-		matched_clusters_output.push_back(cluster_pair);
-	}
-	return matched_clusters_output;
-}
-
-
-TsdfServer::TsdfServer(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private)
-    : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
-                 getTsdfIntegratorConfigFromRosParam(nh_private),
-                 getMeshIntegratorConfigFromRosParam(nh_private)) {}
-
 TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                        const ros::NodeHandle& nh_private)
     : TsdfServer(nh, nh_private, getTsdfMapConfigFromRosParam(nh_private),
@@ -445,6 +215,260 @@ void TsdfServer::getServerConfigFromRosParam(
   color_map_->setMaxValue(intensity_max_value);
 }
 
+Queue::Queue() {
+  last = nullptr;
+  queue_size = 0;
+}
+
+void Queue::push(TsdfMap::Ptr tsdf_map){
+  Member* new_member = new Member;
+  new_member->tsdf_ptr = tsdf_map;
+  new_member->next = last;
+  last = new_member;
+  queue_size++;
+}
+
+TsdfMap::Ptr Queue::front() {
+  Member* current = last;
+  while(current->next != nullptr) {
+    current = current->next;
+  }
+  return current->tsdf_ptr;
+}
+
+void Queue::pop() {
+  Member* current = last;
+  while(current->next->next != nullptr) {
+    current = current->next;
+  }
+  delete current->next;
+  current->next = nullptr;
+  queue_size--;
+}
+
+int Queue::size() {
+  return queue_size;
+}
+
+Clustering::Clustering(const std::shared_ptr<TsdfMap>& input_map, ros::NodeHandle nh_private) {
+  nh_private_ = nh_private;
+  input_map_.reset(new TsdfMap(input_map->getTsdfLayer())); 
+  layer_.reset(input_map_->getTsdfLayerPtr());
+  const size_t vps = layer_->voxels_per_side();
+  const size_t num_voxels_per_block = vps * vps * vps;
+
+  BlockIndexList blocks;
+  layer_->getAllAllocatedBlocks(&blocks);
+
+  for (const BlockIndex& index : blocks) {
+    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
+    if (block.origin().z() > layer_->block_size()) {
+      layer_->removeBlock(index);
+      continue;
+    }
+
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
+         ++linear_index) {
+      TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
+      const Point voxel_coord = block.computeCoordinatesFromLinearIndex(linear_index);
+      if (voxel_coord.z() > block.voxel_size() / 2 || abs(voxel.distance) > distance_threshold) {
+        voxel.weight = 0;
+      }
+    }
+  }
+}
+
+std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> Clustering::extractClusters() {
+  cluster_list_.reset(new std::list<std::shared_ptr<std::list<VoxelElement>>>);
+  cluster_list_->clear();
+  std::shared_ptr<std::list<VoxelElement>> current_cluster_ (new std::list<VoxelElement>);
+  //current_cluster_.reset(new std::list<VoxelElement>);
+  current_cluster_->clear();
+  AlignedVector<VoxelKey>* neighbors_ptr;
+  const size_t vps = layer_->voxels_per_side();
+  const size_t num_voxels_per_block = vps * vps * vps;
+  
+
+  BlockIndexList blocks;
+  layer_->getAllAllocatedBlocks(&blocks);
+
+  for (const BlockIndex& index : blocks) {
+    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
+         ++linear_index) {
+      TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
+      if (voxel.weight != 0) {
+        VoxelIndex voxel_index = block.computeVoxelIndexFromLinearIndex(linear_index);
+        VoxelKey voxel_key = std::make_pair (index, voxel_index);
+        Point voxel_coord = block.computeCoordinatesFromLinearIndex(linear_index);
+        VoxelElement voxel_element = {voxel_key, voxel_coord};
+        current_cluster_->push_back(voxel_element);
+        voxel.weight = 0;
+
+        for (VoxelElement cluster_element : *current_cluster_) {
+          Neighborhood<>::getFromBlockAndVoxelIndex(cluster_element.voxel_key.first, cluster_element.voxel_key.second,
+                                                  layer_->voxels_per_side(), neighbors_ptr);
+          
+          for (VoxelKey neighbor_voxel_key : *neighbors_ptr) {
+            TsdfVoxel neighbor_voxel = block.getVoxelByVoxelIndex(neighbor_voxel_key.second);
+            if (neighbor_voxel.weight != 0) {
+              Block<TsdfVoxel>& neighbor_block = layer_->getBlockByIndex(neighbor_voxel_key.first);
+              Point neighbor_voxel_coord = neighbor_block.computeCoordinatesFromVoxelIndex(neighbor_voxel_key.second);
+              VoxelElement neighbor_voxel_element = {neighbor_voxel_key, neighbor_voxel_coord};
+              neighbor_voxel.weight = 0;
+              current_cluster_->push_back(neighbor_voxel_element);
+            }
+          }
+        }
+      cluster_list_->push_back(current_cluster_);
+      current_cluster_.reset(new std::list<VoxelElement>);
+      current_cluster_->clear();
+      }
+    }
+  }
+  return cluster_list_;
+}
+
+std::list<std::pair<std::shared_ptr<std::list<VoxelElement>>, std::shared_ptr<std::list<VoxelElement>>>> Clustering::matchCommunClusters(std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> input_cluster_list) {
+
+  /* define threshold
+  start list of pairs
+  for cluster in input_cluster_list
+    for voxels in cluster
+      find voxel in cluster_list_ with same coord (and weight != 0)
+        if found: find cluster in cluster_list_ containing voxel with that coord
+          vote for that cluster
+    find cluster with votes above threshold
+    if #clusters > 1 : merge those two clusters 
+    create pair of clusters
+  
+  if pair.second appears > 1 : merge clusters of pair.first and create one single pair;
+  */
+
+	int cluster_match_vote_threshold = 5; //number of voxels which need to have voted for a cluster for a match
+	std::list<std::pair<std::shared_ptr<std::list<VoxelElement>>, std::shared_ptr<std::list<VoxelElement>>>> matched_clusters_output;
+	matched_clusters_output.clear();
+	
+	int size = cluster_list_->size();
+	std::unique_ptr<int[]> vote_array(new int[size]);
+	for (int i = 0; i < size; i++) vote_array[i] = 0;
+	
+	for (std::shared_ptr<std::list<VoxelElement>> cluster : *input_cluster_list) {
+		for (VoxelElement voxel_element : *cluster) {
+			Point voxel_coord = voxel_element.coord;
+			int cluster_count = 0;
+			bool found = false;
+			for (std::shared_ptr<std::list<VoxelElement>> lookup_cluster : *cluster_list_) {
+				for (VoxelElement lookup_voxel_element : *lookup_cluster) {
+					if (lookup_voxel_element.coord == voxel_coord) { //Does they position necesseraly has to match precisely ?
+						vote_array[cluster_count] += 1;
+						found = true;
+						break;
+					}
+				}
+				if (found) break;
+				cluster_count += 1;
+			}
+		}
+		std::list<std::shared_ptr<std::list<VoxelElement>>> matched_clusters;
+		matched_clusters.clear();
+    auto cluster_list_iterator = cluster_list_->cbegin();
+		for (int i = 0; i < size; i++) {
+      cluster_list_iterator++;
+			if (vote_array[i] >= cluster_match_vote_threshold) {
+				std::shared_ptr<std::list<VoxelElement>> matched_cluster = *cluster_list_iterator;
+				matched_clusters.push_back(matched_cluster);
+			}
+		}
+    std::shared_ptr<std::list<VoxelElement>> base_cluster = *matched_clusters.begin();
+		if (matched_clusters.size() == 0) continue;
+		else if (matched_clusters.size() > 1) {
+			for (auto matched_clusters_element = matched_clusters.cbegin(); matched_clusters_element != matched_clusters.end(); matched_clusters_element++ ) {
+				std::shared_ptr<std::list<VoxelElement>> additional_cluster = *(matched_clusters_element);
+				for (VoxelElement voxel_element : *additional_cluster) {
+					base_cluster->push_back(voxel_element);
+				}
+				//cluster_list_->erase(additional_cluster); //erase(iterator)
+			}
+		}
+		std::pair<std::shared_ptr<std::list<VoxelElement>>, std::shared_ptr<std::list<VoxelElement>>> cluster_pair = make_pair(cluster, base_cluster);
+		matched_clusters_output.push_back(cluster_pair);
+	}
+	return matched_clusters_output;
+}
+
+void Clustering::extractedClusterVisualiser(std::string world_frame) {
+  world_frame_ = world_frame;
+  clustered_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>> ("clustered_pointcloud", 1, true);
+  pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+  pointcloud.clear();
+  Color color;
+  Color color_array[] = {color.Red(), color.Green(), color.Blue(), color.Yellow(), color.Orange(), color.Purple(), color.Teal(), color.Pink()};
+  int color_counter = 0;
+  for (std::shared_ptr<std::list<VoxelElement>> cluster : *cluster_list_) {
+    color = color_array[color_counter % 8];
+    if (color_counter > 8) ROS_WARN ("overflowing colors for cluster pub");
+
+    for (VoxelElement voxel_element : *cluster) {
+      Point voxel_coord = voxel_element.coord;
+      pcl::PointXYZRGB point;
+      point.x = voxel_coord.x();
+      point.y = voxel_coord.y();
+      point.z = voxel_coord.z();
+      point.r = color.r;
+      point.g = color.g;
+      point.b = color.b;
+      pointcloud.push_back(point);
+    }
+    color_counter++;
+  }
+  pointcloud.header.frame_id = world_frame_;
+  clustered_pointcloud_pub_.publish(pointcloud);
+}
+
+void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map, 
+      TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance){
+  
+  const size_t vps = current_map->getTsdfLayerPtr()->voxels_per_side();
+  const size_t num_voxels_per_block = vps * vps * vps;
+  const float distance_threshold = 0.1;
+
+  BlockIndexList blocks_current;
+  current_map->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks_current);
+
+  for (const BlockIndex& index : blocks_current) {
+    // Iterate over all voxels in current blocks.
+    const Block<TsdfVoxel>& block_current = current_map->getTsdfLayerPtr()->getBlockByIndex(index);
+
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block;
+         ++linear_index) {
+      //ROS_INFO("Going through voxel indexes");
+      const Point coord = block_current.computeCoordinatesFromLinearIndex(linear_index);
+      const TsdfVoxel& voxel_current = block_current.getVoxelByLinearIndex(linear_index);
+      TsdfVoxel* voxel_newly_occupied = newly_occupied_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
+      TsdfVoxel* voxel_newly_occupied_distance = newly_occupied_map_distance->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
+      const TsdfVoxel* voxel_old = old_map->getTsdfLayerPtr()->getVoxelPtrByCoordinates(coord);
+      if (voxel_old == nullptr) {
+        //ROS_INFO("NOM: voxel_old = nullptr");
+        voxel_newly_occupied->weight = 0;
+        voxel_newly_occupied_distance->weight = 0;
+        continue;
+      }
+
+      voxel_newly_occupied_distance->distance = voxel_current.distance - voxel_old->distance;
+
+      if (std::abs(voxel_current.distance) < distance_threshold && voxel_current.weight != 0) {
+        if (std::abs(voxel_old->distance) < distance_threshold || voxel_old->weight == 0) {
+          //delete voxel in newly_occupied_map
+          voxel_newly_occupied->weight = 0;
+        }
+      } 
+      else {
+          voxel_newly_occupied->weight = 0;
+      }
+    }
+  }  
+}
 
 void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
@@ -566,7 +590,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
   //Vinz: starting my part now 
 
-  TsdfMap::Ptr new_map = new TsdfMap(tsdf_map_->getTsdfLayer());
+  TsdfMap::Ptr new_map (new TsdfMap(tsdf_map_->getTsdfLayer()));
   //new_map.reset(new ); 
 
   queue_.push(new_map);
@@ -579,10 +603,11 @@ void TsdfServer::processPointCloudMessageAndInsert(
   if (queue_.size() == 5) {
     newly_occupied_active_ = true;
     ROS_INFO("newly occupied active true");
-    Clustering current_map_clustering(tsdf_map_);
-    std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> current_map_clusters current_map_clustering.extractClusters();
-    Clustering old_map_clustering(queue_.front());
-    std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> old_map_clusters old_map_clustering.extractClusters();
+    Clustering current_map_clustering (tsdf_map_, nh_private_);
+    std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> current_map_clusters = current_map_clustering.extractClusters();
+    Clustering old_map_clustering(queue_.front(), nh_private_);
+    std::shared_ptr<std::list<std::shared_ptr<std::list<VoxelElement>>>> old_map_clusters = old_map_clustering.extractClusters();
+    current_map_clustering.extractedClusterVisualiser(getWorldFrame());
     tsdf_map_newly_occupied_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
     tsdf_map_newly_occupied_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
     createNewlyOccupiedMap(tsdf_map_, queue_.front(), tsdf_map_newly_occupied_, tsdf_map_newly_occupied_distance_);
