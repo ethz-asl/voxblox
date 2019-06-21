@@ -35,6 +35,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       cache_mesh_(false),
       enable_icp_(false),
       accumulate_icp_corrections_(true),
+      occupancy_min_distance_voxel_size_factor_(1.0),
       pointcloud_queue_size_(1),
       num_subscribers_tsdf_map_(0),
       transformer_(nh, nh_private) {
@@ -176,6 +177,10 @@ void TsdfServer::getServerConfigFromRosParam(
   nh_private.param("accumulate_icp_corrections", accumulate_icp_corrections_,
                    accumulate_icp_corrections_);
 
+  nh_private.param("occupancy_min_distance_voxel_size_factor",
+                   occupancy_min_distance_voxel_size_factor_,
+                   occupancy_min_distance_voxel_size_factor_);
+
   nh_private.param("verbose", verbose_, verbose_);
 
   // Mesh settings.
@@ -208,7 +213,6 @@ void TsdfServer::getServerConfigFromRosParam(
   }
   color_map_->setMaxValue(intensity_max_value);
 }
-
 
 void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
@@ -438,8 +442,11 @@ void TsdfServer::publishTsdfSurfacePoints() {
 void TsdfServer::publishTsdfOccupiedNodes() {
   // Create a pointcloud with distance = intensity.
   visualization_msgs::MarkerArray marker_array;
-  createOccupancyBlocksFromTsdfLayer(tsdf_map_->getTsdfLayer(), world_frame_,
-                                     &marker_array);
+  createOccupancyBlocksFromTsdfLayer(
+      tsdf_map_->getTsdfLayer(), world_frame_,
+      tsdf_map_->getTsdfLayer().voxel_size() *
+          occupancy_min_distance_voxel_size_factor_,
+      &marker_array);
   occupancy_marker_pub_.publish(marker_array);
 }
 

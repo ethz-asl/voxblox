@@ -57,15 +57,64 @@ class TsdfIntegratorBase {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     float default_truncation_distance = 0.1;
-    float max_weight = 10000.0;
     bool voxel_carving_enabled = true;
     FloatingPoint min_ray_length_m = 0.1;
     FloatingPoint max_ray_length_m = 5.0;
-    bool use_const_weight = false;
     bool allow_clear = true;
+
+    // Weighting functions
+    // ===================
+    // Maximum weight a voxel can achieve. Influences how big of an impact a new
+    // measurment has on an existing voxel. The influence continously drops
+    // until the voxel reaches max weight, then it remains constant.
+    float max_weight = 10000.0;
+    // Fraction of the weight the clearing ray receives compared to the weight
+    // at the highest point along the ray, the zero crossing. Set to 1.0 if a
+    // clearing ray should be equally powerful.
+    float clearing_ray_weight_factor = 0.2;
+    // If enabled, the base-weight for each ray is set to 1/z^2, otherwise it is
+    // set to 1.0
+    bool decrease_ray_weight_by_distance = false;
+
+    // Symmetric weight dropoff
+    //-------------------------
+    /*
+                                                          _ 1 or 1/z^2
+                                                    /\   |
+                                     --------------/  \  |_ 0
+                                                   _____
+                                                   | | |
+                                                   t 0 -t
+       Weight drops off to clearing ray weight at both sides of the zero
+       crossing.
+    */
+    bool use_symmetric_weight_dropoff = false;
+
+    // Weight dropoff
+    //---------------
+    /*
+                                                 ___      _ 1 or 1/z^2
+                                                    \    |
+                                     ------------    \   |_ 0
+                                                 _____
+                                                 | || |
+                                                 t 0v -t
+       Weight drops off to 0 one voxel distance behind the zero crossing.
+    */
     bool use_weight_dropoff = true;
-    bool use_sparsity_compensation_factor = false;
-    float sparsity_compensation_factor = 1.0f;
+
+    // Const weight
+    //-------------
+    /*
+                                                  ____    _ 1 or 1/z^2
+                                                         |
+                                     -------------       |_ 0
+                                                  _____
+                                                  | | |
+                                                  t 0 -t
+       Weight is constant at ray weight within the truncation distance.
+    */
+    bool use_const_weight = false;
 
     size_t integrator_threads = std::thread::hardware_concurrency();
 
@@ -79,7 +128,7 @@ class TsdfIntegratorBase {
     /// fast integrator specific
     float start_voxel_subsampling_factor = 2.0f;
     /// fast integrator specific
-    int max_consecutive_ray_collisions = 2;
+    int max_consecutive_ray_collisions = 0;
     /// fast integrator specific
     int clear_checks_every_n_frames = 1;
     /// fast integrator specific
@@ -155,8 +204,8 @@ class TsdfIntegratorBase {
   /// Updates tsdf_voxel, Thread safe.
   bool updateTsdfVoxel(const Point& origin, const Point& point_G,
                        const GlobalIndex& global_voxel_index,
-                       const Color& color, const float weight,
-                       TsdfVoxel* tsdf_voxel);
+                       const Color& color, const float ray_weight,
+                       const float clearing_ray_weight, TsdfVoxel* tsdf_voxel);
 
   /// Calculates TSDF distance, Thread safe.
   float computeDistance(const Point& origin, const Point& point_G,

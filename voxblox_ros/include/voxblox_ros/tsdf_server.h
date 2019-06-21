@@ -222,6 +222,7 @@ class TsdfServer {
    */
   bool accumulate_icp_corrections_;
 
+  FloatingPoint occupancy_min_distance_voxel_size_factor_;
 
   /// Subscriber settings.
   int pointcloud_queue_size_;
