@@ -61,11 +61,6 @@ typedef IndexVector VoxelIndexList;
 typedef AlignedVector<LongIndex> LongIndexVector;
 typedef LongIndexVector GlobalIndexVector;
 
-struct VoxelElement {
-  VoxelKey voxel_key;
-  Point coord;
-};
-
 struct Color;
 
 // Pointcloud types for external interface.

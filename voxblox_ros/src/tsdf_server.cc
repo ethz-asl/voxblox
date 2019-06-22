@@ -80,7 +80,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
     freespace_pointcloud_sub_ =
         nh_.subscribe("freespace_pointcloud", pointcloud_queue_size_,
                       &TsdfServer::insertFreespacePointcloud, this);
-  } 
+  }
 
   if (enable_icp_) {
     icp_transform_pub_ = nh_private_.advertise<geometry_msgs::TransformStamped>(
@@ -773,6 +773,43 @@ void TsdfServer::publishSlices() {
     createDistancePointcloudFromTsdfLayerSlice(tsdf_map_newly_occupied_distance_->getTsdfLayer(), 2, slice_level_, &pointcloud_newly_occupied_distance);
     pointcloud_newly_occupied_distance.header.frame_id = world_frame_;
     tsdf_newly_occupied_distance_pointcloud_pub_.publish(pointcloud_newly_occupied_distance);
+  }
+}
+
+void TsdfServer::publishMap(bool reset_remote_map) {
+  if (!publish_tsdf_map_) {
+    return;
+  }
+  int subscribers = this->tsdf_map_pub_.getNumSubscribers();
+  if (subscribers > 0) {
+    if (num_subscribers_tsdf_map_ < subscribers) {
+      // Always reset the remote map and send all when a new subscriber
+      // subscribes. A bit of overhead for other subscribers, but better than
+      // inconsistent map states.
+      reset_remote_map = true;
+    }
+    const bool only_updated = !reset_remote_map;
+    timing::Timer publish_map_timer("map/publish_tsdf");
+    voxblox_msgs::Layer layer_msg;
+    serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
+                                   only_updated, &layer_msg);
+    if (reset_remote_map) {
+      layer_msg.action = static_cast<uint8_t>(MapDerializationAction::kReset);
+    }
+    this->tsdf_map_pub_.publish(layer_msg);
+    publish_map_timer.Stop();
+  }
+  num_subscribers_tsdf_map_ = subscribers;
+}
+
+void TsdfServer::publishPointclouds() {
+  // Combined function to publish all possible pointcloud messages -- surface
+  // pointclouds, updated points, and occupied points.
+  publishAllUpdatedTsdfVoxels();
+  publishTsdfSurfacePoints();
+  publishTsdfOccupiedNodes();
+  if (publish_slices_) {
+    publishSlices();
   }
 }
 

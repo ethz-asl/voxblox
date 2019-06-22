@@ -279,6 +279,9 @@ class TsdfServer {
   /// ICP matcher
   std::shared_ptr<ICP> icp_;
 
+  /// ICP matcher
+  std::shared_ptr<ICP> icp_;
+
   // Mesh accessories.
   std::shared_ptr<MeshLayer> mesh_layer_;
   std::unique_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
