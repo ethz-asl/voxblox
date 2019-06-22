@@ -1,7 +1,8 @@
 <launch>
   <arg name="voxel_size" default="0.05"/>
 
-  <node name="voxblox_node" pkg="voxblox_ros" type="tsdf_server" output="screen" args="-alsologtostderr" clear_params="true">
+  <node name="voxblox_node" pkg="voxblox_ros" type="tsdf_server" output="screen" args="-alsologtostderr" clear_params="true" launch-prefix="xterm -e gdb --args" >
+  <!-- run gdb with r / more info with bt -->
     <remap from="pointcloud" to="/ifm3d/camera_left/cloud"/>
     <param name="publish_pointclouds" value="true" />
     <param name="publish_pointclouds_on_update" value="true" />
