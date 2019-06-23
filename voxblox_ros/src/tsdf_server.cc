@@ -53,6 +53,10 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_newly_occupied_distance_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_newly_occupied_distance_slice",
                                                               1, true);
+  clustered_pointcloud_pub_ = 
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("clustered_pointcloud",
+                                                              1, true);
+      
   occupancy_marker_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
                                                              1, true);
@@ -250,21 +254,20 @@ int Queue::size() {
   return queue_size;
 }
 
-Clustering::Clustering(const std::shared_ptr<TsdfMap>& input_map, ros::NodeHandle nh_private) {
-  nh_private_ = nh_private;
-  input_map_.reset(new TsdfMap(std::make_shared<Layer<TsdfVoxel>>(input_map->getTsdfLayer()))); 
-  layer_.reset(input_map_->getTsdfLayerPtr());
-  voxels_per_side_ = layer_->voxels_per_side();
-  distance_threshold_ = layer_->voxel_size() / 2;
+Clustering::Clustering(const std::shared_ptr<TsdfMap>& input_map) {
+  input_map_.reset(new TsdfMap(input_map->getTsdfLayer()));
+  //layer_.reset(input_map_->getTsdfLayerPtr());
+  voxels_per_side_ = input_map_->getTsdfLayerPtr()->voxels_per_side();
+  distance_threshold_ = input_map_->getTsdfLayerPtr()->voxel_size() / 2;
   cluster_match_vote_threshold_ = 5; //number of voxels which need to have voted for a cluster for a match
 
   //BlockIndexList blocks;
-  //layer_->getAllAllocatedBlocks(&blocks);
+  //input_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
 
   /*for (const BlockIndex& index : blocks) {
-    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
-    if (block.origin().z() > layer_->block_size()) {
-      layer_->removeBlock(index);
+    const Block<TsdfVoxel>& block = input_map_->getTsdfLayerPtr()->getBlockByIndex(index);
+    if (block.origin().z() > input_map_->getTsdfLayerPtr()->block_size()) {
+      input_map_->getTsdfLayerPtr()->removeBlock(index);
       continue;
     }
 
@@ -279,7 +282,7 @@ Clustering::Clustering(const std::shared_ptr<TsdfMap>& input_map, ros::NodeHandl
   }*/
 
   /*for (const BlockIndex& index : blocks) {
-    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
+    const Block<TsdfVoxel>& block = input_map_->getTsdfLayerPtr()->getBlockByIndex(index);
 
     for (size_t linear_index = 0; linear_index < num_voxels_per_block;
          ++linear_index) {
@@ -299,10 +302,10 @@ std::shared_ptr<std::list<LongIndexSet>> Clustering::extractClusters() {
   Neighborhood<>::IndexMatrix neighbors;
   const size_t num_voxels_per_block = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
   BlockIndexList blocks;
-  layer_->getAllAllocatedBlocks(&blocks);
+  input_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
 
   for (const BlockIndex& index : blocks) {
-    const Block<TsdfVoxel>& block = layer_->getBlockByIndex(index);
+    const Block<TsdfVoxel>& block = input_map_->getTsdfLayerPtr()->getBlockByIndex(index);
     for (size_t linear_index = 0; linear_index < num_voxels_per_block;
          ++linear_index) {
       TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
@@ -320,7 +323,7 @@ std::shared_ptr<std::list<LongIndexSet>> Clustering::extractClusters() {
           Neighborhood<>::getFromGlobalIndex(cluster_voxel_gi, &neighbors);
           for (unsigned int i = 0; i < Connectivity::kTwentySix; i++) {
             GlobalIndex neighbor_global_index = neighbors.col(i);
-            TsdfVoxel* neighbor_voxel_ptr = layer_->getVoxelPtrByGlobalIndex(neighbor_global_index);
+            TsdfVoxel* neighbor_voxel_ptr = input_map_->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(neighbor_global_index);
             if (neighbor_voxel_ptr == nullptr) continue;
             if (neighbor_voxel_ptr->weight != 0 && neighbor_voxel_ptr->distance < distance_threshold_) {
               current_cluster_.insert(neighbor_global_index);
@@ -407,9 +410,7 @@ std::list<std::pair<LongIndexSet, LongIndexSet>> Clustering::matchCommunClusters
 	return matched_clusters_output;
 }
 
-void Clustering::extractedClusterVisualiser(std::string world_frame) {
-  world_frame_ = world_frame;
-  clustered_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>> ("clustered_pointcloud", 1, true);
+pcl::PointCloud<pcl::PointXYZRGB> Clustering::extractedClusterVisualiser() {
   pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
   pointcloud.clear();
   Color color;
@@ -423,7 +424,7 @@ void Clustering::extractedClusterVisualiser(std::string world_frame) {
       BlockIndex block_index ;
       VoxelIndex voxel_index ;
       getBlockAndVoxelIndexFromGlobalVoxelIndex(*voxel_global_index, voxels_per_side_, &block_index, &voxel_index);
-      const Block<TsdfVoxel>& block = layer_->getBlockByIndex(block_index);
+      const Block<TsdfVoxel>& block = input_map_->getTsdfLayerPtr()->getBlockByIndex(block_index);
       Point voxel_coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
       pcl::PointXYZRGB point;
       point.x = voxel_coord.x();
@@ -436,8 +437,7 @@ void Clustering::extractedClusterVisualiser(std::string world_frame) {
     }
     color_counter++;
   }
-  pointcloud.header.frame_id = world_frame_;
-  clustered_pointcloud_pub_.publish(pointcloud);
+  return pointcloud;
 }
 
 void TsdfServer::createNewlyOccupiedMap(const TsdfMap::Ptr current_map, 
@@ -615,20 +615,20 @@ void TsdfServer::processPointCloudMessageAndInsert(
   }
 
   if (queue_.size() == 5) {
-    newly_occupied_active_ = false;
+    newly_occupied_active_ = true;
     ROS_INFO("newly occupied active true");
-    Clustering current_map_clustering (tsdf_map_, nh_private_);
+    Clustering current_map_clustering (tsdf_map_);
     std::shared_ptr<std::list<LongIndexSet>> current_map_clusters = current_map_clustering.extractClusters();
-    Clustering old_map_clustering(queue_.front(), nh_private_);
+    Clustering old_map_clustering(queue_.front());
     std::shared_ptr<std::list<LongIndexSet>> old_map_clusters = old_map_clustering.extractClusters();
-    ROS_INFO("test 1");
-    //current_map_clustering.extractedClusterVisualiser(getWorldFrame());
-    ROS_INFO("test 3");
-    //tsdf_map_newly_occupied_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
-    //tsdf_map_newly_occupied_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
+    //ROS_INFO("test 1");
+    clustered_pcl_ = current_map_clustering.extractedClusterVisualiser();
+    //ROS_INFO("test 3");
+    tsdf_map_newly_occupied_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
+    tsdf_map_newly_occupied_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
     //createNewlyOccupiedMap(tsdf_map_, queue_.front(), tsdf_map_newly_occupied_, tsdf_map_newly_occupied_distance_);
     queue_.pop();
-    ROS_INFO("test 2");
+    //ROS_INFO("test 2");
   }
   ROS_INFO("finishing my part now");
   // Callback for inheriting classes.
@@ -773,43 +773,9 @@ void TsdfServer::publishSlices() {
     createDistancePointcloudFromTsdfLayerSlice(tsdf_map_newly_occupied_distance_->getTsdfLayer(), 2, slice_level_, &pointcloud_newly_occupied_distance);
     pointcloud_newly_occupied_distance.header.frame_id = world_frame_;
     tsdf_newly_occupied_distance_pointcloud_pub_.publish(pointcloud_newly_occupied_distance);
-  }
-}
 
-void TsdfServer::publishMap(bool reset_remote_map) {
-  if (!publish_tsdf_map_) {
-    return;
-  }
-  int subscribers = this->tsdf_map_pub_.getNumSubscribers();
-  if (subscribers > 0) {
-    if (num_subscribers_tsdf_map_ < subscribers) {
-      // Always reset the remote map and send all when a new subscriber
-      // subscribes. A bit of overhead for other subscribers, but better than
-      // inconsistent map states.
-      reset_remote_map = true;
-    }
-    const bool only_updated = !reset_remote_map;
-    timing::Timer publish_map_timer("map/publish_tsdf");
-    voxblox_msgs::Layer layer_msg;
-    serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
-                                   only_updated, &layer_msg);
-    if (reset_remote_map) {
-      layer_msg.action = static_cast<uint8_t>(MapDerializationAction::kReset);
-    }
-    this->tsdf_map_pub_.publish(layer_msg);
-    publish_map_timer.Stop();
-  }
-  num_subscribers_tsdf_map_ = subscribers;
-}
-
-void TsdfServer::publishPointclouds() {
-  // Combined function to publish all possible pointcloud messages -- surface
-  // pointclouds, updated points, and occupied points.
-  publishAllUpdatedTsdfVoxels();
-  publishTsdfSurfacePoints();
-  publishTsdfOccupiedNodes();
-  if (publish_slices_) {
-    publishSlices();
+    clustered_pcl_.header.frame_id = world_frame_;
+    clustered_pointcloud_pub_.publish(clustered_pcl_);
   }
 }
 

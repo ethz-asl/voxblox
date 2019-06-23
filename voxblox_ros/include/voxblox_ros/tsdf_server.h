@@ -55,20 +55,17 @@ class Queue {
 
 class Clustering {
   public:
-    Clustering(const std::shared_ptr<TsdfMap>& input_map, ros::NodeHandle nh_private);
+    Clustering(const std::shared_ptr<TsdfMap>& input_map);
     std::shared_ptr<std::list<LongIndexSet>> extractClusters();
     std::list<std::pair<LongIndexSet, LongIndexSet>> matchCommunClusters(std::shared_ptr<std::list<LongIndexSet>> input_cluster_list);
-    void extractedClusterVisualiser(std::string word_frame);
+    pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
 
   private:
     float distance_threshold_ ;
     int cluster_match_vote_threshold_ ;
     std::shared_ptr<TsdfMap> input_map_ ;
-    std::shared_ptr<Layer<TsdfVoxel>> layer_ ;
+    //std::shared_ptr<Layer<TsdfVoxel>> layer_ ;
     std::shared_ptr<std::list<LongIndexSet>> cluster_list_ ;
-    ros::Publisher clustered_pointcloud_pub_;
-    ros::NodeHandle nh_private_;
-    std::string world_frame_;
     size_t voxels_per_side_ ;
 };
 
@@ -177,6 +174,7 @@ class TsdfServer {
   ros::Publisher tsdf_pointcloud_pub_;
   ros::Publisher tsdf_newly_occupied_pointcloud_pub_;
   ros::Publisher tsdf_newly_occupied_distance_pointcloud_pub_;
+  ros::Publisher clustered_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
@@ -275,10 +273,6 @@ class TsdfServer {
   std::shared_ptr<TsdfMap> tsdf_map_newly_occupied_;
   std::shared_ptr<TsdfMap> tsdf_map_newly_occupied_distance_;
 
-
-  /// ICP matcher
-  std::shared_ptr<ICP> icp_;
-
   /// ICP matcher
   std::shared_ptr<ICP> icp_;
 
@@ -311,6 +305,7 @@ class TsdfServer {
   Queue queue_; 
   bool newly_occupied_active_;
   void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance );
+  pcl::PointCloud<pcl::PointXYZRGB> clustered_pcl_ ; 
 
 };
 
