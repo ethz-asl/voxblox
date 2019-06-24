@@ -279,7 +279,7 @@ float TsdfIntegratorBase::computeDistance(const Point& origin,
 
 // Thread safe.
 float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
-  if (!config_.decrease_ray_weight_by_distance) {
+  if (!config_.weight_ray_by_range) {
     return 1.0f;
   }
   const FloatingPoint dist_z = std::abs(point_C.z());
@@ -660,9 +660,9 @@ std::string TsdfIntegratorBase::Config::print() const {
   ss << " - max_ray_length_m:                          " << max_ray_length_m << "\n";
   ss << " - allow_clear:                               " << allow_clear << "\n";
   ss << " - max_weight:                                " << max_weight << "\n";
-  ss << " - decrease_ray_weight_by_distance:           "  << decrease_ray_weight_by_distance << "\n";
-  ss << " - clearing_ray_weight_factor:                "  << clearing_ray_weight_factor << "\n";
-  ss << " - use_symmetric_weight_dropoff:               " << use_symmetric_weight_dropoff << "\n";
+  ss << " - weight_ray_by_range:                       " << weight_ray_by_range << "\n";
+  ss << " - clearing_ray_weight_factor:                " << clearing_ray_weight_factor << "\n";
+  ss << " - use_symmetric_weight_dropoff:              " << use_symmetric_weight_dropoff << "\n";
   ss << " - use_weight_dropoff:                        " << use_weight_dropoff << "\n";
   ss << " - use_const_weight:                          " << use_const_weight << "\n";
   ss << " - integrator_threads:                        " << integrator_threads << "\n";

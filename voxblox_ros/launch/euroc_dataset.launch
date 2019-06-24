@@ -41,7 +41,7 @@
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="slice_level" value="1.0" />
     <param name="method" value="fast" />
-    <param name="use_const_weight" value="false" />
+    <param name="weight_ray_by_range" value="true" />
     <param name="publish_slices" value="true" />
     <param name="publish_pointclouds" value="true" />
 

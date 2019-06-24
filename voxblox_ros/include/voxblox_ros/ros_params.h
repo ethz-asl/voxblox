@@ -106,9 +106,8 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   nh_private.param("clearing_ray_weight_factor",
                    integrator_config.clearing_ray_weight_factor,
                    integrator_config.clearing_ray_weight_factor);
-  nh_private.param("decrease_ray_weight_by_distance",
-                   integrator_config.decrease_ray_weight_by_distance,
-                   integrator_config.decrease_ray_weight_by_distance);
+  nh_private.param("weight_ray_by_range", integrator_config.weight_ray_by_range,
+                   integrator_config.weight_ray_by_range);
   nh_private.param("integration_order_mode",
                    integrator_config.integration_order_mode,
                    integrator_config.integration_order_mode);

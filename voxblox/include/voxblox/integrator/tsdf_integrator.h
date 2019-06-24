@@ -74,11 +74,10 @@ class TsdfIntegratorBase {
     float clearing_ray_weight_factor = 0.2;
     // If enabled, the base-weight for each ray is set to 1/z^2, otherwise it is
     // set to 1.0
-    bool decrease_ray_weight_by_distance = false;
-
-    // Symmetric weight dropoff
-    //-------------------------
+    bool weight_ray_by_range = false;
     /*
+      Symmetric weight dropoff
+      ------------------------
                                                           _ 1 or 1/z^2
                                                     /\   |
                                      --------------/  \  |_ 0
@@ -90,9 +89,9 @@ class TsdfIntegratorBase {
     */
     bool use_symmetric_weight_dropoff = false;
 
-    // Weight dropoff
-    //---------------
     /*
+      Weight dropoff
+      --------------
                                                  ___      _ 1 or 1/z^2
                                                     \    |
                                      ------------    \   |_ 0
@@ -103,9 +102,9 @@ class TsdfIntegratorBase {
     */
     bool use_weight_dropoff = true;
 
-    // Const weight
-    //-------------
     /*
+      Const weight
+      ------------
                                                   ____    _ 1 or 1/z^2
                                                          |
                                      -------------       |_ 0
