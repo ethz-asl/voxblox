@@ -71,7 +71,7 @@ class TsdfIntegratorBase {
     // Fraction of the weight the clearing ray receives compared to the weight
     // at the highest point along the ray, the zero crossing. Set to 1.0 if a
     // clearing ray should be equally powerful.
-    float clearing_ray_weight_factor = 0.2;
+    float clearing_ray_weight_factor = 1.0;
     // If enabled, the base-weight for each ray is set to 1/z^2, otherwise it is
     // set to 1.0
     bool weight_ray_by_range = false;
