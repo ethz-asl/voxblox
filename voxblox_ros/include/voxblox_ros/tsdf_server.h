@@ -17,6 +17,7 @@
 
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/tsdf_map.h>
+#include <voxblox/core/common.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
@@ -53,11 +54,11 @@ class Queue {
     int queue_size;
 };
 
-class Clustering {
+/*class Clustering {
   public:
     Clustering(const std::shared_ptr<TsdfMap>& input_map);
     std::shared_ptr<std::list<LongIndexSet>> extractClusters();
-    std::list<std::pair<LongIndexSet, LongIndexSet>> matchCommunClusters(std::shared_ptr<std::list<LongIndexSet>> input_cluster_list);
+    std::list<std::pair<LongIndexSet, LongIndexSet>> matchCommunClusters(std::shared_ptr<std::list<LongIndexSet>> input_old_cluster_list);
     pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
 
   private:
@@ -67,6 +68,53 @@ class Clustering {
     //std::shared_ptr<Layer<TsdfVoxel>> layer_ ;
     std::shared_ptr<std::list<LongIndexSet>> cluster_list_ ;
     size_t voxels_per_side_ ;
+};*/
+
+class Clustering {
+  public:
+    Clustering(const std::shared_ptr<TsdfMap> input_map);
+    void addCurrentMap(const std::shared_ptr<TsdfMap> input_map);
+    void matchCommunClusters();
+    pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
+    pcl::PointCloud<pcl::PointXYZRGB> matchedClusterVisualiser();
+
+    int getClusterQueueSize(){
+      return cluster_queue_.size();
+    }
+
+    void popfromQueue(){
+      cluster_queue_.pop();
+    }
+
+    struct ColoredCluster {
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      LongIndexSet cluster;
+      Color color;
+
+      bool operator==(const ColoredCluster& a) const
+      {
+        return (cluster == a.cluster);
+      }
+
+      bool operator!=(const ColoredCluster& a) const
+      {
+        return (cluster != a.cluster);
+      }
+    };
+
+    Color colors[9] = {Color::White(), Color::Red(), Color::Green(), Color::Blue(), 
+                  Color::Yellow(), Color::Orange(), Color::Purple(), Color::Teal(), Color::Pink()};
+
+  private:
+    float distance_threshold_ ;
+    unsigned int cluster_match_vote_threshold_ ;
+    unsigned int cluster_min_size_threshold_;
+    size_t voxels_per_side_ ;
+    size_t num_voxels_per_block_ ;
+
+    std::shared_ptr<TsdfMap> current_map_ ;
+    std::queue<std::list<ColoredCluster>> cluster_queue_ ;
+
 };
 
 class TsdfServer {
@@ -303,10 +351,10 @@ class TsdfServer {
 
   //Vinz Additions
   Queue queue_; 
-  bool newly_occupied_active_;
+  bool cluster_matching_active_;
   void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance );
   pcl::PointCloud<pcl::PointXYZRGB> clustered_pcl_ ; 
-
+  std::unique_ptr<Clustering> clustering_;
 };
 
 }  // namespace voxblox
