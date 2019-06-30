@@ -60,7 +60,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                                               1, true);
   clustered_pointcloud_pub_ = 
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("clustered_pointcloud",
-                                                              1, true); 
+
   occupancy_marker_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
                                                              1, true);
@@ -818,6 +818,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     clustering_->popfromQueue();
   }
   ROS_INFO("-----------------------");
+
   // Callback for inheriting classes.
   newPoseCallback(T_G_C);
 }

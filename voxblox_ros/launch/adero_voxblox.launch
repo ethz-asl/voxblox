@@ -1,4 +1,5 @@
 <launch>
+
   <arg name="voxel_size" default="0.10"/>
 
   <node name="voxblox_node" pkg="voxblox_ros" type="tsdf_server" output="screen" args="-alsologtostderr" clear_params="true">
