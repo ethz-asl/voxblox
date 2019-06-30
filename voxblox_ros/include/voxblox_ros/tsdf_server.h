@@ -72,7 +72,9 @@ class Queue {
 
 class Clustering {
   public:
-    Clustering(const std::shared_ptr<TsdfMap> input_map);
+    Clustering(const std::shared_ptr<TsdfMap> input_map, float cluster_distance_threshold, 
+               unsigned int cluster_match_vote_threshold, unsigned int cluster_min_size_threshold,
+               unsigned int clustering_queue_size);
     void addCurrentMap(const std::shared_ptr<TsdfMap> input_map);
     void matchCommunClusters();
     pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
@@ -106,15 +108,15 @@ class Clustering {
                   Color::Yellow(), Color::Orange(), Color::Purple(), Color::Teal(), Color::Pink()};
 
   private:
-    float distance_threshold_ ;
+    int cluster_distance_threshold_ ;
     unsigned int cluster_match_vote_threshold_ ;
     unsigned int cluster_min_size_threshold_;
+    unsigned int clustering_queue_size_;
     size_t voxels_per_side_ ;
     size_t num_voxels_per_block_ ;
 
     std::shared_ptr<TsdfMap> current_map_ ;
     std::queue<std::list<ColoredCluster>> cluster_queue_ ;
-
 };
 
 class TsdfServer {
@@ -355,6 +357,10 @@ class TsdfServer {
   void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance );
   pcl::PointCloud<pcl::PointXYZRGB> clustered_pcl_ ; 
   std::unique_ptr<Clustering> clustering_;
+  int cluster_distance_threshold_;
+  int cluster_match_vote_threshold_;
+  int cluster_min_size_threshold_;
+  int clustering_queue_size_;
 };
 
 }  // namespace voxblox

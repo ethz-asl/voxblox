@@ -286,7 +286,7 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
     Point point_G = T_G_C * point_C;
 
     //Vinz
-    if (point_G.z() < 0.2 || point_G.z() > 1.0) continue;
+    if (point_G.z() < 0.2 || point_G.z() > 1.8) continue;
     point_G.z() = 0;
 
     RayCaster ray_caster(origin, point_G, is_clearing,

@@ -37,7 +37,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       accumulate_icp_corrections_(true),
       pointcloud_queue_size_(1),
       num_subscribers_tsdf_map_(0),
-      transformer_(nh, nh_private) {
+      transformer_(nh, nh_private),
+      cluster_distance_threshold_(1),
+      cluster_match_vote_threshold_(5),
+      cluster_min_size_threshold_(5),
+      clustering_queue_size_(5)
+       {
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
@@ -114,7 +119,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   }
 
   //Vinz
-  clustering_.reset(new Clustering(tsdf_map_));
+  clustering_.reset(new Clustering(tsdf_map_, cluster_distance_threshold_, cluster_match_vote_threshold_, cluster_min_size_threshold_, clustering_queue_size_));
 
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
@@ -187,6 +192,18 @@ void TsdfServer::getServerConfigFromRosParam(
   nh_private.param("enable_icp", enable_icp_, enable_icp_);
   nh_private.param("accumulate_icp_corrections", accumulate_icp_corrections_,
                    accumulate_icp_corrections_);
+  nh_private.param("cluster_distance_threshold",
+                   cluster_distance_threshold_,
+                   cluster_distance_threshold_);
+  nh_private.param("cluster_match_vote_threshold",
+                   cluster_match_vote_threshold_,
+                   cluster_match_vote_threshold_);
+  nh_private.param("cluster_min_size_threshold",
+                   cluster_min_size_threshold_,
+                   cluster_min_size_threshold_);
+  nh_private.param("clustering_queue_size",
+                   clustering_queue_size_, 
+                   clustering_queue_size_);
 
   nh_private.param("verbose", verbose_, verbose_);
 
@@ -256,12 +273,15 @@ int Queue::size() {
   return queue_size;
 }
 
-Clustering::Clustering(const std::shared_ptr<TsdfMap> input_map) {
+Clustering::Clustering(const std::shared_ptr<TsdfMap> input_map, float cluster_distance_threshold, 
+                       unsigned int cluster_match_vote_threshold, unsigned int cluster_min_size_threshold,
+                       unsigned int clustering_queue_size) {
   current_map_.reset(new TsdfMap(input_map->getTsdfLayer()));
   //layer_.reset(current_map_->getTsdfLayerPtr());
-  distance_threshold_ = current_map_->getTsdfLayerPtr()->voxel_size() / 2;
-  cluster_match_vote_threshold_ = 5; //number of voxels which need to have voted for a cluster for a match
-  cluster_min_size_threshold_ = 5;
+  cluster_distance_threshold_ = cluster_distance_threshold * current_map_->getTsdfLayerPtr()->voxel_size() / 2;
+  cluster_match_vote_threshold_ = cluster_match_vote_threshold; //number of voxels which need to have voted for a cluster for a match
+  cluster_min_size_threshold_ = cluster_min_size_threshold;
+  clustering_queue_size_ = clustering_queue_size;
   voxels_per_side_ = current_map_->getTsdfLayerPtr()->voxels_per_side();
   num_voxels_per_block_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
 }
@@ -280,7 +300,7 @@ void Clustering::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) {
     for (size_t linear_index = 0; linear_index < num_voxels_per_block_;
          ++linear_index) {
       TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
-      if (voxel.weight != 0 && voxel.distance < distance_threshold_) {
+      if (voxel.weight != 0 && voxel.distance < cluster_distance_threshold_) {
         LongIndexSet current_cluster;
         current_cluster.clear();
         VoxelIndex voxel_index = block.computeVoxelIndexFromLinearIndex(linear_index);
@@ -296,7 +316,7 @@ void Clustering::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) {
             GlobalIndex neighbor_global_index = neighbors.col(i);
             TsdfVoxel* neighbor_voxel_ptr = current_map_->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(neighbor_global_index);
             if (neighbor_voxel_ptr == nullptr) continue;
-            if (neighbor_voxel_ptr->weight != 0 && neighbor_voxel_ptr->distance < distance_threshold_) {
+            if (neighbor_voxel_ptr->weight != 0 && neighbor_voxel_ptr->distance < cluster_distance_threshold_) {
               current_cluster.insert(neighbor_global_index);
               global_index_voxel_queue.push(neighbor_global_index);
               neighbor_voxel_ptr->weight = 0;
@@ -306,13 +326,13 @@ void Clustering::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) {
         }
         if (current_cluster.size() > cluster_min_size_threshold_) {
           ColoredCluster current_colored_cluster;
-          if (cluster_queue_.size() < 4) {
+          if (cluster_queue_.size() < (clustering_queue_size_ - 1)) {
             Color color = colors[cluster_list.size() + 1];
             current_colored_cluster = {current_cluster , color};
           }
           else current_colored_cluster = {current_cluster , Color::White()};
           
-          if (current_colored_cluster.color == Color::Red()){
+          /*if (current_colored_cluster.color == Color::Red()){
             ROS_INFO("red");
           } else if (current_colored_cluster.color == Color::Green()){
             ROS_INFO("green");
@@ -320,7 +340,7 @@ void Clustering::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) {
             ROS_INFO("blue");
           } else if (current_colored_cluster.color == Color::White()){
             ROS_INFO("white");
-          }
+          }*/
           cluster_list.push_back(current_colored_cluster);
         }
       }
@@ -397,7 +417,6 @@ void Clustering::matchCommunClusters() {
   for (int i = 0; i<9; i++) used_colors[i] = false;
 	
 	for (ColoredCluster old_color_cluster : *old_clusters) {
-    ROS_INFO("test 6");
     unsigned int* current_cluster_vote_array = new unsigned int[size];
 	  for (int i = 0; i < size; i++) current_cluster_vote_array[i] = 0;
     LongIndexSet old_cluster = old_color_cluster.cluster;
@@ -466,14 +485,12 @@ void Clustering::matchCommunClusters() {
     // Combining clusters if a matched_current_cluster has already been matched by another old_cluster
     Color color_from_old = colors[0];
     while (!double_matched_current_clusters.empty()) {
-      ROS_INFO("double match not empty");
       ColoredCluster* previously_computed_double_matched_current_cluster = double_matched_current_clusters.front();
       for (GlobalIndex previously_computed_current_voxel : previously_computed_double_matched_current_cluster->cluster) {
         base_current_cluster->insert(previously_computed_current_voxel);
       }
       color_from_old = previously_computed_double_matched_current_cluster->color;
-      ROS_INFO("test 12");
-      for (auto current_cluster = current_clusters->begin(); current_cluster != current_clusters->end(); current_cluster++){
+      /*for (auto current_cluster = current_clusters->begin(); current_cluster != current_clusters->end(); current_cluster++){
         ROS_INFO("test 13");
         if (current_cluster->cluster.find(*(previously_computed_double_matched_current_cluster->cluster.begin())) != current_cluster->cluster.end()) {
             ROS_INFO("test 11");
@@ -481,10 +498,10 @@ void Clustering::matchCommunClusters() {
             ROS_INFO("test 10");
             break;
         }
-      }
+      }*/
+      current_clusters->remove(*previously_computed_double_matched_current_cluster);
       double_matched_current_clusters.pop();
     }
-    ROS_INFO("test 8");
     if (color_from_old != colors[0]) {
       base_current_color_cluster->color = color_from_old;
     } else {
@@ -503,9 +520,7 @@ void Clustering::matchCommunClusters() {
       if(base_current_color_cluster->color == colors[i]) used_colors[i] = true;
     }
     delete current_cluster_vote_array;
-    ROS_INFO("test 7");
 	}
-  ROS_INFO("test 4");
   // check for current clusters with color white -> given them an unused color
   for (auto current_color_cluster = current_clusters->begin(); current_color_cluster != current_clusters->end(); current_color_cluster++) {
     if (current_color_cluster->color == Color::White()){
@@ -516,11 +531,19 @@ void Clustering::matchCommunClusters() {
           break;
         }
       }
+      if (current_color_cluster->color == Color::Red()){
+        ROS_INFO("red");
+      } else if (current_color_cluster->color == Color::Green()){
+        ROS_INFO("green");
+      } else if (current_color_cluster->color == Color::Blue()){
+        ROS_INFO("blue");
+      } else if (current_color_cluster->color == Color::White()){
+        ROS_INFO("white");
+      }
     }
   }
 
   delete used_colors;
-  ROS_INFO("test 5");
 }
 
 /* pcl::PointCloud<pcl::PointXYZRGB> Clustering::extractedClusterVisualiser() {
@@ -779,26 +802,22 @@ void TsdfServer::processPointCloudMessageAndInsert(
   clustering_->addCurrentMap(tsdf_map_);
   cluster_matching_active_ = false;
   ROS_INFO("cluster queue size %u", clustering_->getClusterQueueSize());
-  while (clustering_->getClusterQueueSize() > 5) {
+  while (clustering_->getClusterQueueSize() > clustering_queue_size_) {
     clustering_->popfromQueue();
   }
 
-  if (clustering_->getClusterQueueSize() == 5) {
+  if (clustering_->getClusterQueueSize() == clustering_queue_size_) {
     cluster_matching_active_ = true;
     ROS_INFO("newly occupied active true");
-    ROS_INFO("test 1");
     clustering_->matchCommunClusters();
-    ROS_INFO("test 2");
     clustered_pcl_ = clustering_->matchedClusterVisualiser();
-    ROS_INFO("test 3");
    // tsdf_map_newly_occupied_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
     //tsdf_map_newly_occupied_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
     //createNewlyOccupiedMap(tsdf_map_, queue_.front(), tsdf_map_newly_occupied_, tsdf_map_newly_occupied_distance_);
     //queue_.pop();
     clustering_->popfromQueue();
-    //ROS_INFO("test 2");
   }
-  ROS_INFO("finishing my part now");
+  ROS_INFO("-----------------------");
   // Callback for inheriting classes.
   newPoseCallback(T_G_C);
 }
