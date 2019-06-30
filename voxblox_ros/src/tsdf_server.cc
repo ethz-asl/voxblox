@@ -59,7 +59,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_newly_occupied_distance_slice",
                                                               1, true);
   clustered_pointcloud_pub_ = 
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("clustered_pointcloud",
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("clustered_pointcloud", 1, true);
 
   occupancy_marker_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
@@ -436,15 +436,23 @@ void Clustering::matchCommunClusters() {
     //matching current_cluster to old_cluster
 		std::list<ColoredCluster*> matched_current_clusters;
 		matched_current_clusters.clear();
+    int max_votes = 0;
+    ColoredCluster* base_current_color_cluster;
     auto current_cluster_list_iterator = current_clusters->begin();
 		for (int i = 0; i < size; i++) {
 			if (current_cluster_vote_array[i] >= cluster_match_vote_threshold_) {
 				matched_current_clusters.push_back(&(*current_cluster_list_iterator));
+        if (current_cluster_vote_array[i] > max_votes) {
+          base_current_color_cluster = &(*current_cluster_list_iterator);
+          max_votes = current_cluster_vote_array[i];
+        }
 			}
       current_cluster_list_iterator++;
 		}
+    LongIndexSet* base_current_cluster = &(base_current_color_cluster->cluster);
 
     ROS_INFO("matched_current_cluster_count: %u", matched_current_clusters.size());
+    
     // If no matching has been made for this old_cluster
     if (matched_current_clusters.size() == 0) continue;
 
@@ -468,13 +476,12 @@ void Clustering::matchCommunClusters() {
         }
       }
     }
-    ColoredCluster* base_current_color_cluster = *(matched_current_clusters.begin());
-    LongIndexSet* base_current_cluster = &(base_current_color_cluster->cluster);
+
     // In case the current cluster is devided in several clusters
     if (matched_current_clusters.size() > 1) {
       //matched_current_clusters.erase(matched_current_clusters.begin());
       for (auto matched_current_color_cluster = matched_current_clusters.begin(); matched_current_color_cluster != matched_current_clusters.end(); matched_current_color_cluster++ ) {
-        if (matched_current_color_cluster == matched_current_clusters.begin()) continue;
+        if (*matched_current_color_cluster == base_current_color_cluster) continue;
         LongIndexSet* matched_current_cluster = &(*matched_current_color_cluster)->cluster;
         for (auto voxel_global_index = matched_current_cluster->begin(); voxel_global_index != matched_current_cluster->end(); voxel_global_index++) {
           base_current_cluster->insert(*voxel_global_index);

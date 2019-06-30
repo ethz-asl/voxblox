@@ -27,7 +27,7 @@
     <param name="cluster_distance_threshold" value="1" />
     <param name="cluster_match_vote_threshold" value="1" />
     <param name="cluster_min_size_threshold" value="5" />
-    <param name="clustering_queue_size" value="3" />
+    <param name="clustering_queue_size" value="2" /> 
   </node>
 
 </launch>

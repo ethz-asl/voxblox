@@ -54,22 +54,6 @@ class Queue {
     int queue_size;
 };
 
-/*class Clustering {
-  public:
-    Clustering(const std::shared_ptr<TsdfMap>& input_map);
-    std::shared_ptr<std::list<LongIndexSet>> extractClusters();
-    std::list<std::pair<LongIndexSet, LongIndexSet>> matchCommunClusters(std::shared_ptr<std::list<LongIndexSet>> input_old_cluster_list);
-    pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
-
-  private:
-    float distance_threshold_ ;
-    int cluster_match_vote_threshold_ ;
-    std::shared_ptr<TsdfMap> input_map_ ;
-    //std::shared_ptr<Layer<TsdfVoxel>> layer_ ;
-    std::shared_ptr<std::list<LongIndexSet>> cluster_list_ ;
-    size_t voxels_per_side_ ;
-};*/
-
 class Clustering {
   public:
     Clustering(const std::shared_ptr<TsdfMap> input_map, float cluster_distance_threshold, 
