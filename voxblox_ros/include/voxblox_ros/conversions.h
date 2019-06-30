@@ -5,11 +5,13 @@
 #include <pcl_ros/point_cloud.h>
 #include <std_msgs/ColorRGBA.h>
 #include <algorithm>
+#include <memory>
 #include <vector>
 
 #include <voxblox/core/common.h>
 #include <voxblox/core/layer.h>
 #include <voxblox/mesh/mesh.h>
+#include <voxblox/utils/color_maps.h>
 #include <voxblox_msgs/Layer.h>
 
 namespace voxblox {
@@ -88,6 +90,55 @@ inline void pointcloudToPclXYZI(const Pointcloud& ptcloud,
     point.intensity = intensities[i];
 
     ptcloud_pcl->push_back(point);
+  }
+}
+
+/// Check if all coordinates in the PCL point are finite.
+template <typename PCLPoint>
+inline bool isPointFinite(const PCLPoint& point) {
+  return std::isfinite(point.x) && std::isfinite(point.y) &&
+         std::isfinite(point.z);
+}
+
+template <typename PCLPoint>
+Color convertColor(const PCLPoint& point,
+                   const std::shared_ptr<ColorMap>& color_map);
+
+template <>
+inline Color convertColor(const pcl::PointXYZRGB& point,
+                          const std::shared_ptr<ColorMap>& /*color_map*/) {
+  return Color(point.r, point.g, point.b, point.a);
+}
+
+template <>
+inline Color convertColor(const pcl::PointXYZI& point,
+                          const std::shared_ptr<ColorMap>& color_map) {
+  return color_map->colorLookup(point.intensity);
+}
+
+template <>
+inline Color convertColor(const pcl::PointXYZ& /*point*/,
+                          const std::shared_ptr<ColorMap>& color_map) {
+  return color_map->colorLookup(0);
+}
+
+/// Convert pointclouds of different PCL types to a voxblox pointcloud.
+template <typename PCLPoint>
+inline void convertPointcloud(
+    const typename pcl::PointCloud<PCLPoint>& pointcloud_pcl,
+    const std::shared_ptr<ColorMap>& color_map, Pointcloud* points_C,
+    Colors* colors) {
+  points_C->reserve(pointcloud_pcl.size());
+  colors->reserve(pointcloud_pcl.size());
+  for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+    if (!isPointFinite(pointcloud_pcl.points[i])) {
+      continue;
+    }
+    points_C->push_back(Point(pointcloud_pcl.points[i].x,
+                              pointcloud_pcl.points[i].y,
+                              pointcloud_pcl.points[i].z));
+    colors->emplace_back(
+        convertColor<PCLPoint>(pointcloud_pcl.points[i], color_map));
   }
 }
 

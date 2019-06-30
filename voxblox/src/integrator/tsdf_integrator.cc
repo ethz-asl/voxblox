@@ -1,6 +1,6 @@
+#include "voxblox/integrator/tsdf_integrator.h"
 #include <iostream>
 #include <list>
-#include "voxblox/integrator/tsdf_integrator.h"
 
 namespace voxblox {
 
@@ -124,7 +124,7 @@ TsdfVoxel* TsdfIntegratorBase::allocateStorageAndGetVoxelPtr(
     }
   }
 
-  (*last_block)->updated() = true;
+  (*last_block)->updated().set();
 
   const VoxelIndex local_voxel_idx =
       getLocalFromGlobalVoxelIndex(global_voxel_idx, voxels_per_side_);
@@ -281,20 +281,13 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
       continue;
     }
 
-    const Point origin = T_G_C.getPosition();
+    Point origin = T_G_C.getPosition();
+    origin.z() = 0;
     Point point_G = T_G_C * point_C;
 
     //Vinz
-    if (point_G.z() < 0.2 || point_G.z() > 1.0) continue;
-    float radial_distance = point_G.norm();
-    if (radial_distance > 5.5 || radial_distance < 0.1) continue;
-    point_G.z()=0;
-
-//Vinz
-if (point_G.z() < 0.2 || point_G.z() > 1.0) continue;
-radial_distance = point_G.norm();
-if (radial_distance > 5.5 || radial_distance < 0.1) continue;
-// point_G.z() = 0;
+    if (point_G.z() < 0.2 || point_G.z() > 1.8) continue;
+    point_G.z() = 0;
 
     RayCaster ray_caster(origin, point_G, is_clearing,
                          config_.voxel_carving_enabled,

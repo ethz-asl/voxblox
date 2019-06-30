@@ -17,6 +17,7 @@
 
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/tsdf_map.h>
+#include <voxblox/core/common.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
@@ -51,6 +52,71 @@ class Queue {
     };
     Member* last;
     int queue_size;
+};
+
+/*class Clustering {
+  public:
+    Clustering(const std::shared_ptr<TsdfMap>& input_map);
+    std::shared_ptr<std::list<LongIndexSet>> extractClusters();
+    std::list<std::pair<LongIndexSet, LongIndexSet>> matchCommunClusters(std::shared_ptr<std::list<LongIndexSet>> input_old_cluster_list);
+    pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
+
+  private:
+    float distance_threshold_ ;
+    int cluster_match_vote_threshold_ ;
+    std::shared_ptr<TsdfMap> input_map_ ;
+    //std::shared_ptr<Layer<TsdfVoxel>> layer_ ;
+    std::shared_ptr<std::list<LongIndexSet>> cluster_list_ ;
+    size_t voxels_per_side_ ;
+};*/
+
+class Clustering {
+  public:
+    Clustering(const std::shared_ptr<TsdfMap> input_map, float cluster_distance_threshold, 
+               unsigned int cluster_match_vote_threshold, unsigned int cluster_min_size_threshold,
+               unsigned int clustering_queue_size);
+    void addCurrentMap(const std::shared_ptr<TsdfMap> input_map);
+    void matchCommunClusters();
+    pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
+    pcl::PointCloud<pcl::PointXYZRGB> matchedClusterVisualiser();
+
+    int getClusterQueueSize(){
+      return cluster_queue_.size();
+    }
+
+    void popfromQueue(){
+      cluster_queue_.pop();
+    }
+
+    struct ColoredCluster {
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      LongIndexSet cluster;
+      Color color;
+
+      bool operator==(const ColoredCluster& a) const
+      {
+        return (cluster == a.cluster);
+      }
+
+      bool operator!=(const ColoredCluster& a) const
+      {
+        return (cluster != a.cluster);
+      }
+    };
+
+    Color colors[9] = {Color::White(), Color::Red(), Color::Green(), Color::Blue(), 
+                  Color::Yellow(), Color::Orange(), Color::Purple(), Color::Teal(), Color::Pink()};
+
+  private:
+    int cluster_distance_threshold_ ;
+    unsigned int cluster_match_vote_threshold_ ;
+    unsigned int cluster_min_size_threshold_;
+    unsigned int clustering_queue_size_;
+    size_t voxels_per_side_ ;
+    size_t num_voxels_per_block_ ;
+
+    std::shared_ptr<TsdfMap> current_map_ ;
+    std::queue<std::list<ColoredCluster>> cluster_queue_ ;
 };
 
 class TsdfServer {
@@ -113,6 +179,7 @@ class TsdfServer {
                               std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
+  void publishMapEvent(const ros::TimerEvent& event);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
 
@@ -148,6 +215,42 @@ class TsdfServer {
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
+  /// Data subscribers.
+  ros::Subscriber pointcloud_sub_;
+  ros::Subscriber freespace_pointcloud_sub_;
+
+  /// Publish markers for visualization.
+  ros::Publisher mesh_pub_;
+  ros::Publisher tsdf_pointcloud_pub_;
+  ros::Publisher tsdf_newly_occupied_pointcloud_pub_;
+  ros::Publisher tsdf_newly_occupied_distance_pointcloud_pub_;
+  ros::Publisher clustered_pointcloud_pub_;
+  ros::Publisher surface_pointcloud_pub_;
+  ros::Publisher tsdf_slice_pub_;
+  ros::Publisher occupancy_marker_pub_;
+  ros::Publisher icp_transform_pub_;
+
+  /// Publish the complete map for other nodes to consume.
+  ros::Publisher tsdf_map_pub_;
+
+  /// Subscriber to subscribe to another node generating the map.
+  ros::Subscriber tsdf_map_sub_;
+
+  // Services.
+  ros::ServiceServer generate_mesh_srv_;
+  ros::ServiceServer clear_map_srv_;
+  ros::ServiceServer save_map_srv_;
+  ros::ServiceServer load_map_srv_;
+  ros::ServiceServer publish_pointclouds_srv_;
+  ros::ServiceServer publish_tsdf_map_srv_;
+
+  /// Tools for broadcasting TFs.
+  tf::TransformBroadcaster tf_broadcaster_;
+
+  // Timers.
+  ros::Timer update_mesh_timer_;
+  ros::Timer publish_map_timer_;
+
   bool verbose_;
 
   /**
@@ -181,13 +284,13 @@ class TsdfServer {
   ColorMode color_mode_;
 
   /// Colormap to use for intensity pointclouds.
-  std::unique_ptr<ColorMap> color_map_;
+  std::shared_ptr<ColorMap> color_map_;
 
   /// Will throttle to this message rate.
   ros::Duration min_time_between_msgs_;
 
   /// What output information to publish
-  bool publish_tsdf_info_;
+  bool publish_pointclouds_on_update_;
   bool publish_slices_;
   bool publish_pointclouds_;
   bool publish_tsdf_map_;
@@ -208,48 +311,17 @@ class TsdfServer {
    */
   bool accumulate_icp_corrections_;
 
-  /// Data subscribers.
-  ros::Subscriber pointcloud_sub_;
-  ros::Subscriber freespace_pointcloud_sub_;
 
   /// Subscriber settings.
   int pointcloud_queue_size_;
   int num_subscribers_tsdf_map_;
-
-  // Publish markers for visualization.
-  ros::Publisher mesh_pub_;
-  ros::Publisher tsdf_pointcloud_pub_;
-  ros::Publisher tsdf_newly_occupied_pointcloud_pub_;
-  ros::Publisher surface_pointcloud_pub_;
-  ros::Publisher tsdf_slice_pub_;
-  ros::Publisher occupancy_marker_pub_;
-  ros::Publisher icp_transform_pub_;
-
-  /// Publish the complete map for other nodes to consume.
-  ros::Publisher tsdf_map_pub_;
-
-  /// Subscriber to subscribe to another node generating the map.
-  ros::Subscriber tsdf_map_sub_;
-
-  // Services.
-  ros::ServiceServer generate_mesh_srv_;
-  ros::ServiceServer clear_map_srv_;
-  ros::ServiceServer save_map_srv_;
-  ros::ServiceServer load_map_srv_;
-  ros::ServiceServer publish_pointclouds_srv_;
-  ros::ServiceServer publish_tsdf_map_srv_;
-
-  /// Tools for broadcasting TFs.
-  tf::TransformBroadcaster tf_broadcaster_;
-
-  // Timers.
-  ros::Timer update_mesh_timer_;
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
   std::shared_ptr<TsdfMap> tsdf_map_newly_free_;
   std::shared_ptr<TsdfMap> tsdf_map_newly_occupied_;
+  std::shared_ptr<TsdfMap> tsdf_map_newly_occupied_distance_;
 
   /// ICP matcher
   std::shared_ptr<ICP> icp_;
@@ -281,9 +353,14 @@ class TsdfServer {
 
   //Vinz Additions
   Queue queue_; 
-  bool newly_occupied_active_;
-  void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map);
-
+  bool cluster_matching_active_;
+  void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance );
+  pcl::PointCloud<pcl::PointXYZRGB> clustered_pcl_ ; 
+  std::unique_ptr<Clustering> clustering_;
+  int cluster_distance_threshold_;
+  int cluster_match_vote_threshold_;
+  int cluster_min_size_threshold_;
+  int clustering_queue_size_;
 };
 
 }  // namespace voxblox

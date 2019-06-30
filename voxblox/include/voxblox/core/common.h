@@ -136,6 +136,16 @@ struct Color {
   static const Color Purple() { return Color(127, 0, 255); }
   static const Color Teal() { return Color(0, 255, 255); }
   static const Color Pink() { return Color(255, 0, 127); }
+
+  bool operator==(const Color& a) const
+  {
+    return (r == a.r && g == a.g && b == a.b);
+  }
+
+  bool operator!=(const Color& a) const
+  {
+    return (r != a.r || g != a.g || b != a.b);
+  }
 };
 
 // Constants used across the library.
