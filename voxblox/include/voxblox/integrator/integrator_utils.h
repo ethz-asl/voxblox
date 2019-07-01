@@ -23,6 +23,13 @@ class ThreadSafeIndex {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+  // NOTE: The ThreadSafeIndex base destructor must be marked virtual.
+  //       Otherwise the destructors of derived classes don't get called when
+  //       derived class instances are destructed through base class pointers.
+  //       This would result leaking memory due to derived class member
+  //       variables not being freed.
+  virtual ~ThreadSafeIndex() = default;
+
   /// returns true if index is valid, false otherwise
   bool getNextIndex(size_t* idx);
 
