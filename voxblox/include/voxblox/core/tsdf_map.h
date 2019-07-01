@@ -36,13 +36,13 @@ class TsdfMap {
     block_size_ = config.tsdf_voxel_size * config.tsdf_voxels_per_side;
   }
 
-  /// Creates a new TsdfMap by calling the Ptr constructor.
+   /// Creates a new TsdfMap based on a COPY of this layer.  
   explicit TsdfMap(const Layer<TsdfVoxel>& layer)
       : TsdfMap(aligned_shared<Layer<TsdfVoxel>>(layer)) {}
 
-  /// Creates a new TsdfMap that contains a deep copy of the given layer.
-  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer) : tsdf_layer_(new Layer<TsdfVoxel>(*layer)) {
-    if (!layer) {
+   /// Creates a new TsdfMap that contains this layer. 
+   explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer) : tsdf_layer_(layer) { 
+      if (!layer) {
       /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
        * This is idiomatic when wrapping C++ code for Python, especially with
        * pybind11
@@ -82,8 +82,7 @@ class TsdfMap {
       unsigned int free_plane_index, double free_plane_val,
       EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
       Eigen::Ref<Eigen::VectorXd> distances,
-      Eigen::Ref<Eigen::VectorXd> weights, unsigned int max_points) const;  
-
+      Eigen::Ref<Eigen::VectorXd> weights, unsigned int max_points) const; 
  protected:
   FloatingPoint block_size_;
 
