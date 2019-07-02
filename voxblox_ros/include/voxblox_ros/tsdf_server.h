@@ -6,6 +6,9 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
@@ -50,13 +53,14 @@ class TsdfServer {
 
   void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
 
-  void insertPointcloud(const sensor_msgs::PointCloud2::Ptr& pointcloud);
+  void insertPointcloud(
+      const sensor_msgs::PointCloud2ConstPtr& pointcloud_msg_left_in, const sensor_msgs::PointCloud2ConstPtr& pointcloud_msg_right_in);
 
   void insertFreespacePointcloud(
-      const sensor_msgs::PointCloud2::Ptr& pointcloud);
+      const sensor_msgs::PointCloud2ConstPtr& pointcloud);
 
   virtual void processPointCloudMessageAndInsert(
-      const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
+      const sensor_msgs::PointCloud2ConstPtr& pointcloud_msg,
       const Transformation& T_G_C, const bool is_freespace_pointcloud);
 
   void integratePointcloud(const Transformation& T_G_C,
@@ -127,15 +131,21 @@ class TsdfServer {
    * the queue.
    */
   bool getNextPointcloudFromQueue(
-      std::queue<sensor_msgs::PointCloud2::Ptr>* queue,
-      sensor_msgs::PointCloud2::Ptr* pointcloud_msg, Transformation* T_G_C);
+      std::queue<sensor_msgs::PointCloud2ConstPtr>* queue,
+      sensor_msgs::PointCloud2ConstPtr* pointcloud_msg, Transformation* T_G_C);
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
   /// Data subscribers.
-  ros::Subscriber pointcloud_sub_;
+  message_filters::Subscriber<sensor_msgs::PointCloud2> pointcloud_left_sub_;
+  message_filters::Subscriber<sensor_msgs::PointCloud2> pointcloud_right_sub_;
   ros::Subscriber freespace_pointcloud_sub_;
+
+  // Synchroniser for the two point clouds.
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::PointCloud2> MySyncPolicy;
+  typedef message_filters::Synchronizer<MySyncPolicy> Sync;
+  boost::shared_ptr<Sync> sync_;
 
   /// Publish markers for visualization.
   ros::Publisher mesh_pub_;
@@ -257,8 +267,8 @@ class TsdfServer {
    * Queue of incoming pointclouds, in case the transforms can't be immediately
    * resolved.
    */
-  std::queue<sensor_msgs::PointCloud2::Ptr> pointcloud_queue_;
-  std::queue<sensor_msgs::PointCloud2::Ptr> freespace_pointcloud_queue_;
+  std::queue<sensor_msgs::PointCloud2ConstPtr> pointcloud_queue_;
+  std::queue<sensor_msgs::PointCloud2ConstPtr> freespace_pointcloud_queue_;
 
   // Last message times for throttling input.
   ros::Time last_msg_time_ptcloud_;

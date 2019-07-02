@@ -71,8 +71,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
                     pointcloud_queue_size_);
-  pointcloud_sub_ = nh_.subscribe("pointcloud", pointcloud_queue_size_,
-                                  &TsdfServer::insertPointcloud, this);
+
+  pointcloud_left_sub_.subscribe(nh_, "pointcloud_left", 1);
+  pointcloud_right_sub_.subscribe(nh_, "pointcloud_right", 1);
+
+  sync_.reset(new Sync(MySyncPolicy(10), pointcloud_left_sub_, pointcloud_right_sub_));
+  sync_->registerCallback(boost::bind(&TsdfServer::insertPointcloud, this, _1, _2));
 
   mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
 
@@ -248,31 +252,21 @@ void TsdfServer::getServerConfigFromRosParam(
 }
 
 void TsdfServer::processPointCloudMessageAndInsert(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
+    const sensor_msgs::PointCloud2ConstPtr& pointcloud_msg,
     const Transformation& T_G_C, const bool is_freespace_pointcloud) {
   // Convert the PCL pointcloud into our awesome format.
-
-  //Allows only for SimpleTsdfIntegrator and does not allow to output a mesh
-  TsdfMap::Config config;
-  config.tsdf_voxel_size = tsdf_map_->getTsdfLayerPtr()->voxel_size();
-  config.tsdf_voxels_per_side = tsdf_map_->getTsdfLayerPtr()->voxels_per_side();
-  tsdf_map_.reset(new TsdfMap(config));
-
-  const TsdfIntegratorBase::Config integrator_config = tsdf_integrator_->getConfig();
-  tsdf_integrator_.reset(new SimpleTsdfIntegrator(
-        integrator_config, tsdf_map_->getTsdfLayerPtr()));
 
   // Horrible hack fix to fix color parsing colors in PCL.
   bool color_pointcloud = false;
   bool has_intensity = false;
-  for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
+  /*for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
     if (pointcloud_msg->fields[d].name == std::string("rgb")) {
       pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
       color_pointcloud = true;
     } else if (pointcloud_msg->fields[d].name == std::string("intensity")) {
       has_intensity = true;
     }
-  }
+  }*/
 
   Pointcloud points_C;
   Colors colors;
@@ -365,38 +359,14 @@ void TsdfServer::processPointCloudMessageAndInsert(
                                 max_block_distance_from_body_);
   block_remove_timer.Stop();
 
-  //Vinz: starting my part now 
-  clustering_->addCurrentMap(tsdf_map_);
-  dynamic_recognizer_->addCurrentMap(tsdf_map_);
-  cluster_matching_active_ = false;
-  dynamic_recognizing_active_ = false;
-  ROS_INFO("tsdf map queue size %u", dynamic_recognizer_->getMapQueueSize());
-  while (dynamic_recognizer_->getMapQueueSize() > dynamic_recognizer_queue_size_) {
-    dynamic_recognizer_->popfromQueue();
-  }
-
-  if (!(clustering_->isOldClustersEmpty())) {
-    cluster_matching_active_ = true;
-    clustering_->matchCommunClusters();
-    clustered_pcl_ = clustering_->matchedClusterVisualiser();
-  }
-  if (dynamic_recognizer_->getMapQueueSize() == dynamic_recognizer_queue_size_) {
-    dynamic_recognizing_active_ = true;
-    tsdf_map_delta_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
-    dynamic_recognizer_->dynamicRecognizing(clustering_->getCurrentClustersPointer());
-    dynamic_recognizer_->dynamicClusterVisualiser(&dynamic_pcl_, &static_pcl_);
-    dynamic_recognizer_->popfromQueue();
-  }
-  ROS_INFO("-----------------------");
-
   // Callback for inheriting classes.
   newPoseCallback(T_G_C);
 }
 
 // Checks if we can get the next message from queue.
 bool TsdfServer::getNextPointcloudFromQueue(
-    std::queue<sensor_msgs::PointCloud2::Ptr>* queue,
-    sensor_msgs::PointCloud2::Ptr* pointcloud_msg, Transformation* T_G_C) {
+    std::queue<sensor_msgs::PointCloud2ConstPtr>* queue,
+    sensor_msgs::PointCloud2ConstPtr* pointcloud_msg, Transformation* T_G_C) {
   const size_t kMaxQueueSize = 10;
   if (queue->empty()) {
     return false;
@@ -422,16 +392,27 @@ bool TsdfServer::getNextPointcloudFromQueue(
 }
 
 void TsdfServer::insertPointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
-  if (pointcloud_msg_in->header.stamp - last_msg_time_ptcloud_ >
+    const sensor_msgs::PointCloud2ConstPtr& pointcloud_msg_left_in, const sensor_msgs::PointCloud2ConstPtr& pointcloud_msg_right_in) {
+  if (pointcloud_msg_left_in->header.stamp - last_msg_time_ptcloud_ >
       min_time_between_msgs_) {
-    last_msg_time_ptcloud_ = pointcloud_msg_in->header.stamp;
+    last_msg_time_ptcloud_ = pointcloud_msg_left_in->header.stamp;
     // So we have to process the queue anyway... Push this back.
-    pointcloud_queue_.push(pointcloud_msg_in);
+    pointcloud_queue_.push(pointcloud_msg_left_in);
+    pointcloud_queue_.push(pointcloud_msg_right_in);
   }
 
+  //Allows only for SimpleTsdfIntegrator and does not allow to output a mesh
+  TsdfMap::Config config;
+  config.tsdf_voxel_size = tsdf_map_->getTsdfLayerPtr()->voxel_size();
+  config.tsdf_voxels_per_side = tsdf_map_->getTsdfLayerPtr()->voxels_per_side();
+  tsdf_map_.reset(new TsdfMap(config));
+
+  const TsdfIntegratorBase::Config integrator_config = tsdf_integrator_->getConfig();
+  tsdf_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+
   Transformation T_G_C;
-  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
+  sensor_msgs::PointCloud2ConstPtr pointcloud_msg;
   bool processed_any = false;
   while (
       getNextPointcloudFromQueue(&pointcloud_queue_, &pointcloud_msg, &T_G_C)) {
@@ -445,6 +426,30 @@ void TsdfServer::insertPointcloud(
     return;
   }
 
+  //Vinz: starting my part now 
+  clustering_->addCurrentMap(tsdf_map_);
+  dynamic_recognizer_->addCurrentMap(tsdf_map_);
+  cluster_matching_active_ = false;
+  dynamic_recognizing_active_ = false;
+  ROS_INFO("tsdf map queue size %u", dynamic_recognizer_->getMapQueueSize());
+  while (dynamic_recognizer_->getMapQueueSize() > dynamic_recognizer_queue_size_) {
+    dynamic_recognizer_->popfromQueue();
+  }
+
+  if (!(clustering_->isOldClustersEmpty())) {
+    cluster_matching_active_ = true;
+    clustering_->matchCommunClusters();
+    clustered_pcl_ = clustering_->matchedClusterVisualiser();
+  }
+  if (dynamic_recognizer_->getMapQueueSize() == dynamic_recognizer_queue_size_) {
+    dynamic_recognizing_active_ = true;
+    tsdf_map_delta_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
+    dynamic_recognizer_->dynamicRecognizing(clustering_->getCurrentClustersPointer());
+    dynamic_recognizer_->dynamicClusterVisualiser(&dynamic_pcl_, &static_pcl_);
+    dynamic_recognizer_->popfromQueue();
+  }
+  ROS_INFO("-----------------------");
+
   if (publish_pointclouds_on_update_) {
     publishPointclouds();
   }
@@ -457,7 +462,7 @@ void TsdfServer::insertPointcloud(
 }
 
 void TsdfServer::insertFreespacePointcloud(
-    const sensor_msgs::PointCloud2::Ptr& pointcloud_msg_in) {
+    const sensor_msgs::PointCloud2ConstPtr& pointcloud_msg_in) {
   if (pointcloud_msg_in->header.stamp - last_msg_time_freespace_ptcloud_ >
       min_time_between_msgs_) {
     last_msg_time_freespace_ptcloud_ = pointcloud_msg_in->header.stamp;
@@ -466,7 +471,7 @@ void TsdfServer::insertFreespacePointcloud(
   }
 
   Transformation T_G_C;
-  sensor_msgs::PointCloud2::Ptr pointcloud_msg;
+  sensor_msgs::PointCloud2ConstPtr pointcloud_msg;
   while (getNextPointcloudFromQueue(&freespace_pointcloud_queue_,
                                     &pointcloud_msg, &T_G_C)) {
     constexpr bool is_freespace_pointcloud = true;

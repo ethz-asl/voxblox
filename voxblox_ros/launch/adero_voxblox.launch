@@ -3,7 +3,8 @@
   <arg name="voxel_size" default="0.10"/>
 
   <node name="voxblox_node" pkg="voxblox_ros" type="tsdf_server" output="screen" args="-alsologtostderr" clear_params="true">
-    <remap from="pointcloud" to="/ifm3d/camera_left/cloud"/>
+    <remap from="pointcloud_left" to="/ifm3d/camera_left/cloud"/>
+    <remap from="pointcloud_right" to="/ifm3d/camera_right/cloud"/>
     <param name="publish_pointclouds" value="true" />
     <param name="publish_pointclouds_on_update" value="true" />
     <param name="publish_slices" value="true" />
@@ -12,7 +13,6 @@
     <param name="color_mode" value="color" />
     <param name="use_tf_transforms" value="true" />
     <param name="world_frame" value="map_floor" />
-    <param name="sensor_frame" value="ifm3d/camera_left_link" />
     <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
     <param name="tsdf_voxels_per_side" value="16" />
     <param name="voxel_carving_enabled" value="true" />
