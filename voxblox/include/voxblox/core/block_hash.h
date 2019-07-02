@@ -77,6 +77,23 @@ typedef std::unordered_set<LongIndex, LongIndexHash, std::equal_to<LongIndex>,
                            Eigen::aligned_allocator<LongIndex> >
     LongIndexSet;
 
+struct ColoredDynamicCluster {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  LongIndexSet cluster;
+  Color color;
+  bool dynamic;
+
+  bool operator==(const ColoredDynamicCluster& a) const
+  {
+    return (cluster == a.cluster);
+  }
+
+  bool operator!=(const ColoredDynamicCluster& a) const
+  {
+    return (cluster != a.cluster);
+  }
+};
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_CORE_BLOCK_HASH_H_

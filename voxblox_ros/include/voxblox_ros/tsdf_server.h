@@ -18,6 +18,7 @@
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/core/common.h>
+#include <voxblox/core/block_hash.h>
 #include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
@@ -29,104 +30,12 @@
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
 #include "voxblox_ros/transformer.h"
+#include "voxblox_ros/clustering.h"
+#include "voxblox_ros/dynamic_recognizer.h"
 
 namespace voxblox {
 
 constexpr float kDefaultMaxIntensity = 100.0;
-
-struct ColoredDynamicCluster {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  LongIndexSet cluster;
-  Color color;
-  bool dynamic;
-
-  bool operator==(const ColoredDynamicCluster& a) const
-  {
-    return (cluster == a.cluster);
-  }
-
-  bool operator!=(const ColoredDynamicCluster& a) const
-  {
-    return (cluster != a.cluster);
-  }
-};
-
-class Queue {
-  public:
-
-    Queue();
-
-    void push(TsdfMap::Ptr tsdf_map);
-    TsdfMap::Ptr front();
-    void pop();
-    int size();
-
-  private:
-
-    struct Member {
-      TsdfMap::Ptr tsdf_ptr;
-      Member* next; 
-    };
-    Member* last;
-    int queue_size;
-};
-
-class Clustering {
-  public:
-    Clustering(const std::shared_ptr<TsdfMap> input_map, float cluster_distance_threshold, 
-               unsigned int cluster_match_vote_threshold, unsigned int cluster_min_size_threshold,
-               unsigned int clustering_queue_size);
-    void addCurrentMap(const std::shared_ptr<TsdfMap> input_map);
-    void matchCommunClusters();
-    pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
-    pcl::PointCloud<pcl::PointXYZRGB> matchedClusterVisualiser();
-    std::list<ColoredDynamicCluster>* getCurrentClustersPointer() {
-      return &(cluster_queue_.back());
-    }
-
-    int getClusterQueueSize(){
-      return cluster_queue_.size();
-    }
-
-    void popfromQueue(){
-      cluster_queue_.pop();
-    }
-
-    Color colors[9] = {Color::White(), Color::Red(), Color::Green(), Color::Blue(), 
-                  Color::Yellow(), Color::Orange(), Color::Purple(), Color::Teal(), Color::Pink()};
-
-  private:
-    int cluster_distance_threshold_ ;
-    unsigned int cluster_match_vote_threshold_ ;
-    unsigned int cluster_min_size_threshold_;
-    unsigned int clustering_queue_size_;
-    size_t voxels_per_side_ ;
-    size_t num_voxels_per_block_ ;
-
-    std::shared_ptr<TsdfMap> current_map_ ;
-    std::queue<std::list<ColoredDynamicCluster>> cluster_queue_ ;
-};
-
-class DynamicRecognizer{
-  public:
-    DynamicRecognizer(const std::shared_ptr<TsdfMap> input_map, float delta_distance_threshold, float dynamic_share_threshold);
-    void addCurrentMap(const std::shared_ptr<TsdfMap> input_map);
-    void dynamicRecognizing(std::list<ColoredDynamicCluster>* input_clusters);
-    void dynamicClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic_pointcloud, pcl::PointCloud<pcl::PointXYZRGB>* static_pointcloud);
-    int getMapQueueSize(){
-      return tsdf_ptr_queue_.size();
-    }
-    void popfromQueue(){
-      tsdf_ptr_queue_.pop();
-    }
-  private:
-    size_t voxels_per_side_ ;
-    size_t num_voxels_per_block_ ;
-    float delta_distance_threshold_;
-    float dynamic_share_threshold_;
-    std::queue<std::shared_ptr<TsdfMap>> tsdf_ptr_queue_;
-    std::list<ColoredDynamicCluster>* current_clusters_;
-};
 
 class TsdfServer {
  public:
@@ -231,8 +140,6 @@ class TsdfServer {
   /// Publish markers for visualization.
   ros::Publisher mesh_pub_;
   ros::Publisher tsdf_pointcloud_pub_;
-  ros::Publisher tsdf_newly_occupied_pointcloud_pub_;
-  ros::Publisher tsdf_newly_occupied_distance_pointcloud_pub_;
   ros::Publisher clustered_pointcloud_pub_;
   ros::Publisher dynamic_pointcloud_pub_;
   ros::Publisher static_pointcloud_pub_;
@@ -361,16 +268,16 @@ class TsdfServer {
   Transformation icp_corrected_transform_;
 
   //Vinz Additions
-  Queue queue_; 
   bool cluster_matching_active_;
   bool dynamic_recognizing_active_;
-  void createNewlyOccupiedMap(const TsdfMap::Ptr current_map, TsdfMap::Ptr old_map, TsdfMap::Ptr newly_occupied_map, TsdfMap::Ptr newly_occupied_map_distance );
+
   pcl::PointCloud<pcl::PointXYZRGB> clustered_pcl_ ; 
   std::unique_ptr<Clustering> clustering_;
   int cluster_distance_threshold_;
   int cluster_match_vote_threshold_;
   int cluster_min_size_threshold_;
   int clustering_queue_size_;
+
   std::unique_ptr<DynamicRecognizer> dynamic_recognizer_;
   int dynamic_recognizer_queue_size_;
   float delta_distance_threshold_;
