@@ -41,7 +41,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       cluster_distance_threshold_(1),
       cluster_match_vote_threshold_(5),
       cluster_min_size_threshold_(5),
-      clustering_queue_size_(5),
       dynamic_recognizer_queue_size_(5),
       delta_distance_threshold_(0.02),
       dynamic_share_threshold_(0.2)
@@ -122,7 +121,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   }
 
   //Vinz
-  clustering_.reset(new Clustering(tsdf_map_, cluster_distance_threshold_, cluster_match_vote_threshold_, cluster_min_size_threshold_, clustering_queue_size_));
+  clustering_.reset(new Clustering(tsdf_map_, cluster_distance_threshold_, cluster_match_vote_threshold_, cluster_min_size_threshold_));
   dynamic_recognizer_.reset(new DynamicRecognizer(tsdf_map_, delta_distance_threshold_, dynamic_share_threshold_));
 
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
@@ -205,9 +204,6 @@ void TsdfServer::getServerConfigFromRosParam(
   nh_private.param("cluster_min_size_threshold",
                    cluster_min_size_threshold_,
                    cluster_min_size_threshold_);
-  nh_private.param("clustering_queue_size",
-                   clustering_queue_size_, 
-                   clustering_queue_size_);
   nh_private.param("dynamic_recognizer_queue_size",
                    dynamic_recognizer_queue_size_,
                    dynamic_recognizer_queue_size_);
@@ -375,18 +371,14 @@ void TsdfServer::processPointCloudMessageAndInsert(
   cluster_matching_active_ = false;
   dynamic_recognizing_active_ = false;
   ROS_INFO("tsdf map queue size %u", dynamic_recognizer_->getMapQueueSize());
-  while (clustering_->getClusterQueueSize() > clustering_queue_size_) {
-    clustering_->popfromQueue();
-  }
   while (dynamic_recognizer_->getMapQueueSize() > dynamic_recognizer_queue_size_) {
     dynamic_recognizer_->popfromQueue();
   }
 
-  if (clustering_->getClusterQueueSize() == clustering_queue_size_) {
+  if (!(clustering_->isOldClustersEmpty())) {
     cluster_matching_active_ = true;
     clustering_->matchCommunClusters();
     clustered_pcl_ = clustering_->matchedClusterVisualiser();
-    clustering_->popfromQueue();
   }
   if (dynamic_recognizer_->getMapQueueSize() == dynamic_recognizer_queue_size_) {
     dynamic_recognizing_active_ = true;
