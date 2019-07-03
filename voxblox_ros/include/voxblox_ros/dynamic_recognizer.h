@@ -8,7 +8,7 @@ class DynamicRecognizer{
   public:
     DynamicRecognizer(const std::shared_ptr<TsdfMap> input_map, float delta_distance_threshold, float dynamic_share_threshold);
     void addCurrentMap(const std::shared_ptr<TsdfMap> input_map);
-    void dynamicRecognizing(std::list<ColoredDynamicCluster>* input_clusters);
+    void dynamicRecognizing(std::list<ColoredDynamicCluster>* input_clusters, std::shared_ptr<TsdfMap> tsdf_map_delta_distance);
     void dynamicClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic_pointcloud, pcl::PointCloud<pcl::PointXYZRGB>* static_pointcloud);
     int getMapQueueSize(){
       return tsdf_ptr_queue_.size();

@@ -104,6 +104,7 @@ class TsdfServer {
   void publishMapEvent(const ros::TimerEvent& event);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
+  std::shared_ptr<TsdfMap> getTsdfIntegratingMapPtr() { return tsdf_oneshot_map_; }
 
   /// Accessors for setting and getting parameters.
   double getSliceLevel() const { return slice_level_; }
@@ -150,9 +151,11 @@ class TsdfServer {
   /// Publish markers for visualization.
   ros::Publisher mesh_pub_;
   ros::Publisher tsdf_pointcloud_pub_;
+  ros::Publisher tsdf_oneshot_pointcloud_pub_;
   ros::Publisher clustered_pointcloud_pub_;
   ros::Publisher dynamic_pointcloud_pub_;
   ros::Publisher static_pointcloud_pub_;
+  ros::Publisher delta_distance_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
@@ -247,6 +250,8 @@ class TsdfServer {
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
   std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
+  std::shared_ptr<TsdfMap> tsdf_oneshot_map_;
+  std::unique_ptr<TsdfIntegratorBase> tsdf_oneshot_integrator_;
   std::shared_ptr<TsdfMap> tsdf_map_delta_distance_;
 
   /// ICP matcher

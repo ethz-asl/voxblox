@@ -13,37 +13,47 @@ void DynamicRecognizer::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) 
   tsdf_ptr_queue_.push(input_map);
 }
 
-void DynamicRecognizer::dynamicRecognizing(std::list<ColoredDynamicCluster>* input_clusters){
+void DynamicRecognizer::dynamicRecognizing(std::list<ColoredDynamicCluster>* input_clusters, std::shared_ptr<TsdfMap> tsdf_map_delta_distance){
   std::shared_ptr<TsdfMap> current_map = tsdf_ptr_queue_.back();
   std::shared_ptr<TsdfMap> old_map = tsdf_ptr_queue_.front();
   current_clusters_ = input_clusters;
   float voxels_per_side_inv = 1 / voxels_per_side_;
 
+  BlockIndexList blocks_d_dist;
+  tsdf_map_delta_distance->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks_d_dist);
+  for (const BlockIndex& index : blocks_d_dist) {
+    // Iterate over all voxels in current blocks.
+    Block<TsdfVoxel>& block_current = tsdf_map_delta_distance->getTsdfLayerPtr()->getBlockByIndex(index);
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block_; ++linear_index) {
+      TsdfVoxel& delta_distance_voxel = block_current.getVoxelByLinearIndex(linear_index);
+      delta_distance_voxel.distance = 0;
+    }
+  }
+
   for (auto current_color_cluster = current_clusters_->begin(); current_color_cluster != current_clusters_->end(); current_color_cluster++){
-    if (!current_color_cluster->dynamic){
-      LongIndexSet current_cluster = current_color_cluster->cluster;
-      int dynamic_counter = 0;
-      int total_count = 0;
-      for (GlobalIndex global_voxel_index : current_cluster){
-        TsdfVoxel* current_voxel = current_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
-        BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_inv);
-        if (old_map->getTsdfLayerPtr()->hasBlock(block_index)) {
-          TsdfVoxel* old_voxel = old_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
-          if (old_voxel != nullptr) {
-            if (old_voxel->weight != 0) {
-              float delta_distance = std::abs(current_voxel->distance - old_voxel->distance);
-              //ROS_INFO("delta_distance = %f", delta_distance);
-              total_count++;
-              if (delta_distance > delta_distance_threshold_) dynamic_counter++;
-            }
-          }
+    const LongIndexSet& current_cluster = current_color_cluster->cluster;
+    int dynamic_counter = 0;
+    int total_count = 0;
+    for (GlobalIndex global_voxel_index : current_cluster){
+      TsdfVoxel* current_voxel = current_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
+      TsdfVoxel* delta_distance_voxel = tsdf_map_delta_distance->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
+      BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_inv);
+      TsdfVoxel* old_voxel = old_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
+      if (old_voxel != nullptr) {
+        if (old_voxel->weight != 0) {
+          float delta_distance = std::abs(current_voxel->distance - old_voxel->distance);
+          delta_distance_voxel->distance = delta_distance;
+          //delta_distance_voxel->weight = 10000;
+          //ROS_INFO("delta_distance = %f", delta_distance);
+          total_count++;
+          if (delta_distance > delta_distance_threshold_) dynamic_counter++;
         }
       }
-      if (total_count > 0){
-        float dynamic_share = dynamic_counter/total_count;
-        //ROS_INFO("dynamic_share = %f", dynamic_share);
-        if (dynamic_share > dynamic_share_threshold_) current_color_cluster->dynamic = true;      
-      }
+    }
+    if (total_count > 0){
+      float dynamic_share = dynamic_counter/total_count;
+      //ROS_INFO("dynamic_share = %f", dynamic_share);
+      if (dynamic_share > dynamic_share_threshold_) current_color_cluster->dynamic = true;      
     }
   }
 }

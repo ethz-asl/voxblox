@@ -7,7 +7,7 @@
     <remap from="pointcloud_right" to="/ifm3d/camera_right/cloud"/>
     <param name="publish_pointclouds" value="true" />
     <param name="publish_pointclouds_on_update" value="true" />
-    <param name="publish_slices" value="true" />
+    <param name="publish_slices" value="false" />
     <param name="slice_level" value="0.0" />
     <param name="publish_tsdf_info" value="true" />
     <param name="color_mode" value="color" />
@@ -27,8 +27,7 @@
     <param name="cluster_distance_threshold" value="1" />
     <param name="cluster_match_vote_threshold" value="1" />
     <param name="cluster_min_size_threshold" value="5" />
-    <param name="clustering_queue_size" value="2" /> 
-    <param name="dynamic_recognizer_queue_size" value="5" />
+    <param name="dynamic_recognizer_queue_size" value="3" />
     <param name="delta_distance_threshold" value="0.3" />
     <param name="dynamic_share_threshold" value="0.5" />
     

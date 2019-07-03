@@ -54,6 +54,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   tsdf_pointcloud_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
                                                               1, true);
+  tsdf_oneshot_pointcloud_pub_ =
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_oneshot_pointcloud",
+                                                              1, true);
   clustered_pointcloud_pub_ = 
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("clustered_pointcloud", 1, true);
 
@@ -62,6 +65,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   static_pointcloud_pub_ = 
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("static_pointcloud", 1, true);
+
+  delta_distance_pointcloud_pub_ = 
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >("delta_distance_pointcloud", 1, true);
 
   occupancy_marker_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
@@ -107,12 +113,16 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   // Initialize TSDF Map and integrator.
   tsdf_map_.reset(new TsdfMap(config));
+  tsdf_oneshot_map_.reset(new TsdfMap(config));
+  tsdf_map_delta_distance_.reset(new TsdfMap(config));
 
   std::string method("merged");
   nh_private_.param("method", method, method);
   if (method.compare("simple") == 0) {
     tsdf_integrator_.reset(new SimpleTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
+    tsdf_oneshot_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_oneshot_map_->getTsdfLayerPtr()));
   } else if (method.compare("merged") == 0) {
     tsdf_integrator_.reset(new MergedTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
@@ -125,8 +135,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   }
 
   //Vinz
-  clustering_.reset(new Clustering(tsdf_map_, cluster_distance_threshold_, cluster_match_vote_threshold_, cluster_min_size_threshold_));
-  dynamic_recognizer_.reset(new DynamicRecognizer(tsdf_map_, delta_distance_threshold_, dynamic_share_threshold_));
+  clustering_.reset(new Clustering(tsdf_oneshot_map_, cluster_distance_threshold_, cluster_match_vote_threshold_, cluster_min_size_threshold_));
+  dynamic_recognizer_.reset(new DynamicRecognizer(tsdf_oneshot_map_, delta_distance_threshold_, dynamic_share_threshold_));
 
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
@@ -347,13 +357,16 @@ void TsdfServer::processPointCloudMessageAndInsert(
   integratePointcloud(T_G_C_refined, points_C, colors, is_freespace_pointcloud);
   ros::WallTime end = ros::WallTime::now();
   if (verbose_) {
-    ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
+    ROS_INFO("Finished integrating in %f seconds, have %lu blocks, have %lu blocks one shot.",
              (end - start).toSec(),
-             tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
+             tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks(),
+             tsdf_oneshot_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
   }
 
   timing::Timer block_remove_timer("remove_distant_blocks");
   tsdf_map_->getTsdfLayerPtr()->removeDistantBlocks(
+      T_G_C.getPosition(), max_block_distance_from_body_);
+  tsdf_oneshot_map_->getTsdfLayerPtr()->removeDistantBlocks(
       T_G_C.getPosition(), max_block_distance_from_body_);
   mesh_layer_->clearDistantMesh(T_G_C.getPosition(),
                                 max_block_distance_from_body_);
@@ -403,13 +416,13 @@ void TsdfServer::insertPointcloud(
 
   //Allows only for SimpleTsdfIntegrator and does not allow to output a mesh
   TsdfMap::Config config;
-  config.tsdf_voxel_size = tsdf_map_->getTsdfLayerPtr()->voxel_size();
-  config.tsdf_voxels_per_side = tsdf_map_->getTsdfLayerPtr()->voxels_per_side();
-  tsdf_map_.reset(new TsdfMap(config));
+  config.tsdf_voxel_size = tsdf_oneshot_map_->getTsdfLayerPtr()->voxel_size();
+  config.tsdf_voxels_per_side = tsdf_oneshot_map_->getTsdfLayerPtr()->voxels_per_side();
+  tsdf_oneshot_map_.reset(new TsdfMap(config));
 
-  const TsdfIntegratorBase::Config integrator_config = tsdf_integrator_->getConfig();
-  tsdf_integrator_.reset(new SimpleTsdfIntegrator(
-        integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  const TsdfIntegratorBase::Config integrator_config = tsdf_oneshot_integrator_->getConfig();
+  tsdf_oneshot_integrator_.reset(new SimpleTsdfIntegrator(
+        integrator_config, tsdf_oneshot_map_->getTsdfLayerPtr()));
 
   Transformation T_G_C;
   sensor_msgs::PointCloud2ConstPtr pointcloud_msg;
@@ -427,8 +440,8 @@ void TsdfServer::insertPointcloud(
   }
 
   //Vinz: starting my part now 
-  clustering_->addCurrentMap(tsdf_map_);
-  dynamic_recognizer_->addCurrentMap(tsdf_map_);
+  clustering_->addCurrentMap(tsdf_oneshot_map_);
+  dynamic_recognizer_->addCurrentMap(tsdf_oneshot_map_);
   cluster_matching_active_ = false;
   dynamic_recognizing_active_ = false;
   ROS_INFO("tsdf map queue size %u", dynamic_recognizer_->getMapQueueSize());
@@ -443,8 +456,8 @@ void TsdfServer::insertPointcloud(
   }
   if (dynamic_recognizer_->getMapQueueSize() == dynamic_recognizer_queue_size_) {
     dynamic_recognizing_active_ = true;
-    tsdf_map_delta_distance_.reset(new TsdfMap(tsdf_map_->getTsdfLayer()));
-    dynamic_recognizer_->dynamicRecognizing(clustering_->getCurrentClustersPointer());
+    tsdf_map_delta_distance_.reset(new TsdfMap(tsdf_oneshot_map_->getTsdfLayer()));
+    dynamic_recognizer_->dynamicRecognizing(clustering_->getCurrentClustersPointer(), tsdf_map_delta_distance_);
     dynamic_recognizer_->dynamicClusterVisualiser(&dynamic_pcl_, &static_pcl_);
     dynamic_recognizer_->popfromQueue();
   }
@@ -487,6 +500,8 @@ void TsdfServer::integratePointcloud(const Transformation& T_G_C,
   CHECK_EQ(ptcloud_C.size(), colors.size());
   tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors,
                                         is_freespace_pointcloud);
+  tsdf_oneshot_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors,
+                                        is_freespace_pointcloud);                                      
 }
 
 void TsdfServer::publishAllUpdatedTsdfVoxels() {
@@ -495,6 +510,28 @@ void TsdfServer::publishAllUpdatedTsdfVoxels() {
   createDistancePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(), &pointcloud);
   pointcloud.header.frame_id = world_frame_;
   tsdf_pointcloud_pub_.publish(pointcloud);
+
+  pcl::PointCloud<pcl::PointXYZI> pointcloud_oneshot;
+  createDistancePointcloudFromTsdfLayer(tsdf_oneshot_map_->getTsdfLayer(), &pointcloud_oneshot);
+  pointcloud_oneshot.header.frame_id = world_frame_;
+  tsdf_oneshot_pointcloud_pub_.publish(pointcloud_oneshot);
+
+  if (cluster_matching_active_) {
+    clustered_pcl_.header.frame_id = world_frame_;
+    clustered_pointcloud_pub_.publish(clustered_pcl_);
+  }
+
+  if (dynamic_recognizing_active_) {
+    dynamic_pcl_.header.frame_id = world_frame_;
+    static_pcl_.header.frame_id = world_frame_;
+    dynamic_pointcloud_pub_.publish(dynamic_pcl_);
+    static_pointcloud_pub_.publish(static_pcl_);
+
+    pcl::PointCloud<pcl::PointXYZI> pointcloud_delta_distance;
+    createDistancePointcloudFromTsdfLayer(tsdf_map_delta_distance_->getTsdfLayer(), &pointcloud_delta_distance);
+    pointcloud_delta_distance.header.frame_id = world_frame_;
+    delta_distance_pointcloud_pub_.publish(pointcloud_delta_distance);
+  }
 }
 
 void TsdfServer::publishTsdfSurfacePoints() {
@@ -524,18 +561,6 @@ void TsdfServer::publishSlices() {
                                              slice_level_, &pointcloud);
   pointcloud.header.frame_id = world_frame_;
   tsdf_slice_pub_.publish(pointcloud);
-
-  if (cluster_matching_active_) {
-    clustered_pcl_.header.frame_id = world_frame_;
-    clustered_pointcloud_pub_.publish(clustered_pcl_);
-  }
-
-  if (dynamic_recognizing_active_) {
-    dynamic_pcl_.header.frame_id = world_frame_;
-    static_pcl_.header.frame_id = world_frame_;
-    dynamic_pointcloud_pub_.publish(dynamic_pcl_);
-    static_pointcloud_pub_.publish(static_pcl_);
-  }
 }
 
 void TsdfServer::publishMap(bool reset_remote_map) {
@@ -568,8 +593,8 @@ void TsdfServer::publishPointclouds() {
   // Combined function to publish all possible pointcloud messages -- surface
   // pointclouds, updated points, and occupied points.
   publishAllUpdatedTsdfVoxels();
-  publishTsdfSurfacePoints();
-  publishTsdfOccupiedNodes();
+  //publishTsdfSurfacePoints();
+  //publishTsdfOccupiedNodes();
   if (publish_slices_) {
     publishSlices();
   }
