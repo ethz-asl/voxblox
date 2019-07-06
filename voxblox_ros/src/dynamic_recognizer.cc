@@ -7,6 +7,7 @@ DynamicRecognizer::DynamicRecognizer(const std::shared_ptr<TsdfMap> input_map, f
   num_voxels_per_block_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
   delta_distance_threshold_ = delta_distance_threshold;
   dynamic_share_threshold_ = dynamic_share_threshold;
+  for(int i = 0; i<(colors.size()-1); i++) used_colors_[i] = 0;
 }
 
 void DynamicRecognizer::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) {
@@ -35,15 +36,13 @@ void DynamicRecognizer::dynamicRecognizing(std::list<ColoredDynamicCluster>* inp
     int dynamic_counter = 0;
     int total_count = 0;
     for (GlobalIndex global_voxel_index : current_cluster){
-      TsdfVoxel* current_voxel = current_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
-      TsdfVoxel* delta_distance_voxel = tsdf_map_delta_distance->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
-      BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_inv);
       TsdfVoxel* old_voxel = old_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
       if (old_voxel != nullptr) {
         if (old_voxel->weight != 0) {
+          TsdfVoxel* current_voxel = current_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
+          TsdfVoxel* delta_distance_voxel = tsdf_map_delta_distance->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
           float delta_distance = std::abs(current_voxel->distance - old_voxel->distance);
           delta_distance_voxel->distance = delta_distance;
-          //delta_distance_voxel->weight = 10000;
           //ROS_INFO("delta_distance = %f", delta_distance);
           total_count++;
           if (delta_distance > delta_distance_threshold_) dynamic_counter++;
@@ -62,9 +61,9 @@ void DynamicRecognizer::dynamicClusterVisualiser(pcl::PointCloud<pcl::PointXYZRG
                                                  pcl::PointCloud<pcl::PointXYZRGB>* static_pointcloud) {
   dynamic_pointcloud->clear();
   static_pointcloud->clear();
-  for (const ColoredDynamicCluster colored_cluster : *current_clusters_) {
+  for (const ColoredDynamicCluster& colored_cluster : *current_clusters_) {
     LongIndexSet cluster = colored_cluster.cluster;
-    Color color = colored_cluster.color;
+    Color color = findColor();
     for (auto voxel_global_index = cluster.begin(); voxel_global_index != cluster.end(); ++voxel_global_index) {
       BlockIndex block_index ;
       VoxelIndex voxel_index ;
@@ -86,5 +85,18 @@ void DynamicRecognizer::dynamicClusterVisualiser(pcl::PointCloud<pcl::PointXYZRG
       }
     }
   }
+}
+
+Color DynamicRecognizer::findColor() {
+  int min_val = 999;
+  int found_iterator = 0;
+  for (int i = 1; i<colors.size() ; i++){
+    if (used_colors_[i]< min_val) {
+      min_val = used_colors_[i];
+      found_iterator = i;
+    }
+  }
+  used_colors_[found_iterator]++;
+  return colors[found_iterator];
 }
 } //end of namespace

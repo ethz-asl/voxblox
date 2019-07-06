@@ -82,6 +82,7 @@ struct ColoredDynamicCluster {
   LongIndexSet cluster;
   Color color;
   bool dynamic;
+  int index;
 
   bool operator==(const ColoredDynamicCluster& a) const
   {

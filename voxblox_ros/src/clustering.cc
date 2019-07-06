@@ -4,29 +4,28 @@ namespace voxblox {
 
 Clustering::Clustering(const std::shared_ptr<TsdfMap> input_map, float cluster_distance_threshold, 
                        unsigned int cluster_match_vote_threshold, unsigned int cluster_min_size_threshold) {
-  current_map_.reset(new TsdfMap(input_map->getTsdfLayer()));
+  current_oneshot_map_.reset(new TsdfMap(input_map->getTsdfLayer()));
   current_clusters_.clear();
-  old_clusters_.clear();
-  cluster_distance_threshold_ = cluster_distance_threshold * current_map_->getTsdfLayerPtr()->voxel_size() / 2;
+  map_clusters_.clear();
+  used_indices_.clear();
+  for(int i = 0; i<(colors.size()-1); i++) used_colors_[i] = 0;
+  cluster_distance_threshold_ = cluster_distance_threshold * current_oneshot_map_->getTsdfLayerPtr()->voxel_size() / 2; //max positive tsdf distance for voxel to be in cluster
   cluster_match_vote_threshold_ = cluster_match_vote_threshold; //number of voxels which need to have voted for a cluster for a match
   cluster_min_size_threshold_ = cluster_min_size_threshold;
-  voxels_per_side_ = current_map_->getTsdfLayerPtr()->voxels_per_side();
+  voxels_per_side_ = current_oneshot_map_->getTsdfLayerPtr()->voxels_per_side();
   num_voxels_per_block_ = voxels_per_side_ * voxels_per_side_ * voxels_per_side_;
 }
 
 void Clustering::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) {
-  current_map_.reset(new TsdfMap(input_map->getTsdfLayer()));
-  std::list<ColoredDynamicCluster> cluster_list;
-  cluster_list.clear();
+  current_oneshot_map_.reset(new TsdfMap(input_map->getTsdfLayer()));
+  current_clusters_.clear();
   Neighborhood<kEighteen>::IndexMatrix neighbors;
-  old_clusters_.clear();
-  old_clusters_ = current_clusters_;
 
   BlockIndexList blocks;
-  current_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
+  current_oneshot_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
 
   for (const BlockIndex& index : blocks) {
-    const Block<TsdfVoxel>& block = current_map_->getTsdfLayerPtr()->getBlockByIndex(index);
+    const Block<TsdfVoxel>& block = current_oneshot_map_->getTsdfLayerPtr()->getBlockByIndex(index);
     for (size_t linear_index = 0; linear_index < num_voxels_per_block_;
          ++linear_index) {
       TsdfVoxel voxel = block.getVoxelByLinearIndex(linear_index);
@@ -44,7 +43,7 @@ void Clustering::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) {
           Neighborhood<kEighteen>::getFromGlobalIndex(cluster_voxel_gi, &neighbors);
           for (unsigned int i = 0; i < Connectivity::kTwentySix; i++) {
             GlobalIndex neighbor_global_index = neighbors.col(i);
-            TsdfVoxel* neighbor_voxel_ptr = current_map_->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(neighbor_global_index);
+            TsdfVoxel* neighbor_voxel_ptr = current_oneshot_map_->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(neighbor_global_index);
             if (neighbor_voxel_ptr == nullptr) continue;
             if (neighbor_voxel_ptr->weight != 0 && neighbor_voxel_ptr->distance < cluster_distance_threshold_) {
               current_cluster.insert(neighbor_global_index);
@@ -56,151 +55,204 @@ void Clustering::addCurrentMap(const std::shared_ptr<TsdfMap> input_map) {
         }
         if (current_cluster.size() > cluster_min_size_threshold_) {
           ColoredDynamicCluster current_colored_cluster;
-          if (old_clusters_.size() == 0) {
-            Color color = colors[cluster_list.size() + 1];
-            current_colored_cluster = {current_cluster , color, false};
-          }
-          else current_colored_cluster = {current_cluster , Color::White(), false};
-
-          cluster_list.push_back(current_colored_cluster);
+          current_colored_cluster = {current_cluster , Color::White(), false, 0};
+          current_clusters_.push_back(current_colored_cluster);
         }
       }
     }
   }
-  current_clusters_.clear();
-  current_clusters_ = cluster_list;
-  ROS_INFO("old cluster size = %u", old_clusters_.size());
+  ROS_INFO("current cluster size = %u", current_clusters_.size());
 }
 
 void Clustering::matchCommunClusters() {
-	const int size = current_clusters_.size();
-  ColoredDynamicCluster* base_current_color_cluster;
+	const int size = map_clusters_.size();
+  ColoredDynamicCluster* base_map_color_cluster = nullptr;
+  std::list<ColoredDynamicCluster*> processed_matched_map_clusters;
+  processed_matched_map_clusters.clear();
+  std::list<int> seen_indices;
+  seen_indices.clear();
 
-  bool* used_colors = new bool[9];
-  for (int i = 0; i<9; i++) used_colors[i] = false;
-	
-	for (ColoredDynamicCluster old_color_cluster : old_clusters_) {
-    unsigned int* current_cluster_vote_array = new unsigned int[size];
-	  for (int i = 0; i < size; i++) current_cluster_vote_array[i] = 0;
-    LongIndexSet old_cluster = old_color_cluster.cluster;
-    //Vote of old voxels for a current_cluster
-		for (auto old_voxel_global_index = old_cluster.begin(); old_voxel_global_index != old_cluster.end(); old_voxel_global_index++) {
-			//Point voxel_coord = voxel_element.coord;
-			int cluster_count = 0;
-			for (const ColoredDynamicCluster current_color_cluster : current_clusters_) {
-        LongIndexSet current_cluster = current_color_cluster.cluster;
-        if (current_cluster.find(*old_voxel_global_index) != current_cluster.end()){
-          current_cluster_vote_array[cluster_count] += 1;
-          break;
+
+	// looping through all current_clusters_
+	for (ColoredDynamicCluster& current_color_cluster : current_clusters_) {
+    unsigned int* map_cluster_vote_array = nullptr;
+    LongIndexSet& current_cluster = current_color_cluster.cluster;
+    if (size != 0){
+      map_cluster_vote_array = new unsigned int[size];
+	    for (int i = 0; i < size; i++) map_cluster_vote_array[i] = 0;
+      //Vote of current voxels for a map_cluster
+      for (auto current_voxel_global_index = current_cluster.begin(); current_voxel_global_index != current_cluster.end(); current_voxel_global_index++) {
+        //Point voxel_coord = voxel_element.coord;
+        int cluster_count = 0;
+        for (const ColoredDynamicCluster& map_color_cluster : map_clusters_) {
+          const LongIndexSet& map_cluster = map_color_cluster.cluster;
+          if (map_cluster.find(*current_voxel_global_index) != map_cluster.end()){
+            map_cluster_vote_array[cluster_count] += 1;
+            break;
+          }
+          cluster_count += 1;
         }
-				cluster_count += 1;
-			}
-		}
-    //matching current_cluster to old_cluster
-		std::list<ColoredDynamicCluster*> matched_current_clusters;
-		matched_current_clusters.clear();
+      }
+    }
+
+    //matching current_cluster to map_cluster
+		std::list<ColoredDynamicCluster*> matched_map_clusters;
+		matched_map_clusters.clear();
     unsigned int max_votes = 0;
-    auto current_cluster_list_iterator = current_clusters_.begin();
+    auto map_cluster_list_iterator = map_clusters_.begin();
 		for (int i = 0; i < size; i++) {
-			if (current_cluster_vote_array[i] >= cluster_match_vote_threshold_) {
-				matched_current_clusters.push_back(&(*current_cluster_list_iterator));
-        if (current_cluster_vote_array[i] > max_votes) {
-          base_current_color_cluster = &(*current_cluster_list_iterator);
-          max_votes = current_cluster_vote_array[i];
+			if (map_cluster_vote_array[i] >= cluster_match_vote_threshold_) {
+				matched_map_clusters.push_back(&(*map_cluster_list_iterator));
+        if (map_cluster_vote_array[i] > max_votes) {
+          base_map_color_cluster = &(*map_cluster_list_iterator);
+          max_votes = map_cluster_vote_array[i];
         }
 			}
-      current_cluster_list_iterator++;
+      map_cluster_list_iterator++;
 		}
-    LongIndexSet* base_current_cluster = &(base_current_color_cluster->cluster);
 
-    ROS_INFO("matched_current_cluster_count: %u", matched_current_clusters.size());
+    ROS_INFO("matched_map_cluster_count: %u", matched_map_clusters.size());
 
-    // If no matching has been made for this old_cluster
-    if (matched_current_clusters.size() == 0) continue;
+    // If no matching has been made for this current_cluster
+    if (matched_map_clusters.size() == 0) {
+      current_color_cluster.index = findIndex();
+      current_color_cluster.color = findColor();
+      map_clusters_.push_back(current_color_cluster);
+      for (const GlobalIndex current_voxel_global_index : current_cluster){
+        current_FOV_voxels_.erase(current_voxel_global_index);
+      }
+      continue;
+    }
 
-    // Checking if a matched_current_cluster has already been matched by another old_cluster
-    std::queue<ColoredDynamicCluster*> double_matched_current_clusters;
-    unsigned int max_double_matched_size = 0;
-    for (auto matched_current_cluster = matched_current_clusters.begin(); matched_current_cluster != matched_current_clusters.end(); matched_current_cluster++ ) {
-      GlobalIndex matched_current_cluster_voxel = *((*matched_current_cluster)->cluster).begin();
-      for (auto current_color_cluster = current_clusters_.begin(); current_color_cluster != current_clusters_.end(); current_color_cluster++) {
-        if (current_color_cluster->color != colors[0] && current_color_cluster->cluster.find(matched_current_cluster_voxel) != current_color_cluster->cluster.end()) {
+    LongIndexSet& base_map_cluster = base_map_color_cluster->cluster;
+    // In case the map cluster is devided in several clusters
+    if (matched_map_clusters.size() > 1) {
+      for (auto matched_map_color_cluster = matched_map_clusters.begin(); matched_map_color_cluster != matched_map_clusters.end(); matched_map_color_cluster++ ) {
+        if ((*matched_map_color_cluster)->index == base_map_color_cluster->index) continue;
+        if ((*matched_map_color_cluster)->dynamic) {
+            base_map_color_cluster->dynamic = true;
+        }
+        LongIndexSet* matched_current_cluster = &(*matched_map_color_cluster)->cluster;
+        for (auto voxel_global_index = matched_current_cluster->begin(); voxel_global_index != matched_current_cluster->end(); voxel_global_index++) {
+          base_map_cluster.insert(*voxel_global_index);
+        }
+        used_indices_.remove((*matched_map_color_cluster)->index);
+        int counter = 0;
+        for (auto color : colors){
+          if ((*matched_map_color_cluster)->color == color) {
+            used_colors_[counter]--;
+            break;
+          }
+          counter++;
+        }
+        map_clusters_.remove(**matched_map_color_cluster); //erase(iterator)
+      }
+    }
+
+    //Checking if a matched_map_cluster has already been matched by another current_cluster
+    /*for (auto matched_map_cluster = matched_map_clusters.begin(); matched_map_cluster != matched_map_clusters.end(); matched_map_cluster++ ) {
+      for (ColoredDynamicCluster& processed_current_cluster: current_clusters_) {
+        if (processed_current_cluster == current_color_cluster) break;
+        if (processed_current_cluster.index == (*matched_map_cluster)->index) {
+          double_match = true;
+          if (processed_current_cluster.dynamic && current_color_cluster.dynamic) //matched cluster also dynamic
+          {
+            for (auto map_cluster : map_clusters_) {
+              if (map_cluster->index == (*matched_map_cluster)->index) {
+                map_clusters_.erase(map_cluster);
+                break;
+              }
+            }
+            map_clusters_.push_back(processed_current_cluster);
+            current_color_cluster.index = findIndex();
+            current_color_cluster.color = findColor();
+
+            map_clusters_.push_back(current_color_cluster);
+            for (const GlobalIndex& current_voxel_global_index : current_cluster){
+              current_FOV_voxels_.erase(current_voxel_global_index);
+            }
+            break;
+          }
+        }
+      }
+      GlobalIndex matched_map_cluster_voxel = *((*matched_map_cluster)->cluster).begin();
+      for (auto processed_matched_map_cluster = processed_matched_map_clusters.begin(); processed_matched_map_cluster != processed_matched_map_clusters.end(); processed_matched_map_clusters++) {
+        if ((*processed_matched_map_cluster)->cluster.find(matched_map_cluster_voxel) != (*processed_matched_map_cluster)->cluster.end()) {
+
+            if (processed_current_cluster.cluster )
+          }
           double_matched_current_clusters.push(&(*current_color_cluster));
           if (current_color_cluster->cluster.size() > max_double_matched_size) max_double_matched_size = current_color_cluster->cluster.size();
           ROS_INFO("double match activated");
         }
       }
-    }
+  }*/
 
-    // In case the current cluster is devided in several clusters
-    if (matched_current_clusters.size() > 1) {
-      for (auto matched_current_color_cluster = matched_current_clusters.begin(); matched_current_color_cluster != matched_current_clusters.end(); matched_current_color_cluster++ ) {
-        if (*matched_current_color_cluster == base_current_color_cluster) continue;
-        LongIndexSet* matched_current_cluster = &(*matched_current_color_cluster)->cluster;
-        for (auto voxel_global_index = matched_current_cluster->begin(); voxel_global_index != matched_current_cluster->end(); voxel_global_index++) {
-          base_current_cluster->insert(*voxel_global_index);
-        }
-        current_clusters_.remove(**matched_current_color_cluster); //erase(iterator)
-      }
-    }
-    // Combining clusters if a matched_current_cluster has already been matched by another old_cluster
-    Color color_from_old = colors[0];
-    bool dynamic_tag_from_old = false;
+    // Combining clusters if a matched_current_cluster has already been matched by another map_cluster
+    /*Color color_from_map = colors[0];
+    bool dynamic_tag_from_map = false;
     while (!double_matched_current_clusters.empty()) {
       ColoredDynamicCluster* previously_computed_double_matched_current_cluster = double_matched_current_clusters.front();
       for (GlobalIndex previously_computed_current_voxel : previously_computed_double_matched_current_cluster->cluster) {
         base_current_cluster->insert(previously_computed_current_voxel);
       }
-      if (previously_computed_double_matched_current_cluster->cluster.size() == max_double_matched_size) color_from_old = previously_computed_double_matched_current_cluster->color;
-      color_from_old = previously_computed_double_matched_current_cluster->color;
-      if (!dynamic_tag_from_old) dynamic_tag_from_old = previously_computed_double_matched_current_cluster->dynamic; 
+      if (previously_computed_double_matched_current_cluster->cluster.size() == max_double_matched_size) color_from_map = previously_computed_double_matched_current_cluster->color;
+      color_from_map = previously_computed_double_matched_current_cluster->color;
+      if (!dynamic_tag_from_map) dynamic_tag_from_map = previously_computed_double_matched_current_cluster->dynamic; 
       current_clusters_.remove(*previously_computed_double_matched_current_cluster);
       ROS_INFO("double matched cluster removed");
       double_matched_current_clusters.pop();
+    }*/
+    seen_indices.push_back(base_map_color_cluster->index);
+    for (GlobalIndex current_voxel : current_cluster) {
+      base_map_cluster.insert(current_voxel);
+      current_FOV_voxels_.erase(current_voxel);
     }
-    if (color_from_old != colors[0]) {
-      base_current_color_cluster->color = color_from_old;
-      base_current_color_cluster->dynamic = dynamic_tag_from_old;
-    } else {
-      base_current_color_cluster->color = old_color_cluster.color;
-      base_current_color_cluster->dynamic = old_color_cluster.dynamic;
-    }
-    if (base_current_color_cluster->color == Color::Red()){
-      ROS_INFO("red");
-    } else if (base_current_color_cluster->color == Color::Green()){
-      ROS_INFO("green");
-    } else if (base_current_color_cluster->color == Color::Blue()){
-      ROS_INFO("blue");
-    } else if (base_current_color_cluster->color == Color::White()){
-      ROS_INFO("white");
-    }
-    for (int i = 0; i < 9; i++){
-      if(base_current_color_cluster->color == colors[i]) used_colors[i] = true;
-    }
-    delete current_cluster_vote_array;
-	}
-  // check for current clusters with color white -> given them an unused color
-  for (auto current_color_cluster = current_clusters_.begin(); current_color_cluster != current_clusters_.end(); current_color_cluster++) {
-    if (current_color_cluster->color == Color::White()){
-      for (int i = 1; i<9 ; i++){
-        if(!used_colors[i]) {
-          current_color_cluster->color = colors[i];
-          used_colors[i] = true;
+    for (GlobalIndex non_clustered_voxel : current_FOV_voxels_) {
+      for (ColoredDynamicCluster& map_cluster : map_clusters_) {
+        if(map_cluster.cluster.find(non_clustered_voxel) != map_cluster.cluster.end()){
+          map_cluster.cluster.erase(non_clustered_voxel);
           break;
         }
       }
-      if (current_color_cluster->color == Color::Red()){
-        ROS_INFO("red2");
-      } else if (current_color_cluster->color == Color::Green()){
-        ROS_INFO("green2");
-      } else if (current_color_cluster->color == Color::Blue()){
-        ROS_INFO("blue2");
-      } else if (current_color_cluster->color == Color::White()){
-        ROS_INFO("white2");
+    }
+    delete map_cluster_vote_array;
+	}
+  // removing not seen dynamic map clusters
+  for (std::list<ColoredDynamicCluster>::iterator map_cluster = map_clusters_.begin(); map_cluster != map_clusters_.end(); map_cluster++) {
+    ROS_INFO("map cluster: index %u, color r %u g %u b %u", map_cluster->index, map_cluster->color.r, map_cluster->color.g, map_cluster->color.b); 
+    if (map_cluster->dynamic) {
+      bool seen = false;
+      for (int seen_index : seen_indices) {
+        if(map_cluster->index == seen_index) {
+          seen = true;
+          break;
+        }
+      }
+      if (!seen) {
+        used_indices_.remove(map_cluster->index);
+        map_cluster = map_clusters_.erase(map_cluster);
       }
     }
   }
-  delete used_colors;
+  ROS_INFO("map clusters size: %u", map_clusters_.size());
+}
+
+void Clustering::determineFOV() {
+  BlockIndexList blocks_current;
+  current_oneshot_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks_current);
+  for (const BlockIndex& index : blocks_current) {
+    // Iterate over all voxels in current blocks.
+    Block<TsdfVoxel>& block_current = current_oneshot_map_->getTsdfLayerPtr()->getBlockByIndex(index);
+    for (size_t linear_index = 0; linear_index < num_voxels_per_block_; ++linear_index) {
+      TsdfVoxel& voxel = block_current.getVoxelByLinearIndex(linear_index);
+      if(voxel.weight != 0) {
+        GlobalIndex voxel_global_idx = getGlobalVoxelIndexFromBlockAndVoxelIndex(index, block_current.computeVoxelIndexFromLinearIndex(linear_index), voxels_per_side_);
+        current_FOV_voxels_.insert(voxel_global_idx);
+      }
+    }
+  }
+  ROS_INFO("current FOV voxels size: %u", current_FOV_voxels_.size());
 }
 
 pcl::PointCloud<pcl::PointXYZRGB> Clustering::matchedClusterVisualiser() {
@@ -213,7 +265,7 @@ pcl::PointCloud<pcl::PointXYZRGB> Clustering::matchedClusterVisualiser() {
       BlockIndex block_index ;
       VoxelIndex voxel_index ;
       getBlockAndVoxelIndexFromGlobalVoxelIndex(*voxel_global_index, voxels_per_side_, &block_index, &voxel_index);
-      const Block<TsdfVoxel>& block = current_map_->getTsdfLayerPtr()->getBlockByIndex(block_index);
+      const Block<TsdfVoxel>& block = current_oneshot_map_->getTsdfLayerPtr()->getBlockByIndex(block_index);
       Point voxel_coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
       pcl::PointXYZRGB point;
       point.x = voxel_coord.x();
@@ -227,4 +279,71 @@ pcl::PointCloud<pcl::PointXYZRGB> Clustering::matchedClusterVisualiser() {
   }
   return pointcloud;
 }
+
+void Clustering::mapClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic_pointcloud,
+                                      pcl::PointCloud<pcl::PointXYZRGB>* static_pointcloud,
+                                      std::shared_ptr<TsdfMap> tsdf_map){
+  dynamic_pointcloud->clear();
+  static_pointcloud->clear();
+  for (const ColoredDynamicCluster& colored_cluster : map_clusters_) {
+    const LongIndexSet& cluster = colored_cluster.cluster;
+    Color color = colored_cluster.color;
+    for (auto voxel_global_index = cluster.begin(); voxel_global_index != cluster.end(); ++voxel_global_index) {
+      BlockIndex block_index ;
+      VoxelIndex voxel_index ;
+      //ROS_INFO("test_2");
+      getBlockAndVoxelIndexFromGlobalVoxelIndex(*voxel_global_index, voxels_per_side_, &block_index, &voxel_index);
+      const Block<TsdfVoxel>& block = tsdf_map->getTsdfLayerPtr()->getBlockByIndex(block_index);
+      Point voxel_coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
+      pcl::PointXYZRGB point;
+      point.x = voxel_coord.x();
+      point.y = voxel_coord.y();
+      point.z = voxel_coord.z();
+      point.r = color.r;
+      point.g = color.g;
+      point.b = color.b;
+      if(colored_cluster.dynamic){
+        dynamic_pointcloud->push_back(point);
+      } else {
+        static_pointcloud->push_back(point);
+      }
+    }
+  }
+}
+
+
+int Clustering::findIndex() {
+  int index_counter = 1;
+  if (!used_indices_.empty()){
+    bool to_use = true;
+    while(to_use){
+      for (auto used_index : used_indices_) {
+        if(used_index == index_counter) {
+          to_use = false;
+        }
+      }
+      if (!to_use) {
+        index_counter++;
+        to_use = true;
+      } else break;
+    } 
+  }
+  used_indices_.push_back(index_counter);
+  used_indices_.sort();
+  return index_counter;
+}
+
+Color Clustering::findColor() {
+  int min_val = 999;
+  int found_iterator = 0;
+  for (int i = 1; i<colors.size() ; i++){
+    if (used_colors_[i]< min_val) {
+      min_val = used_colors_[i];
+      found_iterator = i;
+    }
+  }
+  used_colors_[found_iterator]++;
+  return colors[found_iterator];
+}
+
 } //end of namespace

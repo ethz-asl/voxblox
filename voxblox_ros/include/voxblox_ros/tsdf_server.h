@@ -155,6 +155,8 @@ class TsdfServer {
   ros::Publisher clustered_pointcloud_pub_;
   ros::Publisher dynamic_pointcloud_pub_;
   ros::Publisher static_pointcloud_pub_;
+  ros::Publisher dynamic_map_pointcloud_pub_;
+  ros::Publisher static_map_pointcloud_pub_;
   ros::Publisher delta_distance_pointcloud_pub_;
   ros::Publisher surface_pointcloud_pub_;
   ros::Publisher tsdf_slice_pub_;
@@ -299,6 +301,8 @@ class TsdfServer {
   float dynamic_share_threshold_;
   pcl::PointCloud<pcl::PointXYZRGB> dynamic_pcl_ ; 
   pcl::PointCloud<pcl::PointXYZRGB> static_pcl_ ; 
+  pcl::PointCloud<pcl::PointXYZRGB> dynamic_map_pcl_ ; 
+  pcl::PointCloud<pcl::PointXYZRGB> static_map_pcl_ ; 
 };
 
 }  // namespace voxblox
