@@ -28,8 +28,8 @@
     <param name="cluster_match_vote_threshold" value="1" />
     <param name="cluster_min_size_threshold" value="5" />
     <param name="dynamic_recognizer_queue_size" value="5" />
-    <param name="delta_distance_threshold" value="0.2" />
-    <param name="dynamic_share_threshold" value="0.5" />
+    <param name="delta_distance_threshold" value="0.3" />
+    <param name="dynamic_share_threshold" value="0.7" />
 
 
 
