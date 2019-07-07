@@ -112,7 +112,7 @@ void Clustering::matchCommunClusters() {
 
     // If no matching has been made for this current_cluster
     if (matched_map_clusters.size() == 0) {
-      ROS_INFO("no match to map cluter");
+      ROS_INFO("no match to current cluster");
       current_color_cluster.index = findIndex();
       current_color_cluster.color = findColor();
       map_clusters_.push_back(current_color_cluster);
@@ -152,54 +152,50 @@ void Clustering::matchCommunClusters() {
 
     //Checking if a matched_map_cluster has already been matched by another current_cluster
     bool double_match_xor_active = false;
-    for (auto matched_map_cluster = matched_map_clusters.begin(); matched_map_cluster != matched_map_clusters.end(); matched_map_cluster++ ) {
-      for (ColoredDynamicCluster& processed_current_cluster: current_clusters_) {
-        if (processed_current_cluster == current_color_cluster) break;
-        if (processed_current_cluster.index == (*matched_map_cluster)->index) {
-          if (processed_current_cluster.dynamic != current_color_cluster.dynamic) { //XOR
-            double_match_xor_active = true;
-            ROS_INFO("double match XOR active");
-            ColoredDynamicCluster* dynamic_cluster;
-            ColoredDynamicCluster* static_cluster;
-            if (current_color_cluster.dynamic) {
-              dynamic_cluster = &current_color_cluster;
-              static_cluster = &processed_current_cluster;
-            }
-            else {
-              dynamic_cluster = &processed_current_cluster;
-              static_cluster = &current_color_cluster;
-            }
-            static_cluster->index = (*matched_map_cluster)->index;
-            static_cluster->color = (*matched_map_cluster)->color;
-            for (GlobalIndex matched_map_voxel_idx : (*matched_map_cluster)->cluster) {
-              if (dynamic_cluster->cluster.find(matched_map_voxel_idx) == dynamic_cluster->cluster.end()){
-                static_cluster->cluster.insert(matched_map_voxel_idx);
-              }
-            }
-            map_clusters_.push_back(*static_cluster);
-            dynamic_cluster->index = findIndex();
-            dynamic_cluster->color = findColor();
-            map_clusters_.push_back(*dynamic_cluster);
-            used_indices_.remove((*matched_map_cluster)->index);
-            int counter = 0;
-            for (auto color : colors){
-              if ((*matched_map_cluster)->color == color) {
-                used_colors_[counter]--;
-                break;
-              }
-              counter++;
-            }
-            ColoredDynamicCluster temp_cluster = **matched_map_cluster;
-            matched_map_cluster = matched_map_clusters.erase(matched_map_cluster);
-            map_clusters_.remove(temp_cluster);
-
-            seen_indices.push_back(current_color_cluster.index);
-            for (GlobalIndex current_voxel : current_color_cluster.cluster) {
-              current_FOV_voxels_.erase(current_voxel);
-            }
-            delete map_cluster_vote_array;
-            ROS_INFO("test 1");
+    for (ColoredDynamicCluster& processed_current_cluster: current_clusters_) {
+      if (processed_current_cluster == current_color_cluster) break;
+      if (processed_current_cluster.index == base_map_color_cluster->index) {
+        if (processed_current_cluster.dynamic != current_color_cluster.dynamic) { //XOR
+          double_match_xor_active = true;
+          ROS_INFO("double match XOR active");
+          ColoredDynamicCluster* dynamic_cluster;
+          ColoredDynamicCluster* static_cluster;
+          if (current_color_cluster.dynamic) {
+            dynamic_cluster = &current_color_cluster;
+            static_cluster = &processed_current_cluster;
           }
+          else {
+            dynamic_cluster = &processed_current_cluster;
+            static_cluster = &current_color_cluster;
+          }
+          static_cluster->index = base_map_color_cluster->index;
+          static_cluster->color = base_map_color_cluster->color;
+          for (GlobalIndex matched_map_voxel_idx : base_map_cluster) {
+            if (dynamic_cluster->cluster.find(matched_map_voxel_idx) == dynamic_cluster->cluster.end()){
+              static_cluster->cluster.insert(matched_map_voxel_idx);
+            }
+          }
+          map_clusters_.push_back(*static_cluster);
+          dynamic_cluster->index = findIndex();
+          dynamic_cluster->color = findColor();
+          map_clusters_.push_back(*dynamic_cluster);
+          used_indices_.remove(base_map_color_cluster->index);
+          int counter = 0;
+          for (auto color : colors){
+            if (base_map_color_cluster->color == color) {
+              used_colors_[counter]--;
+              break;
+            }
+            counter++;
+          }
+
+          map_clusters_.remove(*base_map_color_cluster);
+          seen_indices.push_back(current_color_cluster.index);
+          for (GlobalIndex current_voxel : current_color_cluster.cluster) {
+            current_FOV_voxels_.erase(current_voxel);
+          }
+          delete map_cluster_vote_array;
+          ROS_INFO("test 1");
         }
       }
     }
