@@ -7,14 +7,14 @@ namespace voxblox {
 
 class Clustering {
   public:
-    Clustering(const std::shared_ptr<TsdfMap> input_map, float cluster_distance_threshold, 
+    Clustering(const std::shared_ptr<TsdfMap> input_map, float cluster_distance_threshold,
                unsigned int cluster_match_vote_threshold, unsigned int cluster_min_size_threshold);
     void addCurrentMap(const std::shared_ptr<TsdfMap> input_map);
     void matchCommunClusters();
     void determineFOV();
     pcl::PointCloud<pcl::PointXYZRGB> extractedClusterVisualiser();
     pcl::PointCloud<pcl::PointXYZRGB> matchedClusterVisualiser();
-    void mapClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic_pointcloud,  
+    void mapClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic_pointcloud,
                               pcl::PointCloud<pcl::PointXYZRGB>* static_pointcloud,
                               std::shared_ptr<TsdfMap> tsdf_map);
 
@@ -26,8 +26,8 @@ class Clustering {
     }
     int findIndex();
     Color findColor();
-    
-    const std::vector<Color> colors = {Color::White(), Color::Red(), Color::Green(), Color::Blue(), 
+
+    const std::vector<Color> colors = {Color::White(), Color::Red(), Color::Green(), Color::Blue(),
                   Color::Yellow(), Color::Orange(), Color::Purple(), Color::Teal(), Color::Pink()};
 
   private:

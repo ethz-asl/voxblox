@@ -33,8 +33,8 @@ void DynamicRecognizer::dynamicRecognizing(std::list<ColoredDynamicCluster>* inp
 
   for (auto current_color_cluster = current_clusters_->begin(); current_color_cluster != current_clusters_->end(); current_color_cluster++){
     const LongIndexSet& current_cluster = current_color_cluster->cluster;
-    int dynamic_counter = 0;
-    int total_count = 0;
+    float dynamic_counter = 0;
+    float total_count = 0;
     for (GlobalIndex global_voxel_index : current_cluster){
       TsdfVoxel* old_voxel = old_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
       if (old_voxel != nullptr) {
@@ -43,21 +43,24 @@ void DynamicRecognizer::dynamicRecognizing(std::list<ColoredDynamicCluster>* inp
           TsdfVoxel* delta_distance_voxel = tsdf_map_delta_distance->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
           float delta_distance = std::abs(current_voxel->distance - old_voxel->distance);
           delta_distance_voxel->distance = delta_distance;
-          //ROS_INFO("delta_distance = %f", delta_distance);
+          //ROS_INFO("delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
           total_count++;
-          if (delta_distance > delta_distance_threshold_) dynamic_counter++;
+          if (delta_distance > delta_distance_threshold_) {
+            dynamic_counter++;
+            //ROS_INFO("dynamic count = %u, total count = %u", dynamic_counter, total_count);
+          }
         }
       }
     }
     if (total_count > 0){
       float dynamic_share = dynamic_counter/total_count;
-      //ROS_INFO("dynamic_share = %f", dynamic_share);
-      if (dynamic_share > dynamic_share_threshold_) current_color_cluster->dynamic = true;      
+      //ROS_INFO("dynamic_share = %f, threshold = %f", dynamic_share, dynamic_share_threshold_);
+      if (dynamic_share > dynamic_share_threshold_) current_color_cluster->dynamic = true;
     }
   }
 }
 
-void DynamicRecognizer::dynamicClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic_pointcloud, 
+void DynamicRecognizer::dynamicClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic_pointcloud,
                                                  pcl::PointCloud<pcl::PointXYZRGB>* static_pointcloud) {
   dynamic_pointcloud->clear();
   static_pointcloud->clear();
