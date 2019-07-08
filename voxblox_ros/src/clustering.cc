@@ -128,9 +128,9 @@ void Clustering::matchCommunClusters() {
       ROS_INFO("several map clusters matched to current cluster");
       for (auto matched_map_color_cluster = matched_map_clusters.begin(); matched_map_color_cluster != matched_map_clusters.end(); matched_map_color_cluster++ ) {
         if ((*matched_map_color_cluster)->index == base_map_color_cluster->index) continue;
-        if ((*matched_map_color_cluster)->dynamic) {
+        /*if ((*matched_map_color_cluster)->dynamic) {
             base_map_color_cluster->dynamic = true;
-        }
+        }*/
         LongIndexSet* matched_map_cluster = &(*matched_map_color_cluster)->cluster;
         for (auto voxel_global_index = matched_map_cluster->begin(); voxel_global_index != matched_map_cluster->end(); voxel_global_index++) {
           base_map_cluster.insert(*voxel_global_index);
@@ -270,6 +270,7 @@ void Clustering::matchCommunClusters() {
 }
 
 void Clustering::determineFOV() {
+  current_FOV_voxels_.clear();
   BlockIndexList blocks_current;
   current_oneshot_map_->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks_current);
   for (const BlockIndex& index : blocks_current) {
@@ -285,11 +286,12 @@ void Clustering::determineFOV() {
   }
   ROS_INFO("current FOV voxels size: %u", current_FOV_voxels_.size());
   //erasing dynamic voxels currently not seen
-  for (std::list<ColoredDynamicCluster>::iterator map_cluster = map_clusters_.begin(); map_cluster != map_clusters_.end(); map_cluster++) {
+  /*for (std::list<ColoredDynamicCluster>::iterator map_cluster = map_clusters_.begin(); map_cluster != map_clusters_.end(); map_cluster++) {
     if (map_cluster->dynamic){
-      for (GlobalIndex voxel_idx : map_cluster->cluster) {
-        if (current_FOV_voxels_.find(voxel_idx) == current_FOV_voxels_.end()) {
-          map_cluster->cluster.erase(voxel_idx);
+      //ROS_INFO("map cluster size: %u", map_cluster->cluster.size());
+      for (LongIndexSet::iterator voxel_idx = map_cluster->cluster.begin(); voxel_idx != map_cluster->cluster.end(); voxel_idx++) {
+        if (current_FOV_voxels_.find(*voxel_idx) == current_FOV_voxels_.end()) {
+          voxel_idx = map_cluster->cluster.erase(voxel_idx);
         }
       }
       if (map_cluster->cluster.size() < cluster_min_size_threshold_) {
@@ -300,7 +302,7 @@ void Clustering::determineFOV() {
         map_cluster = map_clusters_.erase(map_cluster);
       }
     }
-  }
+  }*/
 }
 
 pcl::PointCloud<pcl::PointXYZRGB> Clustering::matchedClusterVisualiser() {
@@ -339,7 +341,6 @@ void Clustering::mapClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic
     for (auto voxel_global_index = cluster.begin(); voxel_global_index != cluster.end(); ++voxel_global_index) {
       BlockIndex block_index ;
       VoxelIndex voxel_index ;
-      //ROS_INFO("test_2");
       getBlockAndVoxelIndexFromGlobalVoxelIndex(*voxel_global_index, voxels_per_side_, &block_index, &voxel_index);
       const Block<TsdfVoxel>& block = tsdf_map->getTsdfLayerPtr()->getBlockByIndex(block_index);
       Point voxel_coord = block.computeCoordinatesFromVoxelIndex(voxel_index);
@@ -358,7 +359,6 @@ void Clustering::mapClusterVisualiser(pcl::PointCloud<pcl::PointXYZRGB>* dynamic
     }
   }
 }
-
 
 int Clustering::findIndex() {
   int index_counter = 1;

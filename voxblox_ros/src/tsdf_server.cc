@@ -448,16 +448,13 @@ void TsdfServer::insertPointcloud(
   //Vinz: starting my part now 
   clustering_->addCurrentMap(tsdf_oneshot_map_);
   dynamic_recognizer_->addCurrentMap(tsdf_oneshot_map_);
-  cluster_matching_active_ = false;
   dynamic_recognizing_active_ = false;
-  ROS_INFO("tsdf map queue size %u", dynamic_recognizer_->getMapQueueSize());
+  //ROS_INFO("tsdf map queue size %u", dynamic_recognizer_->getMapQueueSize());
   while (dynamic_recognizer_->getMapQueueSize() > dynamic_recognizer_queue_size_) {
     dynamic_recognizer_->popfromQueue();
   }
 
-  cluster_matching_active_ = true;
   clustering_->determineFOV();
-  
   if (dynamic_recognizer_->getMapQueueSize() == dynamic_recognizer_queue_size_) {
     dynamic_recognizing_active_ = true;
     tsdf_map_delta_distance_.reset(new TsdfMap(tsdf_oneshot_map_->getTsdfLayer()));
@@ -465,7 +462,6 @@ void TsdfServer::insertPointcloud(
     dynamic_recognizer_->dynamicClusterVisualiser(&dynamic_pcl_, &static_pcl_);
     dynamic_recognizer_->popfromQueue();
   }
-
   clustering_->matchCommunClusters();
   //clustered_pcl_ = clustering_->matchedClusterVisualiser();
   clustering_->mapClusterVisualiser(&dynamic_map_pcl_, &static_map_pcl_, tsdf_map_);
@@ -525,15 +521,13 @@ void TsdfServer::publishAllUpdatedTsdfVoxels() {
   pointcloud_oneshot.header.frame_id = world_frame_;
   tsdf_oneshot_pointcloud_pub_.publish(pointcloud_oneshot);
 
-  if (cluster_matching_active_) {
-    clustered_pcl_.header.frame_id = world_frame_;
-    clustered_pointcloud_pub_.publish(clustered_pcl_);
+  clustered_pcl_.header.frame_id = world_frame_;
+  clustered_pointcloud_pub_.publish(clustered_pcl_);
 
-    dynamic_map_pcl_.header.frame_id = world_frame_;
-    static_map_pcl_.header.frame_id = world_frame_;
-    dynamic_map_pointcloud_pub_.publish(dynamic_map_pcl_);
-    static_map_pointcloud_pub_.publish(static_map_pcl_);
-  }
+  dynamic_map_pcl_.header.frame_id = world_frame_;
+  static_map_pcl_.header.frame_id = world_frame_;
+  dynamic_map_pointcloud_pub_.publish(dynamic_map_pcl_);
+  static_map_pointcloud_pub_.publish(static_map_pcl_);
 
   if (dynamic_recognizing_active_) {
     dynamic_pcl_.header.frame_id = world_frame_;

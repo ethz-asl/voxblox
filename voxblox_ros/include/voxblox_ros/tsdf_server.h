@@ -285,7 +285,6 @@ class TsdfServer {
   Transformation icp_corrected_transform_;
 
   //Vinz Additions
-  bool cluster_matching_active_;
   bool dynamic_recognizing_active_;
 
   pcl::PointCloud<pcl::PointXYZRGB> clustered_pcl_ ; 
