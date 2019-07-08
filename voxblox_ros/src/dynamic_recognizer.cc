@@ -49,12 +49,12 @@ void DynamicRecognizer::dynamicRecognizing(std::list<ColoredDynamicCluster>* inp
         } else {
           delta_distance = std::abs(current_voxel->distance);
           delta_distance_voxel->distance = delta_distance;
-          ROS_INFO("weight 0 ; delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
+          ROS_INFO("weight 0; delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
         }
       } else {
         delta_distance = std::abs(current_voxel->distance);
         delta_distance_voxel->distance = delta_distance;
-        ROS_INFO("weight 0 ; delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
+        ROS_INFO("nullptr; delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
       }
       total_count++;
       if (delta_distance > delta_distance_threshold_) {
