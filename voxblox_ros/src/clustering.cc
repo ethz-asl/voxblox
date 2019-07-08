@@ -70,6 +70,15 @@ void Clustering::matchCommunClusters() {
   std::list<int> seen_indices;
   seen_indices.clear();
 
+  for (std::list<ColoredDynamicCluster>::iterator map_cluster = map_clusters_.begin(); map_cluster != map_clusters_.end(); map_cluster++) {
+    if (map_cluster->dynamic) {
+      used_indices_.remove(map_cluster->index);
+      for (int i = 1; i < (colors.size()-1); i++) {
+        if (colors[i] == map_cluster->color) used_colors_[i]--;
+      }
+      map_cluster = map_clusters_.erase(map_cluster);
+    }
+  }
 
 	// looping through all current_clusters_
 	for (ColoredDynamicCluster& current_color_cluster : current_clusters_) {
@@ -240,7 +249,7 @@ void Clustering::matchCommunClusters() {
   for (std::list<ColoredDynamicCluster>::iterator map_cluster = map_clusters_.begin(); map_cluster != map_clusters_.end(); map_cluster++) {
     ROS_INFO("map cluster: index %u, color r %u g %u b %u", map_cluster->index, map_cluster->color.r, map_cluster->color.g, map_cluster->color.b);
     // removing not seen dynamic map clusters
-    if (map_cluster->dynamic) {
+    /*if (map_cluster->dynamic) {
       bool seen = false;
       for (int seen_index : seen_indices) {
         if(map_cluster->index == seen_index) {
@@ -256,7 +265,7 @@ void Clustering::matchCommunClusters() {
         map_cluster = map_clusters_.erase(map_cluster);
         continue;
       }
-    }
+    }*/
     // removing too small map clusters
     if (map_cluster->cluster.size() < cluster_min_size_threshold_) {
       used_indices_.remove(map_cluster->index);

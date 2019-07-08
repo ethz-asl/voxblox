@@ -37,24 +37,33 @@ void DynamicRecognizer::dynamicRecognizing(std::list<ColoredDynamicCluster>* inp
     float total_count = 0;
     for (GlobalIndex global_voxel_index : current_cluster){
       TsdfVoxel* old_voxel = old_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
+      TsdfVoxel* current_voxel = current_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
+      TsdfVoxel* delta_distance_voxel = tsdf_map_delta_distance->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
+      float delta_distance;
       if (old_voxel != nullptr) {
         if (old_voxel->weight != 0) {
-          TsdfVoxel* current_voxel = current_map->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
-          TsdfVoxel* delta_distance_voxel = tsdf_map_delta_distance->getTsdfLayerPtr()->getVoxelPtrByGlobalIndex(global_voxel_index);
-          float delta_distance = std::abs(current_voxel->distance - old_voxel->distance);
+          delta_distance = std::abs(current_voxel->distance - old_voxel->distance);
           delta_distance_voxel->distance = delta_distance;
-          //ROS_INFO("delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
-          total_count++;
-          if (delta_distance > delta_distance_threshold_) {
-            dynamic_counter++;
-            //ROS_INFO("dynamic count = %u, total count = %u", dynamic_counter, total_count);
-          }
+          ROS_INFO("delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
+          //ROS_INFO("dynamic count = %u, total count = %u", dynamic_counter, total_count);
+        } else {
+          delta_distance = std::abs(current_voxel->distance);
+          delta_distance_voxel->distance = delta_distance;
+          ROS_INFO("weight 0 ; delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
         }
+      } else {
+        delta_distance = std::abs(current_voxel->distance);
+        delta_distance_voxel->distance = delta_distance;
+        ROS_INFO("weight 0 ; delta_distance = %f, threshold = %f", delta_distance, delta_distance_threshold_);
+      }
+      total_count++;
+      if (delta_distance > delta_distance_threshold_) {
+        dynamic_counter++;
       }
     }
     if (total_count > 0){
       float dynamic_share = dynamic_counter/total_count;
-      //ROS_INFO("dynamic_share = %f, threshold = %f", dynamic_share, dynamic_share_threshold_);
+      ROS_INFO("dynamic_share = %f, threshold = %f", dynamic_share, dynamic_share_threshold_);
       if (dynamic_share > dynamic_share_threshold_) current_color_cluster->dynamic = true;
     }
   }
