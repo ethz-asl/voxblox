@@ -234,25 +234,23 @@ float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
   }
   FloatingPoint point_depth = 0.0f;
   switch (config_.optical_axis_convention) {
-    case CoordinateAxis::kX: {
+    case CoordinateAxis::kX:
       point_depth = std::abs(point_C.x());
       break;
-      case CoordinateAxis::kY:
-        point_depth = std::abs(point_C.y());
-        break;
-      case CoordinateAxis::kZ:
-        point_depth = std::abs(point_C.z());
-        break;
-      default:
-        LOG(FATAL)
-            << "Coordinate axis convention for optical axis is not valid.";
-    }
+    case CoordinateAxis::kY:
+      point_depth = std::abs(point_C.y());
+      break;
+    case CoordinateAxis::kZ:
+      point_depth = std::abs(point_C.z());
+      break;
+    default:
+      LOG(FATAL) << "Coordinate axis convention for optical axis is not valid.";
   }
   if (point_depth > kEpsilon) {
     return config_.voxel_weight_factor / (point_depth * point_depth);
   }
   return 0.0f;
-}
+}  // namespace voxblox
 
 void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
