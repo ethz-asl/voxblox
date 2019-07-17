@@ -56,11 +56,12 @@ class TsdfIntegratorBase {
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    float default_truncation_distance = 0.1;
-    float max_weight = 10000.0;
+    float default_truncation_distance = 0.1f;
+    float max_weight = 10000.0f;
     bool voxel_carving_enabled = true;
     FloatingPoint min_ray_length_m = 0.1;
     FloatingPoint max_ray_length_m = 5.0;
+    float voxel_weight_factor = 1.0f;
     bool use_const_weight = false;
     bool allow_clear = true;
     bool use_weight_dropoff = true;
@@ -75,6 +76,7 @@ class TsdfIntegratorBase {
 
     /// merge integrator specific
     bool enable_anti_grazing = false;
+    bool use_only_first_point_for_clearing = true;
 
     /// fast integrator specific
     float start_voxel_subsampling_factor = 2.0f;
@@ -110,7 +112,7 @@ class TsdfIntegratorBase {
  protected:
   /// Thread safe.
   inline bool isPointValid(const Point& point_C, const bool freespace_point,
-                    bool* is_clearing) const {
+                           bool* is_clearing) const {
     DCHECK(is_clearing != nullptr);
     const FloatingPoint ray_distance = point_C.norm();
     if (ray_distance < config_.min_ray_length_m) {
@@ -254,7 +256,8 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
   void integrateVoxel(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-      const std::pair<GlobalIndex, AlignedVector<size_t>>& kv,
+      const GlobalIndex& voxel_index,
+      const AlignedVector<size_t>& point_C_indices,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map);
 
   void integrateVoxels(
