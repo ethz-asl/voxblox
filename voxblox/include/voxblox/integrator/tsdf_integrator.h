@@ -81,8 +81,7 @@ class TsdfIntegratorBase {
 
     /// merge integrator specific
     bool enable_anti_grazing = false;
-    // TODO(fabianbl): Set this to its default value again (true).
-    bool use_only_first_point_for_clearing = false;
+    bool use_only_first_point_for_clearing = true;
 
     /// fast integrator specific
     float start_voxel_subsampling_factor = 2.0f;
