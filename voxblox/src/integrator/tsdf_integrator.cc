@@ -250,7 +250,7 @@ float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
     return config_.voxel_weight_factor / (point_depth * point_depth);
   }
   return 0.0f;
-}  // namespace voxblox
+}
 
 void SimpleTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
                                                const Pointcloud& points_C,
