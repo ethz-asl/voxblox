@@ -68,6 +68,11 @@ class TsdfIntegratorBase {
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
 
+    // The coordinate axis convention used for the optical axis. This is used
+    // when computing the voxel weights w.r.t. to their depth and will have no
+    // influence when using a constant voxel weight.
+    CoordinateAxis optical_axis_convention = CoordinateAxis::kZ;
+
     size_t integrator_threads = std::thread::hardware_concurrency();
 
     /// Mode of the ThreadSafeIndex, determines the integration order of the
@@ -76,7 +81,8 @@ class TsdfIntegratorBase {
 
     /// merge integrator specific
     bool enable_anti_grazing = false;
-    bool use_only_first_point_for_clearing = true;
+    // TODO(fabianbl): Set this to its default value again (true).
+    bool use_only_first_point_for_clearing = false;
 
     /// fast integrator specific
     float start_voxel_subsampling_factor = 2.0f;

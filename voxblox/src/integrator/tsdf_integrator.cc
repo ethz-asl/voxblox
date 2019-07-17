@@ -232,9 +232,24 @@ float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
   if (config_.use_const_weight) {
     return config_.voxel_weight_factor;
   }
-  const FloatingPoint dist_z = std::abs(point_C.z());
-  if (dist_z > kEpsilon) {
-    return config_.voxel_weight_factor / (dist_z * dist_z);
+  FloatingPoint point_depth = 0.0f;
+  switch (config_.optical_axis_convention) {
+    case CoordinateAxis::kX: {
+      point_depth = std::abs(point_C.x());
+      break;
+      case CoordinateAxis::kY:
+        point_depth = std::abs(point_C.y());
+        break;
+      case CoordinateAxis::kZ:
+        point_depth = std::abs(point_C.z());
+        break;
+      default:
+        LOG(FATAL)
+            << "Coordinate axis convention for optical axis is not valid.";
+    }
+  }
+  if (point_depth > kEpsilon) {
+    return config_.voxel_weight_factor / (point_depth * point_depth);
   }
   return 0.0f;
 }
