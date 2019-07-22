@@ -1,4 +1,5 @@
 #include "voxblox/integrator/tsdf_integrator.h"
+
 #include <iostream>
 #include <list>
 
@@ -229,11 +230,24 @@ float TsdfIntegratorBase::computeDistance(const Point& origin,
 // Thread safe.
 float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
   if (config_.use_const_weight) {
-    return 1.0f;
+    return config_.voxel_weight_factor;
   }
-  const FloatingPoint dist_z = std::abs(point_C.z());
-  if (dist_z > kEpsilon) {
-    return 1.0f / (dist_z * dist_z);
+  FloatingPoint point_depth = 0.0f;
+  switch (config_.sensor_depth_direction_axis) {
+    case CoordinateAxis::kX:
+      point_depth = std::abs(point_C.x());
+      break;
+    case CoordinateAxis::kY:
+      point_depth = std::abs(point_C.y());
+      break;
+    case CoordinateAxis::kZ:
+      point_depth = std::abs(point_C.z());
+      break;
+    default:
+      LOG(FATAL) << "Coordinate axis convention for optical axis is not valid.";
+  }
+  if (point_depth > kEpsilon) {
+    return config_.voxel_weight_factor / (point_depth * point_depth);
   }
   return 0.0f;
 }
@@ -372,9 +386,10 @@ void MergedTsdfIntegrator::bundleRays(
 void MergedTsdfIntegrator::integrateVoxel(
     const Transformation& T_G_C, const Pointcloud& points_C,
     const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
-    const std::pair<GlobalIndex, AlignedVector<size_t>>& kv,
+    const GlobalIndex& voxel_index,
+    const AlignedVector<size_t>& point_C_indices,
     const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map) {
-  if (kv.second.empty()) {
+  if (point_C_indices.empty()) {
     return;
   }
 
@@ -383,9 +398,11 @@ void MergedTsdfIntegrator::integrateVoxel(
   Point merged_point_C = Point::Zero();
   FloatingPoint merged_weight = 0.0;
 
-  for (const size_t pt_idx : kv.second) {
-    const Point& point_C = points_C[pt_idx];
-    const Color& color = colors[pt_idx];
+  const size_t num_points = points_C.size();
+  for (const size_t point_idx : point_C_indices) {
+    CHECK_LT(point_idx, num_points);
+    const Point& point_C = points_C[point_idx];
+    const Color& color = colors[point_idx];
 
     const float point_weight = getVoxelWeight(point_C);
     if (point_weight < kEpsilon) {
@@ -397,8 +414,8 @@ void MergedTsdfIntegrator::integrateVoxel(
         Color::blendTwoColors(merged_color, merged_weight, color, point_weight);
     merged_weight += point_weight;
 
-    // only take first point when clearing
-    if (clearing_ray) {
+    // Only take first point when clearing if this is specified.
+    if (clearing_ray && config_.use_only_first_point_for_clearing) {
       break;
     }
   }
@@ -414,7 +431,7 @@ void MergedTsdfIntegrator::integrateVoxel(
     if (enable_anti_grazing) {
       // Check if this one is already the the block hash map for this
       // insertion. Skip this to avoid grazing.
-      if ((clearing_ray || global_voxel_idx != kv.first) &&
+      if ((clearing_ray || global_voxel_idx != voxel_index) &&
           voxel_map.find(global_voxel_idx) != voxel_map.end()) {
         continue;
       }
@@ -449,7 +466,7 @@ void MergedTsdfIntegrator::integrateVoxels(
   for (size_t i = 0; i < map_size; ++i) {
     if (((i + thread_idx + 1) % config_.integrator_threads) == 0) {
       integrateVoxel(T_G_C, points_C, colors, enable_anti_grazing, clearing_ray,
-                     *it, voxel_map);
+                     it->first, it->second, voxel_map);
     }
     ++it;
   }

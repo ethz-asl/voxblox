@@ -91,6 +91,8 @@ typedef Eigen::Matrix<FloatingPoint, 1, 8> InterpVector;
 // Type must allow negatives:
 typedef Eigen::Array<IndexElement, 3, 8> InterpIndexes;
 
+enum class CoordinateAxis { kX = 0, kY = 1, kZ = 2 };
+
 struct Color {
   Color() : r(0), g(0), b(0), a(0) {}
   Color(uint8_t _r, uint8_t _g, uint8_t _b) : Color(_r, _g, _b, 255) {}
