@@ -233,7 +233,7 @@ float TsdfIntegratorBase::getVoxelWeight(const Point& point_C) const {
     return config_.voxel_weight_factor;
   }
   FloatingPoint point_depth = 0.0f;
-  switch (config_.optical_axis_convention) {
+  switch (config_.sensor_depth_direction_axis) {
     case CoordinateAxis::kX:
       point_depth = std::abs(point_C.x());
       break;

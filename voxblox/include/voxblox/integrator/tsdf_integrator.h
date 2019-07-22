@@ -71,7 +71,7 @@ class TsdfIntegratorBase {
     // The coordinate axis that goes forward along the optical axis of the
     // sensor. This is used when computing the voxel weights w.r.t. to their
     // depth and will have no influence when using a constant voxel weight.
-    CoordinateAxis optical_axis_convention = CoordinateAxis::kZ;
+    CoordinateAxis sensor_depth_direction_axis = CoordinateAxis::kZ;
 
     size_t integrator_threads = std::thread::hardware_concurrency();
 
