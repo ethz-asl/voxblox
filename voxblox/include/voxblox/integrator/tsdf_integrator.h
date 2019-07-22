@@ -68,9 +68,9 @@ class TsdfIntegratorBase {
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
 
-    // The coordinate axis convention used for the optical axis. This is used
-    // when computing the voxel weights w.r.t. to their depth and will have no
-    // influence when using a constant voxel weight.
+    // The coordinate axis that goes forward along the optical axis of the
+    // sensor. This is used when computing the voxel weights w.r.t. to their
+    // depth and will have no influence when using a constant voxel weight.
     CoordinateAxis optical_axis_convention = CoordinateAxis::kZ;
 
     size_t integrator_threads = std::thread::hardware_concurrency();
@@ -79,8 +79,13 @@ class TsdfIntegratorBase {
     /// rays. Options: "mixed", "sorted"
     std::string integration_order_mode = "mixed";
 
-    /// merge integrator specific
+    /// Merge integrator specific.
     bool enable_anti_grazing = false;
+
+    // Merge integrator specific. If set to true, this does the following: When
+    // computing the merged point coordinate/weight/color, this only takes into
+    // account the first point of all points contained in a voxel to speed up
+    // the procress, but also this will decrease the impact of clearing rays.
     bool use_only_first_point_for_clearing = true;
 
     /// fast integrator specific

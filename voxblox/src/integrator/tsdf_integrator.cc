@@ -398,7 +398,9 @@ void MergedTsdfIntegrator::integrateVoxel(
   Point merged_point_C = Point::Zero();
   FloatingPoint merged_weight = 0.0;
 
+  const size_t num_points = points_C.size();
   for (const size_t point_idx : point_C_indices) {
+    CHECK_LT(point_idx, num_points);
     const Point& point_C = points_C[point_idx];
     const Color& color = colors[point_idx];
 
