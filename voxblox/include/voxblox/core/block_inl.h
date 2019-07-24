@@ -112,15 +112,19 @@ template <typename VoxelType>
 void Block<VoxelType>::mergeBlock(const Block<VoxelType>& other_block) {
   CHECK_EQ(other_block.voxel_size(), voxel_size());
   CHECK_EQ(other_block.voxels_per_side(), voxels_per_side());
+  // LOG(INFO) << "before has_data(...) check.";
 
-  if (!other_block.has_data()) {
+  // if (!other_block.has_data()) {
+  if (false) {
     return;
   } else {
     has_data() = true;
     updated().set();
 
+    // LOG(INFO) << "before mergeVoxelAIntoVoxelB";
     for (IndexElement voxel_idx = 0;
          voxel_idx < static_cast<IndexElement>(num_voxels()); ++voxel_idx) {
+      // LOG(INFO) << "in mergeVoxelAIntoVoxelB";
       mergeVoxelAIntoVoxelB<VoxelType>(
           other_block.getVoxelByLinearIndex(voxel_idx),
           &(getVoxelByLinearIndex(voxel_idx)));
