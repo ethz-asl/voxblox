@@ -40,6 +40,21 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
 }
 
 template <typename VoxelType>
+  const Layer<VoxelType>::VoxelType* getVoxelPtrByGlobalIndex(
+      const GlobalIndex& global_voxel_index) const {
+    const BlockIndex block_index = getBlockIndexFromGlobalVoxelIndex(
+        global_voxel_index, voxels_per_side_inv_);
+    if (!hasBlock(block_index)) {
+      return nullptr;
+    }
+    const VoxelIndex local_voxel_index =
+        getLocalFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_);
+    const Block<VoxelType>& block = getBlockByIndex(block_index);
+    return &block.getVoxelByVoxelIndex(local_voxel_index);
+  }
+
+
+template <typename VoxelType>
 void Layer<VoxelType>::getProto(LayerProto* proto) const {
   CHECK_NOTNULL(proto);
 

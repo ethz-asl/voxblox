@@ -2,6 +2,7 @@
 #define VOXBLOX_CORE_LAYER_H_
 
 #include <glog/logging.h>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -24,11 +25,17 @@ class Layer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  typedef std::shared_ptr<Layer> Ptr;
-  typedef Block<VoxelType> BlockType;
-  typedef
-      typename AnyIndexHashMapType<typename BlockType::Ptr>::type BlockHashMap;
-  typedef typename std::pair<BlockIndex, typename BlockType::Ptr> BlockMapPair;
+  using Ptr = std::shared_ptr<Layer>;
+  using BlockType = Block<VoxelType>;
+  using BlockHashMap =
+      typename AnyIndexHashMapType<typename BlockType::Ptr>::type;
+  using BlockMapPair = typename std::pair<BlockIndex, typename BlockType::Ptr>;
+  using VoxelAction = std::function<void(const BlockIndex& /*block_index*/,
+                                         size_t /*linear_voxel_index*/,
+                                         const VoxelType& /*voxel*/)>;
+  using MutableVoxelAction = std::function<void(
+      const BlockIndex& /*block_index*/, size_t /*linear_voxel_index*/,
+      VoxelType& /*voxel*/)>;
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
@@ -235,6 +242,34 @@ class Layer {
         getLocalFromGlobalVoxelIndex(global_voxel_index, voxels_per_side_);
     Block<VoxelType>& block = getBlockByIndex(block_index);
     return &block.getVoxelByVoxelIndex(local_voxel_index);
+  }
+
+  inline void forEachVoxelInLayer(const VoxelAction& voxel_action) const {
+    voxblox::BlockIndexList all_blocks;
+    getAllAllocatedBlocks(&all_blocks);
+    for (const voxblox::BlockIndex& block_index : all_blocks) {
+      const BlockType& block = getBlockByIndex(block_index);
+      for (size_t linear_voxel_index = 0u;
+           linear_voxel_index < block.num_voxels(); ++linear_voxel_index) {
+        const VoxelType& voxel =
+            block.getVoxelByLinearIndex(linear_voxel_index);
+        voxel_action(block_index, linear_voxel_index, voxel);
+      }
+    }
+  }
+
+  inline void forEachVoxelInLayer(const MutableVoxelAction& voxel_action) {
+    voxblox::BlockIndexList all_blocks;
+    getAllAllocatedBlocks(&all_blocks);
+    for (const voxblox::BlockIndex& block_index : all_blocks) {
+      BlockType& block = *CHECK_NOTNULL(getBlockPtrByIndex(block_index));
+      for (size_t linear_voxel_index = 0u;
+           linear_voxel_index < block.num_voxels(); ++linear_voxel_index) {
+        VoxelType& voxel =
+            block.getVoxelByLinearIndex(linear_voxel_index);
+        voxel_action(block_index, linear_voxel_index, voxel);
+      }
+    }
   }
 
   inline const VoxelType* getVoxelPtrByCoordinates(const Point& coords) const {
