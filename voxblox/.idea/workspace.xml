@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated>
+      <config projectName="voxblox" targetName="test_load_esdf" />
+      <config projectName="voxblox" targetName="voxblox_proto" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_clear_spheres" />
+      <config projectName="voxblox" targetName="voxblox" />
+      <config projectName="voxblox" targetName="test_clear_spheres" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_layer" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_tsdf_map" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_protobuf" />
+      <config projectName="voxblox" targetName="run_tests_voxblox" />
+      <config projectName="voxblox" targetName="test_approx_hash_array" />
+      <config projectName="voxblox" targetName="doxygen" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_sdf_integrators" />
+      <config projectName="voxblox" targetName="test_layer_utils" />
+      <config projectName="voxblox" targetName="download_extra_data" />
+      <config projectName="voxblox" targetName="test_protobuf" />
+      <config projectName="voxblox" targetName="test_tsdf_map" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_merge_integration" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_bucket_queue" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_approx_hash_array" />
+      <config projectName="voxblox" targetName="gmock_main" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_layer_utils" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_tsdf_interpolator" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_clear_spheres" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_merge_integration" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_tsdf_interpolator" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_tsdf_map" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_approx_hash_array" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_bucket_queue" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest" />
+      <config projectName="voxblox" targetName="gtest_main" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_layer" />
+      <config projectName="voxblox" targetName="tests" />
+      <config projectName="voxblox" targetName="gmock" />
+      <config projectName="voxblox" targetName="tsdf_to_esdf" />
+      <config projectName="voxblox" targetName="clean_test_results" />
+      <config projectName="voxblox" targetName="voxblox_package" />
+      <config projectName="voxblox" targetName="test_bucket_queue" />
+      <config projectName="voxblox" targetName="test_tsdf_interpolator" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox_gtest_test_sdf_integrators" />
+      <config projectName="voxblox" targetName="test_merge_integration" />
+      <config projectName="voxblox" targetName="clean_test_results_voxblox" />
+      <config projectName="voxblox" targetName="test_sdf_integrators" />
+      <config projectName="voxblox" targetName="run_tests" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_layer_utils" />
+      <config projectName="voxblox" targetName="test_layer" />
+      <config projectName="voxblox" targetName="run_tests_voxblox_gtest_test_protobuf" />
+      <config projectName="voxblox" targetName="_catkin_empty_exported_target" />
+      <config projectName="voxblox" targetName="_run_tests_voxblox" />
+      <config projectName="voxblox" targetName="test_data" />
+      <config projectName="voxblox" targetName="gtest" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" GENERATION_OPTIONS="-DCATKIN_DEVEL_PREFIX:PATH=/home/laura/catkin_ws/devel" GENERATION_DIR="$PROJECT_DIR$/../../../build" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="07e0c192-7d57-49e1-bc37-e8723aae51c7" name="Default Changelist" comment="" />
+    <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
+    <ignored path="$PROJECT_DIR$/../../../build/" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="600">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/include/voxblox/core/tsdf_map.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="2106">
+              <caret line="78" column="41" selection-start-line="78" selection-start-column="30" selection-end-line="78" selection-end-column="41" />
+              <folding>
+                <element signature="e#1101#1628#0" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/include/voxblox/core/esdf_map.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1809">
+              <caret line="67" column="18" selection-start-line="67" selection-start-column="7" selection-end-line="67" selection-end-column="28" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/include/voxblox/integrator/integrator_utils.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <folding>
+                <element signature="e#784#1583#1" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/integrator/integrator_utils.cc">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="3888">
+              <caret line="144" column="50" selection-start-line="144" selection-start-column="50" selection-end-line="144" selection-end-column="50" />
+              <folding>
+                <element signature="e#7752#9239#0" />
+                <element signature="e#9241#9361#0" />
+                <element signature="e#9363#9809#0" />
+                <element signature="e#9811#12177#0" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>serialize</find>
+      <find>Color</find>
+      <find>getDistance</find>
+    </findStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectConfigurationFiles">
+    <option name="files">
+      <list>
+        <option value="$PROJECT_DIR$/.idea/voxblox.iml" />
+        <option value="$PROJECT_DIR$/.idea/misc.xml" />
+        <option value="$PROJECT_DIR$/.idea/vcs.xml" />
+        <option value="$PROJECT_DIR$/.idea/modules.xml" />
+        <option value="$PROJECT_DIR$/../voxblox_msgs/.idea/voxblox_msgs.iml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="2631" />
+    <option name="y" value="30" />
+    <option name="width" value="1609" />
+    <option name="height" value="1020" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="voxblox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox" type="47feb1d3:ProjectViewModuleNode" />
+            </path>
+            <path>
+              <item name="voxblox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="voxblox" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="voxblox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="voxblox" type="462c0819:PsiDirectoryNode" />
+              <item name="include" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="voxblox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="voxblox" type="462c0819:PsiDirectoryNode" />
+              <item name="include" type="462c0819:PsiDirectoryNode" />
+              <item name="voxblox" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="voxblox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="voxblox" type="462c0819:PsiDirectoryNode" />
+              <item name="include" type="462c0819:PsiDirectoryNode" />
+              <item name="voxblox" type="462c0819:PsiDirectoryNode" />
+              <item name="core" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="voxblox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="voxblox" type="462c0819:PsiDirectoryNode" />
+              <item name="include" type="462c0819:PsiDirectoryNode" />
+              <item name="voxblox" type="462c0819:PsiDirectoryNode" />
+              <item name="integrator" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.advertisement.text.has.clang-format" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../asldoc-2019-ma-gasserl/cblox_planning_ros/CMakeLists.txt" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="settings.editor.selected.configurable" value="CMakeSettings" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="CMake Application.test_approx_hash_array">
+    <configuration name="_catkin_empty_exported_target" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_catkin_empty_exported_target" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_approx_hash_array" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_approx_hash_array" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_bucket_queue" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_bucket_queue" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_clear_spheres" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_clear_spheres" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_layer" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_layer" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_layer_utils" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_layer_utils" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_merge_integration" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_merge_integration" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_protobuf" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_protobuf" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_sdf_integrators" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_sdf_integrators" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_tsdf_interpolator" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_tsdf_interpolator" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_run_tests_voxblox_gtest_test_tsdf_map" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="_run_tests_voxblox_gtest_test_tsdf_map" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="clean_test_results" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="clean_test_results" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="clean_test_results_voxblox" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="clean_test_results_voxblox" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="download_extra_data" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="download_extra_data" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="doxygen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="doxygen" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="gmock" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="gmock" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="gmock_main" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="gmock_main" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="gtest" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="gtest" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="gtest_main" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="gtest_main" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_approx_hash_array" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_approx_hash_array" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_bucket_queue" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_bucket_queue" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_clear_spheres" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_clear_spheres" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_layer" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_layer" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_layer_utils" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_layer_utils" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_merge_integration" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_merge_integration" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_protobuf" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_protobuf" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_sdf_integrators" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_sdf_integrators" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_tsdf_interpolator" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_tsdf_interpolator" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests_voxblox_gtest_test_tsdf_map" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="run_tests_voxblox_gtest_test_tsdf_map" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_approx_hash_array" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_approx_hash_array" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_approx_hash_array">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_bucket_queue" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_bucket_queue" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_bucket_queue">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_clear_spheres" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_clear_spheres" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_clear_spheres">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_data" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_data" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_layer" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_layer" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_layer">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_layer_utils" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_layer_utils" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_layer_utils">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_load_esdf" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_load_esdf" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_load_esdf">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_merge_integration" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_merge_integration" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_merge_integration">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_protobuf" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_protobuf" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_protobuf">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_sdf_integrators" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_sdf_integrators" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_sdf_integrators">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_tsdf_interpolator" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_tsdf_interpolator" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_tsdf_interpolator">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test_tsdf_map" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="test_tsdf_map" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="test_tsdf_map">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tests" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="tests" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tsdf_to_esdf" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="tsdf_to_esdf" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="voxblox" RUN_TARGET_NAME="tsdf_to_esdf">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="voxblox" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_package" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="voxblox_package" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_proto" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox" TARGET_NAME="voxblox_proto" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="CMake Application._catkin_empty_exported_target" />
+      <item itemvalue="CMake Application._run_tests_voxblox" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_approx_hash_array" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_bucket_queue" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_clear_spheres" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_layer" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_layer_utils" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_merge_integration" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_protobuf" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_sdf_integrators" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_tsdf_interpolator" />
+      <item itemvalue="CMake Application._run_tests_voxblox_gtest_test_tsdf_map" />
+      <item itemvalue="CMake Application.clean_test_results" />
+      <item itemvalue="CMake Application.clean_test_results_voxblox" />
+      <item itemvalue="CMake Application.download_extra_data" />
+      <item itemvalue="CMake Application.doxygen" />
+      <item itemvalue="CMake Application.run_tests" />
+      <item itemvalue="CMake Application.run_tests_voxblox" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_approx_hash_array" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_bucket_queue" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_clear_spheres" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_layer" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_layer_utils" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_merge_integration" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_protobuf" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_sdf_integrators" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_tsdf_interpolator" />
+      <item itemvalue="CMake Application.run_tests_voxblox_gtest_test_tsdf_map" />
+      <item itemvalue="CMake Application.test_approx_hash_array" />
+      <item itemvalue="CMake Application.test_bucket_queue" />
+      <item itemvalue="CMake Application.test_clear_spheres" />
+      <item itemvalue="CMake Application.test_data" />
+      <item itemvalue="CMake Application.test_layer" />
+      <item itemvalue="CMake Application.test_layer_utils" />
+      <item itemvalue="CMake Application.test_load_esdf" />
+      <item itemvalue="CMake Application.test_merge_integration" />
+      <item itemvalue="CMake Application.test_protobuf" />
+      <item itemvalue="CMake Application.test_sdf_integrators" />
+      <item itemvalue="CMake Application.test_tsdf_interpolator" />
+      <item itemvalue="CMake Application.test_tsdf_map" />
+      <item itemvalue="CMake Application.tests" />
+      <item itemvalue="CMake Application.tsdf_to_esdf" />
+      <item itemvalue="CMake Application.voxblox" />
+      <item itemvalue="CMake Application.voxblox_package" />
+      <item itemvalue="CMake Application.voxblox_proto" />
+      <item itemvalue="CMake Application.gmock" />
+      <item itemvalue="CMake Application.gmock_main" />
+      <item itemvalue="CMake Application.gtest" />
+      <item itemvalue="CMake Application.gtest_main" />
+    </list>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="07e0c192-7d57-49e1-bc37-e8723aae51c7" name="Default Changelist" comment="" />
+      <created>1556179681717</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1556179681717</updated>
+      <workItem from="1556179683109" duration="2066000" />
+      <workItem from="1556275039484" duration="6043000" />
+      <workItem from="1556291468029" duration="64000" />
+      <workItem from="1556526312737" duration="83000" />
+      <workItem from="1556796975761" duration="2255000" />
+      <workItem from="1557128855115" duration="36000" />
+      <workItem from="1557128985091" duration="671000" />
+      <workItem from="1557130023138" duration="658000" />
+      <workItem from="1557131907153" duration="832000" />
+      <workItem from="1557313111120" duration="706000" />
+      <workItem from="1557412359122" duration="86000" />
+      <workItem from="1557495018947" duration="258000" />
+      <workItem from="1557496427567" duration="886000" />
+      <workItem from="1557745402193" duration="1250000" />
+      <workItem from="1557749214596" duration="715000" />
+      <workItem from="1557752072199" duration="666000" />
+      <workItem from="1557818338792" duration="1420000" />
+      <workItem from="1557904298999" duration="34000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="18729000" />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="2631" y="-26" width="1609" height="1076" extended-state="6" />
+    <layout>
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.22753717" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Database Changes" order="7" />
+      <window_info anchor="bottom" id="Terminal" order="8" />
+      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
+      <window_info anchor="bottom" id="Version Control" order="10" />
+      <window_info active="true" anchor="bottom" id="CMake" order="11" visible="true" weight="0.35784853" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="right" id="Database" order="3" />
+    </layout>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/../../c-blox/cblox/CMakeLists.txt">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/integrator/esdf_integrator.h">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/protobuf_utils.h">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/io/layer_io.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2400" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/io/sdf_ply.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-290" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/voxel_utils.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-68" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/distance_utils.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-68" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/evaluation_utils.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-68" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/layer_utils.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="677">
+          <caret line="125" selection-start-line="125" selection-end-line="125" />
+          <folding>
+            <element signature="e#460#1507#0" />
+            <element signature="e#1509#3836#0" />
+            <element signature="e#4097#6603#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/neighbor_tools.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-68" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/planning_utils_inl.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-68" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/planning_utils.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-68" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/interpolator/interpolator.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-68" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/integrator/tsdf_integrator.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-68" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/core/layer_inl.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4185">
+          <caret line="155" column="14" selection-start-line="155" selection-start-column="5" selection-end-line="155" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/io/layer_io_inl.h">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/utils/timing.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#1059#2508#1" />
+            <element signature="e#2511#2653#1" />
+            <element signature="e#2899#3243#1" />
+            <element signature="e#3246#3617#1" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/utils/timing.cc">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5616">
+          <caret line="208" column="20" selection-start-line="208" selection-start-column="20" selection-end-line="208" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/core/layer.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="7128">
+          <caret line="264" column="13" selection-start-line="264" selection-start-column="13" selection-end-line="264" selection-end-column="13" />
+          <folding>
+            <element signature="e#849#1301#0" />
+            <element signature="e#2135#2427#0" />
+            <element signature="e#2431#2694#0" />
+            <element signature="e#2698#3079#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/core/color.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-162">
+          <folding>
+            <element signature="e#132#1312#0" />
+            <element signature="e#1314#1550#0" />
+            <element signature="e#1552#1711#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/interpolator/interpolator_inl.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="85">
+          <caret line="274" column="30" selection-start-line="274" selection-start-column="30" selection-end-line="274" selection-end-column="30" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/core/common.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4023">
+          <caret line="149" column="52" selection-start-line="149" selection-start-column="52" selection-end-line="149" selection-end-column="52" />
+          <folding>
+            <element signature="e#63#79#0" expanded="true" />
+            <element signature="e#2989#4850#1" />
+            <element signature="e#3264#4151#0" />
+            <element signature="e#5071#5708#0" />
+            <element signature="e#5710#6172#0" />
+            <element signature="e#6174#6814#0" />
+            <element signature="e#6816#7195#0" />
+            <element signature="e#7197#7552#0" />
+            <element signature="e#7554#8035#0" />
+            <element signature="e#8037#8512#0" />
+            <element signature="e#8578#9306#0" />
+            <element signature="e#9308#9800#0" />
+            <element signature="e#9899#10099#0" />
+            <element signature="e#10101#10202#0" />
+            <element signature="e#10204#10544#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/integrator/merge_integration.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4428">
+          <caret line="164" column="29" selection-start-line="164" selection-start-column="29" selection-end-line="164" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/core/esdf_map.cc">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="260">
+          <caret line="13" column="38" selection-start-line="13" selection-start-column="38" selection-end-line="13" selection-end-column="38" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/core/tsdf_map.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2106">
+          <caret line="78" column="41" selection-start-line="78" selection-start-column="30" selection-end-line="78" selection-end-column="41" />
+          <folding>
+            <element signature="e#1101#1628#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/core/esdf_map.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1809">
+          <caret line="67" column="18" selection-start-line="67" selection-start-column="7" selection-end-line="67" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/integrator/integrator_utils.cc">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3888">
+          <caret line="144" column="50" selection-start-line="144" selection-start-column="50" selection-end-line="144" selection-end-column="50" />
+          <folding>
+            <element signature="e#7752#9239#0" />
+            <element signature="e#9241#9361#0" />
+            <element signature="e#9363#9809#0" />
+            <element signature="e#9811#12177#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/voxblox/integrator/integrator_utils.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#784#1583#1" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>

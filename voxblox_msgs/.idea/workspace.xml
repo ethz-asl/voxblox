@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated>
+      <config projectName="voxblox_msgs" targetName="std_msgs_generate_messages_lisp" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_generate_messages_eus" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_geneus" />
+      <config projectName="voxblox_msgs" targetName="_catkin_empty_exported_target" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_generate_messages_nodejs" />
+      <config projectName="voxblox_msgs" targetName="_voxblox_msgs_generate_messages_check_deps_FilePath" />
+      <config projectName="voxblox_msgs" targetName="std_msgs_generate_messages_eus" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_generate_messages" />
+      <config projectName="voxblox_msgs" targetName="download_extra_data" />
+      <config projectName="voxblox_msgs" targetName="gmock_main" />
+      <config projectName="voxblox_msgs" targetName="run_tests" />
+      <config projectName="voxblox_msgs" targetName="_voxblox_msgs_generate_messages_check_deps_VoxelEvaluationDetails" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_package" />
+      <config projectName="voxblox_msgs" targetName="std_msgs_generate_messages_nodejs" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_generate_messages_lisp" />
+      <config projectName="voxblox_msgs" targetName="_voxblox_msgs_generate_messages_check_deps_Mesh" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_genlisp" />
+      <config projectName="voxblox_msgs" targetName="clean_test_results" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_generate_messages_cpp" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_gencpp" />
+      <config projectName="voxblox_msgs" targetName="gtest" />
+      <config projectName="voxblox_msgs" targetName="_voxblox_msgs_generate_messages_check_deps_MeshBlock" />
+      <config projectName="voxblox_msgs" targetName="gmock" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_gennodejs" />
+      <config projectName="voxblox_msgs" targetName="tests" />
+      <config projectName="voxblox_msgs" targetName="std_msgs_generate_messages_cpp" />
+      <config projectName="voxblox_msgs" targetName="doxygen" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_generate_messages_py" />
+      <config projectName="voxblox_msgs" targetName="gtest_main" />
+      <config projectName="voxblox_msgs" targetName="_voxblox_msgs_generate_messages_check_deps_Block" />
+      <config projectName="voxblox_msgs" targetName="_voxblox_msgs_generate_messages_check_deps_Layer" />
+      <config projectName="voxblox_msgs" targetName="std_msgs_generate_messages_py" />
+      <config projectName="voxblox_msgs" targetName="voxblox_msgs_genpy" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Release" CONFIG_NAME="Release" GENERATION_OPTIONS="-DCATKIN_DEVEL_PREFIX:PATH=/home/laura/catkin_ws/devel" GENERATION_DIR="$PROJECT_DIR$/../../../build" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e11c6b6a-aa68-4c18-b799-621b80bc0e2c" name="Default Changelist" comment="" />
+    <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
+    <ignored path="$PROJECT_DIR$/../../../build/" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Release" />
+  <component name="FileEditorManager">
+    <leaf>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/msg/VoxelEvaluationDetails.msg">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectConfigurationFiles">
+    <option name="files">
+      <list>
+        <option value="$PROJECT_DIR$/.idea/voxblox_msgs.iml" />
+        <option value="$PROJECT_DIR$/.idea/misc.xml" />
+        <option value="$PROJECT_DIR$/.idea/vcs.xml" />
+        <option value="$PROJECT_DIR$/.idea/modules.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="1337" />
+    <option name="y" value="48" />
+    <option name="width" value="1223" />
+    <option name="height" value="1392" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="voxblox_msgs" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox_msgs" type="47feb1d3:ProjectViewModuleNode" />
+            </path>
+            <path>
+              <item name="voxblox_msgs" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox_msgs" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="voxblox_msgs" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="voxblox_msgs" type="b2602c69:ProjectViewProjectNode" />
+              <item name="voxblox_msgs" type="47feb1d3:ProjectViewModuleNode" />
+              <item name="voxblox_msgs" type="462c0819:PsiDirectoryNode" />
+              <item name="msg" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/CMakeLists.txt" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="settings.editor.selected.configurable" value="CMakeSettings" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="CMake Application._catkin_empty_exported_target">
+    <configuration name="_catkin_empty_exported_target" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="_catkin_empty_exported_target" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_voxblox_msgs_generate_messages_check_deps_Block" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="_voxblox_msgs_generate_messages_check_deps_Block" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_voxblox_msgs_generate_messages_check_deps_FilePath" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="_voxblox_msgs_generate_messages_check_deps_FilePath" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_voxblox_msgs_generate_messages_check_deps_Layer" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="_voxblox_msgs_generate_messages_check_deps_Layer" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_voxblox_msgs_generate_messages_check_deps_Mesh" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="_voxblox_msgs_generate_messages_check_deps_Mesh" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_voxblox_msgs_generate_messages_check_deps_MeshBlock" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="_voxblox_msgs_generate_messages_check_deps_MeshBlock" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="_voxblox_msgs_generate_messages_check_deps_VoxelEvaluationDetails" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="_voxblox_msgs_generate_messages_check_deps_VoxelEvaluationDetails" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="clean_test_results" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="clean_test_results" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="download_extra_data" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="download_extra_data" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="doxygen" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="doxygen" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="gmock" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="gmock" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="gmock_main" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="gmock_main" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="gtest" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="gtest" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="gtest_main" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="gtest_main" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run_tests" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="run_tests" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="std_msgs_generate_messages_cpp" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="std_msgs_generate_messages_cpp" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="std_msgs_generate_messages_eus" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="std_msgs_generate_messages_eus" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="std_msgs_generate_messages_lisp" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="std_msgs_generate_messages_lisp" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="std_msgs_generate_messages_nodejs" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="std_msgs_generate_messages_nodejs" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="std_msgs_generate_messages_py" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="std_msgs_generate_messages_py" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tests" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="tests" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_gencpp" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_gencpp" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_generate_messages" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_generate_messages" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_generate_messages_cpp" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_generate_messages_cpp" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_generate_messages_eus" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_generate_messages_eus" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_generate_messages_lisp" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_generate_messages_lisp" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_generate_messages_nodejs" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_generate_messages_nodejs" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_generate_messages_py" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_generate_messages_py" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_geneus" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_geneus" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_genlisp" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_genlisp" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_gennodejs" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_gennodejs" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_genpy" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_genpy" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="voxblox_msgs_package" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="voxblox_msgs" TARGET_NAME="voxblox_msgs_package" CONFIG_NAME="Release">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="CMake Application._catkin_empty_exported_target" />
+      <item itemvalue="CMake Application._voxblox_msgs_generate_messages_check_deps_Block" />
+      <item itemvalue="CMake Application._voxblox_msgs_generate_messages_check_deps_FilePath" />
+      <item itemvalue="CMake Application._voxblox_msgs_generate_messages_check_deps_Layer" />
+      <item itemvalue="CMake Application._voxblox_msgs_generate_messages_check_deps_Mesh" />
+      <item itemvalue="CMake Application._voxblox_msgs_generate_messages_check_deps_MeshBlock" />
+      <item itemvalue="CMake Application._voxblox_msgs_generate_messages_check_deps_VoxelEvaluationDetails" />
+      <item itemvalue="CMake Application.clean_test_results" />
+      <item itemvalue="CMake Application.download_extra_data" />
+      <item itemvalue="CMake Application.doxygen" />
+      <item itemvalue="CMake Application.run_tests" />
+      <item itemvalue="CMake Application.std_msgs_generate_messages_cpp" />
+      <item itemvalue="CMake Application.std_msgs_generate_messages_eus" />
+      <item itemvalue="CMake Application.std_msgs_generate_messages_lisp" />
+      <item itemvalue="CMake Application.std_msgs_generate_messages_nodejs" />
+      <item itemvalue="CMake Application.std_msgs_generate_messages_py" />
+      <item itemvalue="CMake Application.tests" />
+      <item itemvalue="CMake Application.voxblox_msgs_gencpp" />
+      <item itemvalue="CMake Application.voxblox_msgs_generate_messages" />
+      <item itemvalue="CMake Application.voxblox_msgs_generate_messages_cpp" />
+      <item itemvalue="CMake Application.voxblox_msgs_generate_messages_eus" />
+      <item itemvalue="CMake Application.voxblox_msgs_generate_messages_lisp" />
+      <item itemvalue="CMake Application.voxblox_msgs_generate_messages_nodejs" />
+      <item itemvalue="CMake Application.voxblox_msgs_generate_messages_py" />
+      <item itemvalue="CMake Application.voxblox_msgs_geneus" />
+      <item itemvalue="CMake Application.voxblox_msgs_genlisp" />
+      <item itemvalue="CMake Application.voxblox_msgs_gennodejs" />
+      <item itemvalue="CMake Application.voxblox_msgs_genpy" />
+      <item itemvalue="CMake Application.voxblox_msgs_package" />
+      <item itemvalue="CMake Application.gmock" />
+      <item itemvalue="CMake Application.gmock_main" />
+      <item itemvalue="CMake Application.gtest" />
+      <item itemvalue="CMake Application.gtest_main" />
+    </list>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="e11c6b6a-aa68-4c18-b799-621b80bc0e2c" name="Default Changelist" comment="" />
+      <created>1556797450710</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1556797450710</updated>
+      <workItem from="1556797451916" duration="254000" />
+      <workItem from="1556801469877" duration="10000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="264000" />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="114" y="-8" width="2446" height="1448" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25402883" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Database Changes" order="7" />
+      <window_info anchor="bottom" id="Terminal" order="8" />
+      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
+      <window_info anchor="bottom" id="Version Control" order="10" />
+      <window_info anchor="bottom" id="CMake" order="11" visible="true" weight="0.31836408" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="right" id="Database" order="3" />
+    </layout>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/msg/Block.msg">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/msg/Layer.msg">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/msg/VoxelEvaluationDetails.msg">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+  </component>
+</project>

@@ -23,6 +23,17 @@ bool Interpolator<VoxelType>::getDistance(const Point& pos,
 }
 
 template <typename VoxelType>
+bool Interpolator<VoxelType>::getWeight(const Point& pos,
+                                        FloatingPoint* weight,
+                                        bool interpolate) const {
+  if (interpolate) {
+    return getInterpWeight(pos, weight);
+  } else {
+    return getNearestWeight(pos, weight);
+  }
+}
+
+template <typename VoxelType>
 bool Interpolator<VoxelType>::getVoxel(const Point& pos, VoxelType* voxel,
                                        bool interpolate) const {
   if (interpolate) {
@@ -304,6 +315,40 @@ bool Interpolator<VoxelType>::getNearestDistance(
 
   return utils::isObservedVoxel(voxel);
 }
+
+template <typename VoxelType>
+bool Interpolator<VoxelType>::getInterpWeight(const Point& pos,
+                                              FloatingPoint* weight) const {
+  CHECK_NOTNULL(weight);
+
+  // get distances of 8 surrounding voxels and weights vector
+  const VoxelType* voxels[8];
+  InterpVector q_vector;
+  if (!getVoxelsAndQVector(pos, voxels, &q_vector)) {
+    return false;
+  } else {
+    *weight = interpMember(q_vector, voxels, &getVoxelWeight);
+    return true;
+  }
+}
+
+template <typename VoxelType>
+bool Interpolator<VoxelType>::getNearestWeight(
+    const Point& pos, FloatingPoint* weight) const {
+    CHECK_NOTNULL(weight);
+
+    typename Layer<VoxelType>::BlockType::ConstPtr block_ptr =
+        layer_->getBlockPtrByCoordinates(pos);
+    if (block_ptr == nullptr) {
+      return false;
+    }
+
+    const VoxelType& voxel = block_ptr->getVoxelByCoordinates(pos);
+
+    *weight = getVoxelWeight(voxel);
+
+    return utils::isObservedVoxel(voxel);
+  }
 
 template <typename VoxelType>
 bool Interpolator<VoxelType>::getInterpVoxel(const Point& pos,

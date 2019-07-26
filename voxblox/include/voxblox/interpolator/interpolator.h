@@ -27,6 +27,9 @@ class Interpolator {
   bool getDistance(const Point& pos, FloatingPoint* distance,
                    bool interpolate = false) const;
 
+  bool getWeight(const Point& pos, FloatingPoint* weight,
+                 bool interpolate = false) const;
+
   bool getVoxel(const Point& pos, VoxelType* voxel,
                 bool interpolate = false) const;
 
@@ -67,6 +70,10 @@ class Interpolator {
   bool getInterpDistance(const Point& pos, FloatingPoint* distance) const;
 
   bool getNearestDistance(const Point& pos, FloatingPoint* distance) const;
+
+  bool getInterpWeight(const Point& pos, FloatingPoint* weight) const;
+
+  bool getNearestWeight(const Point& pos, FloatingPoint* weight) const;
 
   bool getInterpVoxel(const Point& pos, VoxelType* voxel) const;
 
