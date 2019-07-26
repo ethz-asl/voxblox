@@ -119,6 +119,16 @@ void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
       }
     }
   }
+
+  // Clear all esdf blocks which are no longer allocated in the corresponding
+  // tsdf layer.
+  BlockIndexList allocated_esdf_blocks;
+  esdf_layer_->getAllAllocatedBlocks(&allocated_esdf_blocks);
+  for (const BlockIndex& esdf_block_index : allocated_esdf_blocks) {
+    if (!tsdf_layer_->hasBlock(esdf_block_index)) {
+      esdf_layer_->removeBlock(esdf_block_index);
+    }
+  }
 }
 
 void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,

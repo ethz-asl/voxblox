@@ -49,7 +49,7 @@ void Layer<VoxelType>::forEachVoxelInLayer(
     for (size_t linear_voxel_index = 0u;
          linear_voxel_index < block.num_voxels(); ++linear_voxel_index) {
       const VoxelType& voxel = block.getVoxelByLinearIndex(linear_voxel_index);
-      voxel_action(block_index, linear_voxel_index, voxel);
+      voxel_action(block_index, block, linear_voxel_index, voxel);
     }
   }
 }
@@ -64,7 +64,7 @@ void Layer<VoxelType>::forEachVoxelInLayer(
     for (size_t linear_voxel_index = 0u;
          linear_voxel_index < block.num_voxels(); ++linear_voxel_index) {
       VoxelType& voxel = block.getVoxelByLinearIndex(linear_voxel_index);
-      voxel_action(block_index, linear_voxel_index, voxel);
+      voxel_action(block_index, &block, linear_voxel_index, &voxel);
     }
   }
 }
