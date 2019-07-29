@@ -31,13 +31,12 @@ class Layer {
       typename AnyIndexHashMapType<typename BlockType::Ptr>::type;
   using BlockMapPair = typename std::pair<BlockIndex, typename BlockType::Ptr>;
 
-  // TODO(fabianbl): Output parameters have to change to pointers.
   using VoxelAction = std::function<void(
       const BlockIndex& /*block_index*/, const BlockType& /*block*/,
-      size_t /*linear_voxel_index*/, const VoxelType& /*voxel*/)>;
+      const size_t /*linear_voxel_index*/, const VoxelType& /*voxel*/)>;
   using MutableVoxelAction = std::function<void(
       const BlockIndex& /*block_index*/, BlockType* /*block*/,
-      size_t /*linear_voxel_index*/, VoxelType* /*voxel*/)>;
+      const size_t /*linear_voxel_index*/, VoxelType* /*voxel*/)>;
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
