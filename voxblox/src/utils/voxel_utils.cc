@@ -17,7 +17,6 @@ void mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A, TsdfVoxel* voxel_B) {
   float combined_weight = voxel_A.weight + voxel_B->weight;
   // Check for overflow and reset the combined weight in this case.
   if (!std::isfinite(combined_weight)) {
-    LOG(WARNING) << "overflow";
     combined_weight = std::numeric_limits<float>::max();
   }
   if (combined_weight > 0) {
