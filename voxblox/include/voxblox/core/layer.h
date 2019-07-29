@@ -1,11 +1,12 @@
 #ifndef VOXBLOX_CORE_LAYER_H_
 #define VOXBLOX_CORE_LAYER_H_
 
-#include <glog/logging.h>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
+
+#include <glog/logging.h>
 
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
@@ -32,11 +33,11 @@ class Layer {
   using BlockMapPair = typename std::pair<BlockIndex, typename BlockType::Ptr>;
 
   using VoxelAction = std::function<void(
-      const BlockIndex& /*block_index*/, const BlockType& /*block*/,
-      const size_t /*linear_voxel_index*/, const VoxelType& /*voxel*/)>;
+      const BlockIndex& /*block_index*/, const size_t /*linear_voxel_index*/,
+      const BlockType& /*block*/, const VoxelType& /*voxel*/)>;
   using MutableVoxelAction = std::function<void(
-      const BlockIndex& /*block_index*/, BlockType* /*block*/,
-      const size_t /*linear_voxel_index*/, VoxelType* /*voxel*/)>;
+      const BlockIndex& /*block_index*/, const size_t /*linear_voxel_index*/,
+      BlockType* /*block*/, VoxelType* /*voxel*/)>;
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
