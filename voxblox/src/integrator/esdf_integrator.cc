@@ -103,7 +103,7 @@ void EsdfIntegrator::updateFromTsdfLayerBatch() {
 
 void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   BlockIndexList tsdf_blocks;
-  tsdf_layer_->getAllUpdatedBlocks(&tsdf_blocks);
+  tsdf_layer_->getAllUpdatedBlocks(Update::kEsdf, &tsdf_blocks);
   tsdf_blocks.insert(tsdf_blocks.end(), updated_blocks_.begin(),
                      updated_blocks_.end());
   updated_blocks_.clear();
@@ -113,7 +113,9 @@ void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   if (clear_updated_flag) {
     for (const BlockIndex& block_index : tsdf_blocks) {
       if (tsdf_layer_->hasBlock(block_index)) {
-        tsdf_layer_->getBlockByIndex(block_index).updated() = false;
+        tsdf_layer_->getBlockByIndex(block_index)
+            .updated()
+            .reset(Update::kEsdf);
       }
     }
   }
@@ -199,6 +201,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       } else {
         // If this voxel DID exist before.
         // There are three main options:
+        // (1a) unfix: if was fixed before but not anymore, raise.
         // (1) lower: esdf or tsdf is fixed, and tsdf is closer to surface than
         // it used to be.
         // (2) raise: esdf or tsdf is fixed, and tsdf is further from surface
@@ -206,12 +209,22 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         // (3) sign flip: tsdf and esdf have different signs, otherwise the
         // lower and raise rules apply as above.
         if (tsdf_fixed || esdf_voxel.fixed) {
-          if ((esdf_voxel.distance > 0 &&
-               tsdf_voxel.distance + config_.min_diff_m <
-                   esdf_voxel.distance) ||
-              (esdf_voxel.distance <= 0 &&
-               tsdf_voxel.distance - config_.min_diff_m >
-                   esdf_voxel.distance)) {
+          if (!tsdf_fixed) {
+            // New case: have to raise the voxel
+            esdf_voxel.distance =
+                signum(tsdf_voxel.distance) * config_.default_distance_m;
+            esdf_voxel.parent.setZero();
+            esdf_voxel.fixed = false;
+            raise_.push(global_index);
+            esdf_voxel.in_queue = true;
+            open_.push(global_index, esdf_voxel.distance);
+            num_raise++;
+          } else if ((esdf_voxel.distance > 0.0f &&
+                      tsdf_voxel.distance + config_.min_diff_m <
+                          esdf_voxel.distance) ||
+                     (esdf_voxel.distance <= 0.0f &&
+                      tsdf_voxel.distance - config_.min_diff_m >
+                          esdf_voxel.distance)) {
             // Lower.
             esdf_voxel.fixed = tsdf_fixed;
             if (esdf_voxel.fixed) {
@@ -224,10 +237,10 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
             esdf_voxel.in_queue = true;
             open_.push(global_index, esdf_voxel.distance);
             num_lower++;
-          } else if ((esdf_voxel.distance > 0 &&
+          } else if ((esdf_voxel.distance > 0.0f &&
                       tsdf_voxel.distance - config_.min_diff_m >
                           esdf_voxel.distance) ||
-                     (esdf_voxel.distance <= 0 &&
+                     (esdf_voxel.distance <= 0.0f &&
                       tsdf_voxel.distance + config_.min_diff_m <
                           esdf_voxel.distance)) {
             // Raise.

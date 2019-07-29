@@ -31,6 +31,7 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
 
   // Derived config parameter.
   CHECK_GT(proto.voxel_size(), 0.0);
+  voxel_size_inv_ = 1.0 / voxel_size_;
   block_size_ = voxel_size_ * voxels_per_side_;
   CHECK_GT(block_size_, 0.0);
   block_size_inv_ = 1.0 / block_size_;
@@ -155,7 +156,7 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
 
   // Serialize blocks.
   saveBlocksToStream(include_all_blocks, blocks_to_include, &outfile);
-  
+
   outfile.close();
   return true;
 }
@@ -223,7 +224,7 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
         return false;
     }
     // Mark that this block has been updated.
-    block_map_[block_index]->updated() = true;
+    block_map_[block_index]->updated().set();
   } else {
     LOG(ERROR)
         << "The blocks from this protobuf are not compatible with this layer!";

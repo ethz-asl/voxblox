@@ -74,7 +74,7 @@ class TsdfServer {
   // Publishes all available pointclouds.
   virtual void publishPointclouds();
   // Publishes the complete map
-  virtual void publishMap(const bool reset_remote_map = false);
+  virtual void publishMap(bool reset_remote_map = false);
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
@@ -93,6 +93,7 @@ class TsdfServer {
                               std_srvs::Empty::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
+  void publishMapEvent(const ros::TimerEvent& event);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
 
@@ -128,6 +129,39 @@ class TsdfServer {
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
+  /// Data subscribers.
+  ros::Subscriber pointcloud_sub_;
+  ros::Subscriber freespace_pointcloud_sub_;
+
+  /// Publish markers for visualization.
+  ros::Publisher mesh_pub_;
+  ros::Publisher tsdf_pointcloud_pub_;
+  ros::Publisher surface_pointcloud_pub_;
+  ros::Publisher tsdf_slice_pub_;
+  ros::Publisher occupancy_marker_pub_;
+  ros::Publisher icp_transform_pub_;
+
+  /// Publish the complete map for other nodes to consume.
+  ros::Publisher tsdf_map_pub_;
+
+  /// Subscriber to subscribe to another node generating the map.
+  ros::Subscriber tsdf_map_sub_;
+
+  // Services.
+  ros::ServiceServer generate_mesh_srv_;
+  ros::ServiceServer clear_map_srv_;
+  ros::ServiceServer save_map_srv_;
+  ros::ServiceServer load_map_srv_;
+  ros::ServiceServer publish_pointclouds_srv_;
+  ros::ServiceServer publish_tsdf_map_srv_;
+
+  /// Tools for broadcasting TFs.
+  tf::TransformBroadcaster tf_broadcaster_;
+
+  // Timers.
+  ros::Timer update_mesh_timer_;
+  ros::Timer publish_map_timer_;
+
   bool verbose_;
 
   /**
@@ -161,13 +195,13 @@ class TsdfServer {
   ColorMode color_mode_;
 
   /// Colormap to use for intensity pointclouds.
-  std::unique_ptr<ColorMap> color_map_;
+  std::shared_ptr<ColorMap> color_map_;
 
   /// Will throttle to this message rate.
   ros::Duration min_time_between_msgs_;
 
   /// What output information to publish
-  bool publish_tsdf_info_;
+  bool publish_pointclouds_on_update_;
   bool publish_slices_;
   bool publish_pointclouds_;
   bool publish_tsdf_map_;
@@ -188,40 +222,10 @@ class TsdfServer {
    */
   bool accumulate_icp_corrections_;
 
-  /// Data subscribers.
-  ros::Subscriber pointcloud_sub_;
-  ros::Subscriber freespace_pointcloud_sub_;
 
   /// Subscriber settings.
   int pointcloud_queue_size_;
-
-  // Publish markers for visualization.
-  ros::Publisher mesh_pub_;
-  ros::Publisher tsdf_pointcloud_pub_;
-  ros::Publisher surface_pointcloud_pub_;
-  ros::Publisher tsdf_slice_pub_;
-  ros::Publisher occupancy_marker_pub_;
-  ros::Publisher icp_transform_pub_;
-
-  /// Publish the complete map for other nodes to consume.
-  ros::Publisher tsdf_map_pub_;
-
-  /// Subscriber to subscribe to another node generating the map.
-  ros::Subscriber tsdf_map_sub_;
-
-  // Services.
-  ros::ServiceServer generate_mesh_srv_;
-  ros::ServiceServer clear_map_srv_;
-  ros::ServiceServer save_map_srv_;
-  ros::ServiceServer load_map_srv_;
-  ros::ServiceServer publish_pointclouds_srv_;
-  ros::ServiceServer publish_tsdf_map_srv_;
-
-  /// Tools for broadcasting TFs.
-  tf::TransformBroadcaster tf_broadcaster_;
-
-  // Timers.
-  ros::Timer update_mesh_timer_;
+  int num_subscribers_tsdf_map_;
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;

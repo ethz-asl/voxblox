@@ -190,12 +190,12 @@ class Layer {
     }
   }
 
-  void getAllUpdatedBlocks(BlockIndexList* blocks) const {
+  void getAllUpdatedBlocks(Update::Status bit, BlockIndexList* blocks) const {
     CHECK_NOTNULL(blocks);
     blocks->clear();
     for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
          block_map_) {
-      if (kv.second->updated()) {
+      if (kv.second->updated()[bit]) {
         blocks->emplace_back(kv.first);
       }
     }

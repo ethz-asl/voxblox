@@ -17,7 +17,7 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, const bool only_updated,
 
   BlockIndexList block_list;
   if (only_updated) {
-    layer.getAllUpdatedBlocks(&block_list);
+    layer.getAllUpdatedBlocks(Update::kMap, &block_list);
   } else {
     layer.getAllAllocatedBlocks(&block_list);
   }
@@ -66,6 +66,7 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
   }
 
   if (action == MapDerializationAction::kReset) {
+    LOG(INFO) << "Resetting current layer.";
     layer->removeAllBlocks();
   }
 
@@ -104,7 +105,7 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
       CHECK_EQ(layer->getNumberOfAllocatedBlocks(), msg.blocks.size());
       break;
     case MapDerializationAction::kUpdate:
-      // Fall through intended.
+    // Fall through intended.
     case MapDerializationAction::kMerge:
       CHECK_GE(layer->getNumberOfAllocatedBlocks(), msg.blocks.size());
       break;
