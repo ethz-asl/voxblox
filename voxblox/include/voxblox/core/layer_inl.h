@@ -60,7 +60,7 @@ void Layer<VoxelType>::forEachVoxelInLayer(
   voxblox::BlockIndexList all_blocks;
   getAllAllocatedBlocks(&all_blocks);
   for (const voxblox::BlockIndex& block_index : all_blocks) {
-    BlockType& block = *CHECK_NOTNULL(getBlockPtrByIndex(block_index));
+    BlockType& block = getBlockByIndex(block_index);
     for (size_t linear_voxel_index = 0u;
          linear_voxel_index < block.num_voxels(); ++linear_voxel_index) {
       VoxelType& voxel = block.getVoxelByLinearIndex(linear_voxel_index);

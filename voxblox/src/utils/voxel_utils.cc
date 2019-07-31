@@ -29,10 +29,10 @@ void mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A, TsdfVoxel* voxel_B) {
 
     voxel_B->weight = combined_weight;
   } else {
-    // If the combined voxel weight is smaller or equal to 0, and one of voxel
-    // weights is smaller than 0, this means that we try to substract the two
-    // (e.g. an integrated point cloud that we want to remove again). In this
-    // case, we just reset the voxel.
+    // If the combined voxel weight is smaller or equal to 0, this means that
+    // at least one of the voxel weights is smaller than 0 and we try to
+    // substract the two (e.g. an integrated point cloud that we want to remove
+    // again). In this case, we just reset the voxel.
     *voxel_B = TsdfVoxel();
   }
 }
