@@ -2,7 +2,6 @@
 #include <eigen-checks/gtest.h>
 #include <gtest/gtest.h>
 
-//#include "voxblox/core/tsdf_map.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
@@ -37,15 +36,12 @@ class TsdfMergeIntegratorTest : public ::testing::Test {
         }
       }
     }
-    // Setting has data flag
-    block_ptr->has_data() = true;
-  }
+    }
 };
 
 TEST_F(TsdfMergeIntegratorTest, WithinBlock) {
   // New layer
-  Layer<TsdfVoxel> tsdf_layer(tsdf_voxel_size_,
-                              tsdf_voxels_per_side_);
+  Layer<TsdfVoxel> tsdf_layer(tsdf_voxel_size_, tsdf_voxels_per_side_);
 
   // Allocating the block;
   Point origin(0.0, 0.0, 0.0);
@@ -63,7 +59,6 @@ TEST_F(TsdfMergeIntegratorTest, WithinBlock) {
         // Setting voxel
         voxel_ref.distance = z;
         voxel_ref.weight = 1.0;
-        block_ptr->has_data() = true;
       }
     }
   }
@@ -107,8 +102,7 @@ TEST_F(TsdfMergeIntegratorTest, WithinBlock) {
 
 TEST_F(TsdfMergeIntegratorTest, BetweenBlocks) {
   // New layer
-  Layer<TsdfVoxel> tsdf_layer(tsdf_voxel_size_,
-                              tsdf_voxels_per_side_);
+  Layer<TsdfVoxel> tsdf_layer(tsdf_voxel_size_, tsdf_voxels_per_side_);
 
   // Allocating some blocks (in a sort of 3D plus pattern)
   Block<TsdfVoxel>::Ptr block_ptr_0 =

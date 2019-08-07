@@ -10,6 +10,8 @@ message BlockProto {
   optional double origin_y = 4;
   optional double origin_z = 5;
 
+  // Note: the has_data attribute is no longer a member of the block class, but
+  // will stay here to avoid compatibility issues.
   optional bool has_data = 6;
 
   repeated uint32 voxel_data = 7;
