@@ -36,7 +36,7 @@ class TsdfMergeIntegratorTest : public ::testing::Test {
         }
       }
     }
-    }
+  }
 };
 
 TEST_F(TsdfMergeIntegratorTest, WithinBlock) {
@@ -157,7 +157,8 @@ TEST_F(TsdfMergeIntegratorTest, BetweenBlocks) {
     Point point = points_below[point_index];
     interpolator.getVoxel(point, &voxel, true);
     // Testing
-    EXPECT_NEAR(voxel.distance, expected_answers_below[point_index], compare_tol_);
+    EXPECT_NEAR(voxel.distance, expected_answers_below[point_index],
+                compare_tol_);
   }
 }
 
