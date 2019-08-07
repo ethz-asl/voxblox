@@ -130,6 +130,8 @@ void naiveTransformLayer(const Layer<VoxelType>& layer_in,
       VoxelType& output_voxel =
           output_block->getVoxelByVoxelIndex(getLocalFromGlobalVoxelIndex(
               global_output_voxel_idx, layer_out->voxels_per_side()));
+
+      interpolator.getVoxel(voxel_center, &output_voxel, /*interpolate*/ false);
     }
   }
 }
@@ -199,6 +201,12 @@ void transformLayer(const Layer<VoxelType>& layer_in,
       // find voxel centers location in the input
       const Point voxel_center =
           T_in_out * block->computeCoordinatesFromLinearIndex(voxel_idx);
+
+      // interpolate voxel
+      if (!interpolator.getVoxel(voxel_center, &voxel, /*interpolate*/ true)) {
+        // If interpolated value fails use nearest.
+        interpolator.getVoxel(voxel_center, &voxel, /*interpolate*/ false);
+      }
     }
   }
 }
