@@ -43,13 +43,13 @@ class Interpolator {
   bool getNearestDistanceAndWeight(const Point& pos, FloatingPoint* distance,
                                    float* weight) const;
 
+  bool setIndexes(const Point& pos, BlockIndex* block_index,
+                  InterpIndexes* voxel_indexes) const;
+
   bool getVoxelsAndQVector(const Point& pos, const VoxelType** voxels,
                            InterpVector* q_vector) const;
 
  private:
-  bool setIndexes(const Point& pos, BlockIndex* block_index,
-                  InterpIndexes* voxel_indexes) const;
-
   /**
    * Q vector from http://spie.org/samples/PM159.pdf
    * Relates the interpolation distance of any arbitrary point inside a voxel
