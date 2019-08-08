@@ -96,10 +96,6 @@ void Block<VoxelType>::getProto(BlockProto* proto) const {
   proto->set_origin_y(origin_.y());
   proto->set_origin_z(origin_.z());
 
-  // This member does not exist within the block class definition anymore, but
-  // it will remain in the protobuf definition to maintain compatibility.
-  proto->set_has_data(true);
-
   std::vector<uint32_t> data;
   serializeToIntegers(&data);
   // Not quite actually a word since we're in a 64-bit age now, but whatever.
