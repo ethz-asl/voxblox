@@ -31,10 +31,6 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
     // Iterate over all voxels in said blocks.
     const Block<TsdfVoxel>& block = tsdf_layer_->getBlockByIndex(index);
 
-    if (!block.has_data()) {
-      continue;
-    }
-
     const Point origin = block.origin();
     if (std::abs(origin(free_plane_index) - free_plane_val) >
         block.block_size()) {

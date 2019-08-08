@@ -40,6 +40,36 @@ Layer<VoxelType>::Layer(const LayerProto& proto)
 }
 
 template <typename VoxelType>
+void Layer<VoxelType>::forEachVoxelInLayer(
+    const VoxelAction& voxel_action) const {
+  voxblox::BlockIndexList all_blocks;
+  getAllAllocatedBlocks(&all_blocks);
+  for (const voxblox::BlockIndex& block_index : all_blocks) {
+    const BlockType& block = getBlockByIndex(block_index);
+    for (size_t linear_voxel_index = 0u;
+         linear_voxel_index < block.num_voxels(); ++linear_voxel_index) {
+      const VoxelType& voxel = block.getVoxelByLinearIndex(linear_voxel_index);
+      voxel_action(block_index, linear_voxel_index, block, voxel);
+    }
+  }
+}
+
+template <typename VoxelType>
+void Layer<VoxelType>::forEachVoxelInLayer(
+    const MutableVoxelAction& voxel_action) {
+  voxblox::BlockIndexList all_blocks;
+  getAllAllocatedBlocks(&all_blocks);
+  for (const voxblox::BlockIndex& block_index : all_blocks) {
+    BlockType& block = getBlockByIndex(block_index);
+    for (size_t linear_voxel_index = 0u;
+         linear_voxel_index < block.num_voxels(); ++linear_voxel_index) {
+      VoxelType& voxel = block.getVoxelByLinearIndex(linear_voxel_index);
+      voxel_action(block_index, linear_voxel_index, &block, &voxel);
+    }
+  }
+}
+
+template <typename VoxelType>
 void Layer<VoxelType>::getProto(LayerProto* proto) const {
   CHECK_NOTNULL(proto);
 

@@ -1,10 +1,12 @@
 #ifndef VOXBLOX_CORE_LAYER_H_
 #define VOXBLOX_CORE_LAYER_H_
 
-#include <glog/logging.h>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
+
+#include <glog/logging.h>
 
 #include "./Block.pb.h"
 #include "./Layer.pb.h"
@@ -24,11 +26,18 @@ class Layer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  typedef std::shared_ptr<Layer> Ptr;
-  typedef Block<VoxelType> BlockType;
-  typedef
-      typename AnyIndexHashMapType<typename BlockType::Ptr>::type BlockHashMap;
-  typedef typename std::pair<BlockIndex, typename BlockType::Ptr> BlockMapPair;
+  using Ptr = std::shared_ptr<Layer>;
+  using BlockType = Block<VoxelType>;
+  using BlockHashMap =
+      typename AnyIndexHashMapType<typename BlockType::Ptr>::type;
+  using BlockMapPair = typename std::pair<BlockIndex, typename BlockType::Ptr>;
+
+  using VoxelAction = std::function<void(
+      const BlockIndex& /*block_index*/, const size_t /*linear_voxel_index*/,
+      const BlockType& /*block*/, const VoxelType& /*voxel*/)>;
+  using MutableVoxelAction = std::function<void(
+      const BlockIndex& /*block_index*/, const size_t /*linear_voxel_index*/,
+      BlockType* /*block*/, VoxelType* /*voxel*/)>;
 
   explicit Layer(FloatingPoint voxel_size, size_t voxels_per_side)
       : voxel_size_(voxel_size), voxels_per_side_(voxels_per_side) {
@@ -236,6 +245,9 @@ class Layer {
     Block<VoxelType>& block = getBlockByIndex(block_index);
     return &block.getVoxelByVoxelIndex(local_voxel_index);
   }
+
+  inline void forEachVoxelInLayer(const VoxelAction& voxel_action) const;
+  inline void forEachVoxelInLayer(const MutableVoxelAction& voxel_action);
 
   inline const VoxelType* getVoxelPtrByCoordinates(const Point& coords) const {
     typename Block<VoxelType>::ConstPtr block_ptr =

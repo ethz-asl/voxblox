@@ -28,8 +28,7 @@ class Block {
   typedef std::shared_ptr<const Block<VoxelType> > ConstPtr;
 
   Block(size_t voxels_per_side, FloatingPoint voxel_size, const Point& origin)
-      : has_data_(false),
-        voxels_per_side_(voxels_per_side),
+      : voxels_per_side_(voxels_per_side),
         voxel_size_(voxel_size),
         origin_(origin),
         updated_(false) {
@@ -167,16 +166,12 @@ class Block {
   void setOrigin(const Point& new_origin) { origin_ = new_origin; }
   FloatingPoint block_size() const { return block_size_; }
 
-  bool has_data() const { return has_data_; }
-
   const std::bitset<Update::kCount>& updated() const { return updated_; }
   std::bitset<Update::kCount>& updated() { return updated_; }
-  bool& has_data() { return has_data_; }
 
   void set_updated(const std::bitset<Update::kCount>& updated) {
     updated_ = updated;
   }
-  void set_has_data(bool has_data) { has_data_ = has_data; }
 
   // Serialization.
   void getProto(BlockProto* proto) const;
@@ -192,9 +187,6 @@ class Block {
 
   // Derived, cached parameters.
   size_t num_voxels_;
-
-  /// Is set to true if any one of the voxels in this block received an update.
-  bool has_data_;
 
  private:
   void deserializeProto(const BlockProto& proto);

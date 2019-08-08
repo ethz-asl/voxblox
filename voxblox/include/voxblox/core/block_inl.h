@@ -74,8 +74,6 @@ template <typename VoxelType>
 Block<VoxelType>::Block(const BlockProto& proto)
     : Block(proto.voxels_per_side(), proto.voxel_size(),
             Point(proto.origin_x(), proto.origin_y(), proto.origin_z())) {
-  has_data_ = proto.has_data();
-
   // Convert the data into a vector of integers.
   std::vector<uint32_t> data;
   data.reserve(proto.voxel_data_size());
@@ -98,8 +96,6 @@ void Block<VoxelType>::getProto(BlockProto* proto) const {
   proto->set_origin_y(origin_.y());
   proto->set_origin_z(origin_.z());
 
-  proto->set_has_data(has_data_);
-
   std::vector<uint32_t> data;
   serializeToIntegers(&data);
   // Not quite actually a word since we're in a 64-bit age now, but whatever.
@@ -112,19 +108,13 @@ template <typename VoxelType>
 void Block<VoxelType>::mergeBlock(const Block<VoxelType>& other_block) {
   CHECK_EQ(other_block.voxel_size(), voxel_size());
   CHECK_EQ(other_block.voxels_per_side(), voxels_per_side());
+  updated().set();
 
-  if (!other_block.has_data()) {
-    return;
-  } else {
-    has_data() = true;
-    updated().set();
-
-    for (IndexElement voxel_idx = 0;
-         voxel_idx < static_cast<IndexElement>(num_voxels()); ++voxel_idx) {
-      mergeVoxelAIntoVoxelB<VoxelType>(
-          other_block.getVoxelByLinearIndex(voxel_idx),
-          &(getVoxelByLinearIndex(voxel_idx)));
-    }
+  for (IndexElement voxel_idx = 0;
+       voxel_idx < static_cast<IndexElement>(num_voxels()); ++voxel_idx) {
+    mergeVoxelAIntoVoxelB<VoxelType>(
+        other_block.getVoxelByLinearIndex(voxel_idx),
+        &(getVoxelByLinearIndex(voxel_idx)));
   }
 }
 
@@ -140,7 +130,6 @@ size_t Block<VoxelType>::getMemorySize() const {
   size += sizeof(voxel_size_inv_);
   size += sizeof(block_size_);
 
-  size += sizeof(has_data_);
   size += sizeof(updated_);
 
   if (num_voxels_ > 0u) {

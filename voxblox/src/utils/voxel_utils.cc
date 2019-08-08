@@ -1,5 +1,10 @@
 #include "voxblox/utils/voxel_utils.h"
 
+#include <cmath>
+#include <limits>
+
+#include <glog/logging.h>
+
 #include "voxblox/core/color.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/voxel.h"
@@ -8,7 +13,12 @@ namespace voxblox {
 
 template <>
 void mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A, TsdfVoxel* voxel_B) {
+  CHECK_NOTNULL(voxel_B);
   float combined_weight = voxel_A.weight + voxel_B->weight;
+  // Check for overflow and reset the combined weight in this case.
+  if (!std::isfinite(combined_weight)) {
+    combined_weight = std::numeric_limits<float>::max();
+  }
   if (combined_weight > 0) {
     voxel_B->distance = (voxel_A.distance * voxel_A.weight +
                          voxel_B->distance * voxel_B->weight) /
@@ -18,6 +28,12 @@ void mergeVoxelAIntoVoxelB(const TsdfVoxel& voxel_A, TsdfVoxel* voxel_B) {
                                            voxel_B->color, voxel_B->weight);
 
     voxel_B->weight = combined_weight;
+  } else {
+    // If the combined voxel weight is smaller or equal to 0, this means that
+    // at least one of the voxel weights is smaller than 0 and we try to
+    // substract the two (e.g. an integrated point cloud that we want to remove
+    // again). In this case, we just reset the voxel.
+    *voxel_B = TsdfVoxel();
   }
 }
 

@@ -157,8 +157,6 @@ void SetUpTestLayer(const IndexElement block_volume_diameter,
             (x * z + y) % layer->voxels_per_side());
 
         fillVoxelWithTestData(x, y, z, &voxel);
-
-        block->has_data() = true;
       }
     }
   }
