@@ -20,6 +20,12 @@
     local-name: minkindr_ros
     uri: git@github.com:ethz-asl/minkindr_ros.git
 - git:
+    local-name: catkin_boost_python_buildtool
+    uri: git@github.com:ethz-asl/catkin_boost_python_buildtool.git
+- git:
+    local-name: numpy_eigen
+    uri: git@github.com:ethz-asl/numpy_eigen.git
+- git:
     local-name: voxblox
     uri: git@github.com:ethz-asl/voxblox.git
 
