@@ -197,10 +197,11 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
       new_weight;
 
   // color blending is expensive only do it close to the surface
-  if (std::abs(sdf) < config_.default_truncation_distance) {
-    tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
-  }
+  // TODO(victorr): Remove this hack
+//  if (std::abs(sdf) < config_.default_truncation_distance) {
+//    tsdf_voxel->color = Color::blendTwoColors(
+//        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+//  }
   tsdf_voxel->distance =
       (new_sdf > 0.0) ? std::min(config_.default_truncation_distance, new_sdf)
                       : std::max(-config_.default_truncation_distance, new_sdf);

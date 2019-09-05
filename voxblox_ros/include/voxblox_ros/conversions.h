@@ -137,8 +137,9 @@ inline void convertPointcloud(
     points_C->push_back(Point(pointcloud_pcl.points[i].x,
                               pointcloud_pcl.points[i].y,
                               pointcloud_pcl.points[i].z));
-    colors->emplace_back(
-        convertColor<PCLPoint>(pointcloud_pcl.points[i], color_map));
+    // TODO(victorr): Remove this hack
+    colors->emplace_back(Color(0, 0, 0, 0));
+//        convertColor<PCLPoint>(pointcloud_pcl.points[i], color_map));
   }
 }
 
