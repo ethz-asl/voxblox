@@ -21,9 +21,14 @@ enum class VoxelEvaluationMode {
 
 struct VoxelEvaluationDetails {
   FloatingPoint rmse = 0.0;
+
   // Max and min of absolute distance error.
   FloatingPoint max_error = 0.0;
   FloatingPoint min_error = 0.0;
+
+  // Histogram of distance errors.
+  std::map<int, int> error_histogram;
+
   size_t num_evaluated_voxels = 0u;
   size_t num_ignored_voxels = 0u;
   size_t num_overlapping_voxels = 0u;
@@ -38,8 +43,17 @@ struct VoxelEvaluationDetails {
        << " num ignored voxels:         " << num_ignored_voxels << "\n"
        << " error min:                  " << min_error << "\n"
        << " error max:                  " << max_error << "\n"
-       << " RMSE:                       " << rmse << "\n"
-       << "========================================\n";
+       << " RMSE:                       " << rmse << "\n";
+
+    LOG(ERROR) << error_histogram.size();
+
+    ss << "\n Error histogram:\n";
+
+    for (auto voxel_count : error_histogram) {
+      ss << "   Bin " << voxel_count.first << ", voxels: " << voxel_count.second
+         << ")\n";
+    }
+    ss << "========================================";
     return ss.str();
   }
 };
@@ -74,7 +88,7 @@ FloatingPoint evaluateLayersRmse(
     const Layer<VoxelType>& layer_gt, const Layer<VoxelType>& layer_test,
     const VoxelEvaluationMode& voxel_evaluation_mode,
     VoxelEvaluationDetails* evaluation_result = nullptr,
-    Layer<VoxelType>* error_layer = nullptr) {
+    Layer<VoxelType>* error_layer = nullptr, FloatingPoint bin_size = 0.1f) {
   // Iterate over all voxels in the test layer and look them up in the ground
   // truth layer. Then compute RMSE.
   BlockIndexList block_list;
@@ -116,7 +130,7 @@ FloatingPoint evaluateLayersRmse(
                             voxel_evaluation_mode, &error);
 
       switch (result) {
-        case VoxelEvaluationResult::kEvaluated:
+        case VoxelEvaluationResult::kEvaluated: {
           total_squared_error += error * error;
           evaluation_details.min_error =
               std::min(evaluation_details.min_error, std::abs(error));
@@ -124,6 +138,16 @@ FloatingPoint evaluateLayersRmse(
               std::max(evaluation_details.max_error, std::abs(error));
           ++evaluation_details.num_evaluated_voxels;
           ++evaluation_details.num_overlapping_voxels;
+
+          // Compute bin index.
+          int bin_index = abs(static_cast<int>(error / bin_size));
+
+          auto it = evaluation_details.error_histogram.find(bin_index);
+          if (it != evaluation_details.error_histogram.end()) {
+            ++(it->second);
+          } else {
+            evaluation_details.error_histogram.emplace(bin_index, 1);
+          }
 
           if (error_block) {
             VoxelType& error_voxel =
@@ -133,6 +157,7 @@ FloatingPoint evaluateLayersRmse(
           }
 
           break;
+        }
         case VoxelEvaluationResult::kIgnored:
           ++evaluation_details.num_ignored_voxels;
           ++evaluation_details.num_overlapping_voxels;
