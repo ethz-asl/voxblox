@@ -1,9 +1,9 @@
+#include "voxblox_ros/tsdf_server.h"
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include "voxblox_ros/conversions.h"
+#include "voxblox_ros/ray_casting.h"
 #include "voxblox_ros/ros_params.h"
-
-#include "voxblox_ros/tsdf_server.h"
 
 namespace voxblox {
 
@@ -125,6 +125,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "publish_pointclouds", &TsdfServer::publishPointcloudsCallback, this);
   publish_tsdf_map_srv_ = nh_private_.advertiseService(
       "publish_map", &TsdfServer::publishTsdfMapCallback, this);
+  perform_ray_casting_srv_ = nh_private_.advertiseService(
+      "perform_ray_casting", &TsdfServer::performRayCastingCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
   double update_mesh_every_n_sec = 1.0;
@@ -622,6 +624,48 @@ bool TsdfServer::publishTsdfMapCallback(std_srvs::Empty::Request& /*request*/,
                                         /*response*/) {  // NOLINT
   publishMap();
   return true;
+}
+
+bool TsdfServer::performRayCastingCallback(
+    voxblox_msgs::RayCasting::Request& request,      // NOLINT
+    voxblox_msgs::RayCasting::Response& response) {  // NOLINT
+  if (!request.start_points.empty() &&
+      request.start_points.size() == request.end_points.size()) {
+    Eigen::Vector3d view_point;
+    std::vector<Eigen::Vector3d> start_points, end_points, map_end_points;
+
+    tf::pointMsgToEigen(request.view_point, view_point);
+
+    for (const geometry_msgs::Point& sp : request.start_points) {
+      Eigen::Vector3d p;
+      tf::pointMsgToEigen(sp, p);
+      start_points.push_back(p);
+    }
+
+    for (const geometry_msgs::Point& end_point : request.end_points) {
+      Eigen::Vector3d p;
+      tf::pointMsgToEigen(end_point, p);
+      end_points.push_back(p);
+    }
+
+    voxblox::performRayCasting(this->getTsdfMapPtr()->getTsdfLayerPtr(),
+                               view_point, end_points, start_points,
+                               map_end_points);
+
+    for (const Eigen::Vector3d& map_point : map_end_points) {
+      geometry_msgs::Point p;
+      tf::pointEigenToMsg(map_point, p);
+      response.map_end_points.push_back(p);
+    }
+    return true;
+  } else {
+    ROS_WARN_STREAM(
+        "Requested ray casting without providing an equal number of start and "
+        "end points."
+            << request.start_points.size() << " start points vs "
+            << request.end_points.size() << " end points.";);
+    return false;
+  }
 }
 
 void TsdfServer::updateMeshEvent(const ros::TimerEvent& /*event*/) {
