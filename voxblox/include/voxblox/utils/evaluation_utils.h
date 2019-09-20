@@ -27,7 +27,7 @@ struct VoxelEvaluationDetails {
   FloatingPoint min_error = 0.0;
 
   // Histogram of distance errors.
-  std::map<int, int> error_histogram;
+  std::map<int, double> error_histogram;
 
   size_t num_evaluated_voxels = 0u;
   size_t num_ignored_voxels = 0u;
@@ -47,12 +47,11 @@ struct VoxelEvaluationDetails {
 
     LOG(ERROR) << error_histogram.size();
 
-    ss << "\n Error histogram:\n";
-
-    for (auto voxel_count : error_histogram) {
-      ss << "   Bin " << voxel_count.first << ", voxels: " << voxel_count.second
-         << ")\n";
+    ss << "\n Error histogram: [";
+    for (const std::pair<int, double>& bin : error_histogram) {
+      ss << bin.second << ", ";
     }
+    ss << "]\n";
     ss << "========================================";
     return ss.str();
   }
@@ -88,7 +87,8 @@ FloatingPoint evaluateLayersRmse(
     const Layer<VoxelType>& layer_gt, const Layer<VoxelType>& layer_test,
     const VoxelEvaluationMode& voxel_evaluation_mode,
     VoxelEvaluationDetails* evaluation_result = nullptr,
-    Layer<VoxelType>* error_layer = nullptr, FloatingPoint bin_size = 0.1f) {
+    Layer<VoxelType>* error_layer = nullptr, FloatingPoint bin_size = 0.1f,
+    bool normalize_histogram = true) {
   // Iterate over all voxels in the test layer and look them up in the ground
   // truth layer. Then compute RMSE.
   BlockIndexList block_list;
@@ -146,7 +146,7 @@ FloatingPoint evaluateLayersRmse(
           if (it != evaluation_details.error_histogram.end()) {
             ++(it->second);
           } else {
-            evaluation_details.error_histogram.emplace(bin_index, 1);
+            evaluation_details.error_histogram.emplace(bin_index, 1.0);
           }
 
           if (error_block) {
@@ -196,6 +196,18 @@ FloatingPoint evaluateLayersRmse(
   } else {
     evaluation_details.rmse =
         sqrt(total_squared_error / evaluation_details.num_evaluated_voxels);
+  }
+
+  // Normalize histogram.
+  if (normalize_histogram) {
+    for (const std::pair<int, double> bin :
+         evaluation_details.error_histogram) {
+      evaluation_details.error_histogram[bin.first] =
+          bin.second /
+          static_cast<double>(evaluation_details.num_evaluated_voxels);
+
+      CHECK_LE(evaluation_details.error_histogram[bin.first], 1.0);
+    }
   }
 
   // If the details are requested, output them.
