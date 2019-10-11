@@ -136,6 +136,7 @@ class TsdfIntegratorBase {
     std::string print() const;
   };
 
+  // Sets the layer. Verifies that config is valid w.r.t. layer voxel size
   TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer);
 
   /**
