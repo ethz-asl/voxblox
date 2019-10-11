@@ -74,7 +74,7 @@ TsdfIntegratorBase::TsdfIntegratorBase(const Config& config,
 
 void TsdfIntegratorBase::setLayer(Layer<TsdfVoxel>* layer) {
   CHECK_NOTNULL(layer);
-
+  CHECK_GT(config_.default_truncation_distance, layer_->voxel_size());
   layer_ = layer;
 
   voxel_size_ = layer_->voxel_size();
