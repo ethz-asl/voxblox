@@ -629,43 +629,55 @@ bool TsdfServer::publishTsdfMapCallback(std_srvs::Empty::Request& /*request*/,
 bool TsdfServer::performRayCastingCallback(
     voxblox_msgs::RayCasting::Request& request,      // NOLINT
     voxblox_msgs::RayCasting::Response& response) {  // NOLINT
-  if (!request.start_points.empty() &&
-      request.start_points.size() == request.end_points.size()) {
-    Eigen::Vector3d view_point;
-    std::vector<Eigen::Vector3d> start_points, end_points, map_end_points;
-
-    tf::pointMsgToEigen(request.view_point, view_point);
-
-    for (const geometry_msgs::Point& sp : request.start_points) {
-      Eigen::Vector3d p;
-      tf::pointMsgToEigen(sp, p);
-      start_points.push_back(p);
-    }
-
-    for (const geometry_msgs::Point& end_point : request.end_points) {
-      Eigen::Vector3d p;
-      tf::pointMsgToEigen(end_point, p);
-      end_points.push_back(p);
-    }
-
-    voxblox::performRayCasting(this->getTsdfMapPtr()->getTsdfLayerPtr(),
-                               view_point, end_points, start_points,
-                               map_end_points);
-
-    for (const Eigen::Vector3d& map_point : map_end_points) {
-      geometry_msgs::Point p;
-      tf::pointEigenToMsg(map_point, p);
-      response.map_end_points.push_back(p);
-    }
-    return true;
-  } else {
+  // Check if the request is valid
+  if (request.start_points.size() != request.end_points.size()) {
     ROS_WARN_STREAM(
         "Requested ray casting without providing an equal number of start and "
-        "end points."
+        "end points. "
             << request.start_points.size() << " start points vs "
             << request.end_points.size() << " end points.";);
     return false;
   }
+  if (request.start_points.empty()) {
+    ROS_WARN_STREAM(
+        "Requested ray casting without providing any start and end points.");
+    return false;
+  }
+
+  // Instantiate the ray surface intersection finder
+  RaySurfaceIntersectionFinder ray_surface_intersection_finder(
+      this->getTsdfMapPtr()->getTsdfLayerPtr());
+
+  // Keep track of failed rays s.t. an informative error msg can be printed
+  std::stringstream failed_rays_msg;
+
+  // Find the intersections for all the requested rays
+  for (size_t idx = 0; idx < request.start_points.size(); idx++) {
+    Eigen::Matrix<double, 3, 1> start_point, end_point;
+    tf::pointMsgToEigen(request.start_points[idx], start_point);
+    tf::pointMsgToEigen(request.end_points[idx], end_point);
+
+    voxblox::Point intersection_point;
+    if (!ray_surface_intersection_finder.findIntersectionPoint(
+          start_point.cast<voxblox::FloatingPoint>(),
+          end_point.cast<voxblox::FloatingPoint>(),
+          &intersection_point)) {
+      failed_rays_msg << start_point << " -> " << end_point << "\n";
+      intersection_point = end_point.cast<voxblox::FloatingPoint>();
+    }
+
+    geometry_msgs::Point intersection_point_msg;
+    tf::pointEigenToMsg(intersection_point.cast<double>(),
+                     intersection_point_msg);
+    response.surface_intersection_points.push_back(intersection_point_msg);
+  }
+
+  if (!failed_rays_msg.str().empty()) {
+    ROS_WARN_STREAM("Failed to find intersection for rays:\n"
+                    << failed_rays_msg.str());
+  }
+
+  return true;
 }
 
 void TsdfServer::updateMeshEvent(const ros::TimerEvent& /*event*/) {

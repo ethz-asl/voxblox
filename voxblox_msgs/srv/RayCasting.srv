@@ -1,7 +1,5 @@
-# one view point
-geometry_msgs/Point view_point
 # multiple points
 geometry_msgs/Point[] start_points
 geometry_msgs/Point[] end_points
 ---
-geometry_msgs/Point[] map_end_points
+geometry_msgs/Point[] surface_intersection_points
