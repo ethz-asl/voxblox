@@ -653,17 +653,15 @@ bool TsdfServer::performRayCastingCallback(
 
   // Find the intersections for all the requested rays
   for (size_t idx = 0; idx < request.start_points.size(); idx++) {
-    Eigen::Matrix<double, 3, 1> start_point, end_point;
-    tf::pointMsgToEigen(request.start_points[idx], start_point);
-    tf::pointMsgToEigen(request.end_points[idx], end_point);
+    Point start_point, end_point;
+    pointMsgToKindr(request.start_points[idx], &start_point);
+    pointMsgToKindr(request.end_points[idx], &end_point);
 
-    voxblox::Point intersection_point;
+    Point intersection_point;
     if (!ray_surface_intersection_finder.findIntersectionPoint(
-          start_point.cast<voxblox::FloatingPoint>(),
-          end_point.cast<voxblox::FloatingPoint>(),
-          &intersection_point)) {
+            start_point, end_point, &intersection_point)) {
       failed_rays_msg << start_point << " -> " << end_point << "\n";
-      intersection_point = end_point.cast<voxblox::FloatingPoint>();
+      intersection_point = end_point;
     }
 
     geometry_msgs::Point intersection_point_msg;
@@ -675,6 +673,91 @@ bool TsdfServer::performRayCastingCallback(
   if (!failed_rays_msg.str().empty()) {
     ROS_WARN_STREAM("Failed to find intersection for rays:\n"
                     << failed_rays_msg.str());
+  }
+
+  return true;
+}
+
+bool TsdfServer::renderDepthImageCallback(
+    voxblox_msgs::DepthImage::Request& request,
+    voxblox_msgs::DepthImage::Response& response) {
+  // Ingest the msg data
+  Point viewpoint, top_left_corner, top_right_corner, bottom_left_corner;
+  pointMsgToKindr(request.viewpoint, &viewpoint);
+  pointMsgToKindr(request.top_left_corner, &top_left_corner);
+  pointMsgToKindr(request.top_right_corner, &top_right_corner);
+  pointMsgToKindr(request.bottom_left_corner, &bottom_left_corner);
+  int width = request.width;
+  int height = request.height;
+  FloatingPoint max_distance = request.max_distance;
+  FloatingPoint min_distance = request.min_distance;
+
+  // Instantiate the ray surface intersection finder
+  RaySurfaceIntersectionFinder ray_surface_intersection_finder(
+      this->getTsdfMapPtr()->getTsdfLayerPtr());
+
+  // Keep track of number of failed rays
+  // s.t. an informative error msg can be printed
+  size_t num_failed_rays = 0;
+
+  // Cast rays from the viewpoint through all points on the pixel grid
+  Point delta_x = (top_right_corner - top_left_corner) / width;
+  Point delta_y = (bottom_left_corner - top_left_corner) / height;
+  std::vector<std::vector<FloatingPoint>> depth_image;
+  depth_image.resize(width, std::vector<FloatingPoint>(height, 0.0));
+  for (int x_idx = 0; x_idx < width; x_idx++) {
+    for (int y_idx = 0; y_idx < height; y_idx++) {
+      // Compute the start and end points of the ray
+      const Point grid_point =
+          top_left_corner + x_idx * delta_x + y_idx * delta_y;
+      const Point normalized_ray =
+          (grid_point - viewpoint) / (grid_point - viewpoint).norm();
+      const Point ray_start_point = viewpoint + normalized_ray * min_distance;
+      const Point ray_end_point = viewpoint + normalized_ray * max_distance;
+
+      // Find the intersection and compute the distance
+      Point intersection_point;
+      if (ray_surface_intersection_finder.findIntersectionPoint(
+              ray_start_point, ray_end_point, &intersection_point)) {
+        depth_image[x_idx][y_idx] = (intersection_point - viewpoint).norm();
+      } else {
+        num_failed_rays++;
+        depth_image[x_idx][y_idx] = max_distance;
+      }
+    }
+  }
+
+  // Populate the response header
+  response.depth_image.header.stamp = ros::Time::now();
+  response.depth_image.header.frame_id = world_frame_;
+
+  // Indicate how the depth image is encoded
+  size_t bytes_per_pixel = 2;
+  response.depth_image.encoding = "mono16";
+  response.depth_image.step = height * bytes_per_pixel;
+  response.depth_image.width = width;
+  response.depth_image.height = height;
+
+  // Indicate its indianness
+  short int indianness_test_int = 0x1;                           // NOLINT
+  char* indianness_test_char_ptr = (char*)&indianness_test_int;  // NOLINT
+  response.depth_image.is_bigendian = (indianness_test_char_ptr[0] != 1);
+
+  // Copy the data
+  response.depth_image.data.resize(width * height * bytes_per_pixel);
+  size_t current_byte_idx = 0;
+  for (const auto& depth_row : depth_image) {
+    for (const FloatingPoint& depth_pixel : depth_row) {
+      memcpy(&response.depth_image.data[current_byte_idx], &depth_pixel,
+             bytes_per_pixel);
+      current_byte_idx += bytes_per_pixel;
+    }
+  }
+
+  if (num_failed_rays != 0) {
+    ROS_WARN_STREAM("Failed to find depth for " << num_failed_rays << " out of "
+                                                << width * height
+                                                << " pixels.");
   }
 
   return true;

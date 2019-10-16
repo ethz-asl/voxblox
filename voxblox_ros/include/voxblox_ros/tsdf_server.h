@@ -22,6 +22,7 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 #include <voxblox/utils/color_maps.h>
+#include <voxblox_msgs/DepthImage.h>
 #include <voxblox_msgs/FilePath.h>
 #include <voxblox_msgs/Mesh.h>
 #include <voxblox_msgs/RayCasting.h>
@@ -94,6 +95,9 @@ class TsdfServer {
                               std_srvs::Empty::Response& response);  // NOLINT
   bool performRayCastingCallback(voxblox_msgs::RayCasting::Request& request,  // NOLINT
                                  voxblox_msgs::RayCasting::Response& response);  // NOLINT
+  bool renderDepthImageCallback(
+      voxblox_msgs::DepthImage::Request& request,     // NOLINT
+      voxblox_msgs::DepthImage::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
   void publishMapEvent(const ros::TimerEvent& event);
