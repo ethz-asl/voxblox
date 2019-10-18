@@ -243,7 +243,7 @@ Output Parameters
 ``publish_pointclouds_on_update`` `false`
   Whether to publish pointclouds whenever the map gets new input pointcloud data (true) or whenever the mesh is updated (false).
 ``intensity_colormap`` `"rainbow"`
-  If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are ``rainbow``, ``inverse_rainbow``, ``grayscale``, ``inverse_grayscale``, ``ironbow`` (thermal).
+  If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are ``rainbow``, ``inverse_rainbow``, ``grayscale``, ``inverse_grayscale``, ``ironbow`` (thermal). It is expected that an incoming intensity point cloud will have a field named "intensity", while a colored point cloud will have an "rgb" field. In the absense of these a constant color will be used.
 ``intensity_max_value`` `100.0`
   Maximum value to use for the intensity mapping. Minimum value is always 0.
 ``publish_traversable`` `false`
