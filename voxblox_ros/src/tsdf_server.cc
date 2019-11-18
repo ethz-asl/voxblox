@@ -2,8 +2,8 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include "voxblox_ros/conversions.h"
-#include "voxblox_ros/ray_casting.h"
 #include "voxblox_ros/ros_params.h"
+#include "voxblox/utils/distance_utils.h"
 
 namespace voxblox {
 
@@ -644,10 +644,6 @@ bool TsdfServer::performRayCastingCallback(
     return false;
   }
 
-  // Instantiate the ray surface intersection finder
-  RaySurfaceIntersectionFinder ray_surface_intersection_finder(
-      this->getTsdfMapPtr()->getTsdfLayerPtr());
-
   // Keep track of failed rays s.t. an informative error msg can be printed
   std::stringstream failed_rays_msg;
 
@@ -658,9 +654,15 @@ bool TsdfServer::performRayCastingCallback(
     pointMsgToKindr(request.end_points[idx], &end_point);
 
     Point intersection_point;
-    if (!ray_surface_intersection_finder.findIntersectionPoint(
-            start_point, end_point, &intersection_point)) {
+    // NOTE: The bearing_vector does not need to be normalized,
+    //       since getSurfaceDistanceAlongRay() already does this
+    Point bearing_vector = end_point - start_point;
+    float max_distance = bearing_vector.norm();
+    if (!getSurfaceDistanceAlongRay(tsdf_map_->getTsdfLayer(),
+            start_point, bearing_vector, max_distance, &intersection_point)) {
       failed_rays_msg << start_point << " -> " << end_point << "\n";
+      // TODO(victorr): Decide on a clear, common convention to
+      //                communicate ray casting failure
       intersection_point = end_point;
     }
 
@@ -692,10 +694,6 @@ bool TsdfServer::renderDepthImageCallback(
   FloatingPoint max_distance = request.max_distance;
   FloatingPoint min_distance = request.min_distance;
 
-  // Instantiate the ray surface intersection finder
-  RaySurfaceIntersectionFinder ray_surface_intersection_finder(
-      this->getTsdfMapPtr()->getTsdfLayerPtr());
-
   // Keep track of number of failed rays
   // s.t. an informative error msg can be printed
   size_t num_failed_rays = 0;
@@ -713,12 +711,12 @@ bool TsdfServer::renderDepthImageCallback(
       const Point normalized_ray =
           (grid_point - viewpoint) / (grid_point - viewpoint).norm();
       const Point ray_start_point = viewpoint + normalized_ray * min_distance;
-      const Point ray_end_point = viewpoint + normalized_ray * max_distance;
 
       // Find the intersection and compute the distance
       Point intersection_point;
-      if (ray_surface_intersection_finder.findIntersectionPoint(
-              ray_start_point, ray_end_point, &intersection_point)) {
+      if (getSurfaceDistanceAlongRay(
+          tsdf_map_->getTsdfLayer(), ray_start_point, normalized_ray,
+          max_distance, &intersection_point)) {
         depth_image[x_idx][y_idx] = (intersection_point - viewpoint).norm();
       } else {
         num_failed_rays++;
@@ -756,8 +754,7 @@ bool TsdfServer::renderDepthImageCallback(
 
   if (num_failed_rays != 0) {
     ROS_WARN_STREAM("Failed to find depth for " << num_failed_rays << " out of "
-                                                << width * height
-                                                << " pixels.");
+                    << width * height << " pixels.");
   }
 
   return true;

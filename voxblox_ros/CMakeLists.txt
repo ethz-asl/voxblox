@@ -16,7 +16,6 @@ cs_add_library(${PROJECT_NAME}
   src/intensity_server.cc
   src/transformer.cc
   src/tsdf_server.cc
-  src/ray_casting.cc
 )
 
 ############
