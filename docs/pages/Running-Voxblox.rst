@@ -16,10 +16,11 @@ An alternative dataset the `basement dataset <https://projects.asl.ethz.ch/datas
 	roslaunch voxblox_ros basement_dataset.launch
 
 
-If you open rviz, you should be able to see the the mesh visualized on the ``/voxblox_node/mesh`` MarkerArray topic, in the ``world`` static frame, as shown below.
+If you open rviz, you should be able to see the the mesh visualized on the ``/voxblox_node/mesh`` topic of type voxblox_msgs/Mesh, in the ``world`` static frame, as shown below. One should source ``catkin_ws/devel/setup.bash`` before starting rviz, to make it recognize this topic type. 
+
 The mesh only updates once per second (this is a setting in the launch file).
 
 .. image:: http://i.imgur.com/nSX5Qsh.jpg
     :align: center
 
-The rest of the commonly-used settings are parameters in the launch file.
+The rest of the commonly-used settings are parameters in the launch file. The the voxblox node page has the full list of settings.
