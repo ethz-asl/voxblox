@@ -227,8 +227,8 @@ bool TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
     // ray based on the ray weight and the clearling ray weight factor.
     update_weight = clearing_ray_weight;
   }
-  CHECK_GE(update_weight, clearing_ray_weight);
-  CHECK_LE(update_weight, ray_weight);
+  CHECK_GE(update_weight, clearing_ray_weight - kFloatEpsilon);
+  CHECK_LE(update_weight, ray_weight + kFloatEpsilon);
 
   // Lookup the mutex that is responsible for this voxel and lock it
   std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
