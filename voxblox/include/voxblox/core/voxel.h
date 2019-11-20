@@ -46,6 +46,11 @@ struct IntensityVoxel {
   float weight = 0.0f;
 };
 
+struct ColorVoxel {
+  Color color;
+  float weight = 0.0f;
+};
+
 /// Used for serialization only.
 namespace voxel_types {
 const std::string kNotSerializable = "not_serializable";
