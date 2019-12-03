@@ -6,6 +6,7 @@
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/mesh/mesh_layer.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/timing.h"
 
@@ -20,6 +21,9 @@ class ExternalColorIntegrator {
   void integrateColorBearingVectors(const Point& origin,
                                     const Pointcloud& bearing_vectors,
                                     const Colors& colors);
+
+  // TODO(victorr): Move this method to a more appropriate place
+  void recolorMeshLayer(MeshLayer* mesh_layer);
 
  private:
   static constexpr float measurement_weight_ = 1.0f;

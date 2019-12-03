@@ -60,4 +60,30 @@ void ExternalColorIntegrator::integrateColorBearingVectors(
     }
   }
 }
+
+void ExternalColorIntegrator::recolorMeshLayer(voxblox::MeshLayer *mesh_layer) {
+  CHECK_NOTNULL(mesh_layer);
+
+  // Go over and recolor all the mesh blocks
+  BlockIndexList mesh_indices;
+  mesh_layer->getAllAllocatedMeshes(&mesh_indices);
+
+  for (BlockIndex& mesh_index : mesh_indices) {
+    Mesh::Ptr mesh = mesh_layer->getMeshPtrByIndex(mesh_index);
+
+    // Look up vertices in the color layer
+    for (size_t i = 0; i < mesh->vertices.size(); i++) {
+      CHECK(mesh->hasColors())
+      << "Make sure that colors are enabled for your mesh";
+
+      // TODO(victorr): Use interpolation instead of nearest neighbor lookup
+      const ColorVoxel* color_voxel =
+          color_layer_->getVoxelPtrByCoordinates(mesh->vertices[i]);
+
+      if (color_voxel != nullptr && color_voxel->weight > 0.0) {
+        mesh->colors[i] = color_voxel->color;
+      }
+    }
+  }
+}
 }  // namespace voxblox
