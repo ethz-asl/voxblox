@@ -68,6 +68,7 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
 
   double truncation_distance = integrator_config.default_truncation_distance;
   double max_weight = integrator_config.max_weight;
+  int num_integrator_threads = integrator_config.integrator_threads;
   nh_private.param("voxel_carving_enabled",
                    integrator_config.voxel_carving_enabled,
                    integrator_config.voxel_carving_enabled);
@@ -110,10 +111,14 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   nh_private.param("integration_order_mode",
                    integrator_config.integration_order_mode,
                    integrator_config.integration_order_mode);
+  nh_private.param("integrator_threads", num_integrator_threads,
+                   num_integrator_threads);
 
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
+  integrator_config.integrator_threads =
+      static_cast<size_t>(num_integrator_threads);
 
   return integrator_config;
 }
