@@ -66,6 +66,7 @@ class TsdfIntegratorBase {
     bool use_weight_dropoff = true;
     bool use_sparsity_compensation_factor = false;
     float sparsity_compensation_factor = 1.0f;
+    bool use_color_integration = true;
 
     size_t integrator_threads = std::thread::hardware_concurrency();
 
@@ -152,8 +153,8 @@ class TsdfIntegratorBase {
   /// Updates tsdf_voxel, Thread safe.
   void updateTsdfVoxel(const Point& origin, const Point& point_G,
                        const GlobalIndex& global_voxel_index,
-                       const Color& color, const float weight,
-                       TsdfVoxel* tsdf_voxel);
+                       const float weight, TsdfVoxel* tsdf_voxel,
+                       const Color* const color = nullptr);
 
   /// Calculates TSDF distance, Thread safe.
   float computeDistance(const Point& origin, const Point& point_G,

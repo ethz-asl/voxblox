@@ -148,13 +148,14 @@ void TsdfIntegratorBase::updateLayerWithStoredBlocks() {
 // Updates tsdf_voxel. Thread safe.
 void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
                                          const Point& point_G,
-                                         const GlobalIndex& global_voxel_idx,
-                                         const Color& color, const float weight,
-                                         TsdfVoxel* tsdf_voxel) {
+                                         const GlobalIndex& global_voxel_index,
+                                         const float weight,
+                                         TsdfVoxel* tsdf_voxel,
+                                         const Color* const color) {
   DCHECK(tsdf_voxel != nullptr);
 
   const Point voxel_center =
-      getCenterPointFromGridIndex(global_voxel_idx, voxel_size_);
+      getCenterPointFromGridIndex(global_voxel_index, voxel_size_);
 
   const float sdf = computeDistance(origin, point_G, voxel_center);
 
@@ -182,7 +183,7 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
   }
 
   // Lookup the mutex that is responsible for this voxel and lock it
-  std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_idx));
+  std::lock_guard<std::mutex> lock(mutexes_.get(global_voxel_index));
 
   const float new_weight = tsdf_voxel->weight + updated_weight;
 
@@ -197,10 +198,11 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
       new_weight;
 
   // color blending is expensive only do it close to the surface
-  if (std::abs(sdf) < config_.default_truncation_distance) {
+  if (color && std::abs(sdf) < config_.default_truncation_distance) {
     tsdf_voxel->color = Color::blendTwoColors(
-        tsdf_voxel->color, tsdf_voxel->weight, color, updated_weight);
+        tsdf_voxel->color, tsdf_voxel->weight, *color, updated_weight);
   }
+
   tsdf_voxel->distance =
       (new_sdf > 0.0) ? std::min(config_.default_truncation_distance, new_sdf)
                       : std::max(-config_.default_truncation_distance, new_sdf);
@@ -275,7 +277,12 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
   size_t point_idx;
   while (index_getter->getNextIndex(&point_idx)) {
     const Point& point_C = points_C[point_idx];
-    const Color& color = colors[point_idx];
+    const Color* color_ptr;
+    if (config_.use_color_integration) {
+      color_ptr = &colors[point_idx];
+    } else {
+      color_ptr = nullptr;
+    }
     bool is_clearing;
     if (!isPointValid(point_C, freespace_points, &is_clearing)) {
       continue;
@@ -298,7 +305,8 @@ void SimpleTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 
       const float weight = getVoxelWeight(point_C);
 
-      updateTsdfVoxel(origin, point_G, global_voxel_idx, color, weight, voxel);
+      updateTsdfVoxel(origin, point_G, global_voxel_idx, weight, voxel,
+                      color_ptr);
     }
   }
 }
@@ -385,7 +393,6 @@ void MergedTsdfIntegrator::integrateVoxel(
 
   for (const size_t pt_idx : kv.second) {
     const Point& point_C = points_C[pt_idx];
-    const Color& color = colors[pt_idx];
 
     const float point_weight = getVoxelWeight(point_C);
     if (point_weight < kEpsilon) {
@@ -393,10 +400,12 @@ void MergedTsdfIntegrator::integrateVoxel(
     }
     merged_point_C = (merged_point_C * merged_weight + point_C * point_weight) /
                      (merged_weight + point_weight);
-    merged_color =
-        Color::blendTwoColors(merged_color, merged_weight, color, point_weight);
     merged_weight += point_weight;
-
+    if (config_.use_color_integration) {
+      const Color& color = colors[pt_idx];
+      merged_color = Color::blendTwoColors(merged_color, merged_weight, color,
+                                           point_weight);
+    }
     // only take first point when clearing
     if (clearing_ray) {
       break;
@@ -425,8 +434,13 @@ void MergedTsdfIntegrator::integrateVoxel(
     TsdfVoxel* voxel =
         allocateStorageAndGetVoxelPtr(global_voxel_idx, &block, &block_idx);
 
-    updateTsdfVoxel(origin, merged_point_G, global_voxel_idx, merged_color,
-                    merged_weight, voxel);
+    if (config_.use_color_integration) {
+      updateTsdfVoxel(origin, merged_point_G, global_voxel_idx, merged_weight,
+                      voxel, &merged_color);
+    } else {
+      updateTsdfVoxel(origin, merged_point_G, global_voxel_idx, merged_weight,
+                      voxel);
+    }
   }
 }
 
@@ -497,7 +511,12 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
               std::chrono::steady_clock::now() - integration_start_time_)
               .count() < config_.max_integration_time_s * 1000000)) {
     const Point& point_C = points_C[point_idx];
-    const Color& color = colors[point_idx];
+    const Color* color_ptr;
+    if (config_.use_color_integration) {
+      color_ptr = &colors[point_idx];
+    } else {
+      color_ptr = nullptr;
+    }
     bool is_clearing;
     if (!isPointValid(point_C, freespace_points, &is_clearing)) {
       continue;
@@ -546,7 +565,8 @@ void FastTsdfIntegrator::integrateFunction(const Transformation& T_G_C,
 
       const float weight = getVoxelWeight(point_C);
 
-      updateTsdfVoxel(origin, point_G, global_voxel_idx, color, weight, voxel);
+      updateTsdfVoxel(origin, point_G, global_voxel_idx, weight, voxel,
+                      color_ptr);
     }
   }
 }
@@ -593,24 +613,24 @@ std::string TsdfIntegratorBase::Config::print() const {
   // clang-format off
   ss << "================== TSDF Integrator Config ====================\n";
   ss << " General: \n";
-  ss << " - default_truncation_distance:               " << default_truncation_distance << "\n";
-  ss << " - max_weight:                                " << max_weight << "\n";
-  ss << " - voxel_carving_enabled:                     " << voxel_carving_enabled << "\n";
-  ss << " - min_ray_length_m:                          " << min_ray_length_m << "\n";
-  ss << " - max_ray_length_m:                          " << max_ray_length_m << "\n";
-  ss << " - use_const_weight:                          " << use_const_weight << "\n";
-  ss << " - allow_clear:                               " << allow_clear << "\n";
-  ss << " - use_weight_dropoff:                        " << use_weight_dropoff << "\n";
-  ss << " - use_sparsity_compensation_factor:          " << use_sparsity_compensation_factor << "\n";
-  ss << " - sparsity_compensation_factor:              "  << sparsity_compensation_factor << "\n";
-  ss << " - integrator_threads:                        " << integrator_threads << "\n";
+  ss << " - default_truncation_distance:       " << default_truncation_distance << "\n";       // NOLINT
+  ss << " - max_weight:                        " << max_weight << "\n";
+  ss << " - voxel_carving_enabled:             " << voxel_carving_enabled << "\n";             // NOLINT
+  ss << " - min_ray_length_m:                  " << min_ray_length_m << "\n";
+  ss << " - max_ray_length_m:                  " << max_ray_length_m << "\n";
+  ss << " - use_const_weight:                  " << use_const_weight << "\n";
+  ss << " - allow_clear:                       " << allow_clear << "\n";
+  ss << " - use_weight_dropoff:                " << use_weight_dropoff << "\n";
+  ss << " - use_sparsity_compensation_factor:  " << use_sparsity_compensation_factor << "\n";  // NOLINT
+  ss << " - sparsity_compensation_factor:      "  << sparsity_compensation_factor << "\n";     // NOLINT
+  ss << " - integrator_threads:                " << integrator_threads << "\n";
   ss << " MergedTsdfIntegrator: \n";
-  ss << " - enable_anti_grazing:                       " << enable_anti_grazing << "\n";
+  ss << " - enable_anti_grazing:               " << enable_anti_grazing << "\n";
   ss << " FastTsdfIntegrator: \n";
-  ss << " - start_voxel_subsampling_factor:            " << start_voxel_subsampling_factor << "\n";
-  ss << " - max_consecutive_ray_collisions:            " << max_consecutive_ray_collisions << "\n";
-  ss << " - clear_checks_every_n_frames:               " << clear_checks_every_n_frames << "\n";
-  ss << " - max_integration_time_s:                    " << max_integration_time_s << "\n";
+  ss << " - start_voxel_subsampling_factor:    " << start_voxel_subsampling_factor << "\n";    // NOLINT
+  ss << " - max_consecutive_ray_collisions:    " << max_consecutive_ray_collisions << "\n";    // NOLINT
+  ss << " - clear_checks_every_n_frames:       " << clear_checks_every_n_frames << "\n";       // NOLINT
+  ss << " - max_integration_time_s:            " << max_integration_time_s << "\n";            // NOLINT
   ss << "==============================================================\n";
   // clang-format on
   return ss.str();

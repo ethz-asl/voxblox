@@ -104,6 +104,9 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   nh_private.param("sparsity_compensation_factor",
                    integrator_config.sparsity_compensation_factor,
                    integrator_config.sparsity_compensation_factor);
+  nh_private.param("use_color_integration",
+                   integrator_config.use_color_integration,
+                   integrator_config.use_color_integration);
   nh_private.param("integration_order_mode",
                    integrator_config.integration_order_mode,
                    integrator_config.integration_order_mode);
