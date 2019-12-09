@@ -149,7 +149,7 @@ These parameters are only used if the integrator ``method`` is set to "fast".
 
 ``start_voxel_subsampling_factor`` `2`
   Before integration points are inserted into a sub-voxel, only one point is allowed per sub-voxel. This can be thought of as subsampling the pointcloud. The edge length of the sub-voxel is the voxel edge length divided by ``start_voxel_subsampling_factor``.
-``max_consecutive_ray_collisions`` `2`
+``max_consecutive_ray_collisions`` `0`
   When a ray is cast by this integrator it detects if any other ray has already passed through the current voxel this scan. If it passes through more than ``max_consecutive_ray_collisions`` voxels other rays have seen in a row, it is taken to be adding no new information and the casting stops.
 ``max_integration_time_s`` `3.40282e+38`
   The time budget for frame integration, if this time is exceeded ray casting is stopped early. Used to guarantee real time performance.

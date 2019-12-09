@@ -22,8 +22,10 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 #include <voxblox/utils/color_maps.h>
+#include <voxblox_msgs/DepthImage.h>
 #include <voxblox_msgs/FilePath.h>
 #include <voxblox_msgs/Mesh.h>
+#include <voxblox_msgs/RayCasting.h>
 
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
@@ -91,6 +93,11 @@ class TsdfServer {
       std_srvs::Empty::Response& response);                          // NOLINT
   bool publishTsdfMapCallback(std_srvs::Empty::Request& request,     // NOLINT
                               std_srvs::Empty::Response& response);  // NOLINT
+  bool performRayCastingCallback(voxblox_msgs::RayCasting::Request& request,  // NOLINT
+                                 voxblox_msgs::RayCasting::Response& response);  // NOLINT
+  bool renderDepthImageCallback(
+      voxblox_msgs::DepthImage::Request& request,     // NOLINT
+      voxblox_msgs::DepthImage::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
   void publishMapEvent(const ros::TimerEvent& event);
@@ -154,6 +161,7 @@ class TsdfServer {
   ros::ServiceServer load_map_srv_;
   ros::ServiceServer publish_pointclouds_srv_;
   ros::ServiceServer publish_tsdf_map_srv_;
+  ros::ServiceServer perform_ray_casting_srv_;
 
   /// Tools for broadcasting TFs.
   tf::TransformBroadcaster tf_broadcaster_;
@@ -222,6 +230,7 @@ class TsdfServer {
    */
   bool accumulate_icp_corrections_;
 
+  FloatingPoint occupancy_min_distance_voxel_size_factor_;
 
   /// Subscriber settings.
   int pointcloud_queue_size_;

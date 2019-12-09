@@ -1,9 +1,9 @@
+#include "voxblox_ros/tsdf_server.h"
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
-
-#include "voxblox_ros/tsdf_server.h"
+#include "voxblox/utils/distance_utils.h"
 
 namespace voxblox {
 
@@ -35,6 +35,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       cache_mesh_(false),
       enable_icp_(false),
       accumulate_icp_corrections_(true),
+      occupancy_min_distance_voxel_size_factor_(1.0),
       pointcloud_queue_size_(1),
       num_subscribers_tsdf_map_(0),
       transformer_(nh, nh_private) {
@@ -124,6 +125,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "publish_pointclouds", &TsdfServer::publishPointcloudsCallback, this);
   publish_tsdf_map_srv_ = nh_private_.advertiseService(
       "publish_map", &TsdfServer::publishTsdfMapCallback, this);
+  perform_ray_casting_srv_ = nh_private_.advertiseService(
+      "perform_ray_casting", &TsdfServer::performRayCastingCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
   double update_mesh_every_n_sec = 1.0;
@@ -176,6 +179,10 @@ void TsdfServer::getServerConfigFromRosParam(
   nh_private.param("accumulate_icp_corrections", accumulate_icp_corrections_,
                    accumulate_icp_corrections_);
 
+  nh_private.param("occupancy_min_distance_voxel_size_factor",
+                   occupancy_min_distance_voxel_size_factor_,
+                   occupancy_min_distance_voxel_size_factor_);
+
   nh_private.param("verbose", verbose_, verbose_);
 
   // Mesh settings.
@@ -208,7 +215,6 @@ void TsdfServer::getServerConfigFromRosParam(
   }
   color_map_->setMaxValue(intensity_max_value);
 }
-
 
 void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
@@ -438,8 +444,11 @@ void TsdfServer::publishTsdfSurfacePoints() {
 void TsdfServer::publishTsdfOccupiedNodes() {
   // Create a pointcloud with distance = intensity.
   visualization_msgs::MarkerArray marker_array;
-  createOccupancyBlocksFromTsdfLayer(tsdf_map_->getTsdfLayer(), world_frame_,
-                                     &marker_array);
+  createOccupancyBlocksFromTsdfLayer(
+      tsdf_map_->getTsdfLayer(), world_frame_,
+      tsdf_map_->getTsdfLayer().voxel_size() *
+          occupancy_min_distance_voxel_size_factor_,
+      &marker_array);
   occupancy_marker_pub_.publish(marker_array);
 }
 
@@ -614,6 +623,140 @@ bool TsdfServer::publishTsdfMapCallback(std_srvs::Empty::Request& /*request*/,
                                         std_srvs::Empty::Response&
                                         /*response*/) {  // NOLINT
   publishMap();
+  return true;
+}
+
+bool TsdfServer::performRayCastingCallback(
+    voxblox_msgs::RayCasting::Request& request,      // NOLINT
+    voxblox_msgs::RayCasting::Response& response) {  // NOLINT
+  // Check if the request is valid
+  if (request.start_points.size() != request.end_points.size()) {
+    ROS_WARN_STREAM(
+        "Requested ray casting without providing an equal number of start and "
+        "end points. "
+            << request.start_points.size() << " start points vs "
+            << request.end_points.size() << " end points.";);
+    return false;
+  }
+  if (request.start_points.empty()) {
+    ROS_WARN_STREAM(
+        "Requested ray casting without providing any start and end points.");
+    return false;
+  }
+
+  // Keep track of failed rays s.t. an informative error msg can be printed
+  std::stringstream failed_rays_msg;
+
+  // Find the intersections for all the requested rays
+  for (size_t idx = 0; idx < request.start_points.size(); idx++) {
+    Point start_point, end_point;
+    pointMsgToKindr(request.start_points[idx], &start_point);
+    pointMsgToKindr(request.end_points[idx], &end_point);
+
+    Point intersection_point;
+    // NOTE: The bearing_vector does not need to be normalized,
+    //       since getSurfaceDistanceAlongRay() already does this
+    Point bearing_vector = end_point - start_point;
+    float max_distance = bearing_vector.norm();
+    if (!getSurfaceDistanceAlongRay(tsdf_map_->getTsdfLayer(),
+            start_point, bearing_vector, max_distance, &intersection_point)) {
+      failed_rays_msg << start_point << " -> " << end_point << "\n";
+      // TODO(victorr): Decide on a clear, common convention to
+      //                communicate ray casting failure
+      intersection_point = end_point;
+    }
+
+    geometry_msgs::Point intersection_point_msg;
+    tf::pointEigenToMsg(intersection_point.cast<double>(),
+                     intersection_point_msg);
+    response.surface_intersection_points.push_back(intersection_point_msg);
+  }
+
+  if (!failed_rays_msg.str().empty()) {
+    ROS_WARN_STREAM("Failed to find intersection for rays:\n"
+                    << failed_rays_msg.str());
+  }
+
+  return true;
+}
+
+bool TsdfServer::renderDepthImageCallback(
+    voxblox_msgs::DepthImage::Request& request,
+    voxblox_msgs::DepthImage::Response& response) {
+  // Ingest the msg data
+  Point viewpoint, top_left_corner, top_right_corner, bottom_left_corner;
+  pointMsgToKindr(request.viewpoint, &viewpoint);
+  pointMsgToKindr(request.top_left_corner, &top_left_corner);
+  pointMsgToKindr(request.top_right_corner, &top_right_corner);
+  pointMsgToKindr(request.bottom_left_corner, &bottom_left_corner);
+  int width = request.width;
+  int height = request.height;
+  FloatingPoint max_distance = request.max_distance;
+  FloatingPoint min_distance = request.min_distance;
+
+  // Keep track of number of failed rays
+  // s.t. an informative error msg can be printed
+  size_t num_failed_rays = 0;
+
+  // Cast rays from the viewpoint through all points on the pixel grid
+  Point delta_x = (top_right_corner - top_left_corner) / width;
+  Point delta_y = (bottom_left_corner - top_left_corner) / height;
+  std::vector<std::vector<FloatingPoint>> depth_image;
+  depth_image.resize(width, std::vector<FloatingPoint>(height, 0.0));
+  for (int x_idx = 0; x_idx < width; x_idx++) {
+    for (int y_idx = 0; y_idx < height; y_idx++) {
+      // Compute the start and end points of the ray
+      const Point grid_point =
+          top_left_corner + x_idx * delta_x + y_idx * delta_y;
+      const Point normalized_ray =
+          (grid_point - viewpoint) / (grid_point - viewpoint).norm();
+      const Point ray_start_point = viewpoint + normalized_ray * min_distance;
+
+      // Find the intersection and compute the distance
+      Point intersection_point;
+      if (getSurfaceDistanceAlongRay(
+          tsdf_map_->getTsdfLayer(), ray_start_point, normalized_ray,
+          max_distance, &intersection_point)) {
+        depth_image[x_idx][y_idx] = (intersection_point - viewpoint).norm();
+      } else {
+        num_failed_rays++;
+        depth_image[x_idx][y_idx] = max_distance;
+      }
+    }
+  }
+
+  // Populate the response header
+  response.depth_image.header.stamp = ros::Time::now();
+  response.depth_image.header.frame_id = world_frame_;
+
+  // Indicate how the depth image is encoded
+  size_t bytes_per_pixel = 2;
+  response.depth_image.encoding = "mono16";
+  response.depth_image.step = height * bytes_per_pixel;
+  response.depth_image.width = width;
+  response.depth_image.height = height;
+
+  // Indicate its indianness
+  short int indianness_test_int = 0x1;                           // NOLINT
+  char* indianness_test_char_ptr = (char*)&indianness_test_int;  // NOLINT
+  response.depth_image.is_bigendian = (indianness_test_char_ptr[0] != 1);
+
+  // Copy the data
+  response.depth_image.data.resize(width * height * bytes_per_pixel);
+  size_t current_byte_idx = 0;
+  for (const auto& depth_row : depth_image) {
+    for (const FloatingPoint& depth_pixel : depth_row) {
+      memcpy(&response.depth_image.data[current_byte_idx], &depth_pixel,
+             bytes_per_pixel);
+      current_byte_idx += bytes_per_pixel;
+    }
+  }
+
+  if (num_failed_rays != 0) {
+    ROS_WARN_STREAM("Failed to find depth for " << num_failed_rays << " out of "
+                    << width * height << " pixels.");
+  }
+
   return true;
 }
 

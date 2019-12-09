@@ -41,7 +41,6 @@
     <param name="min_time_between_msgs_sec" value="0.2" />
     <param name="slice_level" value="1.0" />
     <param name="method" value="fast" />
-    <param name="use_const_weight" value="true" />
     <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon kitti).ply" />
   </node>
 

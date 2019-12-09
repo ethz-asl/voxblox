@@ -1,0 +1,5 @@
+# multiple points
+geometry_msgs/Point[] start_points
+geometry_msgs/Point[] end_points
+---
+geometry_msgs/Point[] surface_intersection_points

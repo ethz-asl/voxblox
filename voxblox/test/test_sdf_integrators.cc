@@ -156,13 +156,13 @@ TEST_P(SdfIntegratorsTest, TsdfIntegrators) {
 
   size_t total_voxels = simple_result.num_overlapping_voxels +
                         simple_result.num_non_overlapping_voxels;
-  size_t one_percent_of_voxels = static_cast<size_t>(total_voxels * 0.01);
+  size_t difference_threshold = static_cast<size_t>(total_voxels * 0.03);
 
   // Make sure they're all similar.
   EXPECT_NEAR(simple_result.num_overlapping_voxels,
-              merged_result.num_overlapping_voxels, one_percent_of_voxels);
+              merged_result.num_overlapping_voxels, difference_threshold);
   EXPECT_NEAR(simple_result.num_overlapping_voxels,
-              fast_result.num_overlapping_voxels, one_percent_of_voxels);
+              fast_result.num_overlapping_voxels, difference_threshold);
 
   // Make sure they're all reasonable.
   EXPECT_NEAR(simple_result.min_error, 0.0, kFloatingPointToleranceHigh);
@@ -176,6 +176,13 @@ TEST_P(SdfIntegratorsTest, TsdfIntegrators) {
   EXPECT_LT(simple_result.rmse, voxel_size_ * 2);
   EXPECT_LT(merged_result.rmse, voxel_size_ * 2);
   EXPECT_LT(fast_result.rmse, voxel_size_ * 2);
+
+  LOG(INFO) << "Simple - RMSE: " << simple_result.rmse
+            << " max error: " << simple_result.max_error;
+  LOG(INFO) << "Merged - RMSE: " << merged_result.rmse
+            << " max error: " << merged_result.max_error;
+  LOG(INFO) << "Fast - RMSE: " << fast_result.rmse
+            << " max error: " << fast_result.max_error;
 
   io::SaveLayer(merged_layer, "tsdf_fast_test.voxblox", true);
 }

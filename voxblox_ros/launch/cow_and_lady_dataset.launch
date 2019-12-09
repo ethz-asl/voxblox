@@ -17,7 +17,7 @@
     <param name="update_mesh_every_n_sec" value="1.0" />
     <param name="min_time_between_msgs_sec" value="0.0" />
     <param name="method" value="fast" />
-    <param name="use_const_weight" value="false" />
+    <param name="weight_ray_by_range" value="true" />
     <param name="allow_clear" value="true" />
     <param name="verbose" value="true" />
     <remap from="transform" to="/kinect/vrpn_client/estimated_transform" />
