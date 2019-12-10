@@ -6,8 +6,8 @@
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
-#include "voxblox/mesh/mesh_layer.h"
 #include "voxblox/integrator/integrator_utils.h"
+#include "voxblox/mesh/mesh_layer.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -15,12 +15,12 @@ class ExternalColorIntegrator {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ExternalColorIntegrator(const Layer<TsdfVoxel> &tsdf_layer,
+  ExternalColorIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
                           Layer<ColorVoxel>* color_layer);
 
-  void integrateColorBearingVectors(const Point& origin,
-                                    const Pointcloud& bearing_vectors,
-                                    const Colors& colors);
+  bool integrateColorBearingVectors(
+      const kindr::minimal::QuatTransformation& T_G_S,
+      const Pointcloud& bearing_vectors_camera_frame, const Colors& colors);
 
   // TODO(victorr): Move this method to a more appropriate place
   void recolorMeshLayer(MeshLayer* mesh_layer);
@@ -37,6 +37,6 @@ class ExternalColorIntegrator {
   const Layer<TsdfVoxel>& tsdf_layer_;
   Layer<ColorVoxel>* color_layer_;
 };
-}
+}  // namespace voxblox
 
-#endif //VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_EXTERNAL_COLOR_INTEGRATOR_H_
+#endif  // VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_EXTERNAL_COLOR_INTEGRATOR_H_

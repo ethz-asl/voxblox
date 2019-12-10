@@ -2,44 +2,51 @@
 #include "voxblox/utils/distance_utils.h"
 
 namespace voxblox {
-ExternalColorIntegrator::ExternalColorIntegrator(const Layer<TsdfVoxel> &tsdf_layer,
-                                                 Layer<ColorVoxel> *color_layer)
+ExternalColorIntegrator::ExternalColorIntegrator(
+    const Layer<TsdfVoxel> &tsdf_layer, Layer<ColorVoxel> *color_layer)
     : max_distance_(15.0f),
       max_weight_(100.0f),
       intensity_prop_voxel_radius_(2),
       tsdf_layer_(tsdf_layer),
       color_layer_(color_layer) {}
 
-void ExternalColorIntegrator::integrateColorBearingVectors(
-    const Point &origin,
-    const Pointcloud &bearing_vectors,
-    const Colors &colors) {
+bool ExternalColorIntegrator::integrateColorBearingVectors(
+    const kindr::minimal::QuatTransformation &T_G_S,
+    const Pointcloud &bearing_vectors_camera_frame, const Colors &colors) {
   timing::Timer external_color_timer("external_color/integrate");
 
-  CHECK_EQ(bearing_vectors.size(), colors.size())
-    << "Color and bearing vector sizes do not match!";
+  Pointcloud bearing_vectors_world_frame(bearing_vectors_camera_frame.size());
+  Point origin = T_G_S.getPosition().cast<FloatingPoint>();
+  for (const Point &bearing_vector_camera_frame :
+       bearing_vectors_camera_frame) {
+    Point bearing_vector_world_frame =
+        T_G_S.transform(bearing_vector_camera_frame.cast<double>())
+            .cast<FloatingPoint>();
+    bearing_vectors_world_frame.emplace_back(bearing_vector_world_frame);
+  }
+  CHECK_EQ(bearing_vectors_world_frame.size(), colors.size())
+      << "Color and bearing vector sizes do not match!";
   const FloatingPoint voxel_size = tsdf_layer_.voxel_size();
-
-  for (size_t i = 0; i < bearing_vectors.size(); ++i) {
+  bool global_success = false;
+  for (size_t i = 0; i < bearing_vectors_world_frame.size(); ++i) {
     Point surface_intersection = Point::Zero();
     // Cast ray from the origin in the direction of the bearing vector until
     // finding an intersection with a surface.
     bool success = getSurfaceDistanceAlongRay<TsdfVoxel>(
-        tsdf_layer_, origin, bearing_vectors[i], max_distance_,
+        tsdf_layer_, origin, bearing_vectors_world_frame[i], max_distance_,
         &surface_intersection);
 
     if (!success) {
       continue;
     }
-
+    global_success = true;
     // Now look up the matching voxels in the intensity layer and mark them.
     // Let's just start with 1.
     Block<ColorVoxel>::Ptr block_ptr =
         color_layer_->allocateBlockPtrByCoordinates(surface_intersection);
-    ColorVoxel& voxel =
-        block_ptr->getVoxelByCoordinates(surface_intersection);
-    voxel.color = Color::blendTwoColors(
-        voxel.color, voxel.weight, colors[i], measurement_weight_);
+    ColorVoxel &voxel = block_ptr->getVoxelByCoordinates(surface_intersection);
+    voxel.color = Color::blendTwoColors(voxel.color, voxel.weight, colors[i],
+                                        measurement_weight_);
 
     voxel.weight = std::min(max_weight_, voxel.weight + measurement_weight_);
 
@@ -48,8 +55,8 @@ void ExternalColorIntegrator::integrateColorBearingVectors(
     Point close_voxel = surface_intersection;
     for (int voxel_offset = -intensity_prop_voxel_radius_;
          voxel_offset <= intensity_prop_voxel_radius_; voxel_offset++) {
-      close_voxel =
-          surface_intersection + bearing_vectors[i] * voxel_offset * voxel_size;
+      close_voxel = surface_intersection +
+                    bearing_vectors_world_frame[i] * voxel_offset * voxel_size;
       Block<ColorVoxel>::Ptr new_block_ptr =
           color_layer_->allocateBlockPtrByCoordinates(close_voxel);
       ColorVoxel &new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
@@ -59,6 +66,7 @@ void ExternalColorIntegrator::integrateColorBearingVectors(
       }
     }
   }
+  return global_success;
 }
 
 void ExternalColorIntegrator::recolorMeshLayer(voxblox::MeshLayer *mesh_layer) {
@@ -68,16 +76,16 @@ void ExternalColorIntegrator::recolorMeshLayer(voxblox::MeshLayer *mesh_layer) {
   BlockIndexList mesh_indices;
   mesh_layer->getAllAllocatedMeshes(&mesh_indices);
 
-  for (BlockIndex& mesh_index : mesh_indices) {
+  for (BlockIndex &mesh_index : mesh_indices) {
     Mesh::Ptr mesh = mesh_layer->getMeshPtrByIndex(mesh_index);
 
     // Look up vertices in the color layer
     for (size_t i = 0; i < mesh->vertices.size(); i++) {
       CHECK(mesh->hasColors())
-      << "Make sure that colors are enabled for your mesh";
+          << "Make sure that colors are enabled for your mesh";
 
       // TODO(victorr): Use interpolation instead of nearest neighbor lookup
-      const ColorVoxel* color_voxel =
+      const ColorVoxel *color_voxel =
           color_layer_->getVoxelPtrByCoordinates(mesh->vertices[i]);
 
       if (color_voxel != nullptr && color_voxel->weight > 0.0) {
