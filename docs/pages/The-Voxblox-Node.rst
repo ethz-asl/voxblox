@@ -121,13 +121,13 @@ TSDF Integrator Parameters
   "fast"
     Rays that attempt to update voxels already updated by other rays from the same pointcloud are terminated early and discarded. An approximate method that has been designed to give the fastest possible results at the expense of discarding large quantities of information. The trade off between speed and information loss can be tuned via the ``start_voxel_subsampling_factor`` and ``max_consecutive_ray_collisions`` parameters. This method is currently the only viable integrator for real-time applications with voxels smaller than 5 cm.
 
-``tsdf_voxel_size`` `0.2`
+``tsdf_voxel_size`` `0.2 meters`
   The size of the tsdf voxels
 ``tsdf_voxels_per_side`` `16`
   TSDF voxels per side of an allocated block. Must be a power of 2
 ``voxel_carving_enabled`` `true`
   If true, the entire length of a ray is integrated, if false only the region inside the trunaction distance is used.
-``truncation_distance`` `2*```tsdf_voxel_size``
+``truncation_distance`` `2*tsdf_voxel_size`
   The truncation distance for the TSDF
 ``max_ray_length_m`` `5.0`
   The maximum range out to which a ray will be cast
@@ -243,7 +243,7 @@ Output Parameters
 ``publish_pointclouds_on_update`` `false`
   Whether to publish pointclouds whenever the map gets new input pointcloud data (true) or whenever the mesh is updated (false).
 ``intensity_colormap`` `"rainbow"`
-  If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are ``rainbow``, ``inverse_rainbow``, ``grayscale``, ``inverse_grayscale``, ``ironbow`` (thermal).
+  If the incoming pointcloud is an intensity (not RGB) pointcloud, such as from laser, this sets how the intensities will be mapped to a color. Valid options are ``rainbow``, ``inverse_rainbow``, ``grayscale``, ``inverse_grayscale``, ``ironbow`` (thermal). It is expected that an incoming intensity point cloud will have a field named "intensity", while a colored point cloud will have an "rgb" field. In the absense of these a constant color will be used.
 ``intensity_max_value`` `100.0`
   Maximum value to use for the intensity mapping. Minimum value is always 0.
 ``publish_traversable`` `false`
