@@ -95,9 +95,6 @@ class TsdfServer {
                               std_srvs::Empty::Response& response);  // NOLINT
   bool performRayCastingCallback(voxblox_msgs::RayCasting::Request& request,  // NOLINT
                                  voxblox_msgs::RayCasting::Response& response);  // NOLINT
-  bool renderDepthImageCallback(
-      voxblox_msgs::DepthImage::Request& request,     // NOLINT
-      voxblox_msgs::DepthImage::Response& response);  // NOLINT
 
   void updateMeshEvent(const ros::TimerEvent& event);
   void publishMapEvent(const ros::TimerEvent& event);
