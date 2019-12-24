@@ -178,11 +178,11 @@ TEST_P(SdfIntegratorsTest, TsdfIntegrators) {
   EXPECT_LT(fast_result.rmse, voxel_size_ * 2);
 
   LOG(INFO) << "Simple - RMSE: " << simple_result.rmse
-            << " max error: " << simple_result.max_error;
+            << " error max: " << simple_result.max_error;
   LOG(INFO) << "Merged - RMSE: " << merged_result.rmse
-            << " max error: " << merged_result.max_error;
+            << " error max: " << merged_result.max_error;
   LOG(INFO) << "Fast - RMSE: " << fast_result.rmse
-            << " max error: " << fast_result.max_error;
+            << " error max: " << fast_result.max_error;
 
   io::SaveLayer(merged_layer, "tsdf_fast_test.voxblox", true);
 }
