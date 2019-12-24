@@ -22,7 +22,6 @@
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
 #include <voxblox/utils/color_maps.h>
-#include <voxblox_msgs/DepthImage.h>
 #include <voxblox_msgs/FilePath.h>
 #include <voxblox_msgs/Mesh.h>
 #include <voxblox_msgs/RayCasting.h>
