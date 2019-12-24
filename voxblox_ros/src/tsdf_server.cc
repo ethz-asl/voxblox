@@ -1,9 +1,9 @@
+#include "voxblox_ros/tsdf_server.h"
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
-
-#include "voxblox_ros/tsdf_server.h"
+#include "voxblox/utils/distance_utils.h"
 
 namespace voxblox {
 
@@ -125,6 +125,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       "publish_pointclouds", &TsdfServer::publishPointcloudsCallback, this);
   publish_tsdf_map_srv_ = nh_private_.advertiseService(
       "publish_map", &TsdfServer::publishTsdfMapCallback, this);
+  perform_ray_casting_srv_ = nh_private_.advertiseService(
+      "perform_ray_casting", &TsdfServer::performRayCastingCallback, this);
 
   // If set, use a timer to progressively integrate the mesh.
   double update_mesh_every_n_sec = 1.0;
@@ -621,6 +623,60 @@ bool TsdfServer::publishTsdfMapCallback(std_srvs::Empty::Request& /*request*/,
                                         std_srvs::Empty::Response&
                                         /*response*/) {  // NOLINT
   publishMap();
+  return true;
+}
+
+bool TsdfServer::performRayCastingCallback(
+    voxblox_msgs::RayCasting::Request& request,      // NOLINT
+    voxblox_msgs::RayCasting::Response& response) {  // NOLINT
+  // Check if the request is valid
+  if (request.start_points.size() != request.end_points.size()) {
+    ROS_WARN_STREAM(
+        "Requested ray casting without providing an equal number of start and "
+        "end points. "
+            << request.start_points.size() << " start points vs "
+            << request.end_points.size() << " end points.";);
+    return false;
+  }
+  if (request.start_points.empty()) {
+    ROS_WARN_STREAM(
+        "Requested ray casting without providing any start and end points.");
+    return false;
+  }
+
+  // Keep track of failed rays s.t. an informative error msg can be printed
+  std::stringstream failed_rays_msg;
+
+  // Find the intersections for all the requested rays
+  for (size_t idx = 0; idx < request.start_points.size(); idx++) {
+    Point start_point, end_point;
+    pointMsgToKindr(request.start_points[idx], &start_point);
+    pointMsgToKindr(request.end_points[idx], &end_point);
+
+    Point intersection_point;
+    // NOTE: The bearing_vector does not need to be normalized,
+    //       since getSurfaceDistanceAlongRay() already does this
+    Point bearing_vector = end_point - start_point;
+    float max_distance = bearing_vector.norm();
+    if (!getSurfaceDistanceAlongRay(tsdf_map_->getTsdfLayer(),
+            start_point, bearing_vector, max_distance, &intersection_point)) {
+      failed_rays_msg << start_point << " -> " << end_point << "\n";
+      // TODO(victorr): Decide on a clear, common convention to
+      //                communicate ray casting failure
+      intersection_point = end_point;
+    }
+
+    geometry_msgs::Point intersection_point_msg;
+    tf::pointEigenToMsg(intersection_point.cast<double>(),
+                     intersection_point_msg);
+    response.surface_intersection_points.push_back(intersection_point_msg);
+  }
+
+  if (!failed_rays_msg.str().empty()) {
+    ROS_WARN_STREAM("Failed to find intersection for rays:\n"
+                    << failed_rays_msg.str());
+  }
+
   return true;
 }
 

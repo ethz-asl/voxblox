@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_ROS_CONVERSIONS_H_
 #define VOXBLOX_ROS_CONVERSIONS_H_
 
+#include <minkindr_conversions/kindr_msg.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 #include <std_msgs/ColorRGBA.h>
@@ -163,6 +164,14 @@ template <typename VoxelType>
 bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
                            const MapDerializationAction& action,
                            Layer<VoxelType>* layer);
+
+inline void pointMsgToKindr(const geometry_msgs::Point& msg,
+                            Eigen::Matrix<float, 3, 1>* kindr) {
+  CHECK_NOTNULL(kindr);
+  kindr->operator()(0) = msg.x;
+  kindr->operator()(1) = msg.y;
+  kindr->operator()(2) = msg.z;
+}
 
 }  // namespace voxblox
 
