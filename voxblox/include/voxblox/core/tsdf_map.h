@@ -58,6 +58,7 @@ class TsdfMap {
   virtual ~TsdfMap() {}
 
   Layer<TsdfVoxel>* getTsdfLayerPtr() { return tsdf_layer_.get(); }
+  const Layer<TsdfVoxel>* getTsdfLayerConstPtr() const { return tsdf_layer_.get(); }
   const Layer<TsdfVoxel>& getTsdfLayer() const { return *tsdf_layer_; }
 
   FloatingPoint block_size() const { return block_size_; }
