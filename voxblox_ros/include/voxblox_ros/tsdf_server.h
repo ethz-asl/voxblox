@@ -96,6 +96,9 @@ class TsdfServer {
   void publishMapEvent(const ros::TimerEvent& event);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() const { return tsdf_map_; };
+  void setTsdfIntegratorPtr(TsdfIntegratorBase* tsdf_integrator) {
+    tsdf_integrator_.reset(tsdf_integrator);
+  };
 
   /// Accessors for setting and getting parameters.
   double getSliceLevel() const { return slice_level_; }
