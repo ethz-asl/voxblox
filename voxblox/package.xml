@@ -22,5 +22,7 @@
   <depend>minkindr</depend>
   <!-- This is an OPTIONAL dep! Will use system library if not present. -->
   <depend>protobuf_catkin</depend>
+  <!-- This is also an OPTIONAL dep! Microsoft only... Find a portable way to do this crap. -->
+  <depend>mmg_common_dependencies</depend>
 
 </package>
