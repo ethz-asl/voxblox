@@ -130,6 +130,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
   size_t num_lower = 0u;
   size_t num_raise = 0u;
   size_t num_new = 0u;
+  size_t num_forgotten = 0u;
   timing::Timer propagate_timer("esdf/propagate_tsdf");
   VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
           << " updated blocks from the TSDF.";
@@ -159,8 +160,8 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           esdf_voxel.observed = true;
           esdf_voxel.hallucinated = true;
           esdf_voxel.fixed = false;
-        }
         continue;
+        }
       }
 
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
@@ -170,8 +171,22 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           block_index, voxel_index, voxels_per_side_);
 
       const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
-      // If there was nothing there before:
-      if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
+      if (tsdf_voxel.weight < config_.min_weight) {
+        // set esdf voxel to unobserved too
+        esdf_voxel.distance = -config_.default_distance_m;
+        esdf_voxel.observed = false;
+        esdf_voxel.hallucinated = false;
+        esdf_voxel.fixed = false;
+
+        esdf_voxel.parent.setZero();
+        esdf_voxel.fixed = false;
+        raise_.push(global_index);
+        esdf_voxel.in_queue = true;
+        open_.push(global_index, esdf_voxel.distance);
+        num_raise++;
+        ++num_forgotten;
+      } else if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
+        // If there was nothing there before:
         if (esdf_voxel.hallucinated) {
           raise_.push(global_index);
         }
@@ -286,9 +301,34 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
     }
   }
 
+  // remove unobserved blocks
+  size_t num_removed = 0;
+  for (const BlockIndex& block_index : tsdf_blocks) {
+    Block<EsdfVoxel>::ConstPtr esdf_block =
+        esdf_layer_->getBlockPtrByIndex(block_index);
+    if (!esdf_block) {
+      continue;
+    }
+
+    bool observed = false;
+    const size_t num_voxels_per_block = esdf_block->num_voxels();
+    for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
+      const EsdfVoxel& esdf_voxel =
+          esdf_block->getVoxelByLinearIndex(lin_index);
+      if (esdf_voxel.observed) {
+        observed = true;
+        break;
+      }
+    }
+    if (!observed) {
+      esdf_layer_->removeBlock(block_index);
+      ++num_removed;
+    }
+  }
+
   propagate_timer.Stop();
   VLOG(3) << "[ESDF update]: Lower: " << num_lower << " Raise: " << num_raise
-          << " New: " << num_new;
+          << " New: " << num_new << " Removed: " << num_forgotten;
 
   timing::Timer raise_timer("esdf/raise_esdf");
   processRaiseSet();
