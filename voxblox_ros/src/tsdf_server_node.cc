@@ -1,4 +1,5 @@
 #include "voxblox_ros/tsdf_server.h"
+#include <gflags/gflags.h>
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "voxblox");
