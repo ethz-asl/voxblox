@@ -187,7 +187,7 @@ bool EsdfServer::loadMap(const std::string& file_path) {
     constexpr bool kMultipleLayerSupport = true;
     success_esdf = io::LoadBlocksFromFile(
         file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
-        kMultipleLayerSupport, esdf_map_->getEsdfLayerPtr())
+        kMultipleLayerSupport, esdf_map_->getEsdfLayerPtr());
   }
   return success_tsdf && success_esdf;
 }
