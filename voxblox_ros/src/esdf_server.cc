@@ -183,16 +183,10 @@ bool EsdfServer::loadMap(const std::string& file_path) {
   bool success = TsdfServer::loadMap(file_path);
 
   constexpr bool kMultipleLayerSupport = true;
-  if (!io::LoadBlocksFromFile(
-      file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
-      kMultipleLayerSupport, esdf_map_->getEsdfLayerPtr())) {
-    ROS_INFO("[EsdfServer] Could not load ESDF map. Generating from Tsdf map.");
-    esdf_integrator_->setFullEuclidean(false);
-    esdf_integrator_->updateFromTsdfLayerBatch();
-    publishAllUpdatedEsdfVoxels();
-    publishSlices();
-  }
-  return success;
+  return success &&
+         io::LoadBlocksFromFile(
+             file_path, Layer<EsdfVoxel>::BlockMergingStrategy::kReplace,
+             kMultipleLayerSupport, esdf_map_->getEsdfLayerPtr());
 }
 
 void EsdfServer::updateEsdf() {
