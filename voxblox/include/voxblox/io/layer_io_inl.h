@@ -1,7 +1,8 @@
-#ifndef VOXBLOX_CORE_IO_LAYER_IO_INL_H_
-#define VOXBLOX_CORE_IO_LAYER_IO_INL_H_
+#ifndef VOXBLOX_IO_LAYER_IO_INL_H_
+#define VOXBLOX_IO_LAYER_IO_INL_H_
 
 #include <fstream>
+#include <string>
 
 #include "voxblox/Block.pb.h"
 #include "voxblox/Layer.pb.h"
@@ -244,4 +245,4 @@ bool SaveLayerSubset(const Layer<VoxelType>& layer,
 }  // namespace io
 }  // namespace voxblox
 
-#endif  // VOXBLOX_CORE_IO_LAYER_IO_INL_H_
+#endif  // VOXBLOX_IO_LAYER_IO_INL_H_
