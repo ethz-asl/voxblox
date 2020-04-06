@@ -95,7 +95,10 @@ class TsdfServer {
   void updateMeshEvent(const ros::TimerEvent& event);
   void publishMapEvent(const ros::TimerEvent& event);
 
-  std::shared_ptr<TsdfMap> getTsdfMapPtr() const { return tsdf_map_; }
+  inline std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
+  inline std::shared_ptr<const TsdfMap> getTsdfMapPtr() const {
+    return tsdf_map_;
+  }
 
   /// Accessors for setting and getting parameters.
   double getSliceLevel() const { return slice_level_; }

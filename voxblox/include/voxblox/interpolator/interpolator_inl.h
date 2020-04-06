@@ -26,6 +26,7 @@ template <typename VoxelType>
 bool Interpolator<VoxelType>::getWeight(const Point& pos,
                                         FloatingPoint* weight,
                                         bool interpolate) const {
+  CHECK_NOTNULL(weight);
   if (interpolate) {
     return getInterpWeight(pos, weight);
   } else {
