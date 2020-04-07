@@ -52,3 +52,5 @@ autolintc
 docs/_build
 docs/doxyoutput
 docs/api
+
+.idea/
