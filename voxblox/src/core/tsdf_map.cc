@@ -78,6 +78,24 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
   return count;
 }
 
+
+bool TsdfMap::getWeightAtPosition(const Eigen::Vector3d& position,
+                                  double* weight) const {
+  constexpr bool interpolate = true;
+  return getWeightAtPosition(position, interpolate, weight);
+}
+
+bool TsdfMap::getWeightAtPosition(const Eigen::Vector3d& position,
+                                  bool interpolate, double* weight) const {
+  FloatingPoint weight_fp;
+  bool success = interpolator_.getWeight(position.cast<FloatingPoint>(),
+                                         &weight_fp, interpolate);
+  if (success) {
+    *weight = static_cast<double>(weight_fp);
+  }
+  return success;
+}
+
 std::string TsdfMap::Config::print() const {
   std::stringstream ss;
   // clang-format off

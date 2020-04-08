@@ -9,6 +9,7 @@
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/interpolator/interpolator.h"
 
 namespace voxblox {
 /**
@@ -32,7 +33,8 @@ class TsdfMap {
 
   explicit TsdfMap(const Config& config)
       : tsdf_layer_(new Layer<TsdfVoxel>(config.tsdf_voxel_size,
-                                         config.tsdf_voxels_per_side)) {
+                                         config.tsdf_voxels_per_side)),
+        interpolator_(tsdf_layer_.get()) {
     block_size_ = config.tsdf_voxel_size * config.tsdf_voxels_per_side;
   }
 
@@ -41,7 +43,9 @@ class TsdfMap {
       : TsdfMap(aligned_shared<Layer<TsdfVoxel>>(layer)) {}
 
   /// Creates a new TsdfMap that contains this layer.
-  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer) : tsdf_layer_(layer) {
+  explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer)
+      : tsdf_layer_(layer),
+        interpolator_(tsdf_layer_.get()) {
     if (!layer) {
       /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
        * This is idiomatic when wrapping C++ code for Python, especially with
@@ -85,11 +89,19 @@ class TsdfMap {
       Eigen::Ref<Eigen::VectorXd> distances,
       Eigen::Ref<Eigen::VectorXd> weights, unsigned int max_points) const;
 
+  bool getWeightAtPosition(const Eigen::Vector3d& position,
+                           double* weight) const;
+  bool getWeightAtPosition(const Eigen::Vector3d& position,
+                           bool interpolate, double* weight) const;
+
  protected:
   FloatingPoint block_size_;
 
   // The layers.
   Layer<TsdfVoxel>::Ptr tsdf_layer_;
+
+  // Interpolator for the layer.
+  Interpolator<TsdfVoxel> interpolator_;
 };
 
 }  // namespace voxblox
