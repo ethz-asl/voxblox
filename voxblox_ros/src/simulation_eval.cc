@@ -12,6 +12,7 @@ class SimulationServerImpl : public voxblox::SimulationServer {
       : SimulationServer(nh, nh_private) {}
 
   void prepareWorld() {
+    CHECK_NOTNULL(world_);
     world_->addObject(std::unique_ptr<Object>(
         new Sphere(Point(0.0, 0.0, 2.0), 2.0, Color::Red())));
 
