@@ -162,6 +162,7 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
 bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
                                                   Point* ray_origin,
                                                   Point* ray_direction) const {
+  CHECK_NOTNULL(world_);
   // Generate a viewpoint at least min_distance from any objects (if you want
   // just outside an object, just call this with min_distance = 0).
 
@@ -217,6 +218,7 @@ void SimulationServer::generateSDF() {
     ptcloud.clear();
     colors.clear();
 
+    CHECK_NOTNULL(world_);
     world_->getPointcloudFromViewpoint(view_origin, view_direction,
                                       depth_camera_resolution_, fov_h_rad_,
                                       max_dist_, &ptcloud, &colors);
