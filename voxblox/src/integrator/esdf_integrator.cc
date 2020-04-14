@@ -131,7 +131,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
   size_t num_raise = 0u;
   size_t num_new = 0u;
   size_t num_forgotten = 0u;
-  AlignedQueue<BlockIndex> remove_set;
+  AlignedVector<BlockIndex> remove_set;
   timing::Timer propagate_timer("esdf/propagate_tsdf");
   VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
           << " updated blocks from the TSDF.";
@@ -181,8 +181,10 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         esdf_voxel.in_queue = false;
         esdf_voxel.parent.setZero();
         ++num_forgotten;
-        if (remove_set.find(block_index) == remove_set.end()) {
-          remove_set.push(block_index);
+        const auto find_result =
+            std::find(remove_set.begin(), remove_set.end(), block_index);
+        if (find_result == remove_set.end()) {
+          remove_set.emplace_back(block_index);
         }
       } else if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
         // If there was nothing there before:
@@ -302,6 +304,8 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
 
   // remove unobserved blocks
   size_t num_removed = 0;
+  voxblox::timing::MiniTimer deallocate_timer;
+  deallocate_timer.start();
   for (const BlockIndex& block_index : remove_set) {
     Block<EsdfVoxel>::ConstPtr esdf_block =
         esdf_layer_->getBlockPtrByIndex(block_index);
@@ -323,11 +327,16 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       ++num_removed;
     }
   }
+  deallocate_timer.stop();
 
   propagate_timer.Stop();
   VLOG(3) << "[ESDF update]: Lower: " << num_lower << " Raise: " << num_raise
-          << " New: " << num_new
-          << " Forgotten: " << num_forgotten << " Removed: " << num_removed;
+          << " New: " << num_new;
+  if (num_removed > 0) {
+    VLOG(0) << "[ESDF update]: Forgotten: " << num_forgotten
+            << " Removed: " << num_removed
+            << " deallocation " << deallocate_timer.getTime() << "s";
+  }
 
   timing::Timer raise_timer("esdf/raise_esdf");
   processRaiseSet();
