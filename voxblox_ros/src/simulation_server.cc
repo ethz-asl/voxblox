@@ -72,6 +72,7 @@ SimulationServer::SimulationServer(
       nh_private_(nh_private),
       voxel_size_(tsdf_config.tsdf_voxel_size),
       voxels_per_side_(tsdf_config.tsdf_voxels_per_side),
+      world_(new SimulationWorld()),
       world_frame_("world"),
       generate_occupancy_(false),
       visualize_(true),
@@ -161,14 +162,15 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
 bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
                                                   Point* ray_origin,
                                                   Point* ray_direction) const {
+  CHECK_NOTNULL(world_);
   // Generate a viewpoint at least min_distance from any objects (if you want
   // just outside an object, just call this with min_distance = 0).
 
   FloatingPoint max_distance = min_distance * 2.0;
 
   // Figure out the dimensions of the space.
-  Point space_min = world_.getMinBound() / 2.0;
-  Point space_size = world_.getMaxBound() - space_min / 2.0;
+  Point space_min = world_->getMinBound() / 2.0;
+  Point space_size = world_->getMaxBound() - space_min / 2.0;
 
   Point position = Point::Zero();
   bool success = false;
@@ -179,7 +181,7 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
     position =
         space_size.cwiseProduct(position + Point::Ones()) / 2.0 + space_min;
 
-    if (world_.getDistanceToPoint(position, max_distance) >= min_distance) {
+    if (world_->getDistanceToPoint(position, max_distance) >= min_distance) {
       success = true;
       break;
     }
@@ -216,7 +218,8 @@ void SimulationServer::generateSDF() {
     ptcloud.clear();
     colors.clear();
 
-    world_.getPointcloudFromViewpoint(view_origin, view_direction,
+    CHECK_NOTNULL(world_);
+    world_->getPointcloudFromViewpoint(view_origin, view_direction,
                                       depth_camera_resolution_, fov_h_rad_,
                                       max_dist_, &ptcloud, &colors);
 

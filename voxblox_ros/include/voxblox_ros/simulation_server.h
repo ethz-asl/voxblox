@@ -91,7 +91,7 @@ class SimulationServer {
   int num_viewpoints_;
 
   // Actual simulation server.
-  SimulationWorld world_;
+  std::unique_ptr<SimulationWorld> world_;
 
   // Maps (GT and generates from sensors) generated here.
   std::unique_ptr<Layer<TsdfVoxel> > tsdf_gt_;
