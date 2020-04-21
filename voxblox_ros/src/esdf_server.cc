@@ -1,7 +1,6 @@
 #include "voxblox_ros/esdf_server.h"
 
-#include <voxblox_ros/conversions.h>
-
+#include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
 
 namespace voxblox {

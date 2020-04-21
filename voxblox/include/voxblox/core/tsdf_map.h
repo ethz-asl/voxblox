@@ -93,8 +93,8 @@ class TsdfMap {
 
   bool getWeightAtPosition(const Eigen::Vector3d& position,
                            double* weight) const;
-  bool getWeightAtPosition(const Eigen::Vector3d& position, bool interpolate,
-                           double* weight) const;
+  bool getWeightAtPosition(const Eigen::Vector3d& position,
+                           const bool interpolate, double* weight) const;
 
  protected:
   FloatingPoint block_size_;
