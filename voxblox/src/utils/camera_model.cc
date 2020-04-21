@@ -159,7 +159,8 @@ void CameraModel::calculateBoundingPlanes() {
     }
   }
 
-  VLOG(5) << "AABB min:\n" << aabb_min_.transpose() << "\nAABB max:\n"
+  VLOG(5) << "AABB min:\n"
+          << aabb_min_.transpose() << "\nAABB max:\n"
           << aabb_max_.transpose();
 }
 

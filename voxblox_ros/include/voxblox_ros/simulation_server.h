@@ -1,9 +1,10 @@
 #ifndef VOXBLOX_ROS_SIMULATION_SERVER_H_
 #define VOXBLOX_ROS_SIMULATION_SERVER_H_
 
-#include <ros/ros.h>
 #include <memory>
 #include <string>
+
+#include <ros/ros.h>
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/tsdf_map.h>

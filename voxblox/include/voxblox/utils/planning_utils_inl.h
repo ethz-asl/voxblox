@@ -7,6 +7,7 @@
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
+
 namespace utils {
 
 template <typename VoxelType>

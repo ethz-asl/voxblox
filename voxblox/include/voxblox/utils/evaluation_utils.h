@@ -8,6 +8,7 @@
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
+
 namespace utils {
 
 enum class VoxelEvaluationResult { kNoOverlap, kIgnored, kEvaluated };

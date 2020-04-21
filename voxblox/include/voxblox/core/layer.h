@@ -1,10 +1,11 @@
 #ifndef VOXBLOX_CORE_LAYER_H_
 #define VOXBLOX_CORE_LAYER_H_
 
-#include <glog/logging.h>
 #include <memory>
 #include <string>
 #include <utility>
+
+#include <glog/logging.h>
 
 #include "voxblox/Block.pb.h"
 #include "voxblox/Layer.pb.h"

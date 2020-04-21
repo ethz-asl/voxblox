@@ -1,12 +1,13 @@
 #ifndef VOXBLOX_ROS_CONVERSIONS_H_
 #define VOXBLOX_ROS_CONVERSIONS_H_
 
-#include <pcl/point_types.h>
-#include <pcl_ros/point_cloud.h>
-#include <std_msgs/ColorRGBA.h>
 #include <algorithm>
 #include <memory>
 #include <vector>
+
+#include <pcl/point_types.h>
+#include <pcl_ros/point_cloud.h>
+#include <std_msgs/ColorRGBA.h>
 
 #include <voxblox/core/common.h>
 #include <voxblox/core/layer.h>

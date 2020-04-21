@@ -6,7 +6,6 @@
 
 #include "voxblox/Block.pb.h"
 #include "voxblox/Layer.pb.h"
-
 #include "voxblox/utils/protobuf_utils.h"
 
 namespace voxblox {
