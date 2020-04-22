@@ -128,16 +128,17 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
 
   // remove all unobserved tsdf and corresponding esdf blocks
   int num_forgotten_tsdf_blocks = 0;
+  int num_forgotten_esdf_blocks = 0;
   for (const BlockIndex& block_index : tsdf_blocks) {
     Block<TsdfVoxel>::ConstPtr tsdf_block =
         tsdf_layer_->getBlockPtrByIndex(block_index);
     if (!tsdf_block) {
       continue;
     }
-    const size_t num_voxels_per_block = tsdf_block->num_voxels();
 
     // check, if block contains observed voxels
     bool observed_tsdf_block = false;
+    const size_t num_voxels_per_block = tsdf_block->num_voxels();
     for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
       const TsdfVoxel& tsdf_voxel =
           tsdf_block->getVoxelByLinearIndex(lin_index);
@@ -155,19 +156,17 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       Block<EsdfVoxel>::ConstPtr esdf_block =
           esdf_layer_->getBlockPtrByIndex(block_index);
       if (esdf_block) {
+        ++num_forgotten_esdf_blocks;
         esdf_layer_->removeBlock(block_index);
       }
     }
   }
-  VLOG(3) << "[EsdfUpdate] " << num_forgotten_tsdf_blocks
-      << " TSDF blocks forgotten and removed";
 
   // Go through all blocks in TSDF and copy their values for relevant voxels.
   size_t num_lower = 0u;
   size_t num_raise = 0u;
   size_t num_new = 0u;
   size_t num_forgotten = 0u;
-  AlignedVector<BlockIndex> remove_set;
   timing::Timer propagate_timer("esdf/propagate_tsdf");
   VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
           << " updated blocks from the TSDF.";
@@ -189,16 +188,15 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
       const TsdfVoxel& tsdf_voxel =
           tsdf_block->getVoxelByLinearIndex(lin_index);
       // If this voxel is unobserved in the original map, skip it.
-      if (tsdf_voxel.weight < config_.min_weight) {
-        if (!incremental && config_.add_occupied_crust) {
-          // Create a little crust of occupied voxels around.
-          EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
-          esdf_voxel.distance = -config_.default_distance_m;
-          esdf_voxel.observed = true;
-          esdf_voxel.hallucinated = true;
-          esdf_voxel.fixed = false;
-          continue;
-        }
+      if (tsdf_voxel.weight < config_.min_weight &&
+              !incremental && config_.add_occupied_crust) {
+        // Create a little crust of occupied voxels around.
+        EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
+        esdf_voxel.distance = -config_.default_distance_m;
+        esdf_voxel.observed = true;
+        esdf_voxel.hallucinated = true;
+        esdf_voxel.fixed = false;
+        continue;
       }
 
       EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
@@ -209,10 +207,8 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
 
       const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
       if (tsdf_voxel.weight < config_.min_weight) {
-        if (!esdf_voxel.observed) {
-          // If this voxel is unobserved in the original map, skip it.
-          continue;
-        } else {
+        // If this voxel is unobserved in the original map, skip it.
+        if (esdf_voxel.observed) {
           // tsdf voxel newly unobserved, set esdf voxel to unobserved too
           esdf_voxel.observed = false;
           esdf_voxel.distance =
@@ -222,13 +218,8 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           esdf_voxel.hallucinated = false;
           esdf_voxel.parent.setZero();
           ++num_forgotten;
-          const auto find_result =
-              std::find(remove_set.begin(), remove_set.end(), block_index);
-          if (find_result == remove_set.end()) {
-            remove_set.emplace_back(block_index);
-          }
-          continue;
         }
+        continue;
       } else if (!esdf_voxel.observed || esdf_voxel.hallucinated) {
         // If there was nothing there before:
         if (esdf_voxel.hallucinated) {
@@ -349,32 +340,9 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
   VLOG(3) << "[ESDF update]: Lower: " << num_lower << " Raise: " << num_raise
           << " New: " << num_new;
 
-  // remove unobserved blocks
-  size_t num_removed = 0;
-  for (const BlockIndex& block_index : remove_set) {
-    Block<EsdfVoxel>::ConstPtr esdf_block =
-        esdf_layer_->getBlockPtrByIndex(block_index);
-    if (!esdf_block) {
-      continue;
-    }
-
-    bool observed = false;
-    const size_t num_voxels_per_block = esdf_block->num_voxels();
-    for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
-      const EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
-      if (esdf_voxel.observed) {
-        observed = true;
-        break;
-      }
-    }
-    if (!observed) {
-      esdf_layer_->removeBlock(block_index);
-      ++num_removed;
-    }
-  }
-
-  VLOG(3) << "[ESDF update]: Forgotten: " << num_forgotten
-          << " Removed Blocks: " << num_removed;
+  VLOG(3) << "[ESDF update]: Forgotten:" << num_forgotten << ", "
+          << num_forgotten_tsdf_blocks << " TSDF blocks and "
+          << num_forgotten_esdf_blocks << " ESDF blocks removed";
 
   timing::Timer raise_timer("esdf/raise_esdf");
   processRaiseSet();
