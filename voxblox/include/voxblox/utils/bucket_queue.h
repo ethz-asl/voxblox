@@ -1,10 +1,11 @@
 #ifndef VOXBLOX_UTILS_BUCKET_QUEUE_H_
 #define VOXBLOX_UTILS_BUCKET_QUEUE_H_
 
-#include <glog/logging.h>
 #include <deque>
 #include <queue>
 #include <vector>
+
+#include <glog/logging.h>
 
 #include "voxblox/core/common.h"
 

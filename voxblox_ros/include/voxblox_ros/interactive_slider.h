@@ -6,6 +6,7 @@
 
 #include <interactive_markers/interactive_marker_server.h>
 #include <visualization_msgs/InteractiveMarkerFeedback.h>
+
 #include <voxblox/core/common.h>
 
 namespace voxblox {

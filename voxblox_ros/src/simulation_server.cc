@@ -220,8 +220,8 @@ void SimulationServer::generateSDF() {
 
     CHECK_NOTNULL(world_);
     world_->getPointcloudFromViewpoint(view_origin, view_direction,
-                                      depth_camera_resolution_, fov_h_rad_,
-                                      max_dist_, &ptcloud, &colors);
+                                       depth_camera_resolution_, fov_h_rad_,
+                                       max_dist_, &ptcloud, &colors);
 
     // Get T_G_C from ray origin and ray direction.
     Transformation T_G_C(view_origin,

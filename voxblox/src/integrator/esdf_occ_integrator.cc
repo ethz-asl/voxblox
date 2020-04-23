@@ -158,9 +158,8 @@ void EsdfOccIntegrator::processOpenSet() {
       const FloatingPoint distance_to_neighbor =
           distances[i] * esdf_voxel_size_;
 
-      if (!neighbor_voxel.fixed &&
-          esdf_voxel.distance + distance_to_neighbor <
-              neighbor_voxel.distance) {
+      if (!neighbor_voxel.fixed && esdf_voxel.distance + distance_to_neighbor <
+                                       neighbor_voxel.distance) {
         neighbor_voxel.distance = esdf_voxel.distance + distance_to_neighbor;
         // Also update parent.
         neighbor_voxel.parent = -directions[i];
@@ -173,9 +172,8 @@ void EsdfOccIntegrator::processOpenSet() {
         }
       }
 
-      if (neighbor_voxel.fixed &&
-          esdf_voxel.distance - distance_to_neighbor >
-              neighbor_voxel.distance) {
+      if (neighbor_voxel.fixed && esdf_voxel.distance - distance_to_neighbor >
+                                      neighbor_voxel.distance) {
         neighbor_voxel.distance = esdf_voxel.distance - distance_to_neighbor;
         // Also update parent.
         neighbor_voxel.parent = -directions[i];

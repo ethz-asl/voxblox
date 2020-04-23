@@ -1,10 +1,10 @@
 #ifndef VOXBLOX_UTILS_DISTANCE_UTILS_H_
 #define VOXBLOX_UTILS_DISTANCE_UTILS_H_
 
-#include <voxblox/core/block.h>
-#include <voxblox/core/common.h>
-#include <voxblox/core/layer.h>
-#include <voxblox/core/voxel.h>
+#include "voxblox/core/block.h"
+#include "voxblox/core/common.h"
+#include "voxblox/core/layer.h"
+#include "voxblox/core/voxel.h"
 
 namespace voxblox {
 

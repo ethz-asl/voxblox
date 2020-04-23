@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <vector>
 
-#include "voxblox/core/common.h"
 #include "voxblox/core/color.h"
+#include "voxblox/core/common.h"
 
 namespace voxblox {
 

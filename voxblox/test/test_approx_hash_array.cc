@@ -1,6 +1,7 @@
-#include <gtest/gtest.h>
-#include <random>
 #include <limits>
+#include <random>
+
+#include <gtest/gtest.h>
 
 #include "voxblox/core/block_hash.h"
 #include "voxblox/core/common.h"

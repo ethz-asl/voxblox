@@ -1,9 +1,10 @@
 #ifndef VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_DISPLAY_H_
 #define VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_DISPLAY_H_
 
+#include <memory>
+
 #include <rviz/message_filter_display.h>
 #include <voxblox_msgs/Mesh.h>
-#include <memory>
 
 #include "voxblox_rviz_plugin/voxblox_mesh_visual.h"
 

@@ -24,10 +24,11 @@
 #ifndef VOXBLOX_ROS_MESH_VIS_H_
 #define VOXBLOX_ROS_MESH_VIS_H_
 
-#include <eigen_conversions/eigen_msg.h>
-#include <visualization_msgs/Marker.h>
 #include <algorithm>
 #include <limits>
+
+#include <eigen_conversions/eigen_msg.h>
+#include <visualization_msgs/Marker.h>
 
 #include <voxblox/core/common.h>
 #include <voxblox/integrator/esdf_integrator.h>

@@ -1,8 +1,8 @@
+#include "voxblox/utils/protobuf_utils.h"
+
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
-
-#include "voxblox/utils/protobuf_utils.h"
 
 namespace voxblox {
 

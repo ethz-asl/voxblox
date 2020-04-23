@@ -1,10 +1,11 @@
+#include "voxblox_rviz_plugin/voxblox_mesh_visual.h"
+
 #include <limits>
 
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
-#include <voxblox/mesh/mesh_utils.h>
 
-#include "voxblox_rviz_plugin/voxblox_mesh_visual.h"
+#include <voxblox/mesh/mesh_utils.h>
 
 namespace voxblox_rviz_plugin {
 
