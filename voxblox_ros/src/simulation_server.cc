@@ -72,7 +72,6 @@ SimulationServer::SimulationServer(
       nh_private_(nh_private),
       voxel_size_(tsdf_config.tsdf_voxel_size),
       voxels_per_side_(tsdf_config.tsdf_voxels_per_side),
-      world_(new SimulationWorld()),
       world_frame_("world"),
       generate_occupancy_(false),
       visualize_(true),
@@ -87,7 +86,8 @@ SimulationServer::SimulationServer(
       fov_h_rad_(1.5708),
       max_dist_(10.0),
       min_dist_(0.5),
-      num_viewpoints_(50) {
+      num_viewpoints_(50),
+      world_(new SimulationWorld()) {
   CHECK_EQ(voxel_size_, tsdf_config.tsdf_voxel_size);
   CHECK_EQ(voxel_size_, esdf_config.esdf_voxel_size);
   CHECK_EQ(static_cast<size_t>(voxels_per_side_),
