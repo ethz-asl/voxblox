@@ -1,9 +1,10 @@
+#include "voxblox_ros/tsdf_server.h"
+
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
+
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
-
-#include "voxblox_ros/tsdf_server.h"
 
 namespace voxblox {
 
@@ -208,7 +209,6 @@ void TsdfServer::getServerConfigFromRosParam(
   }
   color_map_->setMaxValue(intensity_max_value);
 }
-
 
 void TsdfServer::processPointCloudMessageAndInsert(
     const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,

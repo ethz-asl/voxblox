@@ -2,6 +2,7 @@
 #define VOXBLOX_UTILS_PROTOBUF_UTILS_H_
 
 #include <fstream>
+
 #include <glog/logging.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/message_lite.h>

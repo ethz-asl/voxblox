@@ -1,9 +1,10 @@
 #ifndef VOXBLOX_ROS_INTENSITY_SERVER_H_
 #define VOXBLOX_ROS_INTENSITY_SERVER_H_
 
+#include <memory>
+
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/Image.h>
-#include <memory>
 
 #include <voxblox/core/voxel.h>
 #include <voxblox/integrator/intensity_integrator.h>

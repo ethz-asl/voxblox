@@ -1,6 +1,6 @@
-#include <voxblox/utils/planning_utils.h>
-
 #include "voxblox/integrator/esdf_integrator.h"
+
+#include "voxblox/utils/planning_utils.h"
 
 namespace voxblox {
 

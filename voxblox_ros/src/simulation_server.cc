@@ -86,7 +86,8 @@ SimulationServer::SimulationServer(
       fov_h_rad_(1.5708),
       max_dist_(10.0),
       min_dist_(0.5),
-      num_viewpoints_(50) {
+      num_viewpoints_(50),
+      world_(new SimulationWorld()) {
   CHECK_EQ(voxel_size_, tsdf_config.tsdf_voxel_size);
   CHECK_EQ(voxel_size_, esdf_config.esdf_voxel_size);
   CHECK_EQ(static_cast<size_t>(voxels_per_side_),
@@ -161,14 +162,15 @@ SimulationServer::SimulationServer(const ros::NodeHandle& nh,
 bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
                                                   Point* ray_origin,
                                                   Point* ray_direction) const {
+  CHECK_NOTNULL(world_);
   // Generate a viewpoint at least min_distance from any objects (if you want
   // just outside an object, just call this with min_distance = 0).
 
   FloatingPoint max_distance = min_distance * 2.0;
 
   // Figure out the dimensions of the space.
-  Point space_min = world_.getMinBound() / 2.0;
-  Point space_size = world_.getMaxBound() - space_min / 2.0;
+  Point space_min = world_->getMinBound() / 2.0;
+  Point space_size = world_->getMaxBound() - space_min / 2.0;
 
   Point position = Point::Zero();
   bool success = false;
@@ -179,7 +181,7 @@ bool SimulationServer::generatePlausibleViewpoint(FloatingPoint min_distance,
     position =
         space_size.cwiseProduct(position + Point::Ones()) / 2.0 + space_min;
 
-    if (world_.getDistanceToPoint(position, max_distance) >= min_distance) {
+    if (world_->getDistanceToPoint(position, max_distance) >= min_distance) {
       success = true;
       break;
     }
@@ -216,9 +218,10 @@ void SimulationServer::generateSDF() {
     ptcloud.clear();
     colors.clear();
 
-    world_.getPointcloudFromViewpoint(view_origin, view_direction,
-                                      depth_camera_resolution_, fov_h_rad_,
-                                      max_dist_, &ptcloud, &colors);
+    CHECK_NOTNULL(world_);
+    world_->getPointcloudFromViewpoint(view_origin, view_direction,
+                                       depth_camera_resolution_, fov_h_rad_,
+                                       max_dist_, &ptcloud, &colors);
 
     // Get T_G_C from ray origin and ray direction.
     Transformation T_G_C(view_origin,

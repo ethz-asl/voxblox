@@ -1,6 +1,6 @@
-#include <string>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include <glog/logging.h>
 
@@ -34,8 +34,7 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << "Layer memory size: " << layer_from_file->getMemorySize();
   LOG(INFO) << "Layer voxel size: " << layer_from_file->voxel_size();
-  LOG(INFO) << "Layer voxels per side: "
-               << layer_from_file->voxels_per_side();
+  LOG(INFO) << "Layer voxels per side: " << layer_from_file->voxels_per_side();
 
   // ESDF maps.
   EsdfMap::Config esdf_config;

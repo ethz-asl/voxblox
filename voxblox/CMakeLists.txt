@@ -139,4 +139,4 @@ target_link_libraries(test_clear_spheres ${PROJECT_NAME})
 # EXPORT #
 ##########
 cs_install()
-cs_export()
+cs_export(INCLUDE_DIRS ${CATKIN_DEVEL_PREFIX}/include)

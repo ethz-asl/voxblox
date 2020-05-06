@@ -44,8 +44,7 @@ class TsdfMergeIntegratorTest : public ::testing::Test {
 
 TEST_F(TsdfMergeIntegratorTest, WithinBlock) {
   // New layer
-  Layer<TsdfVoxel> tsdf_layer(tsdf_voxel_size_,
-                              tsdf_voxels_per_side_);
+  Layer<TsdfVoxel> tsdf_layer(tsdf_voxel_size_, tsdf_voxels_per_side_);
 
   // Allocating the block;
   Point origin(0.0, 0.0, 0.0);
@@ -107,8 +106,7 @@ TEST_F(TsdfMergeIntegratorTest, WithinBlock) {
 
 TEST_F(TsdfMergeIntegratorTest, BetweenBlocks) {
   // New layer
-  Layer<TsdfVoxel> tsdf_layer(tsdf_voxel_size_,
-                              tsdf_voxels_per_side_);
+  Layer<TsdfVoxel> tsdf_layer(tsdf_voxel_size_, tsdf_voxels_per_side_);
 
   // Allocating some blocks (in a sort of 3D plus pattern)
   Block<TsdfVoxel>::Ptr block_ptr_0 =
@@ -163,7 +161,8 @@ TEST_F(TsdfMergeIntegratorTest, BetweenBlocks) {
     Point point = points_below[point_index];
     interpolator.getVoxel(point, &voxel, true);
     // Testing
-    EXPECT_NEAR(voxel.distance, expected_answers_below[point_index], compare_tol_);
+    EXPECT_NEAR(voxel.distance, expected_answers_below[point_index],
+                compare_tol_);
   }
 }
 

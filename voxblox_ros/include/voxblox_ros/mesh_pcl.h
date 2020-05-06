@@ -50,7 +50,7 @@ inline void toPCLPolygonMesh(
 
   Mesh mesh;
   convertMeshLayerToMesh(mesh_layer, &mesh, simplify_and_connect_mesh,
-                             vertex_proximity_threshold);
+                         vertex_proximity_threshold);
 
   // add points
   pointcloud.reserve(mesh.vertices.size());

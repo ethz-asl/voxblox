@@ -8,8 +8,7 @@ namespace voxblox {
 InteractiveSlider::InteractiveSlider(
     const std::string& slider_name,
     const std::function<void(const double& slice_level)>& slider_callback,
-    const Point& initial_position,
-    const unsigned int free_plane_index,
+    const Point& initial_position, const unsigned int free_plane_index,
     const float marker_scale_meters)
     : free_plane_index_(free_plane_index),
       interactive_marker_server_(slider_name) {

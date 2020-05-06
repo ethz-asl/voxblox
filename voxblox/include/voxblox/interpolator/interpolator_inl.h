@@ -23,8 +23,7 @@ bool Interpolator<VoxelType>::getDistance(const Point& pos,
 }
 
 template <typename VoxelType>
-bool Interpolator<VoxelType>::getWeight(const Point& pos,
-                                        FloatingPoint* weight,
+bool Interpolator<VoxelType>::getWeight(const Point& pos, FloatingPoint* weight,
                                         bool interpolate) const {
   CHECK_NOTNULL(weight);
   if (interpolate) {
@@ -334,8 +333,8 @@ bool Interpolator<VoxelType>::getInterpWeight(const Point& pos,
 }
 
 template <typename VoxelType>
-bool Interpolator<VoxelType>::getNearestWeight(
-    const Point& pos, FloatingPoint* weight) const {
+bool Interpolator<VoxelType>::getNearestWeight(const Point& pos,
+                                               FloatingPoint* weight) const {
   CHECK_NOTNULL(weight);
 
   typename Layer<VoxelType>::BlockType::ConstPtr block_ptr =
@@ -411,7 +410,8 @@ inline float Interpolator<EsdfVoxel>::getVoxelSdf(const EsdfVoxel& voxel) {
 }
 
 template <typename VoxelType>
-inline float Interpolator<VoxelType>::getVoxelWeight(const VoxelType& /*voxel*/) {
+inline float Interpolator<VoxelType>::getVoxelWeight(
+    const VoxelType& /*voxel*/) {
   return 0.0;
 }
 

@@ -1,4 +1,5 @@
 #include "voxblox/integrator/tsdf_integrator.h"
+
 #include <iostream>
 #include <list>
 

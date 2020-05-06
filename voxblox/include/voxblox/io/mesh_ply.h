@@ -23,11 +23,11 @@
 #ifndef VOXBLOX_IO_MESH_PLY_H_
 #define VOXBLOX_IO_MESH_PLY_H_
 
-#include "voxblox/mesh/mesh_layer.h"
-
 #include <fstream>
 #include <iostream>
 #include <string>
+
+#include "voxblox/mesh/mesh_layer.h"
 
 namespace voxblox {
 

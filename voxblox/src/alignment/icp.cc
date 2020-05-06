@@ -37,10 +37,9 @@
  * $Id$
  *
  */
+#include "voxblox/alignment/icp.h"
 
 #include <random>
-
-#include "voxblox/alignment/icp.h"
 
 namespace voxblox {
 
