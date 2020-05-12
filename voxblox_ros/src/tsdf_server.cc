@@ -2,6 +2,7 @@
 
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
+#include <voxblox/integrator/projective_tsdf_integrator.h>
 
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
@@ -100,6 +101,10 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   } else if (method.compare("fast") == 0) {
     tsdf_integrator_.reset(new FastTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
+  } else if (method.compare("projective") == 0) {
+    tsdf_integrator_.reset(
+        new ProjectiveTsdfIntegrator<InterpolationScheme::kAdaptive>(
+            integrator_config, tsdf_map_->getTsdfLayerPtr()));
   } else {
     tsdf_integrator_.reset(new SimpleTsdfIntegrator(
         integrator_config, tsdf_map_->getTsdfLayerPtr()));
