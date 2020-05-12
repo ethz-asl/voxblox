@@ -17,7 +17,15 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
       num_voxels_per_block_(layer_->voxels_per_side() *
                             layer_->voxels_per_side() *
                             layer_->voxels_per_side()),
-      range_image_(kHeight, kWidth) {}
+      range_image_(kHeight, kWidth),
+      ray_intersections_per_distance_squared_(
+          voxel_size_ * kWidth / (2 * M_PI)  // horizontal point density
+          * voxel_size_ * kHeight /
+          (2 * altitude_angle_max * M_PI / 180.0))  // vertical point density
+{
+  CHECK(config_.use_const_weight) << "Scaling the weight by the inverse square "
+                                     "depth is (not yet) supported.";
+}
 
 template <InterpolationScheme interpolation_scheme>
 void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
@@ -105,8 +113,17 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::parsePointcloud(
           T_G_C *
           (point_C_bearing * (distance + config_.default_truncation_distance)) *
           layer_->block_size_inv();
+      Point t_G_C_truncated_scaled;
+      if (config_.voxel_carving_enabled) {
+        t_G_C_truncated_scaled = t_G_C_scaled;
+      } else {
+        t_G_C_truncated_scaled =
+            point_G_scaled - T_G_C * point_C_bearing *
+                                 config_.default_truncation_distance *
+                                 layer_->block_size_inv();
+      }
       voxblox::GlobalIndex block_index;
-      voxblox::RayCaster ray_caster(point_G_scaled, t_G_C_scaled);
+      voxblox::RayCaster ray_caster(point_G_scaled, t_G_C_truncated_scaled);
       while (ray_caster.nextRayIndex(&block_index)) {
         touched_block_indices->insert(block_index.cast<IndexElement>());
       }
@@ -162,6 +179,13 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
   const float distance_to_surface = interpolate(range_image, h, w);
   const float sdf = distance_to_surface - distance_to_voxel;
 
+  // Approximate how many rays would have updated the voxel
+  // NOTE: We do this to reflect that we are more certain about
+  //       the updates applied to nearer voxels
+  const float num_rays_intersecting_voxel =
+      ray_intersections_per_distance_squared_ /
+      (distance_to_voxel * distance_to_voxel);
+
   // Skip voxels that fall outside the TSDF truncation distance
   if (sdf < -config_.default_truncation_distance) {
     return;
@@ -176,20 +200,13 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
   {
     // Set the sign of the measurement weight
     if (deintegrate) {
-      observation_weight = -1.0f;
+      observation_weight = -num_rays_intersecting_voxel;
     } else {
-      observation_weight = 1.0f;
+      observation_weight = num_rays_intersecting_voxel;
     }
 
-    // Scale the weight by the inverse square depth if appropriate
-    if (!config_.use_const_weight) {
-      const FloatingPoint dist_z = std::abs(t_C_voxel.z());
-      if (dist_z > kEpsilon) {
-        observation_weight /= (dist_z * dist_z);
-      } else {
-        return;
-      }
-    }
+    // NOTE: Scaling the weight by the inverse square depth is not yet
+    //       supported, since this problem is ill-defined for LiDAR
 
     // Apply weight drop-off if appropriate
     const FloatingPoint dropoff_epsilon = voxel_size_;
@@ -233,7 +250,7 @@ Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
     const T h, const T w) {
   double altitude_angle =
       M_PI / 180.0 *
-      (altitude_angle_max - h / 63.0 * (2.0 * altitude_angle_max));
+      (altitude_angle_max - h / (kHeight - 1.0) * (2.0 * altitude_angle_max));
   double azimuth_angle =
       2.0 * M_PI *
       (static_cast<double>(w) / kWidth + azimuth_angle_offset / 360.0);
@@ -255,7 +272,7 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
 
   double altitude_angle = std::asin(b_C_normalized.z());
   *h = static_cast<T>((altitude_angle_max - 180.0 / M_PI * altitude_angle) *
-                      63.0 / (2.0 * altitude_angle_max));
+                      (kHeight - 1.0) / (2.0 * altitude_angle_max));
   if (*h < 0 || kHeight - 1 < *h) {
     return false;
   }

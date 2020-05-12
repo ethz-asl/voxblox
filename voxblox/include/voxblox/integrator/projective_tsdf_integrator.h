@@ -31,6 +31,7 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
   static constexpr int kHeight = 64;
   static constexpr double altitude_angle_max = 16.611;
   static constexpr double azimuth_angle_offset = 3.164;
+  const double ray_intersections_per_distance_squared_;
 
   Eigen::MatrixXf range_image_;
 
