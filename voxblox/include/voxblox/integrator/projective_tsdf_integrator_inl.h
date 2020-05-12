@@ -145,34 +145,77 @@ template <InterpolationScheme interpolation_scheme>
 void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
     const Transformation &T_G_C, const Eigen::MatrixXf &range_image,
     const Point &t_C_voxel, TsdfVoxel *tsdf_voxel, const bool deintegrate) {
+  // Skip voxels that are too far or too close
   const float distance_to_voxel = t_C_voxel.norm();
   if (distance_to_voxel < config_.min_ray_length_m ||
       distance_to_voxel > config_.max_ray_length_m) {
     return;
   }
 
+  // Project the current voxel into the range image
   float h, w;
   if (!bearingToImage(t_C_voxel / distance_to_voxel, &h, &w)) {
     return;
   }
 
-  float observation_weight;
-  if (deintegrate) {
-    observation_weight = -1.0f;
-  } else {
-    observation_weight = 1.0f;
-  }
-  const float new_voxel_weight = tsdf_voxel->weight + observation_weight;
+  // Compute the signed distance
+  const float distance_to_surface = interpolate(range_image, h, w);
+  const float sdf = distance_to_surface - distance_to_voxel;
 
-  if (new_voxel_weight < kFloatEpsilon) {
-    tsdf_voxel->distance = 0.0f;
-    tsdf_voxel->weight = 0.0f;
+  // Skip voxels that fall outside the TSDF truncation distance
+  if (sdf < -config_.default_truncation_distance) {
+    return;
+  }
+  if (!config_.voxel_carving_enabled &&
+      sdf > config_.default_truncation_distance) {
     return;
   }
 
-  const float distance_to_surface = interpolate(range_image, h, w);
-  const float sdf = distance_to_surface - distance_to_voxel;
-  if (sdf < -config_.default_truncation_distance) {
+  // Compute the weight of the measurement
+  float observation_weight;
+  {
+    // Set the sign of the measurement weight
+    if (deintegrate) {
+      observation_weight = -1.0f;
+    } else {
+      observation_weight = 1.0f;
+    }
+
+    // Scale the weight by the inverse square depth if appropriate
+    if (!config_.use_const_weight) {
+      const FloatingPoint dist_z = std::abs(t_C_voxel.z());
+      if (dist_z > kEpsilon) {
+        observation_weight /= (dist_z * dist_z);
+      } else {
+        return;
+      }
+    }
+
+    // Apply weight drop-off if appropriate
+    const FloatingPoint dropoff_epsilon = voxel_size_;
+    if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
+      observation_weight =
+          observation_weight * (config_.default_truncation_distance + sdf) /
+          (config_.default_truncation_distance - dropoff_epsilon);
+      observation_weight = std::max(observation_weight, 0.0f);
+    }
+
+    // Apply sparsity compensation if appropriate
+    if (config_.use_sparsity_compensation_factor) {
+      if (std::abs(sdf) < config_.default_truncation_distance) {
+        observation_weight *= config_.sparsity_compensation_factor;
+      }
+    }
+  }
+
+  // Truncate the new total voxel weight according to the max weight
+  const float new_voxel_weight =
+      std::min(tsdf_voxel->weight + observation_weight, config_.max_weight);
+
+  // Make sure voxels go back to zero when deintegrating
+  if (deintegrate && new_voxel_weight < 1.0) {
+    tsdf_voxel->distance = 0.0f;
+    tsdf_voxel->weight = 0.0f;
     return;
   }
 
