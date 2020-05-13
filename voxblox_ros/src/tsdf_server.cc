@@ -39,7 +39,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       accumulate_icp_corrections_(true),
       pointcloud_queue_size_(1),
       num_subscribers_tsdf_map_(0),
-      transformer_(nh, nh_private) {
+      transformer_(nh, nh_private),
+      pointcloud_deintegration_queue_length_(0) {
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
@@ -169,6 +170,16 @@ void TsdfServer::getServerConfigFromRosParam(
 
   nh_private.param("verbose", verbose_, verbose_);
 
+  // Pointcloud deintegration settings
+  {
+    int pointcloud_deintegration_queue_length_int;
+    if (nh_private.getParam("pointcloud_deintegration_queue_length",
+                            pointcloud_deintegration_queue_length_int)) {
+      pointcloud_deintegration_queue_length_ =
+          pointcloud_deintegration_queue_length_int;
+    }
+  }
+
   // Mesh settings.
   nh_private.param("mesh_filename", mesh_filename_, mesh_filename_);
   std::string color_mode("");
@@ -217,8 +228,8 @@ void TsdfServer::processPointCloudMessageAndInsert(
     }
   }
 
-  Pointcloud points_C;
-  Colors colors;
+  auto points_C = std::make_shared<Pointcloud>();
+  auto colors = std::make_shared<Colors>();
   timing::Timer ptcloud_timer("ptcloud_preprocess");
 
   // Convert differently depending on RGB or I type.
@@ -226,17 +237,17 @@ void TsdfServer::processPointCloudMessageAndInsert(
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-    convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
+    convertPointcloud(pointcloud_pcl, color_map_, points_C.get(), colors.get());
   } else if (has_intensity) {
     pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-    convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
+    convertPointcloud(pointcloud_pcl, color_map_, points_C.get(), colors.get());
   } else {
     pcl::PointCloud<pcl::PointXYZ> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-    convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
+    convertPointcloud(pointcloud_pcl, color_map_, points_C.get(), colors.get());
   }
   ptcloud_timer.Stop();
 
@@ -248,7 +259,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     }
     static Transformation T_offset;
     const size_t num_icp_updates =
-        icp_->runICP(tsdf_map_->getTsdfLayer(), points_C,
+        icp_->runICP(tsdf_map_->getTsdfLayer(), *points_C,
                      icp_corrected_transform_ * T_G_C, &T_G_C_refined);
     if (verbose_) {
       ROS_INFO("ICP refinement performed %zu successful update steps",
@@ -288,17 +299,28 @@ void TsdfServer::processPointCloudMessageAndInsert(
     icp_timer.Stop();
   }
 
+  // Integrate the new pointcloud
   if (verbose_) {
-    ROS_INFO("Integrating a pointcloud with %lu points.", points_C.size());
+    ROS_INFO("Integrating a pointcloud with %lu points.", points_C->size());
   }
-
-  ros::WallTime start = ros::WallTime::now();
+  ros::WallTime start_integration = ros::WallTime::now();
   integratePointcloud(T_G_C_refined, points_C, colors, is_freespace_pointcloud);
-  ros::WallTime end = ros::WallTime::now();
+  ros::WallTime end_integration = ros::WallTime::now();
   if (verbose_) {
     ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
-             (end - start).toSec(),
+             (end_integration - start_integration).toSec(),
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
+  }
+
+  // Deintegrate the pointcloud that's leaving the sliding window
+  if (pointcloud_deintegration_queue_length_ > 0) {
+    ros::WallTime start_deintegration = ros::WallTime::now();
+    servicePointcloudDeintegrationQueue();
+    ros::WallTime end_deintegration = ros::WallTime::now();
+    if (verbose_) {
+      ROS_INFO("Finished deintegrating in %f seconds.",
+               (end_deintegration - start_deintegration).toSec());
+    }
   }
 
   timing::Timer block_remove_timer("remove_distant_blocks");
@@ -394,13 +416,35 @@ void TsdfServer::insertFreespacePointcloud(
   }
 }
 
-void TsdfServer::integratePointcloud(const Transformation& T_G_C,
-                                     const Pointcloud& ptcloud_C,
-                                     const Colors& colors,
-                                     const bool is_freespace_pointcloud) {
-  CHECK_EQ(ptcloud_C.size(), colors.size());
-  tsdf_integrator_->integratePointCloud(T_G_C, ptcloud_C, colors,
+void TsdfServer::integratePointcloud(
+    const Transformation& T_G_C, std::shared_ptr<const Pointcloud> ptcloud_C,
+    std::shared_ptr<const Colors> colors, const bool is_freespace_pointcloud) {
+  CHECK_EQ(ptcloud_C->size(), colors->size());
+  tsdf_integrator_->integratePointCloud(T_G_C, *ptcloud_C, *colors,
                                         is_freespace_pointcloud);
+
+  if (pointcloud_deintegration_queue_length_ > 0) {
+    pointcloud_deintegration_queue_.emplace(PointcloudDeintegrationPacket{
+        T_G_C, ptcloud_C, colors, is_freespace_pointcloud});
+  }
+}
+
+void TsdfServer::servicePointcloudDeintegrationQueue() {
+  while (pointcloud_deintegration_queue_length_ <
+         pointcloud_deintegration_queue_.size()) {
+    const PointcloudDeintegrationPacket& oldest_pointcloud_packet =
+        pointcloud_deintegration_queue_.front();
+    if (verbose_) {
+      ROS_INFO("Deintegrating a pointcloud with %lu points.",
+               oldest_pointcloud_packet.ptcloud_C->size());
+    }
+    tsdf_integrator_->integratePointCloud(
+        oldest_pointcloud_packet.T_G_C, *oldest_pointcloud_packet.ptcloud_C,
+        *oldest_pointcloud_packet.colors,
+        oldest_pointcloud_packet.is_freespace_pointcloud,
+        /* deintegrate */ true);
+    pointcloud_deintegration_queue_.pop();
+  }
 }
 
 void TsdfServer::publishAllUpdatedTsdfVoxels() {

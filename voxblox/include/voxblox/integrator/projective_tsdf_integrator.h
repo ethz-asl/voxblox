@@ -12,6 +12,7 @@ enum class InterpolationScheme {
   kBilinear,
   kAdaptive
 };
+
 template <InterpolationScheme interpolation_scheme>
 class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
  public:
@@ -20,23 +21,20 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-                           const bool freespace_points = false) override;
-  void integratePointCloud(const Transformation& T_G_C,
-                           const Pointcloud& points_C, const Colors& colors,
                            const bool freespace_points = false,
-                           const bool deintegrate = false);
+                           const bool deintegrate = false) override;
 
  private:
   static constexpr int kWidth = 1024;
   static constexpr int kHeight = 64;
   static constexpr double altitude_angle_max = 16.611;
   static constexpr double azimuth_angle_offset = 3.164;
-  const double ray_intersections_per_distance_squared_;
 
   Eigen::MatrixXf range_image_;
 
-  // Calculate the number of voxels per block
+  // Cache some commonly used runtime constants
   const size_t num_voxels_per_block_;
+  const double ray_intersections_per_distance_squared_;
 
   void parsePointcloud(const Transformation& T_G_C, const Pointcloud& points_C,
                        Eigen::MatrixXf* range_image,
@@ -46,8 +44,7 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
                         const Eigen::MatrixXf& range_image,
                         const voxblox::IndexSet& touched_block_indices,
                         const bool deintegrate = false);
-  inline void updateTsdfVoxel(const Transformation& T_G_C,
-                              const Eigen::MatrixXf& range_image,
+  inline void updateTsdfVoxel(const Eigen::MatrixXf& range_image,
                               const Point& t_C_voxel, TsdfVoxel* tsdf_voxel,
                               const bool deintegrate = false);
 

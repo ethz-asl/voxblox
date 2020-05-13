@@ -14,10 +14,10 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
     const voxblox::TsdfIntegratorBase::Config &config,
     voxblox::Layer<voxblox::TsdfVoxel> *layer)
     : TsdfIntegratorBase(config, layer),
+      range_image_(kHeight, kWidth),
       num_voxels_per_block_(layer_->voxels_per_side() *
                             layer_->voxels_per_side() *
                             layer_->voxels_per_side()),
-      range_image_(kHeight, kWidth),
       ray_intersections_per_distance_squared_(
           voxel_size_ * kWidth / (2 * M_PI)  // horizontal point density
           * voxel_size_ * kHeight /
@@ -30,14 +30,12 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
 template <InterpolationScheme interpolation_scheme>
 void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
     const Transformation &T_G_C, const Pointcloud &points_C,
-    const Colors &colors, const bool freespace_points) {
-  integratePointCloud(T_G_C, points_C, colors, freespace_points, false);
-}
+    const Colors & /*colors*/, const bool freespace_points,
+    const bool deintegrate) {
+  // Freespace points are not yet supported
+  CHECK(!freespace_points) << "Freespace points are not yet supported for the "
+                              "Projective TSDF Integrator";
 
-template <InterpolationScheme interpolation_scheme>
-void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
-    const Transformation &T_G_C, const Pointcloud &points_C,
-    const Colors &colors, const bool freespace_points, const bool deintegrate) {
   // Construct the range image and select the blocks it affects
   voxblox::IndexSet touched_block_indices;
   timing::Timer range_image_and_block_selector_timer(
@@ -153,15 +151,15 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfBlocks(
       const Point t_C_voxel =
           T_G_C.inverse() *
           block_ptr->computeCoordinatesFromLinearIndex(linear_index);
-      updateTsdfVoxel(T_G_C, range_image, t_C_voxel, tsdf_voxel, deintegrate);
+      updateTsdfVoxel(range_image, t_C_voxel, tsdf_voxel, deintegrate);
     }
   }
 }
 
 template <InterpolationScheme interpolation_scheme>
 void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
-    const Transformation &T_G_C, const Eigen::MatrixXf &range_image,
-    const Point &t_C_voxel, TsdfVoxel *tsdf_voxel, const bool deintegrate) {
+    const Eigen::MatrixXf &range_image, const Point &t_C_voxel,
+    TsdfVoxel *tsdf_voxel, const bool deintegrate) {
   // Skip voxels that are too far or too close
   const float distance_to_voxel = t_C_voxel.norm();
   if (distance_to_voxel < config_.min_ray_length_m ||

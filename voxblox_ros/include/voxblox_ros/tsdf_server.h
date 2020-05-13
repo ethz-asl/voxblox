@@ -57,8 +57,11 @@ class TsdfServer {
       const Transformation& T_G_C, const bool is_freespace_pointcloud);
 
   void integratePointcloud(const Transformation& T_G_C,
-                           const Pointcloud& ptcloud_C, const Colors& colors,
+                           std::shared_ptr<const Pointcloud> ptcloud_C,
+                           std::shared_ptr<const Colors> colors,
                            const bool is_freespace_pointcloud = false);
+  void servicePointcloudDeintegrationQueue();
+
   virtual void newPoseCallback(const Transformation& /*new_pose*/) {
     // Do nothing.
   }
@@ -252,6 +255,16 @@ class TsdfServer {
    */
   std::queue<sensor_msgs::PointCloud2::Ptr> pointcloud_queue_;
   std::queue<sensor_msgs::PointCloud2::Ptr> freespace_pointcloud_queue_;
+
+  // TODO(victorr): Add description
+  struct PointcloudDeintegrationPacket {
+    const Transformation T_G_C;
+    std::shared_ptr<const Pointcloud> ptcloud_C;
+    std::shared_ptr<const Colors> colors;
+    const bool is_freespace_pointcloud;
+  };
+  size_t pointcloud_deintegration_queue_length_;
+  std::queue<PointcloudDeintegrationPacket> pointcloud_deintegration_queue_;
 
   // Last message times for throttling input.
   ros::Time last_msg_time_ptcloud_;

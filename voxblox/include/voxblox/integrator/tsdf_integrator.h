@@ -102,7 +102,8 @@ class TsdfIntegratorBase {
   virtual void integratePointCloud(const Transformation& T_G_C,
                                    const Pointcloud& points_C,
                                    const Colors& colors,
-                                   const bool freespace_points = false) = 0;
+                                   const bool freespace_points = false,
+                                   const bool deintegrate = false) = 0;
 
   /// Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
@@ -155,7 +156,7 @@ class TsdfIntegratorBase {
   void updateTsdfVoxel(const Point& origin, const Point& point_G,
                        const GlobalIndex& global_voxel_index,
                        const Color& color, const float weight,
-                       TsdfVoxel* tsdf_voxel);
+                       TsdfVoxel* tsdf_voxel, const bool deintegrate);
 
   /// Calculates TSDF distance, Thread safe.
   float computeDistance(const Point& origin, const Point& point_G,
@@ -223,12 +224,13 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-                           const bool freespace_points = false);
+                           const bool freespace_points = false,
+                           const bool deintegrate = false);
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
                          const bool freespace_points,
-                         ThreadSafeIndex* index_getter);
+                         ThreadSafeIndex* index_getter, const bool deintegrate);
 };
 
 /**
@@ -245,7 +247,8 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-                           const bool freespace_points = false);
+                           const bool freespace_points = false,
+                           const bool deintegrate = false);
 
  protected:
   void bundleRays(const Transformation& T_G_C, const Pointcloud& points_C,
@@ -257,20 +260,22 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const std::pair<GlobalIndex, AlignedVector<size_t>>& kv,
-      const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map);
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
+      const bool deintegrate);
 
   void integrateVoxels(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
-      size_t thread_idx);
+      size_t thread_idx, const bool deintegrate);
 
   void integrateRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
-      const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map);
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
+      const bool deintegrate);
 };
 
 /**
@@ -295,11 +300,12 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
                          const bool freespace_points,
-                         ThreadSafeIndex* index_getter);
+                         ThreadSafeIndex* index_getter, const bool deintegrate);
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-                           const bool freespace_points = false);
+                           const bool freespace_points = false,
+                           const bool deintegrate = false);
 
  private:
   /**
