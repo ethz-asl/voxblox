@@ -7,7 +7,7 @@
     <node pkg="tf" type="static_transform_publisher" name="odom_to_mission" args="0 0 0 0 0 0 1 odom mission 100"/>
     <node pkg="tf" type="static_transform_publisher" name="os1_stuff" args="0 0 0 0 0 1 0 os1_sensor os1_lidar 100"/>
 
-    <node name="voxblox_projective" pkg="voxblox_ros" type="esdf_server"
+    <node name="voxblox_projective" pkg="voxblox_ros" type="tsdf_server"
           output="screen" args="-alsologtostderr" clear_params="true">
         <remap from="pointcloud" to="lidar_undistortion/pointcloud_corrected"/>
         <rosparam>
@@ -24,12 +24,15 @@
             max_consecutive_ray_collisions: 1
             use_const_weight: true
             use_weight_dropoff: false
-            slice_level: 1.0
-            publish_pointclouds_on_update: true
-            publish_slices: true
-            update_mesh_every_n_sec: 1.0
+            # publish_pointclouds_on_update: true
+            # slice_level: 1.0
+            # publish_slices: true
+            # update_mesh_every_n_sec: 1.0
             integrator_threads: 1
             pointcloud_deintegration_queue_length: 100
+            publish_tsdf_map: true
+            publish_map_every_n_sec: 10.0
+            publish_map_with_trajectory: true
         </rosparam>
     </node>
 

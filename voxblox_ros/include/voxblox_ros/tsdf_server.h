@@ -56,7 +56,8 @@ class TsdfServer {
       const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
       const Transformation& T_G_C, const bool is_freespace_pointcloud);
 
-  void integratePointcloud(const Transformation& T_G_C,
+  void integratePointcloud(const ros::Time& timestamp,
+                           const Transformation& T_G_C,
                            std::shared_ptr<const Pointcloud> ptcloud_C,
                            std::shared_ptr<const Colors> colors,
                            const bool is_freespace_pointcloud = false);
@@ -258,13 +259,14 @@ class TsdfServer {
 
   // TODO(victorr): Add description
   struct PointcloudDeintegrationPacket {
+    const ros::Time timestamp;
     const Transformation T_G_C;
     std::shared_ptr<const Pointcloud> ptcloud_C;
     std::shared_ptr<const Colors> colors;
     const bool is_freespace_pointcloud;
   };
   size_t pointcloud_deintegration_queue_length_;
-  std::queue<PointcloudDeintegrationPacket> pointcloud_deintegration_queue_;
+  std::deque<PointcloudDeintegrationPacket> pointcloud_deintegration_queue_;
   const size_t num_voxels_per_block_;
   bool map_needs_pruning_;
   virtual void pruneMap();
@@ -275,6 +277,9 @@ class TsdfServer {
 
   /// Current transform corrections from ICP.
   Transformation icp_corrected_transform_;
+
+  // TODO(victorr): Add description
+  bool publish_map_with_trajectory_;
 };
 
 }  // namespace voxblox
