@@ -209,10 +209,9 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
     // Apply weight drop-off if appropriate
     const FloatingPoint dropoff_epsilon = voxel_size_;
     if (config_.use_weight_dropoff && sdf < -dropoff_epsilon) {
-      observation_weight =
-          observation_weight * (config_.default_truncation_distance + sdf) /
+      observation_weight *=
+          (config_.default_truncation_distance + sdf) /
           (config_.default_truncation_distance - dropoff_epsilon);
-      observation_weight = std::max(observation_weight, 0.0f);
     }
 
     // Apply sparsity compensation if appropriate
@@ -228,7 +227,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
       std::min(tsdf_voxel->weight + observation_weight, config_.max_weight);
 
   // Make sure voxels go back to zero when deintegrating
-  if (deintegrate && new_voxel_weight < 1.0) {
+  if (deintegrate && new_voxel_weight < 1e-3) {
     tsdf_voxel->distance = 0.0f;
     tsdf_voxel->weight = 0.0f;
     return;

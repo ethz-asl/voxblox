@@ -17,17 +17,19 @@
             world_frame: "mission"
             tsdf_voxel_size: 0.20
             truncation_distance: 0.60
+            max_weight: 1000
             pointcloud_queue_size: 1
             max_ray_length_m: 12.0 # 14 or 16m would be better, but for that we need better odometry. Otherwise the surface get too damaged.
             min_ray_length_m: 1.0
             max_consecutive_ray_collisions: 1
             use_const_weight: true
+            use_weight_dropoff: false
             slice_level: 1.0
             publish_pointclouds_on_update: true
             publish_slices: true
             update_mesh_every_n_sec: 1.0
             integrator_threads: 1
-            pointcloud_deintegration_queue_length: 200
+            pointcloud_deintegration_queue_length: 100
         </rosparam>
     </node>
 

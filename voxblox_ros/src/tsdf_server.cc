@@ -40,7 +40,11 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       pointcloud_queue_size_(1),
       num_subscribers_tsdf_map_(0),
       transformer_(nh, nh_private),
-      pointcloud_deintegration_queue_length_(0) {
+      pointcloud_deintegration_queue_length_(0),
+      map_needs_pruning_(false),
+      num_voxels_per_block_(config.tsdf_voxels_per_side *
+                            config.tsdf_voxels_per_side *
+                            config.tsdf_voxels_per_side) {
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
@@ -444,10 +448,45 @@ void TsdfServer::servicePointcloudDeintegrationQueue() {
         oldest_pointcloud_packet.is_freespace_pointcloud,
         /* deintegrate */ true);
     pointcloud_deintegration_queue_.pop();
+    map_needs_pruning_ = true;
   }
 }
 
+void TsdfServer::pruneMap() {
+  size_t num_pruned_blocks = 0u;
+  BlockIndexList updated_blocks_;
+  tsdf_map_->getTsdfLayerPtr()->getAllUpdatedBlocks(Update::kMap,
+                                                    &updated_blocks_);
+
+  for (const BlockIndex& updated_block_index : updated_blocks_) {
+    const Block<TsdfVoxel>& updated_block =
+        tsdf_map_->getTsdfLayerPtr()->getBlockByIndex(updated_block_index);
+    bool block_contains_observed_voxels = false;
+    for (size_t linear_index = 0u; linear_index < num_voxels_per_block_;
+         ++linear_index) {
+      const voxblox::TsdfVoxel& voxel =
+          updated_block.getVoxelByLinearIndex(linear_index);
+      if (kFloatEpsilon < voxel.weight) {
+        block_contains_observed_voxels = true;
+        break;
+      }
+    }
+    if (!block_contains_observed_voxels) {
+      ++num_pruned_blocks;
+      tsdf_map_->getTsdfLayerPtr()->removeBlock(updated_block_index);
+    }
+  }
+
+  map_needs_pruning_ = false;
+  ROS_INFO_STREAM_COND(verbose_,
+                       "Pruned " << num_pruned_blocks << " TSDF blocks");
+}
+
 void TsdfServer::publishAllUpdatedTsdfVoxels() {
+  if (map_needs_pruning_) {
+    pruneMap();
+  }
+
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
@@ -458,6 +497,10 @@ void TsdfServer::publishAllUpdatedTsdfVoxels() {
 }
 
 void TsdfServer::publishTsdfSurfacePoints() {
+  if (map_needs_pruning_) {
+    pruneMap();
+  }
+
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
   const float surface_distance_thresh =
@@ -470,6 +513,10 @@ void TsdfServer::publishTsdfSurfacePoints() {
 }
 
 void TsdfServer::publishTsdfOccupiedNodes() {
+  if (map_needs_pruning_) {
+    pruneMap();
+  }
+
   // Create a pointcloud with distance = intensity.
   visualization_msgs::MarkerArray marker_array;
   createOccupancyBlocksFromTsdfLayer(tsdf_map_->getTsdfLayer(), world_frame_,
@@ -478,6 +525,10 @@ void TsdfServer::publishTsdfOccupiedNodes() {
 }
 
 void TsdfServer::publishSlices() {
+  if (map_needs_pruning_) {
+    pruneMap();
+  }
+
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
   createDistancePointcloudFromTsdfLayerSlice(tsdf_map_->getTsdfLayer(), 2,
@@ -488,6 +539,10 @@ void TsdfServer::publishSlices() {
 }
 
 void TsdfServer::publishMap(bool reset_remote_map) {
+  if (map_needs_pruning_) {
+    pruneMap();
+  }
+
   if (!publish_tsdf_map_) {
     return;
   }
@@ -514,6 +569,10 @@ void TsdfServer::publishMap(bool reset_remote_map) {
 }
 
 void TsdfServer::publishPointclouds() {
+  if (map_needs_pruning_) {
+    pruneMap();
+  }
+
   // Combined function to publish all possible pointcloud messages -- surface
   // pointclouds, updated points, and occupied points.
   publishAllUpdatedTsdfVoxels();

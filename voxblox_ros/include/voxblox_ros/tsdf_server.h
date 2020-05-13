@@ -265,6 +265,9 @@ class TsdfServer {
   };
   size_t pointcloud_deintegration_queue_length_;
   std::queue<PointcloudDeintegrationPacket> pointcloud_deintegration_queue_;
+  const size_t num_voxels_per_block_;
+  bool map_needs_pruning_;
+  virtual void pruneMap();
 
   // Last message times for throttling input.
   ros::Time last_msg_time_ptcloud_;

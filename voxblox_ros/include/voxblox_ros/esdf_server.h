@@ -105,6 +105,9 @@ class EsdfServer : public TsdfServer {
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
   std::unique_ptr<EsdfIntegrator> esdf_integrator_;
+
+  // TODO(victorr): Add description
+  void pruneMap() override;
 };
 
 }  // namespace voxblox
