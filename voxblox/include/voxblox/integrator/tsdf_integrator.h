@@ -31,14 +31,16 @@ enum class TsdfIntegratorType : int {
   kSimple = 1,
   kMerged = 2,
   kFast = 3,
+  kProjective = 4,
 };
 
-static constexpr size_t kNumTsdfIntegratorTypes = 3u;
+static constexpr size_t kNumTsdfIntegratorTypes = 4u;
 
 const std::array<std::string, kNumTsdfIntegratorTypes>
     kTsdfIntegratorTypeNames = {{/*kSimple*/ "simple",
                                  /*kMerged*/ "merged",
-                                 /*kFast*/ "fast"}};
+                                 /*kFast*/ "fast",
+                                 /*kProjective*/ "projective"}};
 
 /**
  * Base class to the simple, merged and fast TSDF integrators. The integrator
