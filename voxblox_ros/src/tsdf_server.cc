@@ -465,11 +465,11 @@ void TsdfServer::servicePointcloudDeintegrationQueue() {
 }
 
 void TsdfServer::pruneMap() {
+  timing::Timer prune_map_timer("prune_fully_deintegrated_blocks");
   size_t num_pruned_blocks = 0u;
   BlockIndexList updated_blocks_;
   tsdf_map_->getTsdfLayerPtr()->getAllUpdatedBlocks(Update::kMap,
                                                     &updated_blocks_);
-
   for (const BlockIndex& updated_block_index : updated_blocks_) {
     const Block<TsdfVoxel>& updated_block =
         tsdf_map_->getTsdfLayerPtr()->getBlockByIndex(updated_block_index);
@@ -486,8 +486,14 @@ void TsdfServer::pruneMap() {
     if (!block_contains_observed_voxels) {
       ++num_pruned_blocks;
       tsdf_map_->getTsdfLayerPtr()->removeBlock(updated_block_index);
+      Mesh::Ptr mesh_ptr = mesh_layer_->getMeshPtrByIndex(updated_block_index);
+      if (mesh_ptr) {
+        mesh_ptr->clear();
+        mesh_ptr->updated = true;
+      }
     }
   }
+  prune_map_timer.Stop();
 
   map_needs_pruning_ = false;
   ROS_INFO_STREAM_COND(verbose_,
