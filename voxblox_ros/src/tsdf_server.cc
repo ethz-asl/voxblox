@@ -486,8 +486,9 @@ void TsdfServer::pruneMap() {
     if (!block_contains_observed_voxels) {
       ++num_pruned_blocks;
       tsdf_map_->getTsdfLayerPtr()->removeBlock(updated_block_index);
-      Mesh::Ptr mesh_ptr = mesh_layer_->getMeshPtrByIndex(updated_block_index);
-      if (mesh_ptr) {
+      if (mesh_layer_->hasMeshWithIndex(updated_block_index)) {
+        Mesh::Ptr mesh_ptr =
+            mesh_layer_->getMeshPtrByIndex(updated_block_index);
         mesh_ptr->clear();
         mesh_ptr->updated = true;
       }
