@@ -28,9 +28,7 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
   // Sensor model
   const int horizontal_resolution_;
   const int vertical_resolution_;
-  // TODO(victorr): Use radians internally instead
-  const double altitude_angle_max_deg_;
-  const double azimuth_angle_offset_deg_;
+  const double vertical_fov_rad_;
 
   Eigen::MatrixXf range_image_;
 

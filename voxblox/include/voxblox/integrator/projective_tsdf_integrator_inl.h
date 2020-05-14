@@ -16,8 +16,8 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
     : TsdfIntegratorBase(config, layer),
       horizontal_resolution_(config.sensor_horizontal_resolution),
       vertical_resolution_(config.sensor_vertical_resolution),
-      altitude_angle_max_deg_(config.sensor_altitude_angle_max_degrees),
-      azimuth_angle_offset_deg_(config.sensor_azimuth_angle_offset_degrees),
+      vertical_fov_rad_(config.sensor_vertical_field_of_view_degrees * M_PI /
+                        180.0),
       range_image_(config.sensor_vertical_resolution,
                    config.sensor_horizontal_resolution),
       num_voxels_per_block_(layer_->voxels_per_side() *
@@ -27,15 +27,14 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
           voxel_size_ * horizontal_resolution_ /
           (2 * M_PI)  // horizontal point density
           * voxel_size_ * vertical_resolution_ /
-          (2 * altitude_angle_max_deg_ * M_PI /
-           180.0))  // vertical point density
+          vertical_fov_rad_)  // vertical point density
 {
   CHECK_GT(horizontal_resolution_, 0)
       << "The horizontal sensor resolution must be a positive integer";
   CHECK_GT(vertical_resolution_, 0)
       << "The vertical sensor resolution must be a positive integer";
-  CHECK_GT(altitude_angle_max_deg_, 0)
-      << "The maximum altitude angle of the sensor must be a positive float";
+  CHECK_GT(vertical_fov_rad_, 0)
+      << "The vertical field of view of the sensor must be a positive float";
   CHECK(config_.use_const_weight) << "Scaling the weight by the inverse square "
                                      "depth is (not yet) supported.";
 }
@@ -259,12 +258,9 @@ template <typename T>
 Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
     const T h, const T w) {
   double altitude_angle =
-      M_PI / 180.0 *
-      (altitude_angle_max_deg_ -
-       h / (vertical_resolution_ - 1.0) * (2.0 * altitude_angle_max_deg_));
-  double azimuth_angle = 2.0 * M_PI *
-                         (static_cast<double>(w) / horizontal_resolution_ +
-                          azimuth_angle_offset_deg_ / 360.0);
+      vertical_fov_rad_ * (1.0 / 2.0 - h / (vertical_resolution_ - 1.0));
+  double azimuth_angle =
+      2.0 * M_PI * static_cast<double>(w) / horizontal_resolution_;
 
   Point bearing;
   bearing.x() = std::cos(altitude_angle) * std::cos(azimuth_angle);
@@ -282,9 +278,8 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
   CHECK_NOTNULL(w);
 
   double altitude_angle = std::asin(b_C_normalized.z());
-  *h = static_cast<T>(
-      (altitude_angle_max_deg_ - 180.0 / M_PI * altitude_angle) *
-      (vertical_resolution_ - 1.0) / (2.0 * altitude_angle_max_deg_));
+  *h = static_cast<T>((vertical_resolution_ - 1.0) *
+                      (1.0 / 2.0 - altitude_angle / vertical_fov_rad_));
   if (*h < 0 || vertical_resolution_ - 1 < *h) {
     return false;
   }
@@ -300,9 +295,7 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
   } else {
     azimuth_angle = M_PI + std::atan(-b_C_normalized.y() / b_C_normalized.x());
   }
-  *w = static_cast<T>(
-      horizontal_resolution_ *
-      (azimuth_angle / (2.0 * M_PI) - azimuth_angle_offset_deg_ / 360.0));
+  *w = static_cast<T>(horizontal_resolution_ * azimuth_angle / (2.0 * M_PI));
   if (*w < 0) {
     *w += horizontal_resolution_;
   }
