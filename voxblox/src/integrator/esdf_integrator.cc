@@ -340,7 +340,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
   VLOG(3) << "[ESDF update]: Lower: " << num_lower << " Raise: " << num_raise
           << " New: " << num_new;
 
-  VLOG(3) << "[ESDF update]: Forgotten:" << num_forgotten << ", "
+  VLOG(3) << "[ESDF update]: Forgotten:" << num_forgotten << " ESDF voxels, "
           << num_forgotten_tsdf_blocks << " TSDF blocks and "
           << num_forgotten_esdf_blocks << " ESDF blocks removed";
 
