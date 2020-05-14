@@ -35,6 +35,10 @@ template <typename VoxelType>
 void clearSphereAroundPoint(const Point& center, const FloatingPoint radius,
                             const FloatingPoint max_distance_m,
                             Layer<VoxelType>* layer);
+template <typename VoxelType>
+void emptySphereAroundPoint(const Point& center, const FloatingPoint radius,
+                            const FloatingPoint max_distance_m,
+                            Layer<VoxelType>* layer);
 
 /**
  * Utility function to get map bounds from an arbitrary layer.
