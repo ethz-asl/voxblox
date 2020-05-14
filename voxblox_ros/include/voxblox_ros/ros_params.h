@@ -111,6 +111,18 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
                    integrator_config.integration_order_mode);
   nh_private.param("integrator_threads", integrator_threads,
                    integrator_threads);
+  nh_private.param("sensor_horizontal_resolution",
+                   integrator_config.sensor_horizontal_resolution,
+                   integrator_config.sensor_horizontal_resolution);
+  nh_private.param("sensor_vertical_resolution",
+                   integrator_config.sensor_vertical_resolution,
+                   integrator_config.sensor_vertical_resolution);
+  nh_private.param("sensor_altitude_angle_max_degrees",
+                   integrator_config.sensor_altitude_angle_max_degrees,
+                   integrator_config.sensor_altitude_angle_max_degrees);
+  nh_private.param("sensor_azimuth_angle_offset_degrees",
+                   integrator_config.sensor_azimuth_angle_offset_degrees,
+                   integrator_config.sensor_azimuth_angle_offset_degrees);
 
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);

@@ -14,15 +14,28 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
     const voxblox::TsdfIntegratorBase::Config &config,
     voxblox::Layer<voxblox::TsdfVoxel> *layer)
     : TsdfIntegratorBase(config, layer),
-      range_image_(kHeight, kWidth),
+      horizontal_resolution_(config.sensor_horizontal_resolution),
+      vertical_resolution_(config.sensor_vertical_resolution),
+      altitude_angle_max_deg_(config.sensor_altitude_angle_max_degrees),
+      azimuth_angle_offset_deg_(config.sensor_azimuth_angle_offset_degrees),
+      range_image_(config.sensor_vertical_resolution,
+                   config.sensor_horizontal_resolution),
       num_voxels_per_block_(layer_->voxels_per_side() *
                             layer_->voxels_per_side() *
                             layer_->voxels_per_side()),
       ray_intersections_per_distance_squared_(
-          voxel_size_ * kWidth / (2 * M_PI)  // horizontal point density
-          * voxel_size_ * kHeight /
-          (2 * altitude_angle_max * M_PI / 180.0))  // vertical point density
+          voxel_size_ * horizontal_resolution_ /
+          (2 * M_PI)  // horizontal point density
+          * voxel_size_ * vertical_resolution_ /
+          (2 * altitude_angle_max_deg_ * M_PI /
+           180.0))  // vertical point density
 {
+  CHECK_GT(horizontal_resolution_, 0)
+      << "The horizontal sensor resolution must be a positive integer";
+  CHECK_GT(vertical_resolution_, 0)
+      << "The vertical sensor resolution must be a positive integer";
+  CHECK_GT(altitude_angle_max_deg_, 0)
+      << "The maximum altitude angle of the sensor must be a positive float";
   CHECK(config_.use_const_weight) << "Scaling the weight by the inverse square "
                                      "depth is (not yet) supported.";
 }
@@ -247,10 +260,11 @@ Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
     const T h, const T w) {
   double altitude_angle =
       M_PI / 180.0 *
-      (altitude_angle_max - h / (kHeight - 1.0) * (2.0 * altitude_angle_max));
-  double azimuth_angle =
-      2.0 * M_PI *
-      (static_cast<double>(w) / kWidth + azimuth_angle_offset / 360.0);
+      (altitude_angle_max_deg_ -
+       h / (vertical_resolution_ - 1.0) * (2.0 * altitude_angle_max_deg_));
+  double azimuth_angle = 2.0 * M_PI *
+                         (static_cast<double>(w) / horizontal_resolution_ +
+                          azimuth_angle_offset_deg_ / 360.0);
 
   Point bearing;
   bearing.x() = std::cos(altitude_angle) * std::cos(azimuth_angle);
@@ -268,9 +282,10 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
   CHECK_NOTNULL(w);
 
   double altitude_angle = std::asin(b_C_normalized.z());
-  *h = static_cast<T>((altitude_angle_max - 180.0 / M_PI * altitude_angle) *
-                      (kHeight - 1.0) / (2.0 * altitude_angle_max));
-  if (*h < 0 || kHeight - 1 < *h) {
+  *h = static_cast<T>(
+      (altitude_angle_max_deg_ - 180.0 / M_PI * altitude_angle) *
+      (vertical_resolution_ - 1.0) / (2.0 * altitude_angle_max_deg_));
+  if (*h < 0 || vertical_resolution_ - 1 < *h) {
     return false;
   }
 
@@ -286,12 +301,13 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
     azimuth_angle = M_PI + std::atan(-b_C_normalized.y() / b_C_normalized.x());
   }
   *w = static_cast<T>(
-      kWidth * (azimuth_angle / (2.0 * M_PI) - azimuth_angle_offset / 360.0));
+      horizontal_resolution_ *
+      (azimuth_angle / (2.0 * M_PI) - azimuth_angle_offset_deg_ / 360.0));
   if (*w < 0) {
-    *w += kWidth;
+    *w += horizontal_resolution_;
   }
 
-  return (0 < *w && *w < kWidth - 1);
+  return (0 < *w && *w < horizontal_resolution_ - 1);
 }
 
 template <>
@@ -306,7 +322,7 @@ inline float
 ProjectiveTsdfIntegrator<InterpolationScheme::kMinNeighbor>::interpolate(
     const Eigen::MatrixXf &range_image, const float h, const float w) {
   // TODO(victorr): Implement better edge handling
-  if (h >= kHeight || w >= kWidth) {
+  if (h >= vertical_resolution_ || w >= horizontal_resolution_) {
     return range_image(std::floor(h), std::floor(w));
   }
 
@@ -326,7 +342,7 @@ ProjectiveTsdfIntegrator<InterpolationScheme::kBilinear>::interpolate(
     const Eigen::MatrixXf &range_image, const float h, const float w) {
   // TODO(victorr): Implement better edge handling
   // Check if we're on the edge, to avoid out-of-bounds matrix access
-  if (h >= kHeight || w >= kWidth) {
+  if (h >= vertical_resolution_ || w >= horizontal_resolution_) {
     return range_image(std::floor(h), std::floor(w));
   }
 
@@ -355,7 +371,7 @@ inline float
 ProjectiveTsdfIntegrator<InterpolationScheme::kAdaptive>::interpolate(
     const Eigen::MatrixXf &range_image, const float h, const float w) {
   // Check if we're on the edge, to avoid out-of-bounds matrix access
-  if (h >= kHeight || w >= kWidth) {
+  if (h >= vertical_resolution_ || w >= horizontal_resolution_) {
     return range_image(std::floor(h), std::floor(w));
   }
 

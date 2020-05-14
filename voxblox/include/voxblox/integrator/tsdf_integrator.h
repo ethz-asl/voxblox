@@ -86,6 +86,11 @@ class TsdfIntegratorBase {
     int clear_checks_every_n_frames = 1;
     /// fast integrator specific
     float max_integration_time_s = std::numeric_limits<float>::max();
+    // projective integrator specific
+    int sensor_horizontal_resolution = 0;
+    int sensor_vertical_resolution = 0;
+    double sensor_altitude_angle_max_degrees = 0.0;
+    double sensor_azimuth_angle_offset_degrees = 0.0;
 
     std::string print() const;
   };
