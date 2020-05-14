@@ -15,8 +15,7 @@
             method: "projective"
             sensor_horizontal_resolution: 1024
             sensor_vertical_resolution: 64
-            sensor_altitude_angle_max_degrees: 16.611
-            sensor_azimuth_angle_offset_degrees: 3.164
+            sensor_vertical_field_of_view_degrees: 33.222
             color_mode: "normals"
             world_frame: "mission"
             tsdf_voxel_size: 0.20
