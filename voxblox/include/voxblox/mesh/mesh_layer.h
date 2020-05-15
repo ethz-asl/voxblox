@@ -32,6 +32,11 @@ class MeshLayer {
       : block_size_(block_size), block_size_inv_(1.0 / block_size) {}
   virtual ~MeshLayer() {}
 
+  inline bool hasMeshWithIndex(const BlockIndex& index) const {
+    typename MeshMap::const_iterator it = mesh_map_.find(index);
+    return (it != mesh_map_.end());
+  }
+
   // By index.
   inline const Mesh& getMeshByIndex(const BlockIndex& index) const {
     typename MeshMap::const_iterator it = mesh_map_.find(index);

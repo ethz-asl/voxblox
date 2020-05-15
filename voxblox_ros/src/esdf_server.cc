@@ -256,4 +256,21 @@ void EsdfServer::clear() {
   publishMap(kResetRemoteMap);
 }
 
+void EsdfServer::pruneMap() {
+  TsdfServer::pruneMap();
+
+  size_t num_pruned_blocks = 0u;
+  BlockIndexList esdf_blocks_;
+  esdf_map_->getEsdfLayerPtr()->getAllAllocatedBlocks(&esdf_blocks_);
+  for (const BlockIndex& esdf_block_index : esdf_blocks_) {
+    if (!tsdf_map_->getTsdfLayer().hasBlock(esdf_block_index)) {
+      ++num_pruned_blocks;
+      esdf_map_->getEsdfLayerPtr()->removeBlock(esdf_block_index);
+    }
+  }
+
+  ROS_INFO_STREAM_COND(verbose_,
+                       "Pruned " << num_pruned_blocks << " ESDF blocks");
+}
+
 }  // namespace voxblox

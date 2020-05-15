@@ -31,14 +31,16 @@ enum class TsdfIntegratorType : int {
   kSimple = 1,
   kMerged = 2,
   kFast = 3,
+  kProjective = 4,
 };
 
-static constexpr size_t kNumTsdfIntegratorTypes = 3u;
+static constexpr size_t kNumTsdfIntegratorTypes = 4u;
 
 const std::array<std::string, kNumTsdfIntegratorTypes>
     kTsdfIntegratorTypeNames = {{/*kSimple*/ "simple",
                                  /*kMerged*/ "merged",
-                                 /*kFast*/ "fast"}};
+                                 /*kFast*/ "fast",
+                                 /*kProjective*/ "projective"}};
 
 /**
  * Base class to the simple, merged and fast TSDF integrators. The integrator
@@ -84,6 +86,10 @@ class TsdfIntegratorBase {
     int clear_checks_every_n_frames = 1;
     /// fast integrator specific
     float max_integration_time_s = std::numeric_limits<float>::max();
+    // projective integrator specific
+    int sensor_horizontal_resolution = 0;
+    int sensor_vertical_resolution = 0;
+    double sensor_vertical_field_of_view_degrees = 0.0;
 
     std::string print() const;
   };
@@ -100,7 +106,8 @@ class TsdfIntegratorBase {
   virtual void integratePointCloud(const Transformation& T_G_C,
                                    const Pointcloud& points_C,
                                    const Colors& colors,
-                                   const bool freespace_points = false) = 0;
+                                   const bool freespace_points = false,
+                                   const bool deintegrate = false) = 0;
 
   /// Returns a CONST ref of the config.
   const Config& getConfig() const { return config_; }
@@ -153,7 +160,7 @@ class TsdfIntegratorBase {
   void updateTsdfVoxel(const Point& origin, const Point& point_G,
                        const GlobalIndex& global_voxel_index,
                        const Color& color, const float weight,
-                       TsdfVoxel* tsdf_voxel);
+                       TsdfVoxel* tsdf_voxel, const bool deintegrate);
 
   /// Calculates TSDF distance, Thread safe.
   float computeDistance(const Point& origin, const Point& point_G,
@@ -221,12 +228,13 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-                           const bool freespace_points = false);
+                           const bool freespace_points = false,
+                           const bool deintegrate = false);
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
                          const bool freespace_points,
-                         ThreadSafeIndex* index_getter);
+                         ThreadSafeIndex* index_getter, const bool deintegrate);
 };
 
 /**
@@ -243,7 +251,8 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-                           const bool freespace_points = false);
+                           const bool freespace_points = false,
+                           const bool deintegrate = false);
 
  protected:
   void bundleRays(const Transformation& T_G_C, const Pointcloud& points_C,
@@ -255,20 +264,22 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const std::pair<GlobalIndex, AlignedVector<size_t>>& kv,
-      const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map);
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
+      const bool deintegrate);
 
   void integrateVoxels(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
-      size_t thread_idx);
+      size_t thread_idx, const bool deintegrate);
 
   void integrateRays(
       const Transformation& T_G_C, const Pointcloud& points_C,
       const Colors& colors, bool enable_anti_grazing, bool clearing_ray,
       const LongIndexHashMapType<AlignedVector<size_t>>::type& voxel_map,
-      const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map);
+      const LongIndexHashMapType<AlignedVector<size_t>>::type& clear_map,
+      const bool deintegrate);
 };
 
 /**
@@ -293,11 +304,12 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,
                          const bool freespace_points,
-                         ThreadSafeIndex* index_getter);
+                         ThreadSafeIndex* index_getter, const bool deintegrate);
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
-                           const bool freespace_points = false);
+                           const bool freespace_points = false,
+                           const bool deintegrate = false);
 
  private:
   /**

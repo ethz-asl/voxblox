@@ -56,9 +56,13 @@ class TsdfServer {
       const sensor_msgs::PointCloud2::Ptr& pointcloud_msg,
       const Transformation& T_G_C, const bool is_freespace_pointcloud);
 
-  void integratePointcloud(const Transformation& T_G_C,
-                           const Pointcloud& ptcloud_C, const Colors& colors,
+  void integratePointcloud(const ros::Time& timestamp,
+                           const Transformation& T_G_C,
+                           std::shared_ptr<const Pointcloud> ptcloud_C,
+                           std::shared_ptr<const Colors> colors,
                            const bool is_freespace_pointcloud = false);
+  void servicePointcloudDeintegrationQueue();
+
   virtual void newPoseCallback(const Transformation& /*new_pose*/) {
     // Do nothing.
   }
@@ -230,7 +234,7 @@ class TsdfServer {
 
   // Maps and integrators.
   std::shared_ptr<TsdfMap> tsdf_map_;
-  std::unique_ptr<TsdfIntegratorBase> tsdf_integrator_;
+  TsdfIntegratorBase::Ptr tsdf_integrator_;
 
   /// ICP matcher
   std::shared_ptr<ICP> icp_;
@@ -253,12 +257,29 @@ class TsdfServer {
   std::queue<sensor_msgs::PointCloud2::Ptr> pointcloud_queue_;
   std::queue<sensor_msgs::PointCloud2::Ptr> freespace_pointcloud_queue_;
 
+  // TODO(victorr): Add description
+  struct PointcloudDeintegrationPacket {
+    const ros::Time timestamp;
+    const Transformation T_G_C;
+    std::shared_ptr<const Pointcloud> ptcloud_C;
+    std::shared_ptr<const Colors> colors;
+    const bool is_freespace_pointcloud;
+  };
+  size_t pointcloud_deintegration_queue_length_;
+  std::deque<PointcloudDeintegrationPacket> pointcloud_deintegration_queue_;
+  const size_t num_voxels_per_block_;
+  bool map_needs_pruning_;
+  virtual void pruneMap();
+
   // Last message times for throttling input.
   ros::Time last_msg_time_ptcloud_;
   ros::Time last_msg_time_freespace_ptcloud_;
 
   /// Current transform corrections from ICP.
   Transformation icp_corrected_transform_;
+
+  // TODO(victorr): Add description
+  bool publish_map_with_trajectory_;
 };
 
 }  // namespace voxblox
