@@ -199,6 +199,33 @@ typedef Timer DebugTimer;
 typedef DummyTimer DebugTimer;
 #endif
 
+// Small timer for benchmarking.
+class MiniTimer {
+ public:
+  MiniTimer() : start_(std::chrono::system_clock::now()) {}
+
+  void start() {
+    start_ = std::chrono::system_clock::now();
+  }
+
+  double stop() {
+    end_ = std::chrono::system_clock::now();
+    return getTime();
+  }
+
+  double getTime() const {
+    if (end_ < start_) {
+      return 0.0;
+    }
+    std::chrono::duration<double> duration = end_ - start_;
+    return duration.count();
+  }
+
+ private:
+  std::chrono::time_point<std::chrono::system_clock> start_;
+  std::chrono::time_point<std::chrono::system_clock> end_;
+};
+
 }  // namespace timing
 }  // namespace voxblox
 
