@@ -1,7 +1,6 @@
 #include "voxblox/utils/layer_utils.h"
 
 namespace voxblox {
-
 namespace utils {
 
 template <>

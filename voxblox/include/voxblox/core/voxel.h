@@ -3,11 +3,13 @@
 
 #include <cstdint>
 #include <string>
+#include <bitset>
 
 #include "voxblox/core/color.h"
 #include "voxblox/core/common.h"
 
 namespace voxblox {
+enum VoxelStatus {MapOpenList, MapCloseList, FrontierOpenList, FrontierCloseList};
 
 struct TsdfVoxel {
   float distance = 0.0f;
@@ -32,6 +34,12 @@ struct EsdfVoxel {
    * or in the fixed frontier.
    */
   Eigen::Vector3i parent = Eigen::Vector3i::Zero();
+
+  std::bitset<VoxelStatus::FrontierCloseList> frontier_status;
+
+  int n_visible_frontier_voxels = 0;
+
+  bool visited = false;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

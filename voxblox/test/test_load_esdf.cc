@@ -1,5 +1,5 @@
-#include <memory>
 #include <string>
+#include <memory>
 
 #include <glog/logging.h>
 

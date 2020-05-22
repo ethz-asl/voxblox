@@ -1,6 +1,3 @@
-#include <deque>
-
-#include <gflags/gflags.h>
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_xml.h>
@@ -16,6 +13,7 @@
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <deque>
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>

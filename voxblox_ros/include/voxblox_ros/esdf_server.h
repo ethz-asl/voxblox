@@ -17,6 +17,7 @@ class EsdfServer : public TsdfServer {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+
   EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
              const EsdfMap::Config& esdf_config,
              const EsdfIntegrator::Config& esdf_integrator_config,

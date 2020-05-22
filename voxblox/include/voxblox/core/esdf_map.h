@@ -1,16 +1,16 @@
 #ifndef VOXBLOX_CORE_ESDF_MAP_H_
 #define VOXBLOX_CORE_ESDF_MAP_H_
 
+#include <glog/logging.h>
 #include <memory>
 #include <string>
 #include <utility>
-
-#include <glog/logging.h>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/interpolator/interpolator.h"
+
 #include "voxblox/io/layer_io.h"
 
 namespace voxblox {
@@ -55,8 +55,9 @@ class EsdfMap {
 
   FloatingPoint block_size() const { return block_size_; }
   FloatingPoint voxel_size() const { return esdf_layer_->voxel_size(); }
+  FloatingPoint voxels_per_side() const { return esdf_layer_->voxels_per_side(); }
 
-  /**
+    /**
    * Specific accessor functions for esdf maps.
    * Returns true if the point exists in the map AND is observed.
    * These accessors use Vector3d and doubles explicitly rather than

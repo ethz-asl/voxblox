@@ -1,5 +1,4 @@
 #include "voxblox/core/block.h"
-
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {

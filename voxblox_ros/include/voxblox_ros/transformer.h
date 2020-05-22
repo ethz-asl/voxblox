@@ -1,10 +1,9 @@
 #ifndef VOXBLOX_ROS_TRANSFORMER_H_
 #define VOXBLOX_ROS_TRANSFORMER_H_
 
-#include <string>
-
 #include <geometry_msgs/TransformStamped.h>
 #include <tf/transform_listener.h>
+#include <string>
 
 #include <voxblox/core/common.h>
 

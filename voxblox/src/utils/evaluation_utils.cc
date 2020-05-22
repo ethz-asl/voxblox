@@ -4,7 +4,6 @@
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
-
 namespace utils {
 
 template <>
@@ -65,11 +64,6 @@ VoxelEvaluationResult computeVoxelError(
   *error = voxel_test.distance - voxel_gt.distance;
 
   return VoxelEvaluationResult::kEvaluated;
-}
-
-template <typename VoxelType>
-bool isObservedVoxel(const VoxelType& /*voxel*/) {
-  return false;
 }
 
 template <>

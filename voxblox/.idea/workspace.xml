@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" GENERATION_OPTIONS="-DCATKIN_DEVEL_PREFIX:PATH=/home/laura/catkin_ws/devel" GENERATION_DIR="$PROJECT_DIR$/../../../build" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="07e0c192-7d57-49e1-bc37-e8723aae51c7" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/../.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/voxblox/core/block.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/voxblox/core/block.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/voxblox/core/esdf_map.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/voxblox/core/esdf_map.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/voxblox/core/voxel.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/voxblox/core/voxel.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/voxblox/integrator/merge_integration.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/voxblox/integrator/merge_integration.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../voxblox_ros/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../voxblox_ros/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../voxblox_ros/include/voxblox_ros/conversions_inl.h" beforeDir="false" afterPath="$PROJECT_DIR$/../voxblox_ros/include/voxblox_ros/conversions_inl.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../voxblox_ros/include/voxblox_ros/esdf_server.h" beforeDir="false" afterPath="$PROJECT_DIR$/../voxblox_ros/include/voxblox_ros/esdf_server.h" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
+  <component name="ProjectConfigurationFiles">
+    <option name="files">
+      <list>
+        <option value="$PROJECT_DIR$/.idea/voxblox.iml" />
+        <option value="$PROJECT_DIR$/.idea/misc.xml" />
+        <option value="$PROJECT_DIR$/.idea/vcs.xml" />
+        <option value="$PROJECT_DIR$/.idea/modules.xml" />
+        <option value="$PROJECT_DIR$/../voxblox_msgs/.idea/voxblox_msgs.iml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectId" id="1WwcyWOjfLLac0gKPIygtIDZZ1U" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.advertisement.text.has.clang-format" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="settings.editor.selected.configurable" value="CMakeSettings" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="07e0c192-7d57-49e1-bc37-e8723aae51c7" name="Default Changelist" comment="" />
+      <created>1556179681717</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1556179681717</updated>
+      <workItem from="1556179683109" duration="2066000" />
+      <workItem from="1556275039484" duration="6043000" />
+      <workItem from="1556291468029" duration="64000" />
+      <workItem from="1556526312737" duration="83000" />
+      <workItem from="1556796975761" duration="2255000" />
+      <workItem from="1557128855115" duration="36000" />
+      <workItem from="1557128985091" duration="671000" />
+      <workItem from="1557130023138" duration="658000" />
+      <workItem from="1557131907153" duration="832000" />
+      <workItem from="1557313111120" duration="706000" />
+      <workItem from="1557412359122" duration="86000" />
+      <workItem from="1557495018947" duration="258000" />
+      <workItem from="1557496427567" duration="886000" />
+      <workItem from="1557745402193" duration="1250000" />
+      <workItem from="1557749214596" duration="715000" />
+      <workItem from="1557752072199" duration="666000" />
+      <workItem from="1557818338792" duration="1420000" />
+      <workItem from="1557904298999" duration="34000" />
+      <workItem from="1580064353980" duration="490000" />
+      <workItem from="1580078518944" duration="13000" />
+      <workItem from="1580738330611" duration="1489000" />
+      <workItem from="1580740570163" duration="602000" />
+      <workItem from="1580761606392" duration="613000" />
+      <workItem from="1581170639649" duration="1378000" />
+      <workItem from="1581177301364" duration="2413000" />
+      <workItem from="1581800297478" duration="1616000" />
+      <workItem from="1581954086214" duration="72000" />
+      <workItem from="1582275657447" duration="3415000" />
+      <workItem from="1582640272179" duration="210000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

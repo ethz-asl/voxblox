@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" GENERATION_OPTIONS="-DCATKIN_DEVEL_PREFIX:PATH=/home/laura/catkin_ws/devel" GENERATION_DIR="$PROJECT_DIR$/../../../build" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="a7b9a990-9b9c-4063-a033-2bdc182d7a01" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/../.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../voxblox/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../voxblox/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../voxblox/include/voxblox/core/block.h" beforeDir="false" afterPath="$PROJECT_DIR$/../voxblox/include/voxblox/core/block.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../voxblox/include/voxblox/core/esdf_map.h" beforeDir="false" afterPath="$PROJECT_DIR$/../voxblox/include/voxblox/core/esdf_map.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../voxblox/include/voxblox/core/voxel.h" beforeDir="false" afterPath="$PROJECT_DIR$/../voxblox/include/voxblox/core/voxel.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../voxblox/include/voxblox/integrator/merge_integration.h" beforeDir="false" afterPath="$PROJECT_DIR$/../voxblox/include/voxblox/integrator/merge_integration.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/voxblox_ros/conversions_inl.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/voxblox_ros/conversions_inl.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/voxblox_ros/esdf_server.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/voxblox_ros/esdf_server.h" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
+  <component name="ProjectConfigurationFiles">
+    <option name="files">
+      <list>
+        <option value="$PROJECT_DIR$/.idea/voxblox_ros.iml" />
+        <option value="$PROJECT_DIR$/.idea/misc.xml" />
+        <option value="$PROJECT_DIR$/.idea/vcs.xml" />
+        <option value="$PROJECT_DIR$/.idea/modules.xml" />
+        <option value="$PROJECT_DIR$/../voxblox_msgs/.idea/voxblox_msgs.iml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectId" id="1WW8W9GHhteYjSlmeVJZMO3A57Z" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.advertisement.text.has.clang-format" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../voxgraph_planner/active_3d_planning_app_submap_exploration" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="settings.editor.selected.configurable" value="CMakeSettings" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a7b9a990-9b9c-4063-a033-2bdc182d7a01" name="Default Changelist" comment="" />
+      <created>1556179937529</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1556179937529</updated>
+      <workItem from="1556179938728" duration="2899000" />
+      <workItem from="1556524113523" duration="2037000" />
+      <workItem from="1556535064751" duration="1700000" />
+      <workItem from="1556795655747" duration="5253000" />
+      <workItem from="1556869324233" duration="1359000" />
+      <workItem from="1557149203745" duration="287000" />
+      <workItem from="1579254019266" duration="2270000" />
+      <workItem from="1579256688251" duration="108000" />
+      <workItem from="1580063876692" duration="476000" />
+      <workItem from="1580156496512" duration="1190000" />
+      <workItem from="1580157770552" duration="2407000" />
+      <workItem from="1580545896187" duration="1482000" />
+      <workItem from="1580552082904" duration="16000" />
+      <workItem from="1582275553519" duration="919000" />
+      <workItem from="1587886538677" duration="2315000" />
+      <workItem from="1587940215433" duration="46000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

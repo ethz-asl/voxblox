@@ -1,7 +1,5 @@
 #include "voxblox_ros/intensity_server.h"
 
-#include <gflags/gflags.h>
-
 int main(int argc, char** argv) {
   ros::init(argc, argv, "voxblox");
   google::InitGoogleLogging(argv[0]);

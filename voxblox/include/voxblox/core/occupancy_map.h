@@ -1,10 +1,9 @@
 #ifndef VOXBLOX_CORE_OCCUPANCY_MAP_H_
 #define VOXBLOX_CORE_OCCUPANCY_MAP_H_
 
+#include <glog/logging.h>
 #include <memory>
 #include <utility>
-
-#include <glog/logging.h>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"

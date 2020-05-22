@@ -5,7 +5,6 @@
 #include "voxblox/core/voxel.h"
 
 namespace voxblox {
-
 namespace utils {
 
 /// Gets the indices of all points within the sphere.

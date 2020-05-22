@@ -97,6 +97,7 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
       new_block_ptr->deserializeFromIntegers(data);
 
       old_block_ptr->mergeBlock(*new_block_ptr);
+
     }
   }
 
@@ -108,7 +109,7 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
     // Fall through intended.
     case MapDerializationAction::kMerge:
       CHECK_GE(layer->getNumberOfAllocatedBlocks(), msg.blocks.size());
-      break;
+        break;
   }
 
   return true;

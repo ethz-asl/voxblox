@@ -1,13 +1,12 @@
 #ifndef VOXBLOX_INTEGRATOR_INTENSITY_INTEGRATOR_H_
 #define VOXBLOX_INTEGRATOR_INTENSITY_INTEGRATOR_H_
 
+#include <glog/logging.h>
+#include <Eigen/Core>
 #include <algorithm>
 #include <queue>
 #include <utility>
 #include <vector>
-
-#include <glog/logging.h>
-#include <Eigen/Core>
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"

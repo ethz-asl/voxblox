@@ -78,6 +78,7 @@ unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
   return count;
 }
 
+
 bool TsdfMap::getWeightAtPosition(const Eigen::Vector3d& position,
                                   double* weight) const {
   constexpr bool interpolate = true;
@@ -85,8 +86,7 @@ bool TsdfMap::getWeightAtPosition(const Eigen::Vector3d& position,
 }
 
 bool TsdfMap::getWeightAtPosition(const Eigen::Vector3d& position,
-                                  const bool interpolate,
-                                  double* weight) const {
+                                  bool interpolate, double* weight) const {
   FloatingPoint weight_fp;
   bool success = interpolator_.getWeight(position.cast<FloatingPoint>(),
                                          &weight_fp, interpolate);

@@ -92,7 +92,7 @@ class SimulationWorld {
   Point getMinBound() const { return min_bound_; }
   Point getMaxBound() const { return max_bound_; }
 
- protected:
+ private:
   template <typename VoxelType>
   void setVoxel(FloatingPoint dist, const Color& color, VoxelType* voxel) const;
 

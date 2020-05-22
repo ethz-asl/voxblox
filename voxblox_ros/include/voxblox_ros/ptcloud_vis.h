@@ -319,9 +319,8 @@ inline void createSurfacePointcloudFromTsdfLayer(
     pcl::PointCloud<pcl::PointXYZRGB>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
-                surface_distance, ph::_3),
+      layer, std::bind(&visualizeNearSurfaceTsdfVoxels, ph::_1, ph::_2,
+                       surface_distance, ph::_3),
       pointcloud);
 }
 
@@ -358,9 +357,8 @@ inline void createSurfaceDistancePointcloudFromTsdfLayer(
     pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
   CHECK_NOTNULL(pointcloud);
   createColorPointcloudFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
-                ph::_2, surface_distance, ph::_3),
+      layer, std::bind(&visualizeDistanceIntensityTsdfVoxelsNearSurface, ph::_1,
+                       ph::_2, surface_distance, ph::_3),
       pointcloud);
 }
 
@@ -433,9 +431,8 @@ inline void createOccupancyBlocksFromTsdfLayer(
     visualization_msgs::MarkerArray* marker_array) {
   CHECK_NOTNULL(marker_array);
   createOccupancyBlocksFromLayer<TsdfVoxel>(
-      layer,
-      std::bind(visualizeOccupiedTsdfVoxels, std::placeholders::_1,
-                std::placeholders::_2, layer.voxel_size()),
+      layer, std::bind(visualizeOccupiedTsdfVoxels, std::placeholders::_1,
+                       std::placeholders::_2, layer.voxel_size()),
       frame_id, marker_array);
 }
 

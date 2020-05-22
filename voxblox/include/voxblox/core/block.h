@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-#include "voxblox/Block.pb.h"
+#include "./Block.pb.h"
 #include "voxblox/core/common.h"
 
 namespace voxblox {
@@ -15,7 +15,7 @@ namespace voxblox {
 namespace Update {
 /// Status of which derived things still need to be updated.
 enum Status { kMap, kMesh, kEsdf, kCount };
-}  // namespace Update
+}
 
 /** An n x n x n container holding VoxelType. It is aware of its 3D position and
  * contains functions for accessing voxels by position and index */
@@ -187,6 +187,14 @@ class Block {
 
   size_t getMemorySize() const;
 
+  void setSubmapID(uint8_t id){
+      submap_id_ = id;
+  }
+
+  const uint8_t& getSubmapID() const{
+      return submap_id_;
+  }
+
  protected:
   std::unique_ptr<VoxelType[]> voxels_;
 
@@ -212,6 +220,8 @@ class Block {
 
   /// Is set to true when data is updated.
   std::bitset<Update::kCount> updated_;
+
+  uint8_t submap_id_ = 0;
 };
 
 }  // namespace voxblox

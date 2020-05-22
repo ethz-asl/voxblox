@@ -33,7 +33,6 @@ class Object {
   virtual FloatingPoint getDistanceToPoint(const Point& point) const = 0;
 
   Color getColor() const { return color_; }
-  Type getType() const { return type_; }
 
   /// Raycasting accessors.
   virtual bool getRayIntersection(const Point& ray_origin,

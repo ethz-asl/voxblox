@@ -17,19 +17,18 @@
 
 /* Adapted from Paul Furgale Schweizer Messer sm_timing*/
 
-#include <math.h>
-#include <stdio.h>
 #include <algorithm>
 #include <ostream>
 #include <sstream>
+#include <stdio.h>
 #include <string>
+#include <math.h>
 
 #include <glog/logging.h>
 
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
-
 namespace timing {
 
 const double kNumSecondsPerNanosecond = 1.e-9;

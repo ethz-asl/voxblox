@@ -1,5 +1,3 @@
-#include "voxblox_rviz_plugin/voxblox_mesh_display.h"
-
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
 
@@ -7,6 +5,8 @@
 
 #include <rviz/frame_manager.h>
 #include <rviz/visualization_manager.h>
+
+#include "voxblox_rviz_plugin/voxblox_mesh_display.h"
 
 namespace voxblox_rviz_plugin {
 

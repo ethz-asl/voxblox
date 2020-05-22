@@ -1,11 +1,10 @@
 #ifndef VOXBLOX_CORE_TSDF_MAP_H_
 #define VOXBLOX_CORE_TSDF_MAP_H_
 
+#include <glog/logging.h>
 #include <memory>
 #include <string>
 #include <utility>
-
-#include <glog/logging.h>
 
 #include "voxblox/core/common.h"
 #include "voxblox/core/layer.h"
@@ -45,7 +44,8 @@ class TsdfMap {
 
   /// Creates a new TsdfMap that contains this layer.
   explicit TsdfMap(Layer<TsdfVoxel>::Ptr layer)
-      : tsdf_layer_(layer), interpolator_(tsdf_layer_.get()) {
+      : tsdf_layer_(layer),
+        interpolator_(tsdf_layer_.get()) {
     if (!layer) {
       /* NOTE(mereweth@jpl.nasa.gov) - throw std exception for Python to catch
        * This is idiomatic when wrapping C++ code for Python, especially with
@@ -62,9 +62,6 @@ class TsdfMap {
   virtual ~TsdfMap() {}
 
   Layer<TsdfVoxel>* getTsdfLayerPtr() { return tsdf_layer_.get(); }
-  const Layer<TsdfVoxel>* getTsdfLayerConstPtr() const {
-    return tsdf_layer_.get();
-  }
   const Layer<TsdfVoxel>& getTsdfLayer() const { return *tsdf_layer_; }
 
   FloatingPoint block_size() const { return block_size_; }
@@ -94,7 +91,7 @@ class TsdfMap {
   bool getWeightAtPosition(const Eigen::Vector3d& position,
                            double* weight) const;
   bool getWeightAtPosition(const Eigen::Vector3d& position,
-                           const bool interpolate, double* weight) const;
+                           bool interpolate, double* weight) const;
 
  protected:
   FloatingPoint block_size_;

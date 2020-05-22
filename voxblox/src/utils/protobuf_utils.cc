@@ -1,14 +1,14 @@
-#include "voxblox/utils/protobuf_utils.h"
-
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+
+#include "voxblox/utils/protobuf_utils.h"
 
 namespace voxblox {
 
 namespace utils {
 bool readProtoMsgCountToStream(std::fstream* stream_in, uint32_t* message_count,
-                               uint64_t* byte_offset) {
+                               uint32_t* byte_offset) {
   CHECK_NOTNULL(stream_in);
   CHECK_NOTNULL(message_count);
   CHECK_NOTNULL(byte_offset);
@@ -39,7 +39,7 @@ bool writeProtoMsgCountToStream(uint32_t message_count,
 
 bool readProtoMsgFromStream(std::fstream* stream_in,
                             google::protobuf::Message* message,
-                            uint64_t* byte_offset) {
+                            uint32_t* byte_offset) {
   CHECK_NOTNULL(stream_in);
   CHECK_NOTNULL(message);
   CHECK_NOTNULL(byte_offset);
