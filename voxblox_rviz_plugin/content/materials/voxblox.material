@@ -1,22 +1,4 @@
-// material for transparent meshes, based on BaseWhiteNoLighting
-material VoxbloxMaterialTest
- {
-   technique
-   {
-     pass
-     {
-       scene_blend alpha_blend
-       depth_write off
-
-       texture_unit
-       {
-         colour_op_ex source1 src_manual src_current 1 1 1
-         alpha_op_ex source1 src_manual src_current 1
-       }
-     }
-   }
- }
-
+// material for transparent meshes, based on 'BaseWhiteNoLighting'
 material VoxbloxMaterial
 {
 	receive_shadows on
