@@ -49,6 +49,11 @@ void VoxbloxMultiMeshDisplay::processMessage(
   voxblox_msgs::MeshPtr mesh_msg(new voxblox_msgs::Mesh());
   *mesh_msg=msg->mesh;
   mesh_msg->header = msg->header;
+  uint8_t alpha = msg->alpha;
+  if (alpha == 0){
+    // catch uninitialized alpha values, since nobody wants to display a completely invisible mesh.
+    alpha = std::numeric_limits<uint8_t>::max();
+  }
   it->second->setMessage(mesh_msg, msg->alpha);
   it->second->setFramePosition(position);
   it->second->setFrameOrientation(orientation);
