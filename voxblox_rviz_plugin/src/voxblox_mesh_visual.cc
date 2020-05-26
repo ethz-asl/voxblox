@@ -26,7 +26,7 @@ VoxbloxMeshVisual::~VoxbloxMeshVisual() {
   }
 }
 
-void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
+void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha) {
   for (const voxblox_msgs::MeshBlock& mesh_block : msg->mesh_blocks) {
     const voxblox::BlockIndex index(mesh_block.index[0], mesh_block.index[1],
                                     mesh_block.index[2]);
@@ -91,7 +91,7 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
         color.b = std::numeric_limits<uint8_t>::max() *
                   (mesh.normals[i].z() * 0.5f + 0.5f);
       }
-      color.a = std::numeric_limits<uint8_t>::max();
+      color.a = alpha;
       mesh.colors.push_back(color);
     }
 
@@ -128,7 +128,8 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
 
     ogre_object->estimateVertexCount(connected_mesh.vertices.size());
     ogre_object->estimateIndexCount(connected_mesh.indices.size());
-    ogre_object->begin("BaseWhiteNoLighting",
+    // BaseWhiteNoLighting
+    ogre_object->begin("VoxbloxMaterial",
                        Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
     for (size_t i = 0; i < connected_mesh.vertices.size(); ++i) {
@@ -141,14 +142,13 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
       ogre_object->normal(connected_mesh.normals[i].x(),
                           connected_mesh.normals[i].y(),
                           connected_mesh.normals[i].z());
-
       constexpr float color_conv_factor =
           1.0f / std::numeric_limits<uint8_t>::max();
       ogre_object->colour(
           color_conv_factor * static_cast<float>(connected_mesh.colors[i].r),
           color_conv_factor * static_cast<float>(connected_mesh.colors[i].g),
           color_conv_factor * static_cast<float>(connected_mesh.colors[i].b),
-          color_conv_factor * static_cast<float>(connected_mesh.colors[i].a));
+          color_conv_factor * static_cast<float>(alpha));
     }
 
     // needed for anything other than flat rendering
@@ -158,7 +158,7 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg) {
 
     ogre_object->end();
   }
-}  // namespace voxblox_rviz_plugin
+}
 
 void VoxbloxMeshVisual::setFramePosition(const Ogre::Vector3& position) {
   frame_node_->setPosition(position);

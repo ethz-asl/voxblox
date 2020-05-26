@@ -1,31 +1,32 @@
-#include "voxblox_rviz_plugin/voxblox_mesh_display.h"
+#include "voxblox_rviz_plugin/voxblox_multi_mesh_display.h"
 
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
 
 #include <tf/transform_listener.h>
-
 #include <rviz/frame_manager.h>
 #include <rviz/visualization_manager.h>
 #include <voxblox_rviz_plugin/material_loader.h>
 
 namespace voxblox_rviz_plugin {
 
-VoxbloxMeshDisplay::VoxbloxMeshDisplay() {
+VoxbloxMultiMeshDisplay::VoxbloxMultiMeshDisplay() {
   voxblox_rviz_plugin::MaterialLoader::loadMaterials();
 }
 
-void VoxbloxMeshDisplay::onInitialize() { MFDClass::onInitialize(); }
+void VoxbloxMultiMeshDisplay::onInitialize() { MFDClass::onInitialize(); }
 
-VoxbloxMeshDisplay::~VoxbloxMeshDisplay() {}
+VoxbloxMultiMeshDisplay::~VoxbloxMultiMeshDisplay() {}
 
-void VoxbloxMeshDisplay::reset() {
+void VoxbloxMultiMeshDisplay::reset() {
   MFDClass::reset();
-  visual_.reset();
+  for (auto& visual : visuals_){
+    visual.second.reset();
+  }
 }
 
-void VoxbloxMeshDisplay::processMessage(
-    const voxblox_msgs::Mesh::ConstPtr& msg) {
+void VoxbloxMultiMeshDisplay::processMessage(
+    const voxblox_msgs::MultiMesh::ConstPtr& msg) {
   // Here we call the rviz::FrameManager to get the transform from the
   // fixed frame to the frame in the header of this Imu message.  If
   // it fails, we can't do anything else so we return.
@@ -38,18 +39,21 @@ void VoxbloxMeshDisplay::processMessage(
     return;
   }
 
-  if (visual_ == nullptr) {
-    visual_.reset(
-        new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_));
+  auto it = visuals_.find(msg->id);
+  if (it == visuals_.end()){
+    it = visuals_.insert(std::make_pair(msg->id, std::unique_ptr<VoxbloxMeshVisual>(new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_)))).first;
   }
 
   // Now set or update the contents of the chosen visual.
-  visual_->setMessage(msg);
-  visual_->setFramePosition(position);
-  visual_->setFrameOrientation(orientation);
+  voxblox_msgs::MeshPtr mesh_msg(new voxblox_msgs::Mesh());
+  *mesh_msg=msg->mesh;
+  mesh_msg->header = msg->header;
+  it->second->setMessage(mesh_msg, msg->alpha);
+  it->second->setFramePosition(position);
+  it->second->setFrameOrientation(orientation);
 }
 
 }  // namespace voxblox_rviz_plugin
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(voxblox_rviz_plugin::VoxbloxMeshDisplay, rviz::Display)
+PLUGINLIB_EXPORT_CLASS(voxblox_rviz_plugin::VoxbloxMultiMeshDisplay, rviz::Display)

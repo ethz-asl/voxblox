@@ -5,6 +5,9 @@
 
 #include <voxblox/core/block_hash.h>
 #include <voxblox_msgs/Mesh.h>
+#include <voxblox_msgs/MultiMesh.h>
+
+
 
 namespace voxblox_rviz_plugin {
 
@@ -15,7 +18,7 @@ class VoxbloxMeshVisual {
                     Ogre::SceneNode* parent_node);
   virtual ~VoxbloxMeshVisual();
 
-  void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg);
+  void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha=std::numeric_limits<uint8_t>::max());
 
   /// Set the coordinate frame pose.
   void setFramePosition(const Ogre::Vector3& position);
