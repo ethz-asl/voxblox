@@ -4,8 +4,6 @@
 #include <OGRE/OgreSceneNode.h>
 
 #include <tf/transform_listener.h>
-
-#include <rviz/frame_manager.h>
 #include <rviz/visualization_manager.h>
 #include <voxblox_rviz_plugin/material_loader.h>
 

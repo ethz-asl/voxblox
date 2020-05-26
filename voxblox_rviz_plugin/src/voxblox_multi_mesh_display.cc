@@ -41,7 +41,8 @@ void VoxbloxMultiMeshDisplay::processMessage(
 
   auto it = visuals_.find(msg->id);
   if (it == visuals_.end()){
-    it = visuals_.insert(std::make_pair(msg->id, std::unique_ptr<VoxbloxMeshVisual>(new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_)))).first;
+    it = visuals_.insert(std::make_pair(msg->id, std::unique_ptr<VoxbloxMeshVisual>(
+        new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_)))).first;
   }
 
   // Now set or update the contents of the chosen visual.

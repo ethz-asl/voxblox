@@ -128,7 +128,6 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
 
     ogre_object->estimateVertexCount(connected_mesh.vertices.size());
     ogre_object->estimateIndexCount(connected_mesh.indices.size());
-    // BaseWhiteNoLighting
     ogre_object->begin("VoxbloxMaterial",
                        Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
@@ -148,7 +147,7 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
           color_conv_factor * static_cast<float>(connected_mesh.colors[i].r),
           color_conv_factor * static_cast<float>(connected_mesh.colors[i].g),
           color_conv_factor * static_cast<float>(connected_mesh.colors[i].b),
-          color_conv_factor * static_cast<float>(alpha));
+          color_conv_factor * static_cast<float>(connected_mesh.colors[i].a));
     }
 
     // needed for anything other than flat rendering

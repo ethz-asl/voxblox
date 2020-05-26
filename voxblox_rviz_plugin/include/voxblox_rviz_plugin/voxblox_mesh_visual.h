@@ -7,8 +7,6 @@
 #include <voxblox_msgs/Mesh.h>
 #include <voxblox_msgs/MultiMesh.h>
 
-
-
 namespace voxblox_rviz_plugin {
 
 /// Visualizes a single voxblox_msgs::Mesh message.
