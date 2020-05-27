@@ -20,13 +20,22 @@ VoxbloxMeshVisual::VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
 
 VoxbloxMeshVisual::~VoxbloxMeshVisual() {
   // Destroy all the objects
-  for (std::pair<const voxblox::BlockIndex, Ogre::ManualObject*> ogre_object :
-       object_map_) {
-    scene_manager_->destroyManualObject(ogre_object.second);
+  for (std::pair<int, voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type> object_map :
+  object_maps_) {
+    for (std::pair<const voxblox::BlockIndex, Ogre::ManualObject *> ogre_object :
+        object_map.second) {
+      scene_manager_->destroyManualObject(ogre_object.second);
+    }
   }
 }
 
-void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha) {
+void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha, int id) {
+  auto map_it = object_maps_.find(id);
+  if (map_it == object_maps_.end()){
+    map_it = object_maps_.insert(std::make_pair(id, voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type())).first;
+  }
+  voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type& object_map = map_it->second;
+
   for (const voxblox_msgs::MeshBlock& mesh_block : msg->mesh_blocks) {
     const voxblox::BlockIndex index(mesh_block.index[0], mesh_block.index[1],
                                     mesh_block.index[2]);
@@ -102,12 +111,12 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
     // create ogre object
     Ogre::ManualObject* ogre_object;
     const voxblox::AnyIndexHashMapType<
-        Ogre::ManualObject*>::type::const_iterator it = object_map_.find(index);
-    if (it != object_map_.end()) {
+        Ogre::ManualObject*>::type::const_iterator it = object_map.find(index);
+    if (it != object_map.end()) {
       // delete empty mesh blocks
       if (mesh_block.x.size() == 0) {
         scene_manager_->destroyManualObject(it->second);
-        object_map_.erase(it);
+        object_map.erase(it);
         continue;
       }
 
@@ -117,9 +126,10 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
       std::string object_name = std::to_string(index.x()) + std::string(" ") +
                                 std::to_string(index.y()) + std::string(" ") +
                                 std::to_string(index.z()) + std::string(" ") +
-                                std::to_string(instance_number_);
+                                std::to_string(instance_number_) + std::string(" ") +
+                                std::to_string(id);
       ogre_object = scene_manager_->createManualObject(object_name);
-      object_map_.insert(std::make_pair(index, ogre_object));
+      object_map.insert(std::make_pair(index, ogre_object));
 
       frame_node_->attachObject(ogre_object);
     }

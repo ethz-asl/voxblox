@@ -29,7 +29,7 @@ class VoxbloxMultiMeshDisplay
  private:
   void processMessage(const voxblox_msgs::MultiMesh::ConstPtr& msg);
 
-  std::unordered_map<int, std::unique_ptr<VoxbloxMeshVisual>> visuals_;
+  std::unique_ptr<VoxbloxMeshVisual> visual_;
 };
 
 }  // namespace voxblox_rviz_plugin

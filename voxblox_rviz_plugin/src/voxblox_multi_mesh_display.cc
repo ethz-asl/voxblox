@@ -20,9 +20,7 @@ VoxbloxMultiMeshDisplay::~VoxbloxMultiMeshDisplay() {}
 
 void VoxbloxMultiMeshDisplay::reset() {
   MFDClass::reset();
-  for (auto& visual : visuals_){
-    visual.second.reset();
-  }
+  visual_.reset();
 }
 
 void VoxbloxMultiMeshDisplay::processMessage(
@@ -39,10 +37,8 @@ void VoxbloxMultiMeshDisplay::processMessage(
     return;
   }
 
-  auto it = visuals_.find(msg->id);
-  if (it == visuals_.end()){
-    it = visuals_.insert(std::make_pair(msg->id, std::unique_ptr<VoxbloxMeshVisual>(
-        new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_)))).first;
+  if (!visual_){
+    visual_.reset(  new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_));
   }
 
   // Now set or update the contents of the chosen visual.
@@ -54,9 +50,9 @@ void VoxbloxMultiMeshDisplay::processMessage(
     // catch uninitialized alpha values, since nobody wants to display a completely invisible mesh.
     alpha = std::numeric_limits<uint8_t>::max();
   }
-  it->second->setMessage(mesh_msg, msg->alpha);
-  it->second->setFramePosition(position);
-  it->second->setFrameOrientation(orientation);
+  visual_->setMessage(mesh_msg, msg->alpha, msg->id);
+  visual_->setFramePosition(position);
+  visual_->setFrameOrientation(orientation);
 }
 
 }  // namespace voxblox_rviz_plugin

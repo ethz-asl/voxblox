@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H_
 #define VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H_
 
+#include <map>
+
 #include <OGRE/OgreManualObject.h>
 
 #include <voxblox/core/block_hash.h>
@@ -16,7 +18,7 @@ class VoxbloxMeshVisual {
                     Ogre::SceneNode* parent_node);
   virtual ~VoxbloxMeshVisual();
 
-  void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha=std::numeric_limits<uint8_t>::max());
+  void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha=std::numeric_limits<uint8_t>::max(), int id = 0);
 
   /// Set the coordinate frame pose.
   void setFramePosition(const Ogre::Vector3& position);
@@ -29,7 +31,7 @@ class VoxbloxMeshVisual {
   unsigned int instance_number_;
   static unsigned int instance_counter_;
 
-  voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type object_map_;
+  std::unordered_map<int, voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type> object_maps_;
 };
 
 }  // namespace voxblox_rviz_plugin
