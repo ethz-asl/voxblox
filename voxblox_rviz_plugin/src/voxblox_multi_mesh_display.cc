@@ -4,7 +4,6 @@
 #include <OGRE/OgreSceneNode.h>
 
 #include <tf/transform_listener.h>
-#include <rviz/frame_manager.h>
 #include <rviz/visualization_manager.h>
 #include <voxblox_rviz_plugin/material_loader.h>
 
@@ -20,7 +19,6 @@ VoxbloxMultiMeshDisplay::~VoxbloxMultiMeshDisplay() {}
 
 void VoxbloxMultiMeshDisplay::reset() {
   MFDClass::reset();
-  visual_.reset();
 }
 
 void VoxbloxMultiMeshDisplay::processMessage(
@@ -37,8 +35,9 @@ void VoxbloxMultiMeshDisplay::processMessage(
     return;
   }
 
-  if (!visual_){
-    visual_.reset(  new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_));
+  auto it = visuals_.find(msg->id);
+  if (it == visuals_.end()){
+    it = visuals_.insert(std::make_pair(msg->id, VoxbloxMeshVisual(context_->getSceneManager(), scene_node_->createChildSceneNode()))).first;
   }
 
   // Now set or update the contents of the chosen visual.
@@ -50,9 +49,9 @@ void VoxbloxMultiMeshDisplay::processMessage(
     // catch uninitialized alpha values, since nobody wants to display a completely invisible mesh.
     alpha = std::numeric_limits<uint8_t>::max();
   }
-  visual_->setMessage(mesh_msg, msg->alpha, msg->id);
-  visual_->setFramePosition(position);
-  visual_->setFrameOrientation(orientation);
+  it->second.setMessage(mesh_msg, msg->alpha);
+  it->second.setFramePosition(position);
+  it->second.setFrameOrientation(orientation);
 }
 
 }  // namespace voxblox_rviz_plugin

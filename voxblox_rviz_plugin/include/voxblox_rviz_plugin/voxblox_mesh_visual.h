@@ -15,10 +15,11 @@ namespace voxblox_rviz_plugin {
 class VoxbloxMeshVisual {
  public:
   VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
-                    Ogre::SceneNode* parent_node);
+                    Ogre::SceneNode* parent_node,
+                    int id = 0);
   virtual ~VoxbloxMeshVisual();
 
-  void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha=std::numeric_limits<uint8_t>::max(), int id = 0);
+  void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha=std::numeric_limits<uint8_t>::max());
 
   /// Set the coordinate frame pose.
   void setFramePosition(const Ogre::Vector3& position);
@@ -30,8 +31,9 @@ class VoxbloxMeshVisual {
 
   unsigned int instance_number_;
   static unsigned int instance_counter_;
+  int id_;
 
-  std::unordered_map<int, voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type> object_maps_;
+  voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type object_map_;
 };
 
 }  // namespace voxblox_rviz_plugin
