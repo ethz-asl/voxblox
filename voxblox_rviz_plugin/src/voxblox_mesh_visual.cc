@@ -13,19 +13,25 @@ unsigned int VoxbloxMeshVisual::instance_counter_ = 0;
 
 VoxbloxMeshVisual::VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
                                      Ogre::SceneNode* parent_node,
-                                     int id) {
-  scene_manager_ = scene_manager;
+                                     int id) :
+                                     scene_manager_(scene_manager),
+                                     id_(id),
+                                     is_enabled_(true)
+                                     {
   frame_node_ = parent_node->createChildSceneNode();
   instance_number_ = instance_counter_++;
-  id_ = id;
 }
 
 VoxbloxMeshVisual::~VoxbloxMeshVisual() {
   // Destroy all the objects
-  for (std::pair<const voxblox::BlockIndex, Ogre::ManualObject *> ogre_object :
-      object_map_) {
-    scene_manager_->destroyManualObject(ogre_object.second);
+  for (auto& ogre_object_pair :object_map_) {
+    scene_manager_->destroyManualObject(ogre_object_pair.second);
   }
+}
+
+void VoxbloxMeshVisual::setPose(const Ogre::Vector3 &position, const Ogre::Quaternion &orientation){
+  frame_node_->setPosition(position);
+  frame_node_->setOrientation(orientation);
 }
 
 void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha) {
@@ -124,7 +130,9 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
                                 std::to_string(id_);
       ogre_object = scene_manager_->createManualObject(object_name);
       object_map_.insert(std::make_pair(index, ogre_object));
-
+      if (!is_enabled_){
+        ogre_object->setVisible(false);
+      }
       frame_node_->attachObject(ogre_object);
     }
 
@@ -166,13 +174,19 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
   }
 }
 
-void VoxbloxMeshVisual::setFramePosition(const Ogre::Vector3& position) {
-  frame_node_->setPosition(position);
-}
-
-void VoxbloxMeshVisual::setFrameOrientation(
-    const Ogre::Quaternion& orientation) {
-  frame_node_->setOrientation(orientation);
+void VoxbloxMeshVisual::setEnabled(bool enabled){
+  if (enabled && !is_enabled_){
+    // new enable
+    for (auto &manual_object : object_map_){
+      manual_object.second->setVisible(true);
+    }
+  } else if (!enabled && is_enabled_){
+    // new disable
+    for (auto &manual_object : object_map_){
+      manual_object.second->setVisible(false);
+    }
+    is_enabled_ = enabled;
+  }
 }
 
 }  // namespace voxblox_rviz_plugin

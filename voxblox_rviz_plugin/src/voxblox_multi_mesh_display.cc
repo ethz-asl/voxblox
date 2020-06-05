@@ -9,49 +9,71 @@
 
 namespace voxblox_rviz_plugin {
 
-VoxbloxMultiMeshDisplay::VoxbloxMultiMeshDisplay() {
+VoxbloxMultiMeshDisplay::VoxbloxMultiMeshDisplay()  {
   voxblox_rviz_plugin::MaterialLoader::loadMaterials();
 }
 
-void VoxbloxMultiMeshDisplay::onInitialize() { MFDClass::onInitialize(); }
-
-VoxbloxMultiMeshDisplay::~VoxbloxMultiMeshDisplay() {}
-
 void VoxbloxMultiMeshDisplay::reset() {
   MFDClass::reset();
+  visuals_.clear();
 }
 
 void VoxbloxMultiMeshDisplay::processMessage(
     const voxblox_msgs::MultiMesh::ConstPtr& msg) {
-  // Here we call the rviz::FrameManager to get the transform from the
-  // fixed frame to the frame in the header of this Imu message.  If
-  // it fails, we can't do anything else so we return.
-  Ogre::Quaternion orientation;
-  Ogre::Vector3 position;
-  if (!context_->getFrameManager()->getTransform(
-          msg->header.frame_id, msg->header.stamp, position, orientation)) {
-    ROS_DEBUG("Error transforming from frame '%s' to frame '%s'",
-              msg->header.frame_id.c_str(), qPrintable(fixed_frame_));
-    return;
-  }
-
+  // Select the matching visual
   auto it = visuals_.find(msg->id);
   if (it == visuals_.end()){
-    it = visuals_.insert(std::make_pair(msg->id, VoxbloxMeshVisual(context_->getSceneManager(), scene_node_->createChildSceneNode()))).first;
+    it = visuals_.insert(std::make_pair(msg->id, VoxbloxMeshVisual(context_->getSceneManager(), scene_node_))).first;
   }
 
-  // Now set or update the contents of the chosen visual.
-  voxblox_msgs::MeshPtr mesh_msg(new voxblox_msgs::Mesh());
-  *mesh_msg=msg->mesh;
-  mesh_msg->header = msg->header;
-  uint8_t alpha = msg->alpha;
-  if (alpha == 0){
+  // update the frame, pose and mesh of the visual
+  it->second.setFrameId(msg->header.frame_id);
+  if(updateTransformation(&(it->second), msg->header.stamp)){ // here we use the multi-mesh msg header
     // catch uninitialized alpha values, since nobody wants to display a completely invisible mesh.
-    alpha = std::numeric_limits<uint8_t>::max();
+    uint8_t alpha = msg->alpha;
+    if (alpha == 0){
+      alpha = std::numeric_limits<uint8_t>::max();
+    }
+
+    // convert to normal mesh msg for visual
+    voxblox_msgs::MeshPtr mesh(new voxblox_msgs::Mesh);
+    *mesh = msg->mesh;
+    it->second.setMessage(mesh, alpha);
   }
-  it->second.setMessage(mesh_msg, msg->alpha);
-  it->second.setFramePosition(position);
-  it->second.setFrameOrientation(orientation);
+}
+
+bool VoxbloxMultiMeshDisplay::updateTransformation(VoxbloxMeshVisual* visual, ros::Time stamp){
+  // Look up the transform from tf. If it doesn't work we have to skip.
+  Ogre::Quaternion orientation;
+  Ogre::Vector3 position;
+  if (!context_->getFrameManager()->getTransform(visual->getFrameId(), stamp, position, orientation)) {
+    ROS_DEBUG("Error transforming from frame '%s' to frame '%s'",
+              visual->getFrameId().c_str(), qPrintable(fixed_frame_));
+    return false;
+  }
+  visual->setPose(position, orientation);
+  return true;
+}
+
+void VoxbloxMultiMeshDisplay::onDisable(){
+  // Because the voxblox mesh is incremental we keep building it but don't render it.
+  for (auto & visual : visuals_){
+    visual.second.setEnabled(false);
+  }
+}
+
+void VoxbloxMultiMeshDisplay::onEnable() {
+  for (auto & visual : visuals_){
+    visual.second.setEnabled(true);
+  }
+}
+
+void VoxbloxMultiMeshDisplay::fixedFrameChanged() {
+  tf_filter_->setTargetFrame( fixed_frame_.toStdString());
+  // update the transformation of the visuals w.r.t fixed frame
+  for (auto & visual : visuals_){
+    updateTransformation(&(visual.second), ros::Time::now());
+  }
 }
 
 }  // namespace voxblox_rviz_plugin

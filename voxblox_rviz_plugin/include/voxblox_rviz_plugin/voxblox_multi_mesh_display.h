@@ -19,15 +19,19 @@ class VoxbloxMultiMeshDisplay
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   VoxbloxMultiMeshDisplay();
-  virtual ~VoxbloxMultiMeshDisplay();
+  virtual ~VoxbloxMultiMeshDisplay() = default;
 
  protected:
-  virtual void onInitialize();
+  void reset() override;
 
-  virtual void reset();
+  // override these such that not everything will be reset all the time.
+  void onEnable() override;
+  void onDisable() override;
+  void fixedFrameChanged() override;
 
  private:
-  void processMessage(const voxblox_msgs::MultiMesh::ConstPtr& msg);
+  void processMessage(const voxblox_msgs::MultiMesh::ConstPtr& msg) override;
+  bool updateTransformation(VoxbloxMeshVisual* visual, ros::Time stamp);
 
   std::unordered_map<int, VoxbloxMeshVisual> visuals_;
 };
