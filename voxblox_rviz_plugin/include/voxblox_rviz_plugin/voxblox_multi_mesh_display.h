@@ -16,6 +16,7 @@ class VoxbloxMeshVisual;
 class VoxbloxMultiMeshDisplay
     : public rviz::MessageFilterDisplay<voxblox_msgs::MultiMesh> {
   Q_OBJECT
+
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   VoxbloxMultiMeshDisplay();
@@ -29,11 +30,18 @@ class VoxbloxMultiMeshDisplay
   void onDisable() override;
   void fixedFrameChanged() override;
 
+  // override subscribe to enable a custom queue size of more than 10
+  void subscribe() override;
+
  private:
   void processMessage(const voxblox_msgs::MultiMesh::ConstPtr& msg) override;
   bool updateTransformation(VoxbloxMeshVisual* visual, ros::Time stamp);
 
   std::unordered_map<int, VoxbloxMeshVisual> visuals_;
+
+  // Allows the user to still clear the mesh by clicking this property
+  rviz::BoolProperty reset_property_;
+  Q_SLOT void resetSlot();
 };
 
 }  // namespace voxblox_rviz_plugin

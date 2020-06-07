@@ -33,6 +33,10 @@ class VoxbloxMeshDisplay
   bool updateTransformation(ros::Time stamp);
 
   std::unique_ptr<VoxbloxMeshVisual> visual_;
+
+  // Allows the user to still clear the mesh by clicking this property
+  rviz::BoolProperty reset_property_;
+  Q_SLOT void resetSlot();
 };
 
 }  // namespace voxblox_rviz_plugin

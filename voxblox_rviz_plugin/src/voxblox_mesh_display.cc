@@ -9,7 +9,11 @@
 
 namespace voxblox_rviz_plugin {
 
-VoxbloxMeshDisplay::VoxbloxMeshDisplay() {
+VoxbloxMeshDisplay::VoxbloxMeshDisplay() : reset_property_("Reset Mesh",
+                                                           false,
+                                                           "Tick or un-tick this field to reset the mesh visualization.",
+                                                           this,
+                                                           SLOT(resetSlot())) {
   voxblox_rviz_plugin::MaterialLoader::loadMaterials();
 }
 
@@ -18,8 +22,12 @@ void VoxbloxMeshDisplay::reset() {
   visual_.reset();
 }
 
+void VoxbloxMeshDisplay::resetSlot() {
+  reset();
+}
+
 void VoxbloxMeshDisplay::processMessage(
-    const voxblox_msgs::Mesh::ConstPtr& msg) {
+    const voxblox_msgs::Mesh::ConstPtr &msg) {
   if (!visual_) {
     visual_.reset(
         new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_));
@@ -27,12 +35,12 @@ void VoxbloxMeshDisplay::processMessage(
 
   // update the frame, pose and mesh of the visual
   visual_->setFrameId(msg->header.frame_id);
-  if(updateTransformation(msg->header.stamp)){
+  if (updateTransformation(msg->header.stamp)) {
     visual_->setMessage(msg);
   }
 }
 
-bool VoxbloxMeshDisplay::updateTransformation(ros::Time stamp){
+bool VoxbloxMeshDisplay::updateTransformation(ros::Time stamp) {
   if (!visual_) {
     // can not get the transform if we don't have a visual
     return false;
@@ -49,7 +57,7 @@ bool VoxbloxMeshDisplay::updateTransformation(ros::Time stamp){
   return true;
 }
 
-void VoxbloxMeshDisplay::onDisable(){
+void VoxbloxMeshDisplay::onDisable() {
   // Because the voxblox mesh is incremental we keep building it but don't render it.
   if (visual_) {
     visual_->setEnabled(false);
@@ -63,7 +71,7 @@ void VoxbloxMeshDisplay::onEnable() {
 }
 
 void VoxbloxMeshDisplay::fixedFrameChanged() {
-  tf_filter_->setTargetFrame( fixed_frame_.toStdString());
+  tf_filter_->setTargetFrame(fixed_frame_.toStdString());
   // update the transformation of the visuals w.r.t fixed frame
   updateTransformation(ros::Time::now());
 }
