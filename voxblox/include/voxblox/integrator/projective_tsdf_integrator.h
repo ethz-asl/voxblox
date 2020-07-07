@@ -38,7 +38,7 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
 
   void parsePointcloud(const Transformation& T_G_C, const Pointcloud& points_C,
                        Eigen::MatrixXf* range_image,
-                       voxblox::IndexSet* touched_block_indices);
+                       voxblox::IndexSet* touched_block_indices) const;
 
   void updateTsdfBlocks(const Transformation& T_G_C,
                         const Eigen::MatrixXf& range_image,
@@ -49,13 +49,13 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
                               const bool deintegrate = false);
 
   template <typename T>
-  Point imageToBearing(const T h, const T w);
+  Point imageToBearing(const T h, const T w) const;
 
   template <typename T>
-  bool bearingToImage(const Point& b_C_normalized, T* h, T* w);
+  bool bearingToImage(const Point& b_C_normalized, T* h, T* w) const;
 
   inline float interpolate(const Eigen::MatrixXf& range_image, const float h,
-                           const float w);
+                           const float w) const;
 };
 }  // namespace voxblox
 

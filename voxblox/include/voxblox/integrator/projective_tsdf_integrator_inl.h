@@ -84,7 +84,8 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
 template <InterpolationScheme interpolation_scheme>
 void ProjectiveTsdfIntegrator<interpolation_scheme>::parsePointcloud(
     const Transformation &T_G_C, const Pointcloud &points_C,
-    Eigen::MatrixXf *range_image, voxblox::IndexSet *touched_block_indices) {
+    Eigen::MatrixXf *range_image,
+    voxblox::IndexSet *touched_block_indices) const {
   CHECK_NOTNULL(range_image);
   CHECK_NOTNULL(touched_block_indices);
   range_image->setZero();
@@ -256,7 +257,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
 template <InterpolationScheme interpolation_scheme>
 template <typename T>
 Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
-    const T h, const T w) {
+    const T h, const T w) const {
   double altitude_angle =
       vertical_fov_rad_ * (1.0 / 2.0 - h / (vertical_resolution_ - 1.0));
   double azimuth_angle =
@@ -273,7 +274,7 @@ Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
 template <InterpolationScheme interpolation_scheme>
 template <typename T>
 bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
-    const Point &b_C_normalized, T *h, T *w) {
+    const Point &b_C_normalized, T *h, T *w) const {
   CHECK_NOTNULL(h);
   CHECK_NOTNULL(w);
 
@@ -306,14 +307,14 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
 template <>
 inline float
 ProjectiveTsdfIntegrator<InterpolationScheme::kNearestNeighbor>::interpolate(
-    const Eigen::MatrixXf &range_image, const float h, const float w) {
+    const Eigen::MatrixXf &range_image, const float h, const float w) const {
   return range_image(std::round(h), std::round(w));
 }
 
 template <>
 inline float
 ProjectiveTsdfIntegrator<InterpolationScheme::kMinNeighbor>::interpolate(
-    const Eigen::MatrixXf &range_image, const float h, const float w) {
+    const Eigen::MatrixXf &range_image, const float h, const float w) const {
   // TODO(victorr): Implement better edge handling
   if (h >= vertical_resolution_ || w >= horizontal_resolution_) {
     return range_image(std::floor(h), std::floor(w));
@@ -332,7 +333,7 @@ ProjectiveTsdfIntegrator<InterpolationScheme::kMinNeighbor>::interpolate(
 template <>
 inline float
 ProjectiveTsdfIntegrator<InterpolationScheme::kBilinear>::interpolate(
-    const Eigen::MatrixXf &range_image, const float h, const float w) {
+    const Eigen::MatrixXf &range_image, const float h, const float w) const {
   // TODO(victorr): Implement better edge handling
   // Check if we're on the edge, to avoid out-of-bounds matrix access
   if (h >= vertical_resolution_ || w >= horizontal_resolution_) {
@@ -362,7 +363,7 @@ ProjectiveTsdfIntegrator<InterpolationScheme::kBilinear>::interpolate(
 template <>
 inline float
 ProjectiveTsdfIntegrator<InterpolationScheme::kAdaptive>::interpolate(
-    const Eigen::MatrixXf &range_image, const float h, const float w) {
+    const Eigen::MatrixXf &range_image, const float h, const float w) const {
   // Check if we're on the edge, to avoid out-of-bounds matrix access
   if (h >= vertical_resolution_ || w >= horizontal_resolution_) {
     return range_image(std::floor(h), std::floor(w));
