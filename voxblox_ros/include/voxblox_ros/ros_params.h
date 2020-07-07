@@ -120,6 +120,9 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   nh_private.param("sensor_vertical_field_of_view_degrees",
                    integrator_config.sensor_vertical_field_of_view_degrees,
                    integrator_config.sensor_vertical_field_of_view_degrees);
+  nh_private.param("use_missing_points_for_clearing",
+                   integrator_config.use_missing_points_for_clearing,
+                   integrator_config.use_missing_points_for_clearing);
 
   integrator_config.default_truncation_distance =
       static_cast<float>(truncation_distance);

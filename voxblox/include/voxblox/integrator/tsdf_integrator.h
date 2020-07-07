@@ -90,6 +90,12 @@ class TsdfIntegratorBase {
     int sensor_horizontal_resolution = 0;
     int sensor_vertical_resolution = 0;
     double sensor_vertical_field_of_view_degrees = 0.0;
+    bool use_missing_points_for_clearing = false;
+    // NOTE: Only use this option if the sole source of missing points is rays
+    //       that did not hit anything before exceeding the max sensing range,
+    //       for example, in simulation. This option will cause problems if
+    //       there are also missing points due to surfaces that are
+    //       non-reflective or closer than the minimum sensor range.
 
     std::string print() const;
   };

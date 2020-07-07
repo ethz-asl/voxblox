@@ -88,7 +88,12 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::parsePointcloud(
     voxblox::IndexSet *touched_block_indices) const {
   CHECK_NOTNULL(range_image);
   CHECK_NOTNULL(touched_block_indices);
-  range_image->setZero();
+  if (config_.use_missing_points_for_clearing) {
+    range_image->setConstant(config_.max_ray_length_m +
+                             config_.default_truncation_distance);
+  } else {
+    range_image->setZero();
+  }
   voxblox::Point t_G_C_scaled = T_G_C.getPosition() * layer_->block_size_inv();
   for (const voxblox::Point &point_C : points_C) {
     // Compute the point's bearing vector
