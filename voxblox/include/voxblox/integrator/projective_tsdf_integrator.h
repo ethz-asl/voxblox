@@ -24,6 +24,9 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
                            const bool freespace_points = false,
                            const bool deintegrate = false) override;
 
+  // Convert the range image back to a pointcloud, useful for debugging
+  Pointcloud getReprojectedPointcloud();
+
  private:
   // Sensor model
   const int horizontal_resolution_;

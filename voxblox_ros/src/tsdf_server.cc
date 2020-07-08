@@ -52,15 +52,14 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   // Advertise topics.
   surface_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
           "surface_pointcloud", 1, true);
-  tsdf_pointcloud_pub_ =
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("tsdf_pointcloud",
-                                                              1, true);
+  tsdf_pointcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+      "tsdf_pointcloud", 1, true);
   occupancy_marker_pub_ =
       nh_private_.advertise<visualization_msgs::MarkerArray>("occupied_nodes",
                                                              1, true);
-  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+  tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
       "tsdf_slice", 1, true);
 
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
