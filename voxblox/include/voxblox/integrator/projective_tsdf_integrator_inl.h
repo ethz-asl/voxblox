@@ -84,7 +84,8 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
 template <InterpolationScheme interpolation_scheme>
 Pointcloud
 ProjectiveTsdfIntegrator<interpolation_scheme>::getReprojectedPointcloud() {
-  Pointcloud reprojected_cloud;//(horizontal_resolution_ * vertical_resolution_);
+  Pointcloud reprojected_cloud;
+  reprojected_cloud.reserve(vertical_resolution_ * horizontal_resolution_);
   for (int h = 0; h < vertical_resolution_; ++h) {
     for (int w = 0; w < horizontal_resolution_; ++w) {
       reprojected_cloud.emplace_back(range_image_(h, w) * imageToBearing(h, w));
