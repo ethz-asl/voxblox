@@ -142,6 +142,8 @@ void EsdfServer::publishTraversable() {
 }
 
 void EsdfServer::publishMap(bool reset_remote_map) {
+  TsdfServer::publishMap();
+
   if (!publish_esdf_map_) {
     return;
   }
@@ -166,7 +168,6 @@ void EsdfServer::publishMap(bool reset_remote_map) {
     publish_map_timer.Stop();
   }
   num_subscribers_esdf_map_ = subscribers;
-  TsdfServer::publishMap();
 }
 
 bool EsdfServer::saveMap(const std::string& file_path) {
