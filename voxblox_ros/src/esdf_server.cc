@@ -82,6 +82,7 @@ void EsdfServer::publishAllUpdatedEsdfVoxels() {
   // Create a pointcloud with distance = intensity.
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
   createDistancePointcloudFromEsdfLayer(esdf_map_->getEsdfLayer(), &pointcloud);
 
   pointcloud.header.frame_id = world_frame_;
@@ -93,6 +94,7 @@ void EsdfServer::publishSlices() {
 
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
   constexpr int kZAxisIndex = 2;
   createDistancePointcloudFromEsdfLayerSlice(
       esdf_map_->getEsdfLayer(), kZAxisIndex, slice_level_, &pointcloud);
@@ -135,6 +137,7 @@ void EsdfServer::publishPointclouds() {
 
 void EsdfServer::publishTraversable() {
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
   createFreePointcloudFromEsdfLayer(esdf_map_->getEsdfLayer(),
                                     traversability_radius_, &pointcloud);
   pointcloud.header.frame_id = world_frame_;
@@ -159,6 +162,7 @@ void EsdfServer::publishMap(bool reset_remote_map) {
     const bool only_updated = !reset_remote_map;
     timing::Timer publish_map_timer("map/publish_esdf");
     voxblox_msgs::Layer layer_msg;
+    std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
     serializeLayerAsMsg<EsdfVoxel>(this->esdf_map_->getEsdfLayer(),
                                    only_updated, &layer_msg);
     if (reset_remote_map) {
@@ -175,6 +179,7 @@ bool EsdfServer::saveMap(const std::string& file_path) {
   const bool success = TsdfServer::saveMap(file_path);
 
   constexpr bool kClearFile = false;
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
   return success &&
          io::SaveLayer(esdf_map_->getEsdfLayer(), file_path, kClearFile);
 }
@@ -183,6 +188,7 @@ bool EsdfServer::loadMap(const std::string& file_path) {
   // Load in the same order: TSDF first, then ESDF.
   bool success = TsdfServer::loadMap(file_path);
 
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
   constexpr bool kMultipleLayerSupport = true;
   return success &&
          io::LoadBlocksFromFile(
@@ -192,6 +198,7 @@ bool EsdfServer::loadMap(const std::string& file_path) {
 
 void EsdfServer::updateEsdf() {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
+    std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
     const bool clear_updated_flag_esdf = true;
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   }
@@ -225,6 +232,7 @@ void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
     esdf_integrator_->addNewRobotPosition(T_G_C.getPosition());
   }
 
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
   timing::Timer block_remove_timer("remove_distant_blocks");
   esdf_map_->getEsdfLayerPtr()->removeDistantBlocks(
       T_G_C.getPosition(), max_block_distance_from_body_);
@@ -234,6 +242,7 @@ void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
 void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
   timing::Timer receive_map_timer("map/receive_esdf");
 
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
   bool success =
       deserializeMsgToLayer<EsdfVoxel>(layer_msg, esdf_map_->getEsdfLayerPtr());
 
@@ -246,6 +255,8 @@ void EsdfServer::esdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
 }
 
 void EsdfServer::clear() {
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
+
   esdf_map_->getEsdfLayerPtr()->removeAllBlocks();
   esdf_integrator_->clear();
   CHECK_EQ(esdf_map_->getEsdfLayerPtr()->getNumberOfAllocatedBlocks(), 0u);
@@ -260,6 +271,7 @@ void EsdfServer::clear() {
 void EsdfServer::pruneMap() {
   TsdfServer::pruneMap();
 
+  std::lock_guard<std::mutex> esdf_guard(esdf_mutex_);
   size_t num_pruned_blocks = 0u;
   BlockIndexList esdf_blocks_;
   esdf_map_->getEsdfLayerPtr()->getAllAllocatedBlocks(&esdf_blocks_);

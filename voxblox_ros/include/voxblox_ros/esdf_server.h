@@ -103,6 +103,7 @@ class EsdfServer : public TsdfServer {
   int num_subscribers_esdf_map_;
 
   // ESDF maps.
+  std::mutex esdf_mutex_;
   std::shared_ptr<EsdfMap> esdf_map_;
   std::unique_ptr<EsdfIntegrator> esdf_integrator_;
 
