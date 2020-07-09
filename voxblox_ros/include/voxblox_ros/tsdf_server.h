@@ -146,6 +146,7 @@ class TsdfServer {
   ros::Publisher tsdf_slice_pub_;
   ros::Publisher occupancy_marker_pub_;
   ros::Publisher icp_transform_pub_;
+  ros::Publisher reprojected_pointcloud_pub_;
 
   /// Publish the complete map for other nodes to consume.
   ros::Publisher tsdf_map_pub_;

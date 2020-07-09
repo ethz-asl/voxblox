@@ -61,6 +61,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                                              1, true);
   tsdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
       "tsdf_slice", 1, true);
+  reprojected_pointcloud_pub_ =
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZ>>(
+          "reprojected_pointcloud", 1, false);
 
   nh_private_.param("pointcloud_queue_size", pointcloud_queue_size_,
                     pointcloud_queue_size_);
@@ -324,6 +327,27 @@ void TsdfServer::processPointCloudMessageAndInsert(
     ROS_INFO("Finished integrating in %f seconds, have %lu blocks.",
              (end_integration - start_integration).toSec(),
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
+  }
+
+  // Visualize the reprojected pointcloud, usually for debugging purposes
+  if (reprojected_pointcloud_pub_.getNumSubscribers() > 0) {
+    auto projective_integrator_ptr =
+        dynamic_cast<voxblox::ProjectiveTsdfIntegrator<
+            voxblox::InterpolationScheme::kAdaptive>*>(tsdf_integrator_.get());
+    if (projective_integrator_ptr) {
+      const voxblox::Pointcloud reprojected_pointcloud =
+          projective_integrator_ptr->getReprojectedPointcloud();
+      pcl::PointCloud<pcl::PointXYZ> reprojected_pointcloud_msg;
+      reprojected_pointcloud_msg.header.frame_id =
+          pointcloud_msg->header.frame_id;
+      reprojected_pointcloud_msg.header.stamp =
+          pointcloud_msg->header.stamp.toNSec() / 1000ull;
+      for (const voxblox::Point& point : reprojected_pointcloud) {
+        pcl::PointXYZ reprojected_point = {point.x(), point.y(), point.z()};
+        reprojected_pointcloud_msg.push_back(reprojected_point);
+      }
+      reprojected_pointcloud_pub_.publish(reprojected_pointcloud_msg);
+    }
   }
 
   // Deintegrate the pointcloud that's leaving the sliding window

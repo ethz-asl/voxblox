@@ -629,6 +629,11 @@ std::string TsdfIntegratorBase::Config::print() const {
   ss << " - max_consecutive_ray_collisions:            " << max_consecutive_ray_collisions << "\n";
   ss << " - clear_checks_every_n_frames:               " << clear_checks_every_n_frames << "\n";
   ss << " - max_integration_time_s:                    " << max_integration_time_s << "\n";
+  ss << " ProjectiveTsdfIntegrator: \n";
+  ss << " - sensor_horizontal_resolution:              " << sensor_horizontal_resolution << "\n";
+  ss << " - sensor_vertical_resolution:                " << sensor_vertical_resolution << "\n";
+  ss << " - sensor_vertical_field_of_view_degrees:     " << sensor_vertical_field_of_view_degrees << "\n";
+  ss << " - use_missing_points_for_clearing:           " << use_missing_points_for_clearing << "\n";
   ss << "==============================================================\n";
   // clang-format on
   return ss.str();
