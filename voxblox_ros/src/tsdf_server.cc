@@ -30,6 +30,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       pose_corrected_frame_("pose_corrected"),
       max_block_distance_from_body_(std::numeric_limits<FloatingPoint>::max()),
       slice_level_(0.5),
+      slice_level_follow_robot_(false),
       use_freespace_pointcloud_(false),
       color_map_(new RainbowColorMap()),
       publish_pointclouds_on_update_(false),
@@ -166,6 +167,8 @@ void TsdfServer::getServerConfigFromRosParam(
                    max_block_distance_from_body_,
                    max_block_distance_from_body_);
   nh_private.param("slice_level", slice_level_, slice_level_);
+  nh_private.param("slice_level_follow_robot", slice_level_follow_robot_,
+                   slice_level_follow_robot_);
   nh_private.param("world_frame", world_frame_, world_frame_);
   nh_private.param("publish_pointclouds_on_update",
                    publish_pointclouds_on_update_,
@@ -573,8 +576,9 @@ void TsdfServer::publishSlices() {
 
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
-  createDistancePointcloudFromTsdfLayerSlice(tsdf_map_->getTsdfLayer(), 2,
-                                             slice_level_, &pointcloud);
+  constexpr int kZAxisIndex = 2;
+  createDistancePointcloudFromTsdfLayerSlice(
+      tsdf_map_->getTsdfLayer(), kZAxisIndex, slice_level_, &pointcloud);
 
   pointcloud.header.frame_id = world_frame_;
   tsdf_slice_pub_.publish(pointcloud);

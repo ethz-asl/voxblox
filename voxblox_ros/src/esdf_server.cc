@@ -221,6 +221,8 @@ void EsdfServer::setTraversabilityRadius(float traversability_radius) {
 }
 
 void EsdfServer::newPoseCallback(const Transformation& T_G_C) {
+  TsdfServer::newPoseCallback(T_G_C);
+
   if (clear_sphere_for_planning_) {
     esdf_integrator_->addNewRobotPosition(T_G_C.getPosition());
   }

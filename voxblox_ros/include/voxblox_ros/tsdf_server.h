@@ -63,8 +63,10 @@ class TsdfServer {
                            const bool is_freespace_pointcloud = false);
   void servicePointcloudDeintegrationQueue();
 
-  virtual void newPoseCallback(const Transformation& /*new_pose*/) {
-    // Do nothing.
+  virtual void newPoseCallback(const Transformation& T_G_C) {
+    if (slice_level_follow_robot_) {
+      slice_level_ = T_G_C.getPosition().z();
+    }
   }
 
   void publishAllUpdatedTsdfVoxels();
@@ -189,6 +191,7 @@ class TsdfServer {
 
   /// Pointcloud visualization settings.
   double slice_level_;
+  bool slice_level_follow_robot_;
 
   /// If the system should subscribe to a pointcloud giving points in freespace
   bool use_freespace_pointcloud_;
