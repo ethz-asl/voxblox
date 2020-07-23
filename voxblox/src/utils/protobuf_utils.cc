@@ -7,8 +7,9 @@
 namespace voxblox {
 
 namespace utils {
-bool readProtoMsgCountToStream(std::fstream* stream_in, uint32_t* message_count,
-                               uint64_t* byte_offset) {
+bool readProtoMsgCountFromStream(std::fstream* stream_in,
+                                 uint32_t* message_count,
+                                 uint64_t* byte_offset) {
   CHECK_NOTNULL(stream_in);
   CHECK_NOTNULL(message_count);
   CHECK_NOTNULL(byte_offset);

@@ -36,8 +36,8 @@ bool LoadBlocksFromFile(
   do {
     // Get number of messages
     uint32_t num_protos;
-    if (!utils::readProtoMsgCountToStream(&proto_file, &num_protos,
-                                          &tmp_byte_offset)) {
+    if (!utils::readProtoMsgCountFromStream(&proto_file, &num_protos,
+                                            &tmp_byte_offset)) {
       LOG(ERROR) << "Could not read number of messages.";
       return false;
     }
@@ -150,8 +150,8 @@ bool LoadLayer(const std::string& file_path, const bool multiple_layer_support,
   do {
     // Get number of messages
     uint32_t num_protos;
-    if (!utils::readProtoMsgCountToStream(&proto_file, &num_protos,
-                                          &tmp_byte_offset)) {
+    if (!utils::readProtoMsgCountFromStream(&proto_file, &num_protos,
+                                            &tmp_byte_offset)) {
       LOG(ERROR) << "Could not read number of messages.";
       return false;
     }
