@@ -1,7 +1,9 @@
 #ifndef VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H_
 #define VOXBLOX_RVIZ_PLUGIN_VOXBLOX_MESH_VISUAL_H_
 
+#include <limits>
 #include <map>
+#include <string>
 
 #include <OGRE/OgreManualObject.h>
 
@@ -15,17 +17,18 @@ namespace voxblox_rviz_plugin {
 class VoxbloxMeshVisual {
  public:
   VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
-                    Ogre::SceneNode* parent_node,
-                    int id = 0);
+                    Ogre::SceneNode* parent_node, int id = 0);
   virtual ~VoxbloxMeshVisual();
 
-  void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha=std::numeric_limits<uint8_t>::max());
+  void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg,
+                  uint8_t alpha = std::numeric_limits<uint8_t>::max());
 
   // enable / disable visibility
   void setEnabled(bool enabled);
 
   /// Set the coordinate frame pose.
-  void setPose(const Ogre::Vector3 &position, const Ogre::Quaternion &orientation);
+  void setPose(const Ogre::Vector3& position,
+               const Ogre::Quaternion& orientation);
 
   void setFrameId(const std::string& frame_id) { frame_id_ = frame_id; }
   const std::string& getFrameId() { return frame_id_; }
@@ -36,9 +39,11 @@ class VoxbloxMeshVisual {
 
   unsigned int instance_number_;
   static unsigned int instance_counter_;
-  int id_;  // this is the id used by multi-mesh messages, NOTE: maybe to convert to string namespace as in markers
+  int id_;  // this is the id used by multi-mesh messages, NOTE: maybe to
+            // convert to string namespace as in markers
   bool is_enabled_;
-  std::string frame_id_;  // the frame this mesh is in, newer messages will overwrite this
+  std::string frame_id_;  // the frame this mesh is in, newer messages will
+                          // overwrite this
 
   voxblox::AnyIndexHashMapType<Ogre::ManualObject*>::type object_map_;
 };

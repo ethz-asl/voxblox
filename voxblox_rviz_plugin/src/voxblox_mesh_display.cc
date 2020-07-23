@@ -3,17 +3,17 @@
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreSceneNode.h>
 
-#include <tf/transform_listener.h>
 #include <rviz/visualization_manager.h>
+#include <tf/transform_listener.h>
 #include <voxblox_rviz_plugin/material_loader.h>
 
 namespace voxblox_rviz_plugin {
 
-VoxbloxMeshDisplay::VoxbloxMeshDisplay() : reset_property_("Reset Mesh",
-                                                           false,
-                                                           "Tick or un-tick this field to reset the mesh visualization.",
-                                                           this,
-                                                           SLOT(resetSlot())) {
+VoxbloxMeshDisplay::VoxbloxMeshDisplay()
+    : reset_property_(
+          "Reset Mesh", false,
+          "Tick or un-tick this field to reset the mesh visualization.", this,
+          SLOT(resetSlot())) {
   voxblox_rviz_plugin::MaterialLoader::loadMaterials();
 }
 
@@ -22,12 +22,10 @@ void VoxbloxMeshDisplay::reset() {
   visual_.reset();
 }
 
-void VoxbloxMeshDisplay::resetSlot() {
-  reset();
-}
+void VoxbloxMeshDisplay::resetSlot() { reset(); }
 
 void VoxbloxMeshDisplay::processMessage(
-    const voxblox_msgs::Mesh::ConstPtr &msg) {
+    const voxblox_msgs::Mesh::ConstPtr& msg) {
   if (!visual_) {
     visual_.reset(
         new VoxbloxMeshVisual(context_->getSceneManager(), scene_node_));
@@ -48,7 +46,8 @@ bool VoxbloxMeshDisplay::updateTransformation(ros::Time stamp) {
   // Look up the transform from tf. If it doesn't work we have to skip.
   Ogre::Quaternion orientation;
   Ogre::Vector3 position;
-  if (!context_->getFrameManager()->getTransform(visual_->getFrameId(), stamp, position, orientation)) {
+  if (!context_->getFrameManager()->getTransform(visual_->getFrameId(), stamp,
+                                                 position, orientation)) {
     ROS_DEBUG("Error transforming from frame '%s' to frame '%s'",
               visual_->getFrameId().c_str(), qPrintable(fixed_frame_));
     return false;
@@ -58,7 +57,8 @@ bool VoxbloxMeshDisplay::updateTransformation(ros::Time stamp) {
 }
 
 void VoxbloxMeshDisplay::onDisable() {
-  // Because the voxblox mesh is incremental we keep building it but don't render it.
+  // Because the voxblox mesh is incremental we keep building it but don't
+  // render it.
   if (visual_) {
     visual_->setEnabled(false);
   }

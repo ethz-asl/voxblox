@@ -12,30 +12,27 @@ namespace voxblox_rviz_plugin {
 unsigned int VoxbloxMeshVisual::instance_counter_ = 0;
 
 VoxbloxMeshVisual::VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
-                                     Ogre::SceneNode* parent_node,
-                                     int id) :
-                                     scene_manager_(scene_manager),
-                                     id_(id),
-                                     is_enabled_(true)
-                                     {
+                                     Ogre::SceneNode* parent_node, int id)
+    : scene_manager_(scene_manager), id_(id), is_enabled_(true) {
   frame_node_ = parent_node->createChildSceneNode();
   instance_number_ = instance_counter_++;
 }
 
 VoxbloxMeshVisual::~VoxbloxMeshVisual() {
   // Destroy all the objects
-  for (auto& ogre_object_pair :object_map_) {
+  for (auto& ogre_object_pair : object_map_) {
     scene_manager_->destroyManualObject(ogre_object_pair.second);
   }
 }
 
-void VoxbloxMeshVisual::setPose(const Ogre::Vector3 &position, const Ogre::Quaternion &orientation){
+void VoxbloxMeshVisual::setPose(const Ogre::Vector3& position,
+                                const Ogre::Quaternion& orientation) {
   frame_node_->setPosition(position);
   frame_node_->setOrientation(orientation);
 }
 
-void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint8_t alpha) {
-
+void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg,
+                                   uint8_t alpha) {
   for (const voxblox_msgs::MeshBlock& mesh_block : msg->mesh_blocks) {
     const voxblox::BlockIndex index(mesh_block.index[0], mesh_block.index[1],
                                     mesh_block.index[2]);
@@ -126,11 +123,11 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
       std::string object_name = std::to_string(index.x()) + std::string(" ") +
                                 std::to_string(index.y()) + std::string(" ") +
                                 std::to_string(index.z()) + std::string(" ") +
-                                std::to_string(instance_number_) + std::string(" ") +
-                                std::to_string(id_);
+                                std::to_string(instance_number_) +
+                                std::string(" ") + std::to_string(id_);
       ogre_object = scene_manager_->createManualObject(object_name);
       object_map_.insert(std::make_pair(index, ogre_object));
-      if (!is_enabled_){
+      if (!is_enabled_) {
         ogre_object->setVisible(false);
       }
       frame_node_->attachObject(ogre_object);
@@ -141,10 +138,10 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
     ogre_object->estimateVertexCount(connected_mesh.vertices.size());
     ogre_object->estimateIndexCount(connected_mesh.indices.size());
     std::string material_name("VoxbloxMaterial");
-    if (alpha < std::numeric_limits<uint8_t>::max()){
+    if (alpha < std::numeric_limits<uint8_t>::max()) {
       material_name = "VoxbloxMaterialTransparent";
     }
-    ogre_object->begin(material_name,Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    ogre_object->begin(material_name, Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
     for (size_t i = 0; i < connected_mesh.vertices.size(); ++i) {
       // note calling position changes what vertex the color and normal calls
@@ -174,15 +171,15 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg, uint
   }
 }
 
-void VoxbloxMeshVisual::setEnabled(bool enabled){
-  if (enabled && !is_enabled_){
+void VoxbloxMeshVisual::setEnabled(bool enabled) {
+  if (enabled && !is_enabled_) {
     // new enable
-    for (auto &manual_object : object_map_){
+    for (auto& manual_object : object_map_) {
       manual_object.second->setVisible(true);
     }
-  } else if (!enabled && is_enabled_){
+  } else if (!enabled && is_enabled_) {
     // new disable
-    for (auto &manual_object : object_map_){
+    for (auto& manual_object : object_map_) {
       manual_object.second->setVisible(false);
     }
     is_enabled_ = enabled;

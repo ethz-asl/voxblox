@@ -6,7 +6,7 @@ namespace voxblox_rviz_plugin {
 /**
  * This class simply loads custom ogre materials for visualization upon startup.
  */
-class MaterialLoader{
+class MaterialLoader {
  public:
   static void loadMaterials();
 
@@ -16,6 +16,6 @@ class MaterialLoader{
   static bool materials_loaded_;
 };
 
-} // namespace voxblox_rviz_plugin
+}  // namespace voxblox_rviz_plugin
 
-#endif //VOXBLOX_RVIZ_PLUGIN_MATERIAL_LOADER_H_
+#endif  // VOXBLOX_RVIZ_PLUGIN_MATERIAL_LOADER_H_
