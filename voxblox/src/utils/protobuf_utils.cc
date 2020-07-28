@@ -7,13 +7,12 @@
 namespace voxblox {
 
 namespace utils {
-bool readProtoMsgCountFromStream(std::fstream* stream_in,
+bool readProtoMsgCountFromStream(std::istream* stream_in,
                                  uint32_t* message_count,
                                  uint64_t* byte_offset) {
   CHECK_NOTNULL(stream_in);
   CHECK_NOTNULL(message_count);
   CHECK_NOTNULL(byte_offset);
-  CHECK(stream_in->is_open());
   stream_in->clear();
   stream_in->seekg(*byte_offset, std::ios::beg);
   google::protobuf::io::IstreamInputStream raw_in(stream_in);
@@ -38,13 +37,12 @@ bool writeProtoMsgCountToStream(uint32_t message_count,
   return true;
 }
 
-bool readProtoMsgFromStream(std::fstream* stream_in,
+bool readProtoMsgFromStream(std::istream* stream_in,
                             google::protobuf::Message* message,
                             uint64_t* byte_offset) {
   CHECK_NOTNULL(stream_in);
   CHECK_NOTNULL(message);
   CHECK_NOTNULL(byte_offset);
-  CHECK(stream_in->is_open());
 
   stream_in->clear();
   stream_in->seekg(*byte_offset, std::ios::beg);
