@@ -12,7 +12,7 @@ void MaterialLoader::loadMaterials() {
     return;
   }
   // first instance loads a custom ogre material that supports transparent
-  // colors
+  // colors.
   std::string path =
       ros::package::getPath("voxblox_rviz_plugin") + "/content/materials";
   Ogre::ResourceGroupManager::getSingletonPtr()->createResourceGroup(

@@ -29,7 +29,7 @@ void VoxbloxMultiMeshDisplay::processMessage(
   // Select the matching visual
   auto it = visuals_.find(msg->id);
   if (msg->mesh.mesh_blocks.empty()) {
-    // if blocks are empty he visual is to be cleared.
+    // if blocks are empty the visual is to be cleared.
     if (it != visuals_.end()) {
       visuals_.erase(it);
     }
