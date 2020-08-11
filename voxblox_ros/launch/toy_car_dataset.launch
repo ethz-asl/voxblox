@@ -1,0 +1,50 @@
+<launch>
+    <param name="use_sim_time" value="true"/>
+
+    <node if="1" name="player" pkg="rosbag" type="play" output="screen"
+          args="-r 1 -q --clock /home/victor/data/small_toycar_dataset.bag"/>
+
+<!--    <node pkg="tf" type="static_transform_publisher" name="cam_to_lidar_convention" args="0 0 0 1.5708 -1.5708 0 camera camera_rotated 100"/>-->
+
+    <node name="voxblox" pkg="voxblox_ros" type="tsdf_server"
+          output="screen" args="-alsologtostderr" clear_params="true">
+        <remap from="pointcloud" to="camera/object_segment"/>
+        <rosparam>
+            verbose: true
+            world_frame: "world"
+            color_mode: "normals"
+
+            method: "projective"
+            integrator_threads: 2
+            sensor_horizontal_resolution: 960
+            sensor_vertical_resolution: 540
+            # FoVs yielding good results:
+            sensor_horizontal_field_of_view_degrees: 80
+            sensor_vertical_field_of_view_degrees: 50
+            # FoVs computed from the K matrix:
+            # sensor_horizontal_field_of_view_degrees: 80.7697
+            # sensor_vertical_field_of_view_degrees: 51.1393
+            # Useful to view which points were not matched in the range image,
+            # (i.e. difference between the actual data and the range image model):
+            # use_missing_points_for_clearing: true
+
+            max_ray_length_m: 5.0
+            min_ray_length_m: 0.01
+            use_const_weight: true
+            use_weight_dropoff: false
+            max_weight: 1000
+
+            tsdf_voxel_size: 0.02
+            truncation_distance: 0.08
+
+            pointcloud_queue_size: 1000
+
+            publish_pointclouds_on_update: true
+            slice_level: 1.0
+            publish_slices: true
+            update_mesh_every_n_sec: 1.0
+        </rosparam>
+    </node>
+
+    <node pkg="rviz" type="rviz" name="$(anon rviz)" respawn="false" output="screen"/>
+</launch>
