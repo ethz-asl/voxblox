@@ -41,6 +41,14 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
       << "The vertical field of view of the sensor must be a positive float";
   CHECK(config_.use_const_weight) << "Scaling the weight by the inverse square "
                                      "depth is (not yet) supported.";
+
+  // TODO(victorr): Make this configurable through ROS params
+  kindr::minimal::AngleAxisTemplate<float> rotation_x(-1.5708f,
+                                                      Eigen::Vector3f::UnitX());
+  kindr::minimal::AngleAxisTemplate<float> rotation_z(-1.5708f,
+                                                      Eigen::Vector3f::UnitZ());
+  T_Cl_C_ = Transformation::Rotation(rotation_z * rotation_x);
+  T_C_Cl_ = T_Cl_C_.inverse();
 }
 
 template <InterpolationScheme interpolation_scheme>
@@ -56,6 +64,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
   voxblox::IndexSet touched_block_indices;
   timing::Timer range_image_and_block_selector_timer(
       "range_image_and_block_selector_timer");
+  // TODO(victorr): Parallelize this as well (would benefit RGB-D cameras)
   parsePointcloud(T_G_C, points_C, &range_image_, &touched_block_indices);
   range_image_and_block_selector_timer.Stop();
 
@@ -290,6 +299,8 @@ Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
   bearing.y() = -std::cos(altitude_angle) * std::sin(azimuth_angle);
   bearing.z() = std::sin(altitude_angle);
 
+  bearing = T_C_Cl_.rotate(bearing);
+
   return bearing;
 }
 
@@ -300,7 +311,9 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
   CHECK_NOTNULL(h);
   CHECK_NOTNULL(w);
 
-  double altitude_angle = std::asin(b_C_normalized.z());
+  const Point b_Cl_normalized = T_Cl_C_.rotate(b_C_normalized);
+
+  double altitude_angle = std::asin(b_Cl_normalized.z());
   *h = static_cast<T>((vertical_resolution_ - 1.0) *
                       (1.0 / 2.0 - altitude_angle / vertical_fov_rad_));
   if (*h < 0 || vertical_resolution_ - 1 < *h) {
@@ -308,20 +321,15 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
   }
 
   double azimuth_angle;
-  if (b_C_normalized.x() > 0) {
-    if (b_C_normalized.y() > 0) {
-      azimuth_angle =
-          2.0 * M_PI + std::atan(-b_C_normalized.y() / b_C_normalized.x());
-    } else {
-      azimuth_angle = std::atan(-b_C_normalized.y() / b_C_normalized.x());
-    }
+  if (b_Cl_normalized.x() > 0) {
+    azimuth_angle = std::atan(-b_Cl_normalized.y() / b_Cl_normalized.x());
   } else {
-    azimuth_angle = M_PI + std::atan(-b_C_normalized.y() / b_C_normalized.x());
+    azimuth_angle =
+        M_PI + std::atan(-b_Cl_normalized.y() / b_Cl_normalized.x());
   }
-  *w = static_cast<T>(horizontal_resolution_ * azimuth_angle / (2.0 * M_PI));
-  if (*w < 0) {
-    *w += horizontal_resolution_;
-  }
+  azimuth_angle = std::fmod(azimuth_angle, 2.0 * M_PI);
+  *w = static_cast<T>((horizontal_resolution_ - 1.0) *
+                      (1.0 / 2.0 - azimuth_angle / horizontal_fov_rad_));
 
   return (0 <= *w && *w <= horizontal_resolution_ - 1);
 }
