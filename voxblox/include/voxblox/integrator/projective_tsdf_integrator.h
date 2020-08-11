@@ -31,6 +31,7 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
   // Sensor model
   const int horizontal_resolution_;
   const int vertical_resolution_;
+  const double horizontal_fov_rad_;
   const double vertical_fov_rad_;
 
   Eigen::MatrixXf range_image_;

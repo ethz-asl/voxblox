@@ -89,6 +89,7 @@ class TsdfIntegratorBase {
     // projective integrator specific
     int sensor_horizontal_resolution = 0;
     int sensor_vertical_resolution = 0;
+    double sensor_horizontal_field_of_view_degrees = 0.0;
     double sensor_vertical_field_of_view_degrees = 0.0;
     bool use_missing_points_for_clearing = false;
     // NOTE: Only use this option if the sole source of missing points is rays

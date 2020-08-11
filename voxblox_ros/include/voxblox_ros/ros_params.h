@@ -117,6 +117,9 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   nh_private.param("sensor_vertical_resolution",
                    integrator_config.sensor_vertical_resolution,
                    integrator_config.sensor_vertical_resolution);
+  nh_private.param("sensor_horizontal_field_of_view_degrees",
+                   integrator_config.sensor_horizontal_field_of_view_degrees,
+                   integrator_config.sensor_horizontal_field_of_view_degrees);
   nh_private.param("sensor_vertical_field_of_view_degrees",
                    integrator_config.sensor_vertical_field_of_view_degrees,
                    integrator_config.sensor_vertical_field_of_view_degrees);

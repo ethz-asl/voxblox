@@ -16,6 +16,8 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
     : TsdfIntegratorBase(config, layer),
       horizontal_resolution_(config.sensor_horizontal_resolution),
       vertical_resolution_(config.sensor_vertical_resolution),
+      horizontal_fov_rad_(config.sensor_horizontal_field_of_view_degrees *
+                          M_PI / 180.0),
       vertical_fov_rad_(config.sensor_vertical_field_of_view_degrees * M_PI /
                         180.0),
       range_image_(config.sensor_vertical_resolution,
@@ -33,6 +35,8 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
       << "The horizontal sensor resolution must be a positive integer";
   CHECK_GT(vertical_resolution_, 0)
       << "The vertical sensor resolution must be a positive integer";
+  CHECK_GT(horizontal_fov_rad_, 0)
+      << "The horizontal field of view of the sensor must be a positive float";
   CHECK_GT(vertical_fov_rad_, 0)
       << "The vertical field of view of the sensor must be a positive float";
   CHECK(config_.use_const_weight) << "Scaling the weight by the inverse square "
@@ -279,7 +283,7 @@ Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
   double altitude_angle =
       vertical_fov_rad_ * (1.0 / 2.0 - h / (vertical_resolution_ - 1.0));
   double azimuth_angle =
-      2.0 * M_PI * static_cast<double>(w) / horizontal_resolution_;
+      horizontal_fov_rad_ * (1.0 / 2.0 - w / (horizontal_resolution_ - 1.0));
 
   Point bearing;
   bearing.x() = std::cos(altitude_angle) * std::cos(azimuth_angle);
@@ -319,7 +323,7 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
     *w += horizontal_resolution_;
   }
 
-  return (0 < *w && *w < horizontal_resolution_ - 1);
+  return (0 <= *w && *w <= horizontal_resolution_ - 1);
 }
 
 template <>
