@@ -1,6 +1,7 @@
 #ifndef VOXBLOX_ROS_TSDF_SERVER_H_
 #define VOXBLOX_ROS_TSDF_SERVER_H_
 
+#include <deque>
 #include <memory>
 #include <queue>
 #include <string>
@@ -61,6 +62,12 @@ class TsdfServer {
                            std::shared_ptr<const Pointcloud> ptcloud_C,
                            std::shared_ptr<const Colors> colors,
                            const bool is_freespace_pointcloud = false);
+
+  // Note(schmluk): Provide the legacy interface for voxblox-specific packages.
+  void integratePointcloud(const Transformation& T_G_C,
+                           const Pointcloud& ptcloud_C, const Colors& colors,
+                           const bool is_freespace_pointcloud = false);
+
   void servicePointcloudDeintegrationQueue();
 
   virtual void newPoseCallback(const Transformation& T_G_C) {
