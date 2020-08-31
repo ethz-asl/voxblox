@@ -110,7 +110,7 @@ class IrrationalIdColorMap : IdColorMap {
 
   void setIrrationalBase(float value) { irrational_base_ = value; }
 
-  virtual Color colorLookup(size_t value) const {
+  virtual Color colorLookup(const size_t value) const {
     const float normalized_color = std::fmod(value / irrational_base_, 1.f);
     return rainbowColorMap(normalized_color);
   }
@@ -124,13 +124,13 @@ class IrrationalIdColorMap : IdColorMap {
  * An important advantage of this color map is that the colors are independent
  * of the max ID value, e.g. previous colors don't change when adding new IDs.
  */
-class ExponentialOffsetColorMap : IdColorMap {
+class ExponentialOffsetIdColorMap : IdColorMap {
  public:
-  ExponentialOffsetColorMap() : items_per_revolution_(10u) {}
+  ExponentialOffsetIdColorMap() : items_per_revolution_(10u) {}
 
   void setItemsPerRevolution(uint value) { items_per_revolution_ = value; }
 
-  virtual Color colorLookup(size_t value) const {
+  virtual Color colorLookup(const size_t value) const {
     const size_t revolution = value / items_per_revolution_;
     const float progress_along_revolution =
         std::fmod(value / items_per_revolution_, 1.f);
@@ -154,7 +154,7 @@ class ExponentialOffsetColorMap : IdColorMap {
   }
 
  private:
-    float items_per_revolution_;
+  float items_per_revolution_;
 };
 
 }  // namespace voxblox
