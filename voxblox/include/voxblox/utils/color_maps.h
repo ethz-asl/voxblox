@@ -124,9 +124,9 @@ class IrrationalIdColorMap : IdColorMap {
  * An important advantage of this color map is that the colors are independent
  * of the max ID value, e.g. previous colors don't change when adding new IDs.
  */
-class ExponentialOffsetColorMap : IdColorMap {
+class ExponentialOffsetIdColorMap : IdColorMap {
  public:
-  ExponentialOffsetColorMap() : items_per_revolution_(10u) {}
+  ExponentialOffsetIdColorMap() : items_per_revolution_(10u) {}
 
   void setItemsPerRevolution(uint value) { items_per_revolution_ = value; }
 
