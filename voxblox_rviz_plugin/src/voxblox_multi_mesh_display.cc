@@ -43,6 +43,9 @@ void VoxbloxMultiMeshDisplay::processMessage(
                .first;
     }
 
+    // Initialize the visibility
+    it->second.setEnabled(VoxbloxMultiMeshDisplay::isEnabled());
+
     // update the frame, pose and mesh of the visual.
     it->second.setFrameId(msg->header.frame_id);
     if (updateTransformation(&(it->second), msg->header.stamp)) {
