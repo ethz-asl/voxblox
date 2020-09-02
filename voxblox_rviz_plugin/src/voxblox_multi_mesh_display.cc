@@ -13,7 +13,8 @@ VoxbloxMultiMeshDisplay::VoxbloxMultiMeshDisplay()
     : reset_property_(
           "Reset Mesh", false,
           "Tick or un-tick this field to reset the mesh visualization.", this,
-          SLOT(resetSlot())) {
+          SLOT(resetSlot())),
+      dt_since_last_update_(0.f) {
   voxblox_rviz_plugin::MaterialLoader::loadMaterials();
 }
 
@@ -80,6 +81,21 @@ bool VoxbloxMultiMeshDisplay::updateTransformation(VoxbloxMeshVisual* visual,
   return true;
 }
 
+void VoxbloxMultiMeshDisplay::update(float wall_dt, float ros_dt) {
+  constexpr float kMinUpdateDt = 1e-1;
+  dt_since_last_update_ += wall_dt;
+  if (kMinUpdateDt < dt_since_last_update_) {
+    dt_since_last_update_ = 0;
+    updateAllTransformations();
+  }
+}
+
+void VoxbloxMultiMeshDisplay::updateAllTransformations() {
+  for (auto& visual : visuals_) {
+    updateTransformation(&(visual.second), ros::Time::now());
+  }
+}
+
 void VoxbloxMultiMeshDisplay::onDisable() {
   // Because the voxblox mesh is incremental we keep building it but don't
   // render it.
@@ -97,9 +113,7 @@ void VoxbloxMultiMeshDisplay::onEnable() {
 void VoxbloxMultiMeshDisplay::fixedFrameChanged() {
   tf_filter_->setTargetFrame(fixed_frame_.toStdString());
   // update the transformation of the visuals w.r.t fixed frame
-  for (auto& visual : visuals_) {
-    updateTransformation(&(visual.second), ros::Time::now());
-  }
+  updateAllTransformations();
 }
 
 void VoxbloxMultiMeshDisplay::subscribe() {
