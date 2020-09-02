@@ -35,15 +35,23 @@ class VoxbloxMultiMeshDisplay
   static constexpr size_t kSubscriberQueueLength = 200;
   void subscribe() override;
 
+  // Automatically update the mesh poses based on their frame_ids
+  void update(float wall_dt, float ros_dt) override;
+
  private:
   void processMessage(const voxblox_msgs::MultiMesh::ConstPtr& msg) override;
   bool updateTransformation(VoxbloxMeshVisual* visual, ros::Time stamp);
+  void updateAllTransformations();
 
   std::unordered_map<int, VoxbloxMeshVisual> visuals_;
 
   // Allows the user to still clear the mesh by clicking this property
   rviz::BoolProperty reset_property_;
   Q_SLOT void resetSlot();
+
+  // Keep track of the time that elapsed since we last updated the submap poses,
+  // such that we can throttle these updates to a reasonable rate
+  float dt_since_last_update_;
 };
 
 }  // namespace voxblox_rviz_plugin
