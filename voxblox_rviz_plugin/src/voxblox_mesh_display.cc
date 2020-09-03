@@ -10,10 +10,10 @@
 namespace voxblox_rviz_plugin {
 
 VoxbloxMeshDisplay::VoxbloxMeshDisplay()
-    : reset_property_(
-          "Reset Mesh", false,
-          "Tick or un-tick this field to reset the mesh visualization.", this,
-          SLOT(resetSlot())) {
+    : visible_property_(
+          "Visible", false,
+          "Enable or Disable visibility of the mesh. If the mesh is only invisible and not disabled it will remain alive and contniues being built in the background.", this,
+          SLOT(toggleVisibilitySlot())) {
   voxblox_rviz_plugin::MaterialLoader::loadMaterials();
 }
 
@@ -22,7 +22,13 @@ void VoxbloxMeshDisplay::reset() {
   visual_.reset();
 }
 
-void VoxbloxMeshDisplay::resetSlot() { reset(); }
+void VoxbloxMeshDisplay::toggleVisibilitySlot() {
+  // Because the voxblox mesh is incremental we keep building it but don't
+  // render it.
+  if (visual_) {
+    visual_->setEnabled(visible_property_.getBool());
+  }
+}
 
 void VoxbloxMeshDisplay::processMessage(
     const voxblox_msgs::Mesh::ConstPtr& msg) {
@@ -54,20 +60,6 @@ bool VoxbloxMeshDisplay::updateTransformation(ros::Time stamp) {
   }
   visual_->setPose(position, orientation);
   return true;
-}
-
-void VoxbloxMeshDisplay::onDisable() {
-  // Because the voxblox mesh is incremental we keep building it but don't
-  // render it.
-  if (visual_) {
-    visual_->setEnabled(false);
-  }
-}
-
-void VoxbloxMeshDisplay::onEnable() {
-  if (visual_) {
-    visual_->setEnabled(true);
-  }
 }
 
 void VoxbloxMeshDisplay::fixedFrameChanged() {
