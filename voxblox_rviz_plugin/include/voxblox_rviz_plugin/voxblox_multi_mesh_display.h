@@ -43,7 +43,8 @@ class VoxbloxMultiMeshDisplay
   bool updateTransformation(VoxbloxMeshVisual* visual, ros::Time stamp);
   void updateAllTransformations();
 
-  std::unordered_map<int, VoxbloxMeshVisual> visuals_;
+  // The set of all visuals, identified by namespace.
+  std::unordered_map<std::string, VoxbloxMeshVisual> visuals_;
 
   // Allows the user to still clear the mesh by clicking this property
   rviz::BoolProperty reset_property_;

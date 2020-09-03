@@ -12,8 +12,8 @@ namespace voxblox_rviz_plugin {
 unsigned int VoxbloxMeshVisual::instance_counter_ = 0;
 
 VoxbloxMeshVisual::VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
-                                     Ogre::SceneNode* parent_node, int id)
-    : scene_manager_(scene_manager), id_(id), is_enabled_(true) {
+                                     Ogre::SceneNode* parent_node, std::string name_space)
+    : scene_manager_(scene_manager), name_space_(std::move(name_space)), is_enabled_(true) {
   frame_node_ = parent_node->createChildSceneNode();
   instance_number_ = instance_counter_++;
 }
@@ -124,7 +124,7 @@ void VoxbloxMeshVisual::setMessage(const voxblox_msgs::Mesh::ConstPtr& msg,
                                 std::to_string(index.y()) + std::string(" ") +
                                 std::to_string(index.z()) + std::string(" ") +
                                 std::to_string(instance_number_) +
-                                std::string(" ") + std::to_string(id_);
+                                std::string(" ") + name_space_;
       ogre_object = scene_manager_->createManualObject(object_name);
       object_map_.insert(std::make_pair(index, ogre_object));
       if (!is_enabled_) {
@@ -182,8 +182,8 @@ void VoxbloxMeshVisual::setEnabled(bool enabled) {
     for (auto& manual_object : object_map_) {
       manual_object.second->setVisible(false);
     }
-    is_enabled_ = enabled;
   }
+  is_enabled_ = enabled;
 }
 
 }  // namespace voxblox_rviz_plugin

@@ -22,10 +22,6 @@ class VoxbloxMeshDisplay
 
  protected:
   void reset() override;
-
-  // override these such that not everything will be reset all the time.
-  void onEnable() override;
-  void onDisable() override;
   void fixedFrameChanged() override;
 
  private:
@@ -35,8 +31,8 @@ class VoxbloxMeshDisplay
   std::unique_ptr<VoxbloxMeshVisual> visual_;
 
   // Allows the user to still clear the mesh by clicking this property
-  rviz::BoolProperty reset_property_;
-  Q_SLOT void resetSlot();
+  rviz::BoolProperty visible_property_;
+  Q_SLOT void visibleSLOT();
 };
 
 }  // namespace voxblox_rviz_plugin

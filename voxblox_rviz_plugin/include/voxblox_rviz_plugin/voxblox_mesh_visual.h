@@ -17,7 +17,7 @@ namespace voxblox_rviz_plugin {
 class VoxbloxMeshVisual {
  public:
   VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
-                    Ogre::SceneNode* parent_node, int id = 0);
+                    Ogre::SceneNode* parent_node, std::string name_space = "");
   virtual ~VoxbloxMeshVisual();
 
   void setMessage(const voxblox_msgs::Mesh::ConstPtr& msg,
@@ -39,8 +39,7 @@ class VoxbloxMeshVisual {
 
   unsigned int instance_number_;
   static unsigned int instance_counter_;
-  int id_;  // this is the id used by multi-mesh messages, NOTE: maybe to
-            // convert to string namespace as in markers
+  std::string name_space_;  // this is the id used by multi-mesh messages
   bool is_enabled_;
   std::string frame_id_;  // the frame this mesh is in, newer messages will
                           // overwrite this

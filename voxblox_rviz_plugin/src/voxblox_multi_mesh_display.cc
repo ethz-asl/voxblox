@@ -28,7 +28,7 @@ void VoxbloxMultiMeshDisplay::resetSlot() { reset(); }
 void VoxbloxMultiMeshDisplay::processMessage(
     const voxblox_msgs::MultiMesh::ConstPtr& msg) {
   // Select the matching visual
-  auto it = visuals_.find(msg->id);
+  auto it = visuals_.find(msg->name_space);
   if (msg->mesh.mesh_blocks.empty()) {
     // if blocks are empty the visual is to be cleared.
     if (it != visuals_.end()) {
@@ -39,7 +39,7 @@ void VoxbloxMultiMeshDisplay::processMessage(
     if (it == visuals_.end()) {
       it = visuals_
                .insert(std::make_pair(
-                   msg->id,
+                   msg->name_space,
                    VoxbloxMeshVisual(context_->getSceneManager(), scene_node_)))
                .first;
     }
