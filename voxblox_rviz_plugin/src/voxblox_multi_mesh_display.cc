@@ -84,7 +84,7 @@ bool VoxbloxMultiMeshDisplay::updateTransformation(VoxbloxMeshVisual* visual,
 void VoxbloxMultiMeshDisplay::update(float wall_dt, float ros_dt) {
   constexpr float kMinUpdateDt = 1e-1;
   dt_since_last_update_ += wall_dt;
-  if (kMinUpdateDt < dt_since_last_update_) {
+  if (isEnabled() && kMinUpdateDt < dt_since_last_update_) {
     dt_since_last_update_ = 0;
     updateAllTransformations();
   }
