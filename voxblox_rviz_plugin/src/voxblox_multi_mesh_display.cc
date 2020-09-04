@@ -5,17 +5,16 @@
 
 #include <rviz/visualization_manager.h>
 #include <tf/transform_listener.h>
-#include <voxblox_rviz_plugin/material_loader.h>
+
+#include "voxblox_rviz_plugin/material_loader.h"
 
 namespace voxblox_rviz_plugin {
 
 VoxbloxMultiMeshDisplay::VoxbloxMultiMeshDisplay()
-    : reset_property_(
-          "Reset Mesh", false,
-          "Tick or un-tick this field to reset the mesh visualization.", this,
-          SLOT(resetSlot())),
-      dt_since_last_update_(0.f) {
+    : dt_since_last_update_(0.f) {
   voxblox_rviz_plugin::MaterialLoader::loadMaterials();
+  // Initialize the top level of the visibility hierarchy.
+  visibility_fields_.reset(new VisibilityField("Visible", this, this));
 }
 
 void VoxbloxMultiMeshDisplay::reset() {
@@ -23,7 +22,23 @@ void VoxbloxMultiMeshDisplay::reset() {
   visuals_.clear();
 }
 
-void VoxbloxMultiMeshDisplay::resetSlot() { reset(); }
+void VoxbloxMultiMeshDisplay::visibleSlot() {
+  updateVisible();
+}
+
+void VoxbloxMultiMeshDisplay::updateVisible() {
+  // Set visibility of all visuals and update poses if visibility is turned on.
+  for (auto& ns_visual_pair : visuals_) {
+    bool visible = false;
+    if (isEnabled()) {
+      visible = visibility_fields_->isEnabled(ns_visual_pair.first);
+    }
+    ns_visual_pair.second.setEnabled(visible);
+    if (visible) {
+      updateTransformation(&(ns_visual_pair.second), ros::Time::now());
+    }
+  }
+}
 
 void VoxbloxMultiMeshDisplay::processMessage(
     const voxblox_msgs::MultiMesh::ConstPtr& msg) {
@@ -32,6 +47,7 @@ void VoxbloxMultiMeshDisplay::processMessage(
   if (msg->mesh.mesh_blocks.empty()) {
     // if blocks are empty the visual is to be cleared.
     if (it != visuals_.end()) {
+      visibility_fields_->removeField(it->first);
       visuals_.erase(it);
     }
   } else {
@@ -42,10 +58,9 @@ void VoxbloxMultiMeshDisplay::processMessage(
                    msg->name_space,
                    VoxbloxMeshVisual(context_->getSceneManager(), scene_node_)))
                .first;
+      visibility_fields_->addField(msg->name_space);
+      it->second.setEnabled(visibility_fields_->isEnabled(msg->name_space));
     }
-
-    // Initialize the visibility
-    it->second.setEnabled(VoxbloxMultiMeshDisplay::isEnabled());
 
     // update the frame, pose and mesh of the visual.
     it->second.setFrameId(msg->header.frame_id);
@@ -96,20 +111,6 @@ void VoxbloxMultiMeshDisplay::updateAllTransformations() {
   }
 }
 
-void VoxbloxMultiMeshDisplay::onDisable() {
-  // Because the voxblox mesh is incremental we keep building it but don't
-  // render it.
-  for (auto& visual : visuals_) {
-    visual.second.setEnabled(false);
-  }
-}
-
-void VoxbloxMultiMeshDisplay::onEnable() {
-  for (auto& visual : visuals_) {
-    visual.second.setEnabled(true);
-  }
-}
-
 void VoxbloxMultiMeshDisplay::fixedFrameChanged() {
   tf_filter_->setTargetFrame(fixed_frame_.toStdString());
   // update the transformation of the visuals w.r.t fixed frame
@@ -131,6 +132,86 @@ void VoxbloxMultiMeshDisplay::subscribe() {
   } catch (ros::Exception& e) {
     setStatus(rviz::StatusProperty::Error, "Topic",
               QString("Error subscribing: ") + e.what());
+  }
+}
+
+VisibilityField::VisibilityField(const std::string& name, rviz::BoolProperty* parent, VoxbloxMultiMeshDisplay* master) :
+    rviz::BoolProperty(name.c_str(), true, "Show or hide the mesh. If the mesh is hidden but not disabled, it will persist and is incrementally built in the background.", parent, SLOT(visibleSlot())),
+    master_(master) {
+  setDisableChildrenIfFalse(true);
+}
+
+void VisibilityField::visibleSlot() {
+  master_->updateVisible();
+}
+
+bool VisibilityField::hasNameSpace(const std::string& name, std::string* ns, std::string* sub_name) {
+  std::size_t ns_indicator = name.find('/');
+  if (ns_indicator != std::string::npos) {
+    *sub_name = name.substr(ns_indicator + 1);
+    *ns = name.substr(0, ns_indicator);
+    return true;
+  }
+  *sub_name = name;
+  return false;
+}
+
+void VisibilityField::addField(const std::string& field_name) {
+  std::string sub_name;
+  std::string ns;
+  if (hasNameSpace(field_name, &ns, &sub_name)) {
+    // If there is at least a namespace present resolve it first.
+    auto it = children_.find(ns);
+    if (it == children_.end()) {
+      // Add the new namespace.
+      it = children_.insert(std::make_pair(ns, std::unique_ptr<VisibilityField>())).first;
+      it->second.reset(new VisibilityField(ns, this, master_));
+    }
+    it->second->addField(sub_name);
+  } else {
+    auto it = children_.insert(std::make_pair(field_name, std::unique_ptr<VisibilityField>())).first;
+    it->second.reset(new VisibilityField(field_name, this, master_));
+  }
+}
+
+void VisibilityField::removeField(const std::string& field_name) {
+  std::string sub_name;
+  std::string ns;
+  if (hasNameSpace(field_name, &ns, &sub_name)) {
+    // If there is at least a namespace present resolve it first.
+    auto it = children_.find(ns);
+    if (it != children_.end()) {
+      it->second->removeField(sub_name);
+      if (it->second->children_.empty()) {
+        // If the namespace has no more members remove it.
+        children_.erase(it);
+      }
+    }
+  } else {
+    children_.erase(field_name);
+  }
+}
+
+bool VisibilityField::isEnabled(const std::string& field_name) {
+  if (!getBool()) {
+    // This property and therefore all children are disabled.
+    return false;
+  }
+  std::string sub_name;
+  std::string ns;
+  if (hasNameSpace(field_name, &ns, &sub_name)) {
+    // If there is at least a namespace present resolve it first.
+    auto it = children_.find(ns);
+    if (it == children_.end()) {
+      return false;
+    }
+    return it->second->isEnabled(sub_name);
+  } else {
+    auto it = children_.find(field_name);
+    if (it == children_.end()) {
+      return false;
+    }
+    return it->second->getBool();
   }
 }
 
