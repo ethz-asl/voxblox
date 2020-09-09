@@ -36,8 +36,8 @@ class MarchingCubes {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  static int kTriangleTable[256][16];
-  static int kEdgeIndexPairs[12][2];
+  static const int kTriangleTable[256][16];
+  static const int kEdgeIndexPairs[12][2];
 
   MarchingCubes() {}
   virtual ~MarchingCubes() {}

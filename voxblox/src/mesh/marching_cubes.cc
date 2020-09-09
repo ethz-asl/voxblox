@@ -26,7 +26,7 @@ namespace voxblox {
 // Lookup table from the 256 possible cube configurations from
 // CalculateVertexConfigurationIndex() to the 0-5 triplets the give the edges
 // where the triangle vertices lie.
-int MarchingCubes::kTriangleTable[256][16] = {
+const int MarchingCubes::kTriangleTable[256][16] = {
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -286,8 +286,8 @@ int MarchingCubes::kTriangleTable[256][16] = {
 
 // Lookup table from the 12 cube edge indices to their corresponding corner
 // indices.
-int MarchingCubes::kEdgeIndexPairs[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0},
-                                             {4, 5}, {5, 6}, {6, 7}, {7, 4},
-                                             {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+const int MarchingCubes::kEdgeIndexPairs[12][2] = {
+    {0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6},
+    {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
 
 }  // namespace voxblox

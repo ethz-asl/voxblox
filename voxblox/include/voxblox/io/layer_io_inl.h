@@ -36,8 +36,8 @@ bool LoadBlocksFromFile(
   do {
     // Get number of messages
     uint32_t num_protos;
-    if (!utils::readProtoMsgCountToStream(&proto_file, &num_protos,
-                                          &tmp_byte_offset)) {
+    if (!utils::readProtoMsgCountFromStream(&proto_file, &num_protos,
+                                            &tmp_byte_offset)) {
       LOG(ERROR) << "Could not read number of messages.";
       return false;
     }
@@ -104,7 +104,7 @@ template <typename VoxelType>
 bool LoadBlocksFromStream(
     const size_t num_blocks,
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
-    std::fstream* proto_file_ptr, Layer<VoxelType>* layer_ptr,
+    std::istream* proto_file_ptr, Layer<VoxelType>* layer_ptr,
     uint64_t* tmp_byte_offset_ptr) {
   CHECK_NOTNULL(proto_file_ptr);
   CHECK_NOTNULL(layer_ptr);
@@ -150,8 +150,8 @@ bool LoadLayer(const std::string& file_path, const bool multiple_layer_support,
   do {
     // Get number of messages
     uint32_t num_protos;
-    if (!utils::readProtoMsgCountToStream(&proto_file, &num_protos,
-                                          &tmp_byte_offset)) {
+    if (!utils::readProtoMsgCountFromStream(&proto_file, &num_protos,
+                                            &tmp_byte_offset)) {
       LOG(ERROR) << "Could not read number of messages.";
       return false;
     }
