@@ -29,8 +29,10 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
 
  private:
   // Sensor model
-  const int horizontal_resolution_;
-  const int vertical_resolution_;
+  // NOTE: Although the resolutions are integer, we store them as floating
+  //       points since they are primarily used in floating point operations
+  const float horizontal_resolution_;
+  const float vertical_resolution_;
   const double vertical_fov_rad_;
 
   Eigen::MatrixXf range_image_;

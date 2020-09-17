@@ -111,11 +111,11 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::parsePointcloud(
   for (const voxblox::Point &point_C : points_C) {
     // Compute the point's bearing vector
     float distance = point_C.norm();
-    if (std::abs(distance) < kFloatEpsilon) {
+    if (distance < kFloatEpsilon) {
       // Avoid divisions by zero
       continue;
     }
-    Point point_C_bearing = point_C / distance;
+    const Point point_C_bearing = point_C / distance;
 
     // Get the bearing vector's coordinates in the range image
     // NOTE: In this first implementation we only update the range image at its
@@ -279,7 +279,7 @@ Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
   double altitude_angle =
       vertical_fov_rad_ * (1.0 / 2.0 - h / (vertical_resolution_ - 1.0));
   double azimuth_angle =
-      (2 * M_PI) * (1.0 / 2.0 - w / (horizontal_resolution_ - 1.0));
+      (2.0 * M_PI) * (1.0 / 2.0 - w / horizontal_resolution_);
 
   Point bearing;
   bearing.x() = std::cos(altitude_angle) * std::cos(azimuth_angle);
@@ -297,24 +297,46 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
   CHECK_NOTNULL(w);
 
   double altitude_angle = std::asin(b_C_normalized.z());
-  *h = static_cast<T>((vertical_resolution_ - 1.0) *
-      (1.0 / 2.0 - altitude_angle / vertical_fov_rad_));
-  if (*h < 0 || vertical_resolution_ - 1 < *h) {
+  // Make sure to round to nearest (not to 0) when using integers
+  if (std::numeric_limits<T>::is_integer) {
+    *h = std::round((vertical_resolution_ - 1.0) *
+                    (1.0 / 2.0 - altitude_angle / vertical_fov_rad_));
+  } else {
+    *h = (vertical_resolution_ - 1.0) *
+         (1.0 / 2.0 - altitude_angle / vertical_fov_rad_);
+  }
+  if (*h < 0.0 || vertical_resolution_ - 1.0 < *h) {
     return false;
   }
 
   double azimuth_angle;
-  if (b_C_normalized.x() > 0) {
-    azimuth_angle = std::atan(-b_C_normalized.y() / b_C_normalized.x());
-  } else {
-    azimuth_angle =
-        M_PI + std::atan(-b_C_normalized.y() / b_C_normalized.x());
-  }
-  azimuth_angle = std::fmod(azimuth_angle, 2.0 * M_PI);
-  *w = static_cast<T>((horizontal_resolution_ - 1.0) *
-      (1.0 / 2.0 - azimuth_angle / (2 * M_PI)));
+  azimuth_angle = std::atan2(-b_C_normalized.y(), b_C_normalized.x());
 
-  return (0 <= *w && *w <= horizontal_resolution_ - 1);
+  // Handle integer and floating point types appropriately
+  if (std::numeric_limits<T>::is_integer) {
+    *w = std::round(horizontal_resolution_ *
+                    (1.0 / 2.0 - azimuth_angle / (2.0 * M_PI)));
+    *w = std::fmod(*w, static_cast<T>(horizontal_resolution_));
+    if (*w < 0) {
+      *w += horizontal_resolution_;
+    }
+  } else {
+    *w = horizontal_resolution_ * (1.0 / 2.0 - azimuth_angle / (2.0 * M_PI));
+    *w = std::fmod(*w, static_cast<T>(horizontal_resolution_));
+    if (*w < 0.0) {
+      // NOTE: The comparison below is a workaround to avoid the change in
+      //       floating point precision around zero and horizontal_resolution_
+      //       (e.g. A < 0.0 = true && A + B < B = false for A = -1e-6; B = 1e2)
+      if (*w + horizontal_resolution_ < horizontal_resolution_) {
+        *w += horizontal_resolution_;
+      } else {
+        // Negligibly small values will be truncated
+        *w = 0.0;
+      }
+    }
+  }
+
+  return true;
 }
 
 template <>
