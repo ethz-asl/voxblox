@@ -279,7 +279,7 @@ Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
   double altitude_angle =
       vertical_fov_rad_ * (1.0 / 2.0 - h / (vertical_resolution_ - 1.0));
   double azimuth_angle =
-      2.0 * M_PI * static_cast<double>(w) / horizontal_resolution_;
+      (2 * M_PI) * (1.0 / 2.0 - w / (horizontal_resolution_ - 1.0));
 
   Point bearing;
   bearing.x() = std::cos(altitude_angle) * std::cos(azimuth_angle);
@@ -298,28 +298,23 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
 
   double altitude_angle = std::asin(b_C_normalized.z());
   *h = static_cast<T>((vertical_resolution_ - 1.0) *
-                      (1.0 / 2.0 - altitude_angle / vertical_fov_rad_));
+      (1.0 / 2.0 - altitude_angle / vertical_fov_rad_));
   if (*h < 0 || vertical_resolution_ - 1 < *h) {
     return false;
   }
 
   double azimuth_angle;
   if (b_C_normalized.x() > 0) {
-    if (b_C_normalized.y() > 0) {
-      azimuth_angle =
-          2.0 * M_PI + std::atan(-b_C_normalized.y() / b_C_normalized.x());
-    } else {
-      azimuth_angle = std::atan(-b_C_normalized.y() / b_C_normalized.x());
-    }
+    azimuth_angle = std::atan(-b_C_normalized.y() / b_C_normalized.x());
   } else {
-    azimuth_angle = M_PI + std::atan(-b_C_normalized.y() / b_C_normalized.x());
+    azimuth_angle =
+        M_PI + std::atan(-b_C_normalized.y() / b_C_normalized.x());
   }
-  *w = static_cast<T>(horizontal_resolution_ * azimuth_angle / (2.0 * M_PI));
-  if (*w < 0) {
-    *w += horizontal_resolution_;
-  }
+  azimuth_angle = std::fmod(azimuth_angle, 2.0 * M_PI);
+  *w = static_cast<T>((horizontal_resolution_ - 1.0) *
+      (1.0 / 2.0 - azimuth_angle / (2 * M_PI)));
 
-  return (0 < *w && *w < horizontal_resolution_ - 1);
+  return (0 <= *w && *w <= horizontal_resolution_ - 1);
 }
 
 template <>
