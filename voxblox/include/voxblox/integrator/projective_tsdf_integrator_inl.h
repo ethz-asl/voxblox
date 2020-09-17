@@ -309,8 +309,8 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
     return false;
   }
 
-  double azimuth_angle;
-  azimuth_angle = std::atan2(-b_C_normalized.y(), b_C_normalized.x());
+  const double azimuth_angle =
+      std::atan2(-b_C_normalized.y(), b_C_normalized.x());
 
   // Handle integer and floating point types appropriately
   if (std::numeric_limits<T>::is_integer) {
