@@ -399,6 +399,8 @@ template <>
 inline float
 ProjectiveTsdfIntegrator<InterpolationScheme::kAdaptive>::interpolate(
     const Eigen::MatrixXf &range_image, const float h, const float w) const {
+  // TODO(victorr): Implement better horizontal wrap-around handling and
+  //                out of bounds access assertions
   // Check if we're on the edge, to avoid out-of-bounds matrix access
   if (h >= vertical_resolution_ || w >= horizontal_resolution_) {
     return range_image(std::floor(h), std::floor(w));
@@ -411,9 +413,11 @@ ProjectiveTsdfIntegrator<InterpolationScheme::kAdaptive>::interpolate(
 
   // Define easy to read names for all four range image pixels
   const float top_left = range_image(h_int, w_int);
-  const float top_right = range_image(h_int, w_int + 1);
+  const float top_right =
+      range_image(h_int, std::fmod(w_int + 1, horizontal_resolution_));
   const float bottom_left = range_image(h_int + 1, w_int);
-  const float bottom_right = range_image(h_int + 1, w_int + 1);
+  const float bottom_right =
+      range_image(h_int + 1, std::fmod(w_int + 1, horizontal_resolution_));
 
   // Left column
   float bilinear_left, min_left;
