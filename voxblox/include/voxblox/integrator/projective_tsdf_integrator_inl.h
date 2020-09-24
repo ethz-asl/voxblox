@@ -102,8 +102,23 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::parsePointcloud(
   CHECK_NOTNULL(range_image);
   CHECK_NOTNULL(touched_block_indices);
   if (config_.use_missing_points_for_clearing) {
-    range_image->setConstant(config_.max_ray_length_m +
-                             config_.default_truncation_distance);
+    constexpr float kMaxMissingPointsToClearRatio = 0.3;
+    const float total_resolution =
+        horizontal_resolution_ * vertical_resolution_;
+    const float min_num_points_for_clearing =
+        (1.f - kMaxMissingPointsToClearRatio) * total_resolution;
+    if (min_num_points_for_clearing < points_C.size()) {
+      range_image->setConstant(config_.max_ray_length_m +
+                               config_.default_truncation_distance);
+    } else {
+      LOG(WARNING) << "Not using missing points for clearing since pointcloud "
+                      "only has "
+                   << points_C.size() << " out of " << total_resolution
+                   << " points. Will only clear if at most "
+                   << kMaxMissingPointsToClearRatio * 100
+                   << "% of the points are unknown.";
+      range_image->setZero();
+    }
   } else {
     range_image->setZero();
   }
