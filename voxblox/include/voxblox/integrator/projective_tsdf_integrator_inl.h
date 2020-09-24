@@ -110,6 +110,10 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::parsePointcloud(
     if (min_num_points_for_clearing < points_C.size()) {
       range_image->setConstant(config_.max_ray_length_m +
                                config_.default_truncation_distance);
+      // Hack to account for AirSim regularly not returning points for the
+      // center columns of the LiDAR
+      range_image->block(0, horizontal_resolution_ / 2, vertical_resolution_, 2)
+          .setZero();
     } else {
       LOG(WARNING) << "Not using missing points for clearing since pointcloud "
                       "only has "
