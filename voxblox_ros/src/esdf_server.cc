@@ -37,6 +37,12 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
   setupRos();
 }
 
+std::shared_ptr<EsdfMap> EsdfServer::getEsdfMapPtr() { return esdf_map_; }
+
+std::shared_ptr<const EsdfMap> EsdfServer::getEsdfMapPtr() const {
+  return esdf_map_;
+}
+
 void EsdfServer::setupRos() {
   // Set up publisher.
   esdf_pointcloud_pub_ =
