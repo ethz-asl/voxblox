@@ -22,9 +22,7 @@ void VoxbloxMultiMeshDisplay::reset() {
   visuals_.clear();
 }
 
-void VoxbloxMultiMeshDisplay::visibleSlot() {
-  updateVisible();
-}
+void VoxbloxMultiMeshDisplay::visibleSlot() { updateVisible(); }
 
 void VoxbloxMultiMeshDisplay::updateVisible() {
   // Set visibility of all visuals and update poses if visibility is turned on.
@@ -135,17 +133,22 @@ void VoxbloxMultiMeshDisplay::subscribe() {
   }
 }
 
-VisibilityField::VisibilityField(const std::string& name, rviz::BoolProperty* parent, VoxbloxMultiMeshDisplay* master) :
-    rviz::BoolProperty(name.c_str(), true, "Show or hide the mesh. If the mesh is hidden but not disabled, it will persist and is incrementally built in the background.", parent, SLOT(visibleSlot())),
-    master_(master) {
+VisibilityField::VisibilityField(const std::string& name,
+                                 rviz::BoolProperty* parent,
+                                 VoxbloxMultiMeshDisplay* master)
+    : rviz::BoolProperty(
+          name.c_str(), true,
+          "Show or hide the mesh. If the mesh is hidden but not disabled, it "
+          "will persist and is incrementally built in the background.",
+          parent, SLOT(visibleSlot())),
+      master_(master) {
   setDisableChildrenIfFalse(true);
 }
 
-void VisibilityField::visibleSlot() {
-  master_->updateVisible();
-}
+void VisibilityField::visibleSlot() { master_->updateVisible(); }
 
-bool VisibilityField::hasNameSpace(const std::string& name, std::string* ns, std::string* sub_name) {
+bool VisibilityField::hasNameSpace(const std::string& name, std::string* ns,
+                                   std::string* sub_name) {
   std::size_t ns_indicator = name.find('/');
   if (ns_indicator != std::string::npos) {
     *sub_name = name.substr(ns_indicator + 1);
@@ -164,12 +167,17 @@ void VisibilityField::addField(const std::string& field_name) {
     auto it = children_.find(ns);
     if (it == children_.end()) {
       // Add the new namespace.
-      it = children_.insert(std::make_pair(ns, std::unique_ptr<VisibilityField>())).first;
+      it = children_
+               .insert(std::make_pair(ns, std::unique_ptr<VisibilityField>()))
+               .first;
       it->second.reset(new VisibilityField(ns, this, master_));
     }
     it->second->addField(sub_name);
   } else {
-    auto it = children_.insert(std::make_pair(field_name, std::unique_ptr<VisibilityField>())).first;
+    auto it = children_
+                  .insert(std::make_pair(field_name,
+                                         std::unique_ptr<VisibilityField>()))
+                  .first;
     it->second.reset(new VisibilityField(field_name, this, master_));
   }
 }

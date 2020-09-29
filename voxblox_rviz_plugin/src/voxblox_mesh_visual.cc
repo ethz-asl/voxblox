@@ -12,8 +12,11 @@ namespace voxblox_rviz_plugin {
 unsigned int VoxbloxMeshVisual::instance_counter_ = 0;
 
 VoxbloxMeshVisual::VoxbloxMeshVisual(Ogre::SceneManager* scene_manager,
-                                     Ogre::SceneNode* parent_node, std::string name_space)
-    : scene_manager_(scene_manager), name_space_(std::move(name_space)), is_enabled_(true) {
+                                     Ogre::SceneNode* parent_node,
+                                     std::string name_space)
+    : scene_manager_(scene_manager),
+      name_space_(std::move(name_space)),
+      is_enabled_(true) {
   frame_node_ = parent_node->createChildSceneNode();
   instance_number_ = instance_counter_++;
 }

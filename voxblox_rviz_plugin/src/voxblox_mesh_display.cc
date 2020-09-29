@@ -12,8 +12,9 @@ namespace voxblox_rviz_plugin {
 VoxbloxMeshDisplay::VoxbloxMeshDisplay()
     : visible_property_(
           "Visible", true,
-          "Show or hide the mesh. If the mesh is hidden but not disabled, it will persist and is incrementally built in the background.", this,
-          SLOT(visibleSLOT())) {
+          "Show or hide the mesh. If the mesh is hidden but not disabled, it "
+          "will persist and is incrementally built in the background.",
+          this, SLOT(visibleSLOT())) {
   voxblox_rviz_plugin::MaterialLoader::loadMaterials();
 }
 
