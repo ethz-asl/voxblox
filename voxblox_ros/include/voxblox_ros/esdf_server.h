@@ -43,9 +43,9 @@ class EsdfServer : public TsdfServer {
   /// Call this to update the ESDF based on latest state of the TSDF map,
   /// considering only the newly updated parts of the TSDF map (checked with
   /// the ESDF updated bit in Update::Status).
-  void updateEsdf();
+  virtual void updateEsdf();
   /// Update the ESDF all at once; clear the existing map.
-  void updateEsdfBatch(bool full_euclidean = false);
+  virtual void updateEsdfBatch(bool full_euclidean = false);
 
   // Overwrites the layer with what's coming from the topic!
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
