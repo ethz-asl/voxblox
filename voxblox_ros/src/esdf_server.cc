@@ -27,7 +27,8 @@ EsdfServer::EsdfServer(const ros::NodeHandle& nh,
       publish_traversable_(false),
       traversability_radius_(1.0),
       incremental_update_(true),
-      num_subscribers_esdf_map_(0) {
+      num_subscribers_esdf_map_(0),
+      map_has_been_pruned_(false) {
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
   esdf_integrator_.reset(new EsdfIntegrator(esdf_integrator_config,
@@ -197,6 +198,13 @@ bool EsdfServer::loadMap(const std::string& file_path) {
 }
 
 void EsdfServer::updateEsdf() {
+  if (map_has_been_pruned_) {
+    map_has_been_pruned_ = false;
+    LOG(INFO) << "Map has been pruned. Batch recomputing the ESDF.";
+    updateEsdfBatch();
+    return;
+  }
+
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = true;
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
@@ -277,6 +285,8 @@ void EsdfServer::pruneMap() {
       esdf_map_->getEsdfLayerPtr()->removeBlock(esdf_block_index);
     }
   }
+
+  map_has_been_pruned_ = true;
 
   ROS_INFO_STREAM_COND(verbose_,
                        "Pruned " << num_pruned_blocks << " ESDF blocks");
