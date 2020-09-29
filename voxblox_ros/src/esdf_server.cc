@@ -200,7 +200,6 @@ bool EsdfServer::loadMap(const std::string& file_path) {
 void EsdfServer::updateEsdf() {
   if (map_has_been_pruned_) {
     map_has_been_pruned_ = false;
-    LOG(INFO) << "Map has been pruned. Batch recomputing the ESDF.";
     updateEsdfBatch();
     return;
   }
