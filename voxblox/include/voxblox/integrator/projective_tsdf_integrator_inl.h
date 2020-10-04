@@ -232,7 +232,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
   //       the updates applied to nearer voxels
   const float num_rays_intersecting_voxel =
       ray_intersections_per_distance_squared_ /
-      (distance_to_voxel * distance_to_voxel);
+        std::max(distance_to_voxel * distance_to_voxel, 1.f);
 
   // Skip voxels that fall outside the TSDF truncation distance
   if (sdf < -config_.default_truncation_distance) {
