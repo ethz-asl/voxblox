@@ -18,17 +18,21 @@ class VoxbloxMeshDisplay
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   VoxbloxMeshDisplay();
-  virtual ~VoxbloxMeshDisplay();
+  virtual ~VoxbloxMeshDisplay() = default;
 
  protected:
-  virtual void onInitialize();
-
-  virtual void reset();
+  void reset() override;
+  void fixedFrameChanged() override;
 
  private:
-  void processMessage(const voxblox_msgs::Mesh::ConstPtr& msg);
+  void processMessage(const voxblox_msgs::Mesh::ConstPtr& msg) override;
+  bool updateTransformation(ros::Time stamp);
 
   std::unique_ptr<VoxbloxMeshVisual> visual_;
+
+  // Allows the user to still clear the mesh by clicking this property
+  rviz::BoolProperty visible_property_;
+  Q_SLOT void visibleSLOT();
 };
 
 }  // namespace voxblox_rviz_plugin

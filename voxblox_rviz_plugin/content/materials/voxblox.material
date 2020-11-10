@@ -1,0 +1,82 @@
+// material for (transparent) meshes, based on 'BaseWhiteNoLighting'
+material VoxbloxMaterialTransparent
+{
+	receive_shadows on
+	transparency_casts_shadows off
+	technique
+	{
+		lod_index 0
+		scheme Default
+		pass
+		{
+			lighting off
+			max_lights 8
+			start_light 0
+			iteration once
+			point_size 1
+			point_sprites off
+			point_size_attenuation off
+			point_size_min 0
+			point_size_max 0
+			scene_blend alpha_blend
+			depth_check on
+			alpha_rejection always_pass 0
+			alpha_to_coverage off
+			transparent_sorting on
+			depth_write off
+			depth_func less_equal
+			depth_bias 0 0
+			iteration_depth_bias 0
+			light_scissor off
+			light_clip_planes off
+			cull_hardware clockwise
+			cull_software back
+			shading gouraud
+			polygon_mode solid
+			polygon_mode_overrideable on
+			normalise_normals off
+			fog_override false
+		}
+	}
+}
+
+material VoxbloxMaterial
+{
+	receive_shadows on
+	transparency_casts_shadows off
+	technique
+	{
+		lod_index 0
+		scheme Default
+		pass
+		{
+			lighting off
+			max_lights 8
+			start_light 0
+			iteration once
+			point_size 1
+			point_sprites off
+			point_size_attenuation off
+			point_size_min 0
+			point_size_max 0
+			scene_blend one zero
+			depth_check on
+			alpha_rejection always_pass 0
+			alpha_to_coverage off
+			transparent_sorting on
+			depth_write on
+			depth_func less_equal
+			depth_bias 0 0
+			iteration_depth_bias 0
+			light_scissor off
+			light_clip_planes off
+			cull_hardware clockwise
+			cull_software back
+			shading gouraud
+			polygon_mode solid
+			polygon_mode_overrideable on
+			normalise_normals off
+			fog_override false
+		}
+	}
+}
