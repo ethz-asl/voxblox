@@ -3,6 +3,7 @@
 
 #include <map>
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 #include <rviz/message_filter_display.h>
@@ -22,18 +23,19 @@ class VoxbloxMultiMeshDisplay
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   VoxbloxMultiMeshDisplay();
-  virtual ~VoxbloxMultiMeshDisplay() = default;
+  ~VoxbloxMultiMeshDisplay() override = default;
   void updateVisible();
 
  protected:
   void reset() override;
   void fixedFrameChanged() override;
 
-  // override subscribe to enable a custom queue size of more than 10
-  static constexpr size_t kSubscriberQueueLength = 200;
+  // Override subscribe to enable a custom queue size of more than 10.
+  static constexpr uint32_t kSubscriberQueueLength = 1000;
   void subscribe() override;
+  void onInitialize() override;
 
-  // Automatically update the mesh poses based on their frame_ids
+  // Automatically update the mesh poses based on their frame_ids.
   void update(float wall_dt, float ros_dt) override;
 
  private:
@@ -49,7 +51,7 @@ class VoxbloxMultiMeshDisplay
   Q_SLOT void visibleSlot();
 
   // Keep track of the time that elapsed since we last updated the submap poses,
-  // such that we can throttle these updates to a reasonable rate
+  // such that we can throttle these updates to a reasonable rate.
   float dt_since_last_update_;
 };
 

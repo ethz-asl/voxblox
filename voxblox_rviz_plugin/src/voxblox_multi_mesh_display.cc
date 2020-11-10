@@ -116,8 +116,11 @@ void VoxbloxMultiMeshDisplay::fixedFrameChanged() {
 }
 
 void VoxbloxMultiMeshDisplay::subscribe() {
-  // override this to allow for custom queue size, the rest is taken from
-  // rviz::MessageFilterDisplay
+  // Override this to allow for custom queue size, the rest is taken from
+  // rviz::MessageFilterDisplay.
+  if (!isEnabled()) {
+    return;
+  }
   try {
     ros::TransportHints transport_hint = ros::TransportHints().reliable();
     // Determine UDP vs TCP transport for user selection.
@@ -131,6 +134,13 @@ void VoxbloxMultiMeshDisplay::subscribe() {
     setStatus(rviz::StatusProperty::Error, "Topic",
               QString("Error subscribing: ") + e.what());
   }
+}
+
+void VoxbloxMultiMeshDisplay::onInitialize() {
+  // Override this to allow for custom queue size, the rest is taken from
+  // rviz::MessageFilterDisplay.
+  MessageFilterDisplay::onInitialize();
+  tf_filter_->setQueueSize(kSubscriberQueueLength);
 }
 
 VisibilityField::VisibilityField(const std::string& name,
