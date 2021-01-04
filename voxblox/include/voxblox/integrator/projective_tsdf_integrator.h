@@ -36,20 +36,24 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
   const double vertical_fov_rad_;
 
   Eigen::MatrixXf range_image_;
+  ColorImage color_image_;
 
   // Cache some commonly used runtime constants
   const size_t num_voxels_per_block_;
   const double ray_intersections_per_distance_squared_;
 
   void parsePointcloud(const Transformation& T_G_C, const Pointcloud& points_C,
-                       Eigen::MatrixXf* range_image,
+                       const Colors& colors, Eigen::MatrixXf* range_image,
+                       ColorImage* color_image,
                        voxblox::IndexSet* touched_block_indices) const;
 
   void updateTsdfBlocks(const Transformation& T_G_C,
                         const Eigen::MatrixXf& range_image,
+                        const ColorImage& color_image,
                         const voxblox::IndexSet& touched_block_indices,
                         const bool deintegrate = false);
   inline void updateTsdfVoxel(const Eigen::MatrixXf& range_image,
+                              const ColorImage& color_image,
                               const Point& t_C_voxel, TsdfVoxel* tsdf_voxel,
                               const bool deintegrate = false);
 
