@@ -79,6 +79,13 @@ class TsdfMap {
   template <typename MatrixType>
   using EigenDRef = Eigen::Ref<MatrixType, 0, EigenDStride>;
 
+  bool getDistanceAtPosition(const Eigen::Vector3d& position,
+                             double* distance) const;
+  bool getDistanceAtPosition(const Eigen::Vector3d& position, bool interpolate,
+                             double* distance) const;
+
+  bool isObserved(const Eigen::Vector3d& position) const;
+
   /**
    *  Extract all voxels on a slice plane that is parallel to one of the
    * axis-aligned planes. free_plane_index specifies the free coordinate
