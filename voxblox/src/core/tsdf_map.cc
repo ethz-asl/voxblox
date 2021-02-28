@@ -2,6 +2,35 @@
 
 namespace voxblox {
 
+bool TsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
+                                    double* distance) const {
+  constexpr bool kInterpolate = true;
+  return getDistanceAtPosition(position, kInterpolate, distance);
+}
+
+bool TsdfMap::getDistanceAtPosition(const Eigen::Vector3d& position,
+                                    bool interpolate, double* distance) const {
+  FloatingPoint distance_fp;
+  const bool success = interpolator_.getDistance(position.cast<FloatingPoint>(),
+                                                 &distance_fp, interpolate);
+  if (success) {
+    *distance = static_cast<double>(distance_fp);
+  }
+  return success;
+}
+
+bool TsdfMap::isObserved(const Eigen::Vector3d& position) const {
+  constexpr double kMinWeight = 1e-6;
+  Block<TsdfVoxel>::Ptr block_ptr =
+      tsdf_layer_->getBlockPtrByCoordinates(position.cast<FloatingPoint>());
+  if (block_ptr) {
+    const TsdfVoxel& voxel =
+        block_ptr->getVoxelByCoordinates(position.cast<FloatingPoint>());
+    return voxel.weight > kMinWeight;
+  }
+  return false;
+}
+
 unsigned int TsdfMap::coordPlaneSliceGetDistanceWeight(
     unsigned int free_plane_index, double free_plane_val,
     EigenDRef<Eigen::Matrix<double, 3, Eigen::Dynamic>>& positions,
