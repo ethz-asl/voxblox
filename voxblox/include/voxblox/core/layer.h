@@ -196,7 +196,7 @@ class Layer {
     blocks->clear();
     for (const std::pair<const BlockIndex, typename BlockType::Ptr>& kv :
          block_map_) {
-      if (kv.second->updated()[bit]) {
+      if (kv.second->updated(bit)) {
         blocks->emplace_back(kv.first);
       }
     }

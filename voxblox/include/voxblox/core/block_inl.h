@@ -117,7 +117,7 @@ void Block<VoxelType>::mergeBlock(const Block<VoxelType>& other_block) {
     return;
   } else {
     has_data() = true;
-    updated().set();
+    setUpdatedAll();
 
     for (IndexElement voxel_idx = 0;
          voxel_idx < static_cast<IndexElement>(num_voxels()); ++voxel_idx) {

@@ -178,7 +178,7 @@ class MeshIntegrator {
       if (clear_updated_flag) {
         typename Block<VoxelType>::Ptr block =
             sdf_layer_mutable_->getBlockPtrByIndex(block_idx);
-        block->updated().reset(Update::kMesh);
+        block->setUpdated(Update::kMesh, false);
       }
     }
   }
