@@ -1,8 +1,9 @@
-#ifndef VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
-#define VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
+#ifndef VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
+#define VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <vector>
 
@@ -25,10 +26,9 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
                             layer_->voxels_per_side()),
       ray_intersections_per_distance_squared_(
           voxel_size_ * horizontal_resolution_ /
-          (2 * M_PI)  // horizontal point density
+          (2 * M_PI) /* horizontal point density */
           * voxel_size_ * vertical_resolution_ /
-          vertical_fov_rad_)  // vertical point density
-{
+          vertical_fov_rad_) /* vertical point density */ {
   CHECK_GT(horizontal_resolution_, 0)
       << "The horizontal sensor resolution must be a positive integer";
   CHECK_GT(vertical_resolution_, 0)
@@ -115,12 +115,12 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::parsePointcloud(
       range_image->block(0, horizontal_resolution_ / 2, vertical_resolution_, 2)
           .setZero();
     } else {
-      LOG(WARNING) << "Not using missing points for clearing since pointcloud "
-                      "only has "
-                   << points_C.size() << " out of " << total_resolution
-                   << " points. Will only clear if at most "
-                   << kMaxMissingPointsToClearRatio * 100
-                   << "% of the points are unknown.";
+      LOG_EVERY_N(INFO, 20) << "[Throttled] Not using missing points for "
+                               "clearing since pointcloud only has "
+                            << points_C.size() << " out of " << total_resolution
+                            << " points. Will only clear if at most "
+                            << kMaxMissingPointsToClearRatio * 100
+                            << "% of the points are unknown.";
       range_image->setZero();
     }
   } else {
@@ -232,7 +232,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
   //       the updates applied to nearer voxels
   const float num_rays_intersecting_voxel =
       ray_intersections_per_distance_squared_ /
-        std::max(distance_to_voxel * distance_to_voxel, 1.f);
+      std::max(distance_to_voxel * distance_to_voxel, 1.f);
 
   // Skip voxels that fall outside the TSDF truncation distance
   if (sdf < -config_.default_truncation_distance) {
@@ -504,4 +504,4 @@ ProjectiveTsdfIntegrator<InterpolationScheme::kAdaptive>::interpolate(
 }
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
+#endif  // VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_

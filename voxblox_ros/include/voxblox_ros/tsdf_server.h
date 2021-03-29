@@ -89,6 +89,7 @@ class TsdfServer {
   virtual void publishPointclouds();
   // Publishes the complete map
   virtual void publishMap(bool reset_remote_map = false);
+  virtual void publishSubmap();
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
@@ -108,6 +109,7 @@ class TsdfServer {
 
   void updateMeshEvent(const ros::TimerEvent& event);
   void publishMapEvent(const ros::TimerEvent& event);
+  void publishSubmapEvent(const ros::TimerEvent& event);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
   std::shared_ptr<const TsdfMap> getTsdfMapPtr() const { return tsdf_map_; }
@@ -159,6 +161,7 @@ class TsdfServer {
 
   /// Publish the complete map for other nodes to consume.
   ros::Publisher tsdf_map_pub_;
+  ros::Publisher submap_pub_;
 
   /// Subscriber to subscribe to another node generating the map.
   ros::Subscriber tsdf_map_sub_;
@@ -177,6 +180,7 @@ class TsdfServer {
   // Timers.
   ros::Timer update_mesh_timer_;
   ros::Timer publish_map_timer_;
+  ros::Timer publish_submap_timer_;
 
   bool verbose_;
 
@@ -185,6 +189,7 @@ class TsdfServer {
    * frame.
    */
   std::string world_frame_;
+  std::string robot_name_;
   /**
    * Name of the ICP corrected frame. Publishes TF and transform topic to this
    * if ICP on.
@@ -288,9 +293,6 @@ class TsdfServer {
 
   /// Current transform corrections from ICP.
   Transformation icp_corrected_transform_;
-
-  // TODO(victorr): Add description
-  bool publish_map_with_trajectory_;
 };
 
 }  // namespace voxblox

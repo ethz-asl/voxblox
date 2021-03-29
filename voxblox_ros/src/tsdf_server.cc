@@ -4,7 +4,7 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <voxblox/integrator/projective_tsdf_integrator.h>
-#include <voxblox_msgs/LayerWithTrajectory.h>
+#include <voxblox_msgs/Submap.h>
 
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
@@ -26,6 +26,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       verbose_(true),
       world_frame_("world"),
+      robot_name_("robot"),
       icp_corrected_frame_("icp_corrected"),
       pose_corrected_frame_("pose_corrected"),
       max_block_distance_from_body_(std::numeric_limits<FloatingPoint>::max()),
@@ -47,8 +48,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       num_voxels_per_block_(config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side),
-      map_needs_pruning_(false),
-      publish_map_with_trajectory_(false) {
+      map_needs_pruning_(false) {
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
@@ -75,13 +75,10 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   // Publishing/subscribing to a layer from another node (when using this as
   // a library, for example within a planner).
-  if (publish_map_with_trajectory_) {
-    tsdf_map_pub_ = nh_private_.advertise<voxblox_msgs::LayerWithTrajectory>(
-        "tsdf_map_out", 1, false);
-  } else {
-    tsdf_map_pub_ =
-        nh_private_.advertise<voxblox_msgs::Layer>("tsdf_map_out", 1, false);
-  }
+  tsdf_map_pub_ =
+      nh_private_.advertise<voxblox_msgs::Layer>("tsdf_map_out", 1, false);
+  submap_pub_ =
+      nh_private_.advertise<voxblox_msgs::Submap>("submap_out", 1, false);
   tsdf_map_sub_ = nh_private_.subscribe("tsdf_map_in", 1,
                                         &TsdfServer::tsdfMapCallback, this);
   nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
@@ -146,11 +143,19 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
   double publish_map_every_n_sec = 1.0;
   nh_private_.param("publish_map_every_n_sec", publish_map_every_n_sec,
                     publish_map_every_n_sec);
-
   if (publish_map_every_n_sec > 0.0) {
     publish_map_timer_ =
         nh_private_.createTimer(ros::Duration(publish_map_every_n_sec),
                                 &TsdfServer::publishMapEvent, this);
+  }
+
+  double publish_submap_every_n_sec = -1.0;
+  nh_private_.param("publish_submap_every_n_sec", publish_submap_every_n_sec,
+                    publish_submap_every_n_sec);
+  if (publish_submap_every_n_sec > 0.0) {
+    publish_submap_timer_ =
+        nh_private_.createTimer(ros::Duration(publish_submap_every_n_sec),
+                                &TsdfServer::publishSubmapEvent, this);
   }
 }
 
@@ -170,6 +175,7 @@ void TsdfServer::getServerConfigFromRosParam(
   nh_private.param("slice_level_follow_robot", slice_level_follow_robot_,
                    slice_level_follow_robot_);
   nh_private.param("world_frame", world_frame_, world_frame_);
+  nh_private.param("robot_name", robot_name_, robot_name_);
   nh_private.param("publish_pointclouds_on_update",
                    publish_pointclouds_on_update_,
                    publish_pointclouds_on_update_);
@@ -196,8 +202,6 @@ void TsdfServer::getServerConfigFromRosParam(
           pointcloud_deintegration_queue_length_int;
     }
   }
-  nh_private.param("publish_map_with_trajectory", publish_map_with_trajectory_,
-                   publish_map_with_trajectory_);
 
   // Mesh settings.
   nh_private.param("mesh_filename", mesh_filename_, mesh_filename_);
@@ -617,25 +621,29 @@ void TsdfServer::publishMap(bool reset_remote_map) {
     if (reset_remote_map) {
       layer_msg.action = static_cast<uint8_t>(MapDerializationAction::kReset);
     }
-    if (publish_map_with_trajectory_) {
-      voxblox_msgs::LayerWithTrajectory layer_with_trajectory_msg;
-      layer_with_trajectory_msg.layer = layer_msg;
-      for (const PointcloudDeintegrationPacket& pointcloud_queue_packet :
-           pointcloud_deintegration_queue_) {
-        geometry_msgs::PoseStamped pose_msg;
-        pose_msg.header.frame_id = world_frame_;
-        pose_msg.header.stamp = pointcloud_queue_packet.timestamp;
-        tf::poseKindrToMsg(pointcloud_queue_packet.T_G_C.cast<double>(),
-                           &pose_msg.pose);
-        layer_with_trajectory_msg.trajectory.poses.emplace_back(pose_msg);
-      }
-      this->tsdf_map_pub_.publish(layer_with_trajectory_msg);
-    } else {
-      this->tsdf_map_pub_.publish(layer_msg);
-    }
+    this->tsdf_map_pub_.publish(layer_msg);
     publish_map_timer.Stop();
   }
   num_subscribers_tsdf_map_ = subscribers;
+}
+
+void TsdfServer::publishSubmap() {
+  if (0 < this->submap_pub_.getNumSubscribers()) {
+    voxblox_msgs::Submap submap_msg;
+    submap_msg.robot_name = robot_name_;
+    serializeLayerAsMsg<TsdfVoxel>(this->tsdf_map_->getTsdfLayer(),
+                                   /* only_updated */ false, &submap_msg.layer);
+    for (const PointcloudDeintegrationPacket& pointcloud_queue_packet :
+         pointcloud_deintegration_queue_) {
+      geometry_msgs::PoseStamped pose_msg;
+      pose_msg.header.frame_id = world_frame_;
+      pose_msg.header.stamp = pointcloud_queue_packet.timestamp;
+      tf::poseKindrToMsg(pointcloud_queue_packet.T_G_C.cast<double>(),
+                         &pose_msg.pose);
+      submap_msg.trajectory.poses.emplace_back(pose_msg);
+    }
+    this->submap_pub_.publish(submap_msg);
+  }
 }
 
 void TsdfServer::publishPointclouds() {
@@ -786,6 +794,10 @@ void TsdfServer::updateMeshEvent(const ros::TimerEvent& /*event*/) {
 
 void TsdfServer::publishMapEvent(const ros::TimerEvent& /*event*/) {
   publishMap();
+}
+
+void TsdfServer::publishSubmapEvent(const ros::TimerEvent& /* event */) {
+  publishSubmap();
 }
 
 void TsdfServer::clear() {
