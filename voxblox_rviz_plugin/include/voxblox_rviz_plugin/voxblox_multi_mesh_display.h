@@ -50,6 +50,10 @@ class VoxbloxMultiMeshDisplay
   std::unique_ptr<VisibilityField> visibility_fields_;
   Q_SLOT void visibleSlot();
 
+  // Property to set visibility for all submaps.
+  rviz::BoolProperty toggle_visibility_all_property_;
+  Q_SLOT void toggleVisibilityAllSLOT();
+
   // Keep track of the time that elapsed since we last updated the submap poses,
   // such that we can throttle these updates to a reasonable rate.
   float dt_since_last_update_;
@@ -64,6 +68,7 @@ class VisibilityField : public rviz::BoolProperty {
   void addField(const std::string& field_name);
   void removeField(const std::string& field_name);
   bool isEnabled(const std::string& field_name);
+  void setEnabledForAll(bool enabled);
 
  private:
   Q_SLOT void visibleSlot();
