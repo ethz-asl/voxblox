@@ -248,12 +248,17 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
     return;
   }
 
+  const float new_sdf = (tsdf_voxel->distance * tsdf_voxel->weight +
+                         std::min(config_.default_truncation_distance, sdf) *
+                         observation_weight) /
+                        new_voxel_weight;
   // Store the updated voxel weight and distance
-  tsdf_voxel->distance = (tsdf_voxel->distance * tsdf_voxel->weight +
-                          std::min(config_.default_truncation_distance, sdf) *
-                              observation_weight) /
-                         new_voxel_weight;
+  tsdf_voxel->distance =
+            (new_sdf > 0.0) ? std::min(config_.default_truncation_distance, new_sdf)
+                            : std::max(-config_.default_truncation_distance, new_sdf);
   tsdf_voxel->weight = new_voxel_weight;
+
+
 }
 
 template <InterpolationScheme interpolation_scheme>

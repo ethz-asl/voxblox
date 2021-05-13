@@ -91,6 +91,72 @@ class IronbowColorMap : public ColorMap {
   float increment_;
 };
 
+class IdColorMap {
+ public:
+  IdColorMap() {}
+  virtual ~IdColorMap() {}
+
+  virtual Color colorLookup(size_t value) const = 0;
+};
+/**
+ * Map unique IDs from [0, Inf[ to unique colors that have constant (irrational)
+ * spacing and high spread on the color wheel.
+ * An important advantage of this color map is that the colors are independent
+ * of the max ID value, e.g. previous colors don't change when adding new IDs.
+ */
+class IrrationalIdColorMap : IdColorMap {
+ public:
+  IrrationalIdColorMap() : irrational_base_(3.f * M_PI) {}
+
+  void setIrrationalBase(float value) { irrational_base_ = value; }
+
+  virtual Color colorLookup(const size_t value) const {
+    const float normalized_color = std::fmod(value / irrational_base_, 1.f);
+    return rainbowColorMap(normalized_color);
+  }
+
+ private:
+  float irrational_base_;
+};
+/**
+ * Map unique IDs from [0, Inf[ to unique colors
+ * with piecewise constant spacing and higher spread on the color wheel.
+ * An important advantage of this color map is that the colors are independent
+ * of the max ID value, e.g. previous colors don't change when adding new IDs.
+ */
+class ExponentialOffsetIdColorMap : IdColorMap {
+ public:
+  ExponentialOffsetIdColorMap() : items_per_revolution_(10u) {}
+
+  void setItemsPerRevolution(uint value) { items_per_revolution_ = value; }
+
+  virtual Color colorLookup(const size_t value) const {
+    const size_t revolution = value / items_per_revolution_;
+    const float progress_along_revolution =
+        std::fmod(value / items_per_revolution_, 1.f);
+    // NOTE: std::modf could be used to simultaneously get the integer and
+    //       fractional parts, but the above code is assumed to be more readable
+
+    // Calculate the offset if appropriate
+    float offset = 0;
+    if (items_per_revolution_ < value + 1u) {
+      const size_t current_episode = std::floor(std::log2(revolution));
+      const size_t episode_start = std::exp2(current_episode);
+      const size_t episode_num_subdivisions = episode_start;
+      const size_t current_subdivision = revolution - episode_start;
+      const float subdivision_step_size =
+          1 / (items_per_revolution_ * 2 * episode_num_subdivisions);
+      offset = (2 * current_subdivision + 1) * subdivision_step_size;
+    }
+
+    const float normalized_color = progress_along_revolution + offset;
+    return rainbowColorMap(normalized_color);
+  }
+
+ private:
+  float items_per_revolution_;
+};
+
 }  // namespace voxblox
 
 #endif  // VOXBLOX_UTILS_COLOR_MAPS_H_

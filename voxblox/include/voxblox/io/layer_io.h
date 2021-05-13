@@ -35,7 +35,7 @@ template <typename VoxelType>
 bool LoadBlocksFromStream(
     const size_t num_blocks,
     typename Layer<VoxelType>::BlockMergingStrategy strategy,
-    std::fstream* proto_file_ptr, Layer<VoxelType>* layer_ptr,
+    std::istream* proto_file_ptr, Layer<VoxelType>* layer_ptr,
     uint64_t* tmp_byte_offset_ptr);
 
 /**
