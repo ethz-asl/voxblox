@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
-#define VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
+#ifndef VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
+#define VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
 
 #include <algorithm>
 #include <iostream>
@@ -273,8 +273,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
   }
 
   // Truncate the new total voxel weight according to the max weight
-  const float new_voxel_weight =
-      std::min(tsdf_voxel->weight + observation_weight, config_.max_weight);
+  const float new_voxel_weight = tsdf_voxel->weight + observation_weight;
 
   // Make sure voxels go back to zero when deintegrating
   if (deintegrate && new_voxel_weight < 1e-3) {
@@ -288,7 +287,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
                           std::min(config_.default_truncation_distance, sdf) *
                               observation_weight) /
                          new_voxel_weight;
-  tsdf_voxel->weight = new_voxel_weight;
+  tsdf_voxel->weight = std::min(new_voxel_weight, config_.max_weight);
 }
 
 template <InterpolationScheme interpolation_scheme>
@@ -504,4 +503,4 @@ ProjectiveTsdfIntegrator<InterpolationScheme::kAdaptive>::interpolate(
 }
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
+#endif  // VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_INL_H_
