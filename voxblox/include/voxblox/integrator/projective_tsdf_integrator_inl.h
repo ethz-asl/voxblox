@@ -6,6 +6,9 @@
 #include <list>
 #include <vector>
 
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
+
 #include "voxblox/core/block.h"
 
 namespace voxblox {
@@ -54,6 +57,19 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
       "range_image_and_block_selector_timer");
   parsePointcloud(T_G_C, points_C, &range_image_, &touched_block_indices);
   range_image_and_block_selector_timer.Stop();
+
+  if (!deintegrate) {
+    cv::Mat test_image;
+    cv::eigen2cv(range_image_, test_image);
+    cv::threshold(test_image, test_image, config_.max_ray_length_m,
+                  config_.max_ray_length_m, cv::ThresholdTypes::THRESH_TRUNC);
+    test_image *= -1.0f / config_.max_ray_length_m;
+    test_image += 1.0f;
+
+    cv::namedWindow("Range image", cv::WINDOW_NORMAL);
+    cv::imshow("Range image", test_image);
+    cv::waitKey(1 /* ms */);
+  }
 
   // Process all blocks
   timing::Timer integration_timer("integration_timer");
@@ -142,6 +158,12 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::parsePointcloud(
     int h, w;
     if (!bearingToImage(point_C_bearing, &h, &w)) {
       continue;
+    }
+    if (w == 0 && 0.0 <= point_C.x()) {
+      LOG(INFO) << "Unsure about point with w " << w << ", h " << h
+                << ", coordinates\n"
+                << point_C << "\nand bearing\n"
+                << point_C_bearing;
     }
 
     // Set the range image distance
@@ -354,6 +376,16 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
     }
   }
 
+  CHECK_GE(*w, static_cast<T>(0.0));
+  CHECK_LT(*w, static_cast<T>(horizontal_resolution_))
+      << "Floating horizontal index was "
+      << "\n- not normalized: "
+      << horizontal_resolution_ * (1.0 / 2.0 - azimuth_angle / (2.0 * M_PI))
+      << "\n- after fmod: "
+      << std::fmod(static_cast<T>(horizontal_resolution_ *
+                                  (1.0 / 2.0 - azimuth_angle / (2.0 * M_PI))),
+                   horizontal_resolution_)
+      << "\n- normalized: " << *w;
   return true;
 }
 
