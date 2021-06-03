@@ -31,14 +31,16 @@ enum class TsdfIntegratorType : int {
   kSimple = 1,
   kMerged = 2,
   kFast = 3,
+  kProjective = 4,
 };
 
-static constexpr size_t kNumTsdfIntegratorTypes = 3u;
+static constexpr size_t kNumTsdfIntegratorTypes = 4u;
 
 const std::array<std::string, kNumTsdfIntegratorTypes>
     kTsdfIntegratorTypeNames = {{/*kSimple*/ "simple",
                                  /*kMerged*/ "merged",
-                                 /*kFast*/ "fast"}};
+                                 /*kFast*/ "fast",
+                                 /*kProjective*/ "projective"}};
 
 /**
  * Base class to the simple, merged and fast TSDF integrators. The integrator
@@ -84,6 +86,10 @@ class TsdfIntegratorBase {
     int clear_checks_every_n_frames = 1;
     /// fast integrator specific
     float max_integration_time_s = std::numeric_limits<float>::max();
+    // projective integrator specific
+    int sensor_horizontal_resolution = 0;
+    int sensor_vertical_resolution = 0;
+    double sensor_vertical_field_of_view_degrees = 0.0;
 
     std::string print() const;
   };

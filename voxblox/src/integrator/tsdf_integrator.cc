@@ -1,4 +1,5 @@
 #include "voxblox/integrator/tsdf_integrator.h"
+#include "voxblox/integrator/projective_tsdf_integrator.h"
 
 #include <iostream>
 #include <list>
@@ -36,6 +37,11 @@ TsdfIntegratorBase::Ptr TsdfIntegratorFactory::create(
       break;
     case TsdfIntegratorType::kFast:
       return TsdfIntegratorBase::Ptr(new FastTsdfIntegrator(config, layer));
+      break;
+    case TsdfIntegratorType::kProjective:
+      return TsdfIntegratorBase::Ptr(
+          new ProjectiveTsdfIntegrator<InterpolationScheme::kAdaptive>(config,
+                                                                       layer));
       break;
     default:
       LOG(FATAL) << "Unknown TSDF integrator type: "

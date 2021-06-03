@@ -1,0 +1,62 @@
+<launch>
+    <param name="use_sim_time" value="true"/>
+
+    <node if="1" name="player" pkg="rosbag" type="play" output="screen"
+          args="-r 1.0 -s 5 -q --clock /home/victor/data/voxgraph_release/arche_flight1_2ms_indoor-outdoor-figure-8.bag"/>
+
+    <node pkg="tf" type="static_transform_publisher" name="odom_to_mission" args="0 0 0 0 0 0 1 odom mission 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="os1_stuff" args="0 0 0 0 0 1 0 os1_sensor os1_lidar 100"/>
+
+    <node name="voxblox_projective" pkg="voxblox_ros" type="tsdf_server"
+          output="screen" args="-alsologtostderr" clear_params="true">
+        <remap from="pointcloud" to="lidar_undistortion/pointcloud_corrected"/>
+        <rosparam>
+            verbose: false
+            method: "projective"
+            sensor_horizontal_resolution: 1024
+            sensor_vertical_resolution: 64
+            sensor_vertical_field_of_view_degrees: 33.222
+            color_mode: "normals"
+            world_frame: "mission"
+            tsdf_voxel_size: 0.20
+            truncation_distance: 0.60
+            pointcloud_queue_size: 1
+            max_ray_length_m: 12.0 # 14 or 16m would be better, but for that we need better odometry. Otherwise the surface get too damaged.
+            min_ray_length_m: 1.0
+            max_consecutive_ray_collisions: 1
+            use_const_weight: true
+<!--            slice_level: 1.0-->
+<!--            publish_pointclouds_on_update: true-->
+<!--            publish_slices: true-->
+            update_mesh_every_n_sec: 1.0
+            integrator_threads: 1
+        </rosparam>
+    </node>
+
+    <node name="voxblox_fast" pkg="voxblox_ros" type="tsdf_server"
+          output="screen" args="-alsologtostderr" clear_params="true">
+        <remap from="pointcloud" to="lidar_undistortion/pointcloud_corrected"/>
+        <rosparam>
+            verbose: false
+            method: "fast"
+            color_mode: "normals"
+            world_frame: "mission"
+            tsdf_voxel_size: 0.15
+            truncation_distance: 0.60
+            pointcloud_queue_size: 1
+            max_ray_length_m: 12.0 # 14 or 16m would be better, but for that we need better odometry. Otherwise the surface get too damaged.
+            min_ray_length_m: 1.0
+            max_consecutive_ray_collisions: 1
+            use_const_weight: true
+            <!--            slice_level: 1.0-->
+            <!--            publish_pointclouds_on_update: true-->
+            <!--            publish_slices: true-->
+            update_mesh_every_n_sec: 1.0
+<!--            integrator_threads: 1-->
+        </rosparam>
+    </node>
+
+    <include file="$(find lidar_undistortion)/launch/os1_undistortion.launch"/>
+
+    <node pkg="rviz" type="rviz" name="$(anon rviz)" respawn="false" output="screen"/>
+</launch>
