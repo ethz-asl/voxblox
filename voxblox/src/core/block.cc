@@ -131,6 +131,8 @@ void Block<EsdfVoxel>::deserializeFromIntegers(
     voxel.hallucinated = static_cast<bool>((bytes_2 & 0x00000002));
     voxel.in_queue = static_cast<bool>((bytes_2 & 0x00000004));
     voxel.fixed = static_cast<bool>((bytes_2 & 0x00000008));
+    voxel.ever_free = static_cast<bool>((bytes_2 & 0x00000010));
+    voxel.currently_occupied = static_cast<bool>((bytes_2 & 0x00000020));
 
     voxel.parent = deserializeDirection(bytes_2);
   }
@@ -225,6 +227,8 @@ void Block<EsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
         static_cast<uint8_t>(voxel.hallucinated ? 0b00000010 : 0b00000000);
     flag_byte |= static_cast<uint8_t>(voxel.in_queue ? 0b00000100 : 0b00000000);
     flag_byte |= static_cast<uint8_t>(voxel.fixed ? 0b00001000 : 0b00000000);
+    flag_byte |= static_cast<uint8_t>(voxel.ever_free ? 0b00010000 : 0b00000000);
+    flag_byte |= static_cast<uint8_t>(voxel.currently_occupied ? 0b00100000 : 0b00000000);
 
     bytes_2 |= static_cast<uint32_t>(flag_byte) & 0x000000FF;
 

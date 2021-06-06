@@ -277,6 +277,14 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
             num_raise++;
           }
         }
+        else {
+            if (tsdf_voxel.distance > esdf_voxel.distance){
+                esdf_voxel.distance =
+                        signum(tsdf_voxel.distance) * config_.default_distance_m;
+//                esdf_voxel.distance = tsdf_voxel.distance;
+            }
+
+        }
         // Otherwise we just don't care. Not fixed voxels that match the right
         // sign can be whatever value that they want to be.
       }
