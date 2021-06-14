@@ -42,8 +42,11 @@ void VoxbloxMultiMeshDisplay::updateVisible() {
 }
 
 void VoxbloxMultiMeshDisplay::toggleVisibilityAllSLOT() {
+  // Toggle all visibility fields except for the root.
+  const bool root_visible = visibility_fields_->getBool();
   visibility_fields_->setEnabledForAll(
       toggle_visibility_all_property_.getBool());
+  visibility_fields_->setBool(root_visible);
   updateVisible();
 }
 
