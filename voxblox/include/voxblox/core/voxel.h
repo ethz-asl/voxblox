@@ -30,6 +30,8 @@ struct EsdfVoxel {
   bool ever_free = false;
   bool currently_occupied = false;
 
+  int occ_counter = 0;
+
   /**
    * Relative direction toward parent. If itself, then either uninitialized
    * or in the fixed frontier.

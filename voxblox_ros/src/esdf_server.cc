@@ -191,7 +191,7 @@ bool EsdfServer::loadMap(const std::string& file_path) {
 
 void EsdfServer::updateEsdf() {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
-    const bool clear_updated_flag_esdf = true;
+    const bool clear_updated_flag_esdf = false;
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   }
 }

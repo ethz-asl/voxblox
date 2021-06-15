@@ -111,7 +111,7 @@ void Block<OccupancyVoxel>::deserializeFromIntegers(
 template <>
 void Block<EsdfVoxel>::deserializeFromIntegers(
     const std::vector<uint32_t>& data) {
-  constexpr size_t kNumDataPacketsPerVoxel = 2u;
+  constexpr size_t kNumDataPacketsPerVoxel = 3u;
   const size_t num_data_packets = data.size();
   CHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, num_data_packets);
   for (size_t voxel_idx = 0u, data_idx = 0u;
@@ -122,10 +122,12 @@ void Block<EsdfVoxel>::deserializeFromIntegers(
 
     const uint32_t bytes_1 = data[data_idx];
     const uint32_t bytes_2 = data[data_idx + 1u];
+    const uint32_t bytes_3 = data[data_idx + 2u];
 
     EsdfVoxel& voxel = voxels_[voxel_idx];
 
     memcpy(&(voxel.distance), &bytes_1, sizeof(bytes_1));
+    memcpy(&(voxel.occ_counter), &bytes_3, sizeof(bytes_3));
 
     voxel.observed = static_cast<bool>(bytes_2 & 0x00000001);
     voxel.hallucinated = static_cast<bool>((bytes_2 & 0x00000002));
@@ -205,7 +207,7 @@ void Block<OccupancyVoxel>::serializeToIntegers(
 template <>
 void Block<EsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
   CHECK_NOTNULL(data);
-  constexpr size_t kNumDataPacketsPerVoxel = 2u;
+  constexpr size_t kNumDataPacketsPerVoxel = 3u;
   data->clear();
   data->reserve(num_voxels_ * kNumDataPacketsPerVoxel);
   for (size_t voxel_idx = 0u; voxel_idx < num_voxels_; ++voxel_idx) {
@@ -233,6 +235,9 @@ void Block<EsdfVoxel>::serializeToIntegers(std::vector<uint32_t>* data) const {
     bytes_2 |= static_cast<uint32_t>(flag_byte) & 0x000000FF;
 
     data->push_back(bytes_2);
+
+    const uint32_t* bytes_3_ptr = reinterpret_cast<const uint32_t*>(&voxel.occ_counter);
+    data->push_back(*bytes_3_ptr);
   }
   CHECK_EQ(num_voxels_ * kNumDataPacketsPerVoxel, data->size());
 }
