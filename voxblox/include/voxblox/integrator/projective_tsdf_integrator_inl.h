@@ -273,8 +273,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
   }
 
   // Truncate the new total voxel weight according to the max weight
-  const float new_voxel_weight =
-      std::min(tsdf_voxel->weight + observation_weight, config_.max_weight);
+  const float new_voxel_weight = tsdf_voxel->weight + observation_weight;
 
   // Make sure voxels go back to zero when deintegrating
   if (deintegrate && new_voxel_weight < 1e-3) {
@@ -288,7 +287,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
                           std::min(config_.default_truncation_distance, sdf) *
                               observation_weight) /
                          new_voxel_weight;
-  tsdf_voxel->weight = new_voxel_weight;
+  tsdf_voxel->weight = std::min(new_voxel_weight, config_.max_weight);
 }
 
 template <InterpolationScheme interpolation_scheme>
