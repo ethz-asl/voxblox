@@ -82,6 +82,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
         GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
             kv.first, voxel_index, voxels_per_side_);
         open_.push(global_index, esdf_voxel.distance);
+        updated_blocks_.insert(kv.first);
       }
     }
   }

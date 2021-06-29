@@ -140,6 +140,9 @@ class EsdfIntegrator {
     open_.clear();
     raise_ = AlignedQueue<GlobalIndex>();
   }
+  bool blockQueuedForUpdate(const BlockIndex& block_index) const {
+    return updated_blocks_.count(block_index);
+  }
   /// Update some specific settings.
   float getEsdfMaxDistance() const { return config_.max_distance_m; }
   void setEsdfMaxDistance(float max_distance) {

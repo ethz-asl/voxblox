@@ -275,14 +275,14 @@ void EsdfServer::pruneMap() {
   esdf_map_->getEsdfLayerPtr()->getAllAllocatedBlocks(&esdf_blocks_);
   for (const BlockIndex& esdf_block_index : esdf_blocks_) {
     if (!tsdf_map_->getTsdfLayer().hasBlock(esdf_block_index)) {
-      ++num_pruned_blocks;
-      esdf_map_->getEsdfLayerPtr()->removeBlock(esdf_block_index);
+      // Avoid pruning blocks that are already queued to be updated
+      // NOTE: This is mainly important when using clear spheres for planning
+      if (!esdf_integrator_->blockQueuedForUpdate(esdf_block_index)) {
+        ++num_pruned_blocks;
+        esdf_map_->getEsdfLayerPtr()->removeBlock(esdf_block_index);
+      }
     }
   }
-
-  // Reset the ESDF integrator's internal queues, as they might contain
-  // indices of blocks that no longer exist after pruning
-  esdf_integrator_->clear();
 
   ROS_INFO_STREAM_COND(verbose_,
                        "Pruned " << num_pruned_blocks << " ESDF blocks");
