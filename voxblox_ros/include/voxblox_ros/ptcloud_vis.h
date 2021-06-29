@@ -240,6 +240,19 @@ inline bool visualizeDistanceIntensityTsdfVoxelsSlice(
   return false;
 }
 
+inline bool visualizeWeightIntensityTsdfVoxelsSlice(
+    const TsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
+    FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
+  CHECK_NOTNULL(intensity);
+
+  if (std::abs(coord(free_plane_index) - free_plane_val) <=
+      (voxel_size / 2.0 + kFloatEpsilon)) {
+      *intensity = voxel.weight;
+      return true;
+  }
+  return false;
+}
+
 inline bool visualizeDistanceIntensityEsdfVoxels(const EsdfVoxel& voxel,
                                                  const Point& /*coord*/,
                                                  double* intensity) {
@@ -405,6 +418,25 @@ inline void createDistancePointcloudFromTsdfLayerSlice(
   createColorPointcloudFromLayer<TsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityTsdfVoxelsSlice, ph::_1, ph::_2,
+                free_plane_index, free_plane_val, layer.voxel_size(), ph::_3),
+      pointcloud);
+}
+
+inline void createWeightPointcloudFromTsdfLayerSlice(
+    const Layer<TsdfVoxel>& layer, unsigned int free_plane_index,
+    FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
+  // Make sure that the free_plane_val doesn't fall evenly between 2 slices.
+  // Prefer to push it up.
+  // Using std::remainder rather than std::fmod as the latter has huge crippling
+  // issues with floating-point division.
+  if (std::remainder(free_plane_val, layer.voxel_size()) < kFloatEpsilon) {
+    free_plane_val += layer.voxel_size() / 2.0;
+  }
+
+  createColorPointcloudFromLayer<TsdfVoxel>(
+      layer,
+      std::bind(&visualizeWeightIntensityTsdfVoxelsSlice, ph::_1, ph::_2,
                 free_plane_index, free_plane_val, layer.voxel_size(), ph::_3),
       pointcloud);
 }

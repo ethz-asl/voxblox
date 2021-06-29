@@ -282,11 +282,23 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
     return;
   }
 
-  // Store the updated voxel weight and distance
-  tsdf_voxel->distance = (tsdf_voxel->distance * tsdf_voxel->weight +
-                          std::min(config_.default_truncation_distance, sdf) *
-                              observation_weight) /
-                         new_voxel_weight;
+  // Store the new voxel distance
+  const FloatingPoint new_voxel_distance =
+      (tsdf_voxel->distance * tsdf_voxel->weight +
+       std::min(config_.default_truncation_distance, sdf) *
+           observation_weight) /
+      new_voxel_weight;
+  // NOTE: The integration and deintegration steps are theoretically reversible,
+  //       but non-linearities in the implementation (e.g. weight clamped to
+  //       [0, max_weight], or even dropped distant blocks), and numerical
+  //       errors (e.g. limited precision during the new_voxel_distance
+  //       computation) can make make it grow beyond the truncation distance.
+  //       We therefore explicitly clamp the distance.
+  tsdf_voxel->distance = std::min(
+      std::max(new_voxel_distance, -config_.default_truncation_distance),
+      config_.default_truncation_distance);
+
+  // Store the new weight
   tsdf_voxel->weight = std::min(new_voxel_weight, config_.max_weight);
 }
 
