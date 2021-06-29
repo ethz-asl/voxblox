@@ -105,7 +105,6 @@ class EsdfServer : public TsdfServer {
   std::unique_ptr<EsdfIntegrator> esdf_integrator_;
 
   // TODO(victorr): Add description
-  bool map_has_been_pruned_;
   void pruneMap() override;
 };
 
