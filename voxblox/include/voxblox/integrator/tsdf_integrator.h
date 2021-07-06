@@ -102,6 +102,8 @@ class TsdfIntegratorBase {
 
   TsdfIntegratorBase(const Config& config, Layer<TsdfVoxel>* layer);
 
+  virtual TsdfIntegratorType getType() = 0;
+
   /**
    * Integrates the given point infomation into the TSDF.
    * NOT thread safe.
@@ -232,6 +234,8 @@ class SimpleTsdfIntegrator : public TsdfIntegratorBase {
   SimpleTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
 
+  TsdfIntegratorType getType() override { return TsdfIntegratorType::kSimple; }
+
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
                            const bool freespace_points = false,
@@ -254,6 +258,8 @@ class MergedTsdfIntegrator : public TsdfIntegratorBase {
 
   MergedTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
+
+  TsdfIntegratorType getType() override { return TsdfIntegratorType::kMerged; }
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
@@ -306,6 +312,8 @@ class FastTsdfIntegrator : public TsdfIntegratorBase {
 
   FastTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* layer)
       : TsdfIntegratorBase(config, layer) {}
+
+  TsdfIntegratorType getType() override { return TsdfIntegratorType::kFast; }
 
   void integrateFunction(const Transformation& T_G_C,
                          const Pointcloud& points_C, const Colors& colors,

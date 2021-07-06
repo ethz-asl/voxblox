@@ -1,6 +1,8 @@
 #ifndef VOXBLOX_ROS_ROS_PARAMS_H_
 #define VOXBLOX_ROS_ROS_PARAMS_H_
 
+#include <string>
+
 #include <ros/node_handle.h>
 
 #include <voxblox/alignment/icp.h>
@@ -193,6 +195,35 @@ inline MeshIntegratorConfig getMeshIntegratorConfigFromRosParam(
                    mesh_integrator_config.use_color);
 
   return mesh_integrator_config;
+}
+
+template <typename RosParamType, typename DestinationParamType>
+bool getParamIfSetAndValid(
+    const ros::NodeHandle& nh_private, const std::string& ros_param_name,
+    std::function<bool(RosParamType ros_param)> validator_func,
+    DestinationParamType* destination_param,
+    const std::string& validator_requirement_msg = "") {
+  RosParamType ros_param;
+  if (nh_private.getParam(ros_param_name, ros_param)) {
+    if (validator_func(ros_param)) {
+      destination_param->operator=(ros_param);
+      return true;
+    } else {
+      if (validator_requirement_msg.empty()) {
+        ROS_WARN_STREAM("Ignoring param \""
+                        << ros_param_name
+                        << "\" since it was set to invalid value:  "
+                        << ros_param);
+      } else {
+        ROS_WARN_STREAM("Ignoring param \""
+                        << ros_param_name << "\" since it must be "
+                        << validator_requirement_msg
+                        << " but was set to: " << ros_param);
+      }
+    }
+  }
+
+  return false;
 }
 
 }  // namespace voxblox

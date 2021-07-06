@@ -29,6 +29,7 @@
 
 #include "voxblox_ros/mesh_vis.h"
 #include "voxblox_ros/ptcloud_vis.h"
+#include "voxblox_ros/threshold.h"
 #include "voxblox_ros/transformer.h"
 
 namespace voxblox {
@@ -109,7 +110,6 @@ class TsdfServer {
 
   void updateMeshEvent(const ros::TimerEvent& event);
   void publishMapEvent(const ros::TimerEvent& event);
-  void publishSubmapEvent(const ros::TimerEvent& event);
 
   std::shared_ptr<TsdfMap> getTsdfMapPtr() { return tsdf_map_; }
   std::shared_ptr<const TsdfMap> getTsdfMapPtr() const { return tsdf_map_; }
@@ -273,7 +273,27 @@ class TsdfServer {
   std::queue<sensor_msgs::PointCloud2::Ptr> pointcloud_queue_;
   std::queue<sensor_msgs::PointCloud2::Ptr> freespace_pointcloud_queue_;
 
-  // TODO(victorr): Add description
+  // Optionally publish the map as submaps for use in submap-based
+  // SLAM and/or path planning systems such as cblox, voxgraph, or GLocal
+  Threshold<FloatingPoint> submap_max_time_interval_;
+  Threshold<FloatingPoint> submap_max_distance_travelled_;
+  ros::Time last_published_submap_timestamp_;
+  Point last_published_submap_position_;
+  bool submappingEnabled() const {
+    return submap_max_time_interval_.isSet() ||
+           submap_max_distance_travelled_.isSet();
+  }
+  bool shouldCreateNewSubmap(const ros::Time& current_timestamp,
+                             const Transformation& current_T_G_C);
+  void createNewSubmap(const ros::Time& current_timestamp,
+                       const Transformation& current_T_G_C);
+
+  // Optionally build and incrementally update a sliding window local map by
+  // not only integrating pointclouds but also removing them again once their
+  // age and/or distance to the robot exceeds a given threshold.
+  // NOTE: This can also be used to create submap collections with arbitrary
+  //       amounts of overlap, while only having to integrating and
+  //       deintegrating each pointcloud once.
   struct PointcloudDeintegrationPacket {
     const ros::Time timestamp;
     const Transformation T_G_C;
@@ -281,12 +301,20 @@ class TsdfServer {
     std::shared_ptr<const Colors> colors;
     const bool is_freespace_pointcloud;
   };
-  size_t pointcloud_deintegration_queue_length_;
   std::deque<PointcloudDeintegrationPacket> pointcloud_deintegration_queue_;
+  Threshold<size_t> pointcloud_deintegration_max_queue_length_;
+  Threshold<FloatingPoint> pointcloud_deintegration_max_time_interval_;
+  Threshold<FloatingPoint> pointcloud_deintegration_max_distance_travelled_;
+  bool pointcloudDeintegrationEnabled() const {
+    return (pointcloud_deintegration_max_queue_length_.isSet() ||
+            pointcloud_deintegration_max_time_interval_.isSet() ||
+            pointcloud_deintegration_max_distance_travelled_.isSet());
+  }
+
+  // Remove blocks that no longer contain any observed voxels
   const size_t num_voxels_per_block_;
   bool map_needs_pruning_;
   virtual void pruneMap();
-  bool clear_map_after_submap_publish_;
 
   // Last message times for throttling input.
   ros::Time last_msg_time_ptcloud_;

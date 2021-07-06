@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_H_
-#define VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_H_
+#ifndef VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_H_
+#define VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_H_
 
 #include <vector>
 
@@ -18,6 +18,10 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
  public:
   ProjectiveTsdfIntegrator(const Config& config,
                            voxblox::Layer<voxblox::TsdfVoxel>* layer);
+
+  TsdfIntegratorType getType() override {
+    return TsdfIntegratorType::kProjective;
+  }
 
   void integratePointCloud(const Transformation& T_G_C,
                            const Pointcloud& points_C, const Colors& colors,
@@ -66,4 +70,4 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
 
 #include "voxblox/integrator/projective_tsdf_integrator_inl.h"
 
-#endif  // VOXBLOX_INCLUDE_VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_H_
+#endif  // VOXBLOX_INTEGRATOR_PROJECTIVE_TSDF_INTEGRATOR_H_

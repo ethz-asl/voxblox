@@ -44,12 +44,12 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       pointcloud_queue_size_(1),
       num_subscribers_tsdf_map_(0),
       transformer_(nh, nh_private),
-      pointcloud_deintegration_queue_length_(0),
+      last_published_submap_timestamp_(0),
+      last_published_submap_position_(Point::Constant(NAN)),
       num_voxels_per_block_(config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side),
-      map_needs_pruning_(false),
-      clear_map_after_submap_publish_(false) {
+      map_needs_pruning_(false) {
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
@@ -116,6 +116,21 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   icp_.reset(new ICP(getICPConfigFromRosParam(nh_private)));
 
+  // Disable deintegration if the chosen TSDF integrator does not support it
+  if (pointcloudDeintegrationEnabled() &&
+      tsdf_integrator_->getType() != TsdfIntegratorType::kProjective) {
+    ROS_ERROR_STREAM(
+        "Pointcloud deintegration is enabled, but not supported by the "
+        "chosen TSDF integration method.\n"
+        "Please use method: \"projective\" or do not set "
+        "pointcloud_deintegration_max_queue_length, "
+        "pointcloud_deintegration_max_time_interval and "
+        "pointcloud_deintegration_max_distance_travelled.");
+    pointcloud_deintegration_max_queue_length_.unset();
+    pointcloud_deintegration_max_time_interval_.unset();
+    pointcloud_deintegration_max_distance_travelled_.unset();
+  }
+
   // Advertise services.
   generate_mesh_srv_ = nh_private_.advertiseService(
       "generate_mesh", &TsdfServer::generateMeshCallback, this);
@@ -149,18 +164,6 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
         nh_private_.createTimer(ros::Duration(publish_map_every_n_sec),
                                 &TsdfServer::publishMapEvent, this);
   }
-
-  double publish_submap_every_n_sec = -1.0;
-  nh_private_.param("publish_submap_every_n_sec", publish_submap_every_n_sec,
-                    publish_submap_every_n_sec);
-  if (publish_submap_every_n_sec > 0.0) {
-    publish_submap_timer_ =
-        nh_private_.createTimer(ros::Duration(publish_submap_every_n_sec),
-                                &TsdfServer::publishSubmapEvent, this);
-  }
-  nh_private_.param("clear_map_after_submap_publish",
-                    clear_map_after_submap_publish_,
-                    clear_map_after_submap_publish_);
 }
 
 void TsdfServer::getServerConfigFromRosParam(
@@ -197,15 +200,29 @@ void TsdfServer::getServerConfigFromRosParam(
 
   nh_private.param("verbose", verbose_, verbose_);
 
+  // Submap creation settings
+  getParamIfSetAndValid<float>(
+      nh_private_, "submap_max_time_interval",
+      [](float ros_param) { return 0.f < ros_param; },
+      &submap_max_time_interval_, "positive");
+  getParamIfSetAndValid<float>(
+      nh_private_, "submap_max_distance_travelled",
+      [](float ros_param) { return 0.f < ros_param; },
+      &submap_max_distance_travelled_, "positive");
+
   // Pointcloud deintegration settings
-  {
-    int pointcloud_deintegration_queue_length_int;
-    if (nh_private.getParam("pointcloud_deintegration_queue_length",
-                            pointcloud_deintegration_queue_length_int)) {
-      pointcloud_deintegration_queue_length_ =
-          pointcloud_deintegration_queue_length_int;
-    }
-  }
+  getParamIfSetAndValid<int>(
+      nh_private_, "pointcloud_deintegration_max_queue_length",
+      [](int ros_param) { return 0 < ros_param; },
+      &pointcloud_deintegration_max_queue_length_, "positive");
+  getParamIfSetAndValid<float>(
+      nh_private_, "pointcloud_deintegration_max_time_interval",
+      [](float ros_param) { return 0.f < ros_param; },
+      &pointcloud_deintegration_max_time_interval_, "positive");
+  getParamIfSetAndValid<float>(
+      nh_private_, "pointcloud_deintegration_max_distance_travelled",
+      [](float ros_param) { return 0.f < ros_param; },
+      &pointcloud_deintegration_max_distance_travelled_, "positive");
 
   // Mesh settings.
   nh_private.param("mesh_filename", mesh_filename_, mesh_filename_);
@@ -361,8 +378,8 @@ void TsdfServer::processPointCloudMessageAndInsert(
     }
   }
 
-  // Deintegrate the pointcloud that's leaving the sliding window
-  if (pointcloud_deintegration_queue_length_ > 0) {
+  // Deintegrate the pointclouds that leave the sliding window
+  if (pointcloudDeintegrationEnabled()) {
     ros::WallTime start_deintegration = ros::WallTime::now();
     servicePointcloudDeintegrationQueue();
     ros::WallTime end_deintegration = ros::WallTime::now();
@@ -378,6 +395,12 @@ void TsdfServer::processPointCloudMessageAndInsert(
   mesh_layer_->clearDistantMesh(T_G_C.getPosition(),
                                 max_block_distance_from_body_);
   block_remove_timer.Stop();
+
+  // Publish the old submap and continue with a new one if appropriate
+  if (shouldCreateNewSubmap(pointcloud_msg->header.stamp, T_G_C)) {
+    publishSubmap();
+    createNewSubmap(pointcloud_msg->header.stamp, T_G_C);
+  }
 
   // Callback for inheriting classes.
   newPoseCallback(T_G_C);
@@ -473,7 +496,7 @@ void TsdfServer::integratePointcloud(
   tsdf_integrator_->integratePointCloud(T_G_C, *ptcloud_C, *colors,
                                         is_freespace_pointcloud);
 
-  if (pointcloud_deintegration_queue_length_ > 0) {
+  if (pointcloudDeintegrationEnabled()) {
     pointcloud_deintegration_queue_.emplace_back(PointcloudDeintegrationPacket{
         timestamp, T_G_C, ptcloud_C, colors, is_freespace_pointcloud});
   }
@@ -489,10 +512,35 @@ void TsdfServer::integratePointcloud(const Transformation& T_G_C,
 }
 
 void TsdfServer::servicePointcloudDeintegrationQueue() {
-  while (pointcloud_deintegration_queue_length_ <
-         pointcloud_deintegration_queue_.size()) {
+  while (1u < pointcloud_deintegration_queue_.size()) {
     const PointcloudDeintegrationPacket& oldest_pointcloud_packet =
         pointcloud_deintegration_queue_.front();
+    const PointcloudDeintegrationPacket& newest_pointcloud_packet =
+        pointcloud_deintegration_queue_.back();
+
+    const bool queue_length_exceeded =
+        pointcloud_deintegration_max_queue_length_.isSetAndLT(
+            pointcloud_deintegration_queue_.size());
+    const ros::Duration time_elapsed =
+        newest_pointcloud_packet.timestamp - oldest_pointcloud_packet.timestamp;
+    const bool time_threshold_exceeded =
+        pointcloud_deintegration_max_time_interval_.isSetAndLT(
+            time_elapsed.toSec());
+    const FloatingPoint distance_travelled =
+        (newest_pointcloud_packet.T_G_C.getPosition() -
+         oldest_pointcloud_packet.T_G_C.getPosition())
+            .norm();
+    const bool distance_threshold_exceeded =
+        pointcloud_deintegration_max_distance_travelled_.isSetAndLT(
+            distance_travelled);
+
+    const bool should_deintegrate_pointcloud = queue_length_exceeded ||
+                                               time_threshold_exceeded ||
+                                               distance_threshold_exceeded;
+    if (!should_deintegrate_pointcloud) {
+      break;
+    }
+
     if (verbose_) {
       ROS_INFO("Deintegrating a pointcloud with %lu points.",
                oldest_pointcloud_packet.ptcloud_C->size());
@@ -632,6 +680,7 @@ void TsdfServer::publishMap(bool reset_remote_map) {
 }
 
 void TsdfServer::publishSubmap() {
+  // Publish the submap if anyone is listening
   if (0 < this->submap_pub_.getNumSubscribers()) {
     voxblox_msgs::Submap submap_msg;
     submap_msg.robot_name = robot_name_;
@@ -647,10 +696,6 @@ void TsdfServer::publishSubmap() {
       submap_msg.trajectory.poses.emplace_back(pose_msg);
     }
     this->submap_pub_.publish(submap_msg);
-  }
-
-  if (clear_map_after_submap_publish_) {
-    clear();
   }
 }
 
@@ -804,13 +849,10 @@ void TsdfServer::publishMapEvent(const ros::TimerEvent& /*event*/) {
   publishMap();
 }
 
-void TsdfServer::publishSubmapEvent(const ros::TimerEvent& /* event */) {
-  publishSubmap();
-}
-
 void TsdfServer::clear() {
   tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
   mesh_layer_->clear();
+  pointcloud_deintegration_queue_.clear();
 
   // Publish a message to reset the map to all subscribers.
   if (publish_tsdf_map_) {
@@ -833,6 +875,47 @@ void TsdfServer::tsdfMapCallback(const voxblox_msgs::Layer& layer_msg) {
       publishPointclouds();
     }
   }
+}
+
+bool TsdfServer::shouldCreateNewSubmap(const ros::Time& current_timestamp,
+                                       const Transformation& current_T_G_C) {
+  // Return early if submapping is disabled
+  if (!submappingEnabled()) {
+    return false;
+  }
+
+  // If this is the first time, initialize
+  if (last_published_submap_timestamp_.isZero() ||
+      last_published_submap_position_.array().isNaN().any()) {
+    last_published_submap_timestamp_ = current_timestamp;
+    last_published_submap_position_ = current_T_G_C.getPosition();
+    return false;
+  }
+
+  // Check the time and distance thresholds
+  const ros::Duration time_elapsed =
+      current_timestamp - last_published_submap_timestamp_;
+  const bool time_threshold_exceeded =
+      submap_max_time_interval_.isSetAndLT(time_elapsed.toSec());
+
+  const FloatingPoint distance_travelled =
+      (current_T_G_C.getPosition() - last_published_submap_position_).norm();
+  const bool distance_threshold_exceeded =
+      submap_max_distance_travelled_.isSetAndLT(distance_travelled);
+
+  return time_threshold_exceeded || distance_threshold_exceeded;
+}
+
+void TsdfServer::createNewSubmap(const ros::Time& current_timestamp,
+                                 const Transformation& current_T_G_C) {
+  // Reset the map, unless (smooth) pointcloud deintegration is used instead
+  if (!pointcloudDeintegrationEnabled()) {
+    clear();
+  }
+
+  // Bookkeeping
+  last_published_submap_timestamp_ = current_timestamp;
+  last_published_submap_position_ = current_T_G_C.getPosition();
 }
 
 }  // namespace voxblox
