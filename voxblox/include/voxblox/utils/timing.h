@@ -139,12 +139,16 @@ class Timer {
 
   void Start();
   void Stop();
+  void Pause();
+  void Unpause();
   bool IsTiming() const;
 
  private:
   std::chrono::time_point<std::chrono::system_clock> time_;
 
   bool timing_;
+  bool paused_ = false;
+  double accumulated_time_ = 0.0;
   size_t handle_;
 };
 
