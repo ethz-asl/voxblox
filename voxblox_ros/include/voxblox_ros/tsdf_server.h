@@ -286,6 +286,7 @@ class TsdfServer {
   const size_t num_voxels_per_block_;
   bool map_needs_pruning_;
   virtual void pruneMap();
+  bool clear_map_after_submap_publish_;
 
   // Last message times for throttling input.
   ros::Time last_msg_time_ptcloud_;

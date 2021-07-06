@@ -48,7 +48,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       num_voxels_per_block_(config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side),
-      map_needs_pruning_(false) {
+      map_needs_pruning_(false),
+      clear_map_after_submap_publish_(false) {
   getServerConfigFromRosParam(nh_private);
 
   // Advertise topics.
@@ -157,6 +158,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
         nh_private_.createTimer(ros::Duration(publish_submap_every_n_sec),
                                 &TsdfServer::publishSubmapEvent, this);
   }
+  nh_private_.param("clear_map_after_submap_publish",
+                    clear_map_after_submap_publish_,
+                    clear_map_after_submap_publish_);
 }
 
 void TsdfServer::getServerConfigFromRosParam(
@@ -643,6 +647,10 @@ void TsdfServer::publishSubmap() {
       submap_msg.trajectory.poses.emplace_back(pose_msg);
     }
     this->submap_pub_.publish(submap_msg);
+  }
+
+  if (clear_map_after_submap_publish_) {
+    clear();
   }
 }
 
