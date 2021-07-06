@@ -496,7 +496,7 @@ void TsdfServer::integratePointcloud(
   tsdf_integrator_->integratePointCloud(T_G_C, *ptcloud_C, *colors,
                                         is_freespace_pointcloud);
 
-  if (pointcloudDeintegrationEnabled()) {
+  if (pointcloudDeintegrationEnabled() || submappingEnabled()) {
     pointcloud_deintegration_queue_.emplace_back(PointcloudDeintegrationPacket{
         timestamp, T_G_C, ptcloud_C, colors, is_freespace_pointcloud});
   }
