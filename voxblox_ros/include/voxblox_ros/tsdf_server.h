@@ -162,6 +162,7 @@ class TsdfServer {
   /// Publish the complete map for other nodes to consume.
   ros::Publisher tsdf_map_pub_;
   ros::Publisher submap_pub_;
+  ros::Publisher new_submap_notification_pub_;
 
   /// Subscriber to subscribe to another node generating the map.
   ros::Subscriber tsdf_map_sub_;
@@ -287,6 +288,9 @@ class TsdfServer {
                              const Transformation& current_T_G_C);
   void createNewSubmap(const ros::Time& current_timestamp,
                        const Transformation& current_T_G_C);
+  int published_submap_counter_;
+  bool write_submaps_to_disk_;
+  std::string submap_root_directory_;
 
   // Optionally build and incrementally update a sliding window local map by
   // not only integrating pointclouds but also removing them again once their
@@ -322,6 +326,10 @@ class TsdfServer {
 
   /// Current transform corrections from ICP.
   Transformation icp_corrected_transform_;
+
+  // File system helpers
+  bool hasOnlyAsciiCharacters(const std::string& string_to_test);
+  bool createPath(const std::string& path_to_create_input);
 };
 
 }  // namespace voxblox

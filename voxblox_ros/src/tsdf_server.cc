@@ -3,6 +3,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
+#include <std_msgs/String.h>
 #include <voxblox/integrator/projective_tsdf_integrator.h>
 #include <voxblox_msgs/Submap.h>
 
@@ -46,6 +47,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       transformer_(nh, nh_private),
       last_published_submap_timestamp_(0),
       last_published_submap_position_(Point::Constant(NAN)),
+      published_submap_counter_(0),
+      write_submaps_to_disk_(false),
       num_voxels_per_block_(config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side),
@@ -80,6 +83,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       nh_private_.advertise<voxblox_msgs::Layer>("tsdf_map_out", 1, false);
   submap_pub_ =
       nh_private_.advertise<voxblox_msgs::Submap>("submap_out", 1, false);
+  new_submap_notification_pub_ = nh_private_.advertise<std_msgs::String>(
+      "new_submap_written_to_disk", 1000, false);
   tsdf_map_sub_ = nh_private_.subscribe("tsdf_map_in", 1,
                                         &TsdfServer::tsdfMapCallback, this);
   nh_private_.param("publish_tsdf_map", publish_tsdf_map_, publish_tsdf_map_);
@@ -209,6 +214,40 @@ void TsdfServer::getServerConfigFromRosParam(
       nh_private_, "submap_max_distance_travelled",
       [](float ros_param) { return 0.f < ros_param; },
       &submap_max_distance_travelled_, "positive");
+  nh_private.param("write_submaps_to_disk", write_submaps_to_disk_,
+                   write_submaps_to_disk_);
+  nh_private.param("submap_root_directory", submap_root_directory_,
+                   submap_root_directory_);
+  // Check and sanitize the submap_root_directory path
+  if (submap_root_directory_.empty()) {
+    if (write_submaps_to_disk_) {
+      ROS_ERROR(
+          "If \"write_submaps_to_disk\" is set to True, "
+          "\"submap_root_directory\" must be set to a non-empty path. "
+          "Otherwise, submaps will not be written to disk.");
+      write_submaps_to_disk_ = false;
+    }
+  } else {
+    // Remove the trailing slash if present
+    if (submap_root_directory_.back() == '/') {
+      submap_root_directory_.pop_back();
+    }
+    // Check if the provided path is absolute
+    if (submap_root_directory_.front() != '/') {
+      ROS_ERROR(
+          "Param \"submap_root_directory\" must correspond to an "
+          "absolute path. Otherwise, submaps will not be written to disk.");
+      write_submaps_to_disk_ = false;
+    }
+    // Check if the provided path contains no invalid characters
+    if (!hasOnlyAsciiCharacters(submap_root_directory_)) {
+      ROS_ERROR(
+          "Param \"submap_root_directory\" must correspond to a valid path "
+          "which only contains ASCII characters. Otherwise, submaps will not "
+          "be written to disk.");
+      write_submaps_to_disk_ = false;
+    }
+  }
 
   // Pointcloud deintegration settings
   getParamIfSetAndValid<int>(
@@ -680,6 +719,8 @@ void TsdfServer::publishMap(bool reset_remote_map) {
 }
 
 void TsdfServer::publishSubmap() {
+  ++published_submap_counter_;
+
   // Publish the submap if anyone is listening
   if (0 < this->submap_pub_.getNumSubscribers()) {
     voxblox_msgs::Submap submap_msg;
@@ -696,6 +737,32 @@ void TsdfServer::publishSubmap() {
       submap_msg.trajectory.poses.emplace_back(pose_msg);
     }
     this->submap_pub_.publish(submap_msg);
+  }
+
+  // Save the submap to disk if enabled
+  // NOTE: If the submap_root_directory_ directory contains leftover submap
+  //       folders from a previous mission, the code below will overwrite their
+  //       voxblox_submap_*/submap.tsdf files one after the other.
+  if (write_submaps_to_disk_) {
+    // Create the submap directory
+    const std::string absolute_subfolder_path =
+        submap_root_directory_ + "/voxblox_submap_" +
+        std::to_string(published_submap_counter_);
+    createPath(absolute_subfolder_path);
+
+    // Save the submap to disk
+    const std::string absolute_file_path =
+        absolute_subfolder_path + "/submap.tsdf";
+    if (saveMap(absolute_file_path)) {
+      // Notify other nodes that the new submap is now available on disk
+      std_msgs::String new_submap_path;
+      new_submap_path.data = absolute_subfolder_path;
+      new_submap_notification_pub_.publish(new_submap_path);
+    } else {
+      ROS_ERROR_STREAM("Could not write submap "
+                       << published_submap_counter_ << " to path \""
+                       << absolute_file_path << "\".");
+    }
   }
 }
 
@@ -916,6 +983,59 @@ void TsdfServer::createNewSubmap(const ros::Time& current_timestamp,
   // Bookkeeping
   last_published_submap_timestamp_ = current_timestamp;
   last_published_submap_position_ = current_T_G_C.getPosition();
+}
+
+bool TsdfServer::hasOnlyAsciiCharacters(const std::string& string_to_test) {
+  constexpr char kUpperAsciiBound = '~';
+  constexpr char kLowerAsciiBound = ' ';
+  for (const char& character : string_to_test) {
+    if (character > kUpperAsciiBound || character < kLowerAsciiBound) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TsdfServer::createPath(const std::string& path_to_create_input) {
+  constexpr mode_t kMode = 0777;
+
+  CHECK(!path_to_create_input.empty()) << "Cannot create empty path!";
+
+  // Append slash if necessary to make sure that stepping through the folders
+  // works.
+  std::string path_to_create = path_to_create_input;
+  if (path_to_create.back() != '/') {
+    path_to_create += '/';
+  }
+
+  // Loop over the path and create one folder after another.
+  size_t current_position = 0u;
+  size_t previous_position = 0u;
+  std::string current_directory;
+  while ((current_position = path_to_create.find_first_of(
+              '/', previous_position)) != std::string::npos) {
+    current_directory = path_to_create.substr(0, current_position++);
+    previous_position = current_position;
+
+    if (current_directory == "." || current_directory.empty()) {
+      continue;
+    }
+
+    if (!hasOnlyAsciiCharacters(current_directory)) {
+      LOG(ERROR) << "The directory '" << current_directory
+                 << "' contains non-ASCII characters! Cannot create path: '"
+                 << path_to_create_input << "'!";
+      return false;
+    }
+
+    int make_dir_status = 0;
+    if ((make_dir_status = mkdir(current_directory.c_str(), kMode)) &&
+        errno != EEXIST) {
+      VLOG(2) << "Unable to make path! Error: " << strerror(errno);
+      return make_dir_status == 0;
+    }
+  }
+  return true;
 }
 
 }  // namespace voxblox
