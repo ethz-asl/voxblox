@@ -13,7 +13,8 @@ add_definitions(-std=c++14 -Wall -Wextra -Wno-deprecated-copy)
 # General idea: first check if we have protobuf catkin, then use that.
 # Otherwise use system protobuf.
 set(PROTO_DEFNS proto/voxblox/Block.proto
-                proto/voxblox/Layer.proto)
+                proto/voxblox/Layer.proto
+                proto/voxblox/Trajectory.proto)
 set(BASE_PATH "proto")
 set(PROTOBUF_COMPILE_PYTHON true)
 

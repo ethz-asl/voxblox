@@ -291,6 +291,8 @@ class TsdfServer {
   int published_submap_counter_;
   bool write_submaps_to_disk_;
   std::string submap_root_directory_;
+  bool saveSubmap(const std::string& submap_folder_path);
+  bool saveTrajectory(const std::string& file_path);
 
   // Optionally build and incrementally update a sliding window local map by
   // not only integrating pointclouds but also removing them again once their
@@ -328,8 +330,8 @@ class TsdfServer {
   Transformation icp_corrected_transform_;
 
   // File system helpers
-  bool hasOnlyAsciiCharacters(const std::string& string_to_test);
-  bool createPath(const std::string& path_to_create_input);
+  static bool hasOnlyAsciiCharacters(const std::string& string_to_test);
+  static bool createPath(const std::string& path_to_create_input);
 };
 
 }  // namespace voxblox

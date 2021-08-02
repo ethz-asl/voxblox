@@ -4,6 +4,7 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <std_msgs/String.h>
+#include <voxblox/Trajectory.pb.h>
 #include <voxblox/integrator/projective_tsdf_integrator.h>
 #include <voxblox_msgs/Submap.h>
 
@@ -744,26 +745,89 @@ void TsdfServer::publishSubmap() {
   //       folders from a previous mission, the code below will overwrite their
   //       voxblox_submap_*/submap.tsdf files one after the other.
   if (write_submaps_to_disk_) {
-    // Create the submap directory
-    const std::string absolute_subfolder_path =
+    // Save the submap to disk
+    const std::string submap_folder_path =
         submap_root_directory_ + "/voxblox_submap_" +
         std::to_string(published_submap_counter_);
-    createPath(absolute_subfolder_path);
-
-    // Save the submap to disk
-    const std::string absolute_file_path =
-        absolute_subfolder_path + "/submap.tsdf";
-    if (saveMap(absolute_file_path)) {
+    if (saveSubmap(submap_folder_path)) {
       // Notify other nodes that the new submap is now available on disk
       std_msgs::String new_submap_path;
-      new_submap_path.data = absolute_subfolder_path;
+      new_submap_path.data = submap_folder_path;
       new_submap_notification_pub_.publish(new_submap_path);
     } else {
       ROS_ERROR_STREAM("Could not write submap "
-                       << published_submap_counter_ << " to path \""
-                       << absolute_file_path << "\".");
+                       << published_submap_counter_ << " to directory \""
+                       << submap_folder_path << "\".");
     }
   }
+}
+
+bool TsdfServer::saveSubmap(const std::string& submap_folder_path) {
+  // Create the submap directory
+  if (!createPath(submap_folder_path)) {
+    ROS_ERROR_STREAM("Failed to create submap directory \""
+                     << submap_folder_path << "\".");
+    return false;
+  }
+
+  // Save the TSDF
+  const std::string volumetric_map_file_path =
+      submap_folder_path + "/volumetric_map.tsdf";
+  if (!saveMap(volumetric_map_file_path)) {
+    ROS_ERROR_STREAM("Failed to write submap TSDF to file \""
+                     << volumetric_map_file_path << "\".");
+    return false;
+  }
+
+  // Save the trajectory
+  const std::string trajectory_file_path =
+      submap_folder_path + "/robot_trajectory.traj";
+  if (!saveTrajectory(trajectory_file_path)) {
+    ROS_ERROR_STREAM("Failed to write submap trajectory to file \""
+                     << trajectory_file_path << "\".");
+    return false;
+  }
+
+  return true;
+}
+
+bool TsdfServer::saveTrajectory(const std::string& file_path) {
+  // Create and open the file
+  const std::ios_base::openmode file_flags =
+      std::fstream::out | std::fstream::binary | std::fstream::trunc;
+  std::ofstream file_stream(file_path, file_flags);
+  if (!file_stream.is_open()) {
+    LOG(WARNING) << "Could not open file '" << file_path
+                 << "' to save the trajectory.";
+    return false;
+  }
+
+  TrajectoryProto trajectory_proto;
+  trajectory_proto.set_frame_id(world_frame_);
+  for (const PointcloudDeintegrationPacket& pointcloud_queue_packet :
+       pointcloud_deintegration_queue_) {
+    StampedPoseProto* stamped_pose_proto = trajectory_proto.add_stamped_poses();
+
+    const uint64_t timestamp = pointcloud_queue_packet.timestamp.toNSec();
+    stamped_pose_proto->set_stamp(timestamp);
+
+    const Transformation& pose = pointcloud_queue_packet.T_G_C;
+    PoseProto* pose_proto = stamped_pose_proto->mutable_pose();
+
+    const Point& position = pose.getPosition();
+    PositionProto* position_proto = pose_proto->mutable_position();
+    position_proto->set_x(position.x());
+    position_proto->set_y(position.y());
+    position_proto->set_z(position.z());
+
+    const Transformation::Rotation& orientation = pose.getRotation();
+    OrientationProto* orientation_proto = pose_proto->mutable_orientation();
+    orientation_proto->set_w(orientation.w());
+    orientation_proto->set_x(orientation.x());
+    orientation_proto->set_y(orientation.y());
+    orientation_proto->set_z(orientation.z());
+  }
+  return trajectory_proto.SerializeToOstream(&file_stream);
 }
 
 void TsdfServer::publishPointclouds() {

@@ -1,0 +1,30 @@
+syntax = "proto2";
+package voxblox;
+
+message PositionProto {
+  optional double x = 1;
+  optional double y = 2;
+  optional double z = 3;
+}
+
+message OrientationProto {
+  optional double w = 1;
+  optional double x = 2;
+  optional double y = 3;
+  optional double z = 4;
+}
+
+message PoseProto {
+  optional PositionProto position = 1;
+  optional OrientationProto orientation = 2;
+}
+
+message StampedPoseProto {
+  optional uint64 stamp = 1;
+  optional PoseProto pose = 2;
+}
+
+message TrajectoryProto {
+  optional string frame_id = 1;
+  repeated StampedPoseProto stamped_poses = 2;
+}
