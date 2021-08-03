@@ -785,19 +785,21 @@ bool TsdfServer::saveTrajectory(const std::string& file_path) {
       std::fstream::out | std::fstream::binary | std::fstream::trunc;
   std::ofstream file_stream(file_path, file_flags);
   if (!file_stream.is_open()) {
-    LOG(WARNING) << "Could not open file '" << file_path
-                 << "' to save the trajectory.";
+    ROS_WARN_STREAM("Could not open file '" << file_path
+                                            << "' to save the trajectory.");
     return false;
   }
 
+  // Write trajectory to file
   TrajectoryProto trajectory_proto;
+  trajectory_proto.set_robot_name(robot_name_);
   trajectory_proto.set_frame_id(world_frame_);
   for (const PointcloudDeintegrationPacket& pointcloud_queue_packet :
        pointcloud_deintegration_queue_) {
     StampedPoseProto* stamped_pose_proto = trajectory_proto.add_stamped_poses();
 
     const uint64_t timestamp = pointcloud_queue_packet.timestamp.toNSec();
-    stamped_pose_proto->set_stamp(timestamp);
+    stamped_pose_proto->set_timestamp(timestamp);
 
     const Transformation& pose = pointcloud_queue_packet.T_G_C;
     PoseProto* pose_proto = stamped_pose_proto->mutable_pose();
@@ -1075,16 +1077,18 @@ bool TsdfServer::createPath(const std::string& path_to_create_input) {
     }
 
     if (!hasOnlyAsciiCharacters(current_directory)) {
-      LOG(ERROR) << "The directory '" << current_directory
-                 << "' contains non-ASCII characters! Cannot create path: '"
-                 << path_to_create_input << "'!";
+      ROS_ERROR_STREAM(
+          "The directory '"
+          << current_directory
+          << "' contains non-ASCII characters! Cannot create path: '"
+          << path_to_create_input << "'!");
       return false;
     }
 
     int make_dir_status = 0;
     if ((make_dir_status = mkdir(current_directory.c_str(), kMode)) &&
         errno != EEXIST) {
-      VLOG(2) << "Unable to make path! Error: " << strerror(errno);
+      ROS_WARN_STREAM("Unable to make path! Error: " << strerror(errno));
       return make_dir_status == 0;
     }
   }

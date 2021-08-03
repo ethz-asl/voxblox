@@ -17,6 +17,7 @@ cs_add_library(${PROJECT_NAME}
   src/transformer.cc
   src/tsdf_server.cc
   src/simple_tsdf_visualizer.cc
+  src/submap_republisher.cc
 )
 
 ############
@@ -52,6 +53,11 @@ cs_add_executable(visualize_tsdf
   src/visualize_tsdf.cc
 )
 target_link_libraries(visualize_tsdf ${PROJECT_NAME})
+
+cs_add_executable(submap_republisher
+    src/submap_republisher_node.cc
+)
+target_link_libraries(submap_republisher ${PROJECT_NAME})
 
 ##########
 # EXPORT #
