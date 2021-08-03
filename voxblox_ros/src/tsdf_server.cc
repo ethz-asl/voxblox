@@ -733,10 +733,15 @@ void TsdfServer::publishSubmap() {
   //       files they contain and do so one by one (i.e. at the rate at which
   //       the new submaps are finished, not all at once).
   if (!write_submaps_to_directory_.empty()) {
+    // Generate the submap folder name
+    constexpr int kIdNumDigits = 5;
+    const std::string submap_id_str = std::to_string(submap_counter_);
+    const std::string padded_submap_id_str =
+        std::string(kIdNumDigits - submap_id_str.length(), '0') + submap_id_str;
+    const std::string submap_folder_path =
+        write_submaps_to_directory_ + "/voxblox_submap_" + padded_submap_id_str;
+
     // Save the submap to disk
-    const std::string submap_folder_path = write_submaps_to_directory_ +
-                                           "/voxblox_submap_" +
-                                           std::to_string(submap_counter_);
     if (saveSubmap(submap_folder_path)) {
       // Notify other nodes that the new submap is now available on disk
       std_msgs::String new_submap_path;
