@@ -46,10 +46,9 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       pointcloud_queue_size_(1),
       num_subscribers_tsdf_map_(0),
       transformer_(nh, nh_private),
+      submap_counter_(0),
       last_published_submap_timestamp_(0),
       last_published_submap_position_(Point::Constant(NAN)),
-      published_submap_counter_(0),
-      write_submaps_to_disk_(false),
       num_voxels_per_block_(config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side),
@@ -215,38 +214,28 @@ void TsdfServer::getServerConfigFromRosParam(
       nh_private_, "submap_max_distance_travelled",
       [](float ros_param) { return 0.f < ros_param; },
       &submap_max_distance_travelled_, "positive");
-  nh_private.param("write_submaps_to_disk", write_submaps_to_disk_,
-                   write_submaps_to_disk_);
-  nh_private.param("submap_root_directory", submap_root_directory_,
-                   submap_root_directory_);
+  nh_private.param("write_submaps_to_directory", write_submaps_to_directory_,
+                   write_submaps_to_directory_);
   // Check and sanitize the submap_root_directory path
-  if (submap_root_directory_.empty()) {
-    if (write_submaps_to_disk_) {
-      ROS_ERROR(
-          "If \"write_submaps_to_disk\" is set to True, "
-          "\"submap_root_directory\" must be set to a non-empty path. "
-          "Otherwise, submaps will not be written to disk.");
-      write_submaps_to_disk_ = false;
-    }
-  } else {
+  if (!write_submaps_to_directory_.empty()) {
     // Remove the trailing slash if present
-    if (submap_root_directory_.back() == '/') {
-      submap_root_directory_.pop_back();
+    if (write_submaps_to_directory_.back() == '/') {
+      write_submaps_to_directory_.pop_back();
     }
     // Check if the provided path is absolute
-    if (submap_root_directory_.front() != '/') {
+    if (write_submaps_to_directory_.front() != '/') {
       ROS_ERROR(
           "Param \"submap_root_directory\" must correspond to an "
           "absolute path. Otherwise, submaps will not be written to disk.");
-      write_submaps_to_disk_ = false;
+      write_submaps_to_directory_.clear();
     }
     // Check if the provided path contains no invalid characters
-    if (!hasOnlyAsciiCharacters(submap_root_directory_)) {
+    if (!hasOnlyAsciiCharacters(write_submaps_to_directory_)) {
       ROS_ERROR(
           "Param \"submap_root_directory\" must correspond to a valid path "
           "which only contains ASCII characters. Otherwise, submaps will not "
           "be written to disk.");
-      write_submaps_to_disk_ = false;
+      write_submaps_to_directory_.clear();
     }
   }
 
@@ -720,8 +709,6 @@ void TsdfServer::publishMap(bool reset_remote_map) {
 }
 
 void TsdfServer::publishSubmap() {
-  ++published_submap_counter_;
-
   // Publish the submap if anyone is listening
   if (0 < this->submap_pub_.getNumSubscribers()) {
     voxblox_msgs::Submap submap_msg;
@@ -741,14 +728,15 @@ void TsdfServer::publishSubmap() {
   }
 
   // Save the submap to disk if enabled
-  // NOTE: If the submap_root_directory_ directory contains leftover submap
-  //       folders from a previous mission, the code below will overwrite their
-  //       voxblox_submap_*/submap.tsdf files one after the other.
-  if (write_submaps_to_disk_) {
+  // NOTE: If the write_submaps_to_directory_ directory contains leftover submap
+  //       folders from a previous mission, the code below will overwrite the
+  //       files they contain and do so one by one (i.e. at the rate at which
+  //       the new submaps are finished, not all at once).
+  if (!write_submaps_to_directory_.empty()) {
     // Save the submap to disk
-    const std::string submap_folder_path =
-        submap_root_directory_ + "/voxblox_submap_" +
-        std::to_string(published_submap_counter_);
+    const std::string submap_folder_path = write_submaps_to_directory_ +
+                                           "/voxblox_submap_" +
+                                           std::to_string(submap_counter_);
     if (saveSubmap(submap_folder_path)) {
       // Notify other nodes that the new submap is now available on disk
       std_msgs::String new_submap_path;
@@ -756,7 +744,7 @@ void TsdfServer::publishSubmap() {
       new_submap_notification_pub_.publish(new_submap_path);
     } else {
       ROS_ERROR_STREAM("Could not write submap "
-                       << published_submap_counter_ << " to directory \""
+                       << submap_counter_ << " to directory \""
                        << submap_folder_path << "\".");
     }
   }
@@ -1045,6 +1033,7 @@ void TsdfServer::createNewSubmap(const ros::Time& current_timestamp,
   }
 
   // Bookkeeping
+  ++submap_counter_;
   last_published_submap_timestamp_ = current_timestamp;
   last_published_submap_position_ = current_T_G_C.getPosition();
 }

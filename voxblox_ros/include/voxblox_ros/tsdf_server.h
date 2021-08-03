@@ -276,10 +276,11 @@ class TsdfServer {
 
   // Optionally publish the map as submaps for use in submap-based
   // SLAM and/or path planning systems such as cblox, voxgraph, or GLocal
-  Threshold<FloatingPoint> submap_max_time_interval_;
-  Threshold<FloatingPoint> submap_max_distance_travelled_;
+  int submap_counter_;
   ros::Time last_published_submap_timestamp_;
   Point last_published_submap_position_;
+  Threshold<FloatingPoint> submap_max_time_interval_;
+  Threshold<FloatingPoint> submap_max_distance_travelled_;
   bool submappingEnabled() const {
     return submap_max_time_interval_.isSet() ||
            submap_max_distance_travelled_.isSet();
@@ -288,9 +289,9 @@ class TsdfServer {
                              const Transformation& current_T_G_C);
   void createNewSubmap(const ros::Time& current_timestamp,
                        const Transformation& current_T_G_C);
-  int published_submap_counter_;
-  bool write_submaps_to_disk_;
-  std::string submap_root_directory_;
+
+  // Optionally write the submaps to disk, as an alternative to publishing them
+  std::string write_submaps_to_directory_;
   bool saveSubmap(const std::string& submap_folder_path);
   bool saveTrajectory(const std::string& file_path);
 
