@@ -4,8 +4,8 @@
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <std_msgs/String.h>
-#include <voxblox/Trajectory.pb.h>
 #include <voxblox/integrator/projective_tsdf_integrator.h>
+#include <voxblox/io/submap_io.h>
 #include <voxblox_msgs/Submap.h>
 
 #include "voxblox_ros/conversions.h"
@@ -763,66 +763,20 @@ bool TsdfServer::saveSubmap(const std::string& submap_folder_path) {
     return false;
   }
 
-  // Save the TSDF
-  const std::string volumetric_map_file_path =
-      submap_folder_path + "/volumetric_map.tsdf";
-  if (!saveMap(volumetric_map_file_path)) {
-    ROS_ERROR_STREAM("Failed to write submap TSDF to file \""
-                     << volumetric_map_file_path << "\".");
-    return false;
-  }
-
-  // Save the trajectory
-  const std::string trajectory_file_path =
-      submap_folder_path + "/robot_trajectory.traj";
-  if (!saveTrajectory(trajectory_file_path)) {
-    ROS_ERROR_STREAM("Failed to write submap trajectory to file \""
-                     << trajectory_file_path << "\".");
-    return false;
-  }
-
-  return true;
-}
-
-bool TsdfServer::saveTrajectory(const std::string& file_path) {
-  // Create and open the file
-  const std::ios_base::openmode file_flags =
-      std::fstream::out | std::fstream::binary | std::fstream::trunc;
-  std::ofstream file_stream(file_path, file_flags);
-  if (!file_stream.is_open()) {
-    ROS_WARN_STREAM("Could not open file '" << file_path
-                                            << "' to save the trajectory.");
-    return false;
-  }
-
-  // Write trajectory to file
-  TrajectoryProto trajectory_proto;
-  trajectory_proto.set_robot_name(robot_name_);
-  trajectory_proto.set_frame_id(world_frame_);
-  for (const PointcloudDeintegrationPacket& pointcloud_queue_packet :
+  // Convert the trajectory
+  io::Trajectory trajectory;
+  trajectory.robot_name = robot_name_;
+  trajectory.frame_id = world_frame_;
+  for (const PointcloudDeintegrationPacket& pointcloud_deintegration_packet :
        pointcloud_deintegration_queue_) {
-    StampedPoseProto* stamped_pose_proto = trajectory_proto.add_stamped_poses();
-
-    const uint64_t timestamp = pointcloud_queue_packet.timestamp.toNSec();
-    stamped_pose_proto->set_timestamp(timestamp);
-
-    const Transformation& pose = pointcloud_queue_packet.T_G_C;
-    PoseProto* pose_proto = stamped_pose_proto->mutable_pose();
-
-    const Point& position = pose.getPosition();
-    PositionProto* position_proto = pose_proto->mutable_position();
-    position_proto->set_x(position.x());
-    position_proto->set_y(position.y());
-    position_proto->set_z(position.z());
-
-    const Transformation::Rotation& orientation = pose.getRotation();
-    OrientationProto* orientation_proto = pose_proto->mutable_orientation();
-    orientation_proto->set_w(orientation.w());
-    orientation_proto->set_x(orientation.x());
-    orientation_proto->set_y(orientation.y());
-    orientation_proto->set_z(orientation.z());
+    trajectory.stamped_poses.emplace_back(
+        pointcloud_deintegration_packet.timestamp.toNSec(),
+        pointcloud_deintegration_packet.T_G_C);
   }
-  return trajectory_proto.SerializeToOstream(&file_stream);
+
+  // Save the submap
+  return io::SaveSubmap(submap_folder_path, tsdf_map_->getTsdfLayer(),
+                        trajectory);
 }
 
 void TsdfServer::publishPointclouds() {

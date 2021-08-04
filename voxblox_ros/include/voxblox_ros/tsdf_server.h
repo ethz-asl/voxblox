@@ -293,7 +293,6 @@ class TsdfServer {
   // Optionally write the submaps to disk, as an alternative to publishing them
   std::string write_submaps_to_directory_;
   bool saveSubmap(const std::string& submap_folder_path);
-  bool saveTrajectory(const std::string& file_path);
 
   // Optionally build and incrementally update a sliding window local map by
   // not only integrating pointclouds but also removing them again once their

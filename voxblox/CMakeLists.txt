@@ -36,6 +36,7 @@ set("${PROJECT_NAME}_SRCS"
   src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
   src/io/sdf_ply.cc
+  src/io/trajectory_io.cc
   src/mesh/marching_cubes.cc
   src/simulation/objects.cc
   src/simulation/simulation_world.cc
