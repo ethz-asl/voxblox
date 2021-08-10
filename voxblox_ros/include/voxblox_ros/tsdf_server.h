@@ -310,6 +310,7 @@ class TsdfServer {
             pointcloud_deintegration_max_time_interval_.isSet() ||
             pointcloud_deintegration_max_distance_travelled_.isSet());
   }
+  int pointcloud_deintegration_max_consecutive_deintegrations_;
 
   // Remove blocks that no longer contain any observed voxels
   const size_t num_voxels_per_block_;
