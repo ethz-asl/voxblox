@@ -49,6 +49,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       submap_counter_(0),
       last_published_submap_timestamp_(0),
       last_published_submap_position_(Point::Constant(NAN)),
+      pointcloud_deintegration_max_consecutive_deintegrations_(5),
       num_voxels_per_block_(config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side *
                             config.tsdf_voxels_per_side),
@@ -252,6 +253,9 @@ void TsdfServer::getServerConfigFromRosParam(
       nh_private_, "pointcloud_deintegration_max_distance_travelled",
       [](float ros_param) { return 0.f < ros_param; },
       &pointcloud_deintegration_max_distance_travelled_, "positive");
+  nh_private.param("pointcloud_deintegration_max_consecutive_deintegrations",
+                   pointcloud_deintegration_max_consecutive_deintegrations_,
+                   pointcloud_deintegration_max_consecutive_deintegrations_);
 
   // Mesh settings.
   nh_private.param("mesh_filename", mesh_filename_, mesh_filename_);
@@ -541,12 +545,14 @@ void TsdfServer::integratePointcloud(const Transformation& T_G_C,
 }
 
 void TsdfServer::servicePointcloudDeintegrationQueue() {
+  int num_pointclouds_deintegrated = 0;
   while (1u < pointcloud_deintegration_queue_.size()) {
     const PointcloudDeintegrationPacket& oldest_pointcloud_packet =
         pointcloud_deintegration_queue_.front();
     const PointcloudDeintegrationPacket& newest_pointcloud_packet =
         pointcloud_deintegration_queue_.back();
 
+    // Check if the oldest pointcloud in the queue should be deintegrated
     const bool queue_length_exceeded =
         pointcloud_deintegration_max_queue_length_.isSetAndLT(
             pointcloud_deintegration_queue_.size());
@@ -570,6 +576,32 @@ void TsdfServer::servicePointcloudDeintegrationQueue() {
       break;
     }
 
+    // Limit the max number of clouds that can consecutively be deintegrated
+    // NOTE: This is done to keep a reasonable map update (integration) rate
+    //       when large numbers of pointclouds meet the deintegration thresholds
+    //       at the same time. For example, when a large time threshold is set
+    //       (allowing the queue to become long) and the robot leaves a room
+    //       where it spent a lot of time (triggering the distance travelled
+    //       threshold on all pointclouds in the room at the same time).
+    // NOTE: This guard is a hack, not a solution. When it kicks in, the map
+    //       will be left in a state that violates the spatio-temporal sliding
+    //       window thresholds until it manages to catch up. This violation
+    //       could cause issues in submap based global mappers.
+    if (pointcloud_deintegration_max_consecutive_deintegrations_ <=
+        num_pointclouds_deintegrated) {
+      ROS_WARN_STREAM_THROTTLE(
+          1,
+          "[Throttled] Could not deintegrate all pointclouds that should leave "
+          "the sliding window, since the "
+          "pointcloud_deintegration_max_consecutive_deintegrations "
+          "guard, set to "
+              << pointcloud_deintegration_max_consecutive_deintegrations_
+              << ", kicked in. This could cause issues for submap-based global "
+                 "mappers and planners if it lasts for extended periods.");
+      break;
+    }
+
+    // Deintegrate the pointcloud
     if (verbose_) {
       ROS_INFO("Deintegrating a pointcloud with %lu points.",
                oldest_pointcloud_packet.ptcloud_C->size());
@@ -580,6 +612,7 @@ void TsdfServer::servicePointcloudDeintegrationQueue() {
         oldest_pointcloud_packet.is_freespace_pointcloud,
         /* deintegrate */ true);
     pointcloud_deintegration_queue_.pop_front();
+    ++num_pointclouds_deintegrated;
     map_needs_pruning_ = true;
   }
 }
