@@ -89,6 +89,15 @@ class EsdfIntegrator {
   void addNewRobotPosition(const Point& position);
 
   /**
+   * Helper functions to set all unknown voxels in a given set to hallucinated
+   * and free. Used, among others, to apply the clear spheres for planning.
+   */
+  void setUnobservedVoxelsToHallucinatedFree(
+      const HierarchicalIndexMap& block_voxel_list);
+  void setUnobservedVoxelsToHallucinatedOccupied(
+      const HierarchicalIndexMap& block_voxel_list);
+
+  /**
    *Update from a TSDF layer in batch, clearing the current ESDF layer in the
    * process.
    */

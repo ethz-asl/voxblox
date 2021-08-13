@@ -48,12 +48,64 @@ void getSphereAroundPoint(const Layer<VoxelType>& layer, const Point& center,
 }
 
 template <typename VoxelType>
+void getVerticalCylinderAtPoint(const Layer<VoxelType>& layer,
+                                const Point& bottom_center,
+                                FloatingPoint radius, FloatingPoint height,
+                                HierarchicalIndexMap* block_voxel_list) {
+  CHECK_NOTNULL(block_voxel_list);
+  float voxel_size = layer.voxel_size();
+  float voxel_size_inv = 1.0 / layer.voxel_size();
+  int voxels_per_side = layer.voxels_per_side();
+
+  const GlobalIndex bottom_center_index =
+      getGridIndexFromPoint<GlobalIndex>(bottom_center, voxel_size_inv);
+  const FloatingPoint radius_in_voxels = radius / voxel_size;
+
+  for (FloatingPoint x = -radius_in_voxels; x <= radius_in_voxels; x++) {
+    for (FloatingPoint y = -radius_in_voxels; y <= radius_in_voxels; y++) {
+      for (FloatingPoint z = 0.f; z <= height; z++) {
+        Point point_voxel_space(x, y, z);
+
+        // check if point is inside the spheres radius
+        if (point_voxel_space.head<2>().norm() <= radius_in_voxels) {
+          GlobalIndex voxel_offset_index(std::floor(point_voxel_space.x()),
+                                         std::floor(point_voxel_space.y()),
+                                         std::floor(point_voxel_space.z()));
+          // Get the block and voxel indices from this.
+          BlockIndex block_index;
+          VoxelIndex voxel_index;
+
+          getBlockAndVoxelIndexFromGlobalVoxelIndex(
+              voxel_offset_index + bottom_center_index, voxels_per_side,
+              &block_index, &voxel_index);
+          (*block_voxel_list)[block_index].push_back(voxel_index);
+        }
+      }
+    }
+  }
+}
+
+template <typename VoxelType>
 void getAndAllocateSphereAroundPoint(const Point& center, FloatingPoint radius,
                                      Layer<VoxelType>* layer,
                                      HierarchicalIndexMap* block_voxel_list) {
   CHECK_NOTNULL(layer);
   CHECK_NOTNULL(block_voxel_list);
   getSphereAroundPoint(*layer, center, radius, block_voxel_list);
+  for (auto it = block_voxel_list->begin(); it != block_voxel_list->end();
+       ++it) {
+    layer->allocateBlockPtrByIndex(it->first);
+  }
+}
+
+template <typename VoxelType>
+void getAndAllocateVerticalCylinderAtPoint(
+    const Point& bottom_center, FloatingPoint radius, FloatingPoint height,
+    Layer<VoxelType>* layer, HierarchicalIndexMap* block_voxel_list) {
+  CHECK_NOTNULL(layer);
+  CHECK_NOTNULL(block_voxel_list);
+  getVerticalCylinderAtPoint(*layer, bottom_center, radius, height,
+                             block_voxel_list);
   for (auto it = block_voxel_list->begin(); it != block_voxel_list->end();
        ++it) {
     layer->allocateBlockPtrByIndex(it->first);
