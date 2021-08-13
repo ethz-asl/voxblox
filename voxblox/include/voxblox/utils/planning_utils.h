@@ -8,20 +8,29 @@ namespace voxblox {
 
 namespace utils {
 
-/// Gets the indices of all points within the sphere.
+/// Gets the indices of all points within a sphere or vertical cylinder.
 template <typename VoxelType>
 void getSphereAroundPoint(const Layer<VoxelType>& layer, const Point& center,
                           FloatingPoint radius,
                           HierarchicalIndexMap* block_voxel_list);
+template <typename VoxelType>
+void getVerticalCylinderAtPoint(const Layer<VoxelType>& layer,
+                                const Point& bottom_center,
+                                FloatingPoint radius, FloatingPoint height,
+                                HierarchicalIndexMap* block_voxel_list);
 
 /**
- * Gets the indices of all points around a sphere, and also allocates any
- * blocks that don't already exist.
+ * Gets the indices of all points within a sphere or vertical cylinder, and also
+ * allocates any blocks that don't already exist.
  */
 template <typename VoxelType>
 void getAndAllocateSphereAroundPoint(const Point& center, FloatingPoint radius,
                                      Layer<VoxelType>* layer,
                                      HierarchicalIndexMap* block_voxel_list);
+template <typename VoxelType>
+void getAndAllocateVerticalCylinderAtPoint(
+    const Point& bottom_center, FloatingPoint radius, FloatingPoint height,
+    Layer<VoxelType>* layer, HierarchicalIndexMap* block_voxel_list);
 
 /**
  * Tools for manually editing a set of voxels. Sets the values around a sphere
