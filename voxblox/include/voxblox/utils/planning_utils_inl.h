@@ -60,10 +60,11 @@ void getVerticalCylinderAtPoint(const Layer<VoxelType>& layer,
   const GlobalIndex bottom_center_index =
       getGridIndexFromPoint<GlobalIndex>(bottom_center, voxel_size_inv);
   const FloatingPoint radius_in_voxels = radius / voxel_size;
+  const FloatingPoint height_in_voxels = height / voxel_size;
 
   for (FloatingPoint x = -radius_in_voxels; x <= radius_in_voxels; x++) {
     for (FloatingPoint y = -radius_in_voxels; y <= radius_in_voxels; y++) {
-      for (FloatingPoint z = 0.f; z <= height; z++) {
+      for (FloatingPoint z = 0.f; z <= height_in_voxels; z++) {
         Point point_voxel_space(x, y, z);
 
         // check if point is inside the spheres radius
