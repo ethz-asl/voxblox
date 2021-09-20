@@ -121,8 +121,8 @@ class RayCaster {
   AnyIndex ray_step_signs_;
   Ray t_step_size_;
 
-  uint ray_length_in_steps_;
-  uint current_step_;
+  uint32_t ray_length_in_steps_;
+  uint32_t current_step_;
 };
 
 /**
