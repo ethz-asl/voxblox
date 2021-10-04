@@ -33,6 +33,9 @@
 /Debug/
 .settings
 
+# VSCode
+.vscode/
+
 # Python (for lint)
 *.pyc
 
