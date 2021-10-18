@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <vector>
 
@@ -25,10 +26,9 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
                             layer_->voxels_per_side()),
       ray_intersections_per_distance_squared_(
           voxel_size_ * horizontal_resolution_ /
-          (2 * M_PI)  // horizontal point density
+          (2 * M_PI) /* horizontal point density */
           * voxel_size_ * vertical_resolution_ /
-          vertical_fov_rad_)  // vertical point density
-{
+          vertical_fov_rad_) /* vertical point density */ {
   CHECK_GT(horizontal_resolution_, 0)
       << "The horizontal sensor resolution must be a positive integer";
   CHECK_GT(vertical_resolution_, 0)
@@ -223,8 +223,18 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
     return;
   }
 
-  // Compute the signed distance
+  // Look up the distance to the surface in the range image and skip points that
+  // are too close (e.g. on the robot), or too far (unless the setting to still
+  // use out-of-range points for free-space clearing is enabled).
   const float distance_to_surface = interpolate(range_image, h, w);
+  if (distance_to_surface < config_.min_ray_length_m) {
+    return;
+  }
+  if (!config_.allow_clear && config_.max_ray_length_m < distance_to_surface) {
+    return;
+  }
+
+  // Compute the signed distance
   const float sdf = distance_to_surface - distance_to_voxel;
 
   // Approximate how many rays would have updated the voxel
@@ -232,7 +242,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
   //       the updates applied to nearer voxels
   const float num_rays_intersecting_voxel =
       ray_intersections_per_distance_squared_ /
-        std::max(distance_to_voxel * distance_to_voxel, 1.f);
+      std::max(distance_to_voxel * distance_to_voxel, 1.f);
 
   // Skip voxels that fall outside the TSDF truncation distance
   if (sdf < -config_.default_truncation_distance) {
