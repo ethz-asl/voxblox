@@ -223,8 +223,18 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
     return;
   }
 
-  // Compute the signed distance
+  // Look up the distance to the surface in the range image and skip points that
+  // are too close (e.g. on the robot), or too far (unless the setting to still
+  // use out-of-range points for free-space clearing is enabled).
   const float distance_to_surface = interpolate(range_image, h, w);
+  if (distance_to_surface < config_.min_ray_length_m) {
+    return;
+  }
+  if (!config_.allow_clear && config_.max_ray_length_m < distance_to_surface) {
+    return;
+  }
+
+  // Compute the signed distance
   const float sdf = distance_to_surface - distance_to_voxel;
 
   // Approximate how many rays would have updated the voxel
