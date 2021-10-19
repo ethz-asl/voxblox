@@ -61,6 +61,11 @@ typedef IndexVector VoxelIndexList;
 typedef AlignedVector<LongIndex> LongIndexVector;
 typedef LongIndexVector GlobalIndexVector;
 
+// Common containers for indices (used in FIESTA)
+typedef AlignedQueue<GlobalIndex> GlobalIndexQueue;
+typedef AlignedList<GlobalIndex> GlobalIndexList;
+typedef std::unordered_set<GlobalIndex> GlobalIndexSet; 
+
 struct Color;
 
 // Pointcloud types for external interface.
