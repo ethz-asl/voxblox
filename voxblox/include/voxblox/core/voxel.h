@@ -3,11 +3,16 @@
 
 #include <cstdint>
 #include <string>
+#include <climits>
+#include <float.h>
 
 #include "voxblox/core/color.h"
 #include "voxblox/core/common.h"
 
 namespace voxblox {
+
+#define INF FLT_MAX
+#define UNDEF INT_MAX // Undefined voxel index
 
 struct TsdfVoxel {
   float distance = 0.0f;
@@ -33,12 +38,36 @@ struct EsdfVoxel {
    */
   Eigen::Vector3i parent = Eigen::Vector3i::Zero();
 
+  /** Used for fast incremental ESDF mapping from occupied grids. 
+   * Reference: FIESTA (https://github.com/HKUST-Aerial-Robotics/FIESTA)
+   * It's a bit wasteful on map memory. Fix it later.
+   */
+  
+  // Fix FIESTA's problem of unsigned distance, use signed distance instead
+  bool behind = false;
+
+  // Index of this voxel's closest occupied voxel
+  GlobalIndex coc_idx = GlobalIndex(UNDEF, UNDEF, UNDEF); 
+
+  // Simple version of a doubly linked list (prev, next, head)
+  GlobalIndex prev_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
+  GlobalIndex next_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
+  GlobalIndex head_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
+  
+  // Index of this voxel itself
+  GlobalIndex self_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct OccupancyVoxel {
   float probability_log = 0.0f;
   bool observed = false;
+
+  // check if probability_log > threshold
+  bool occupied = false; 
+  // Fix FIESTA's problem of unsigned distance, use signed distance instead
+  bool behind = false; 
 };
 
 struct IntensityVoxel {
