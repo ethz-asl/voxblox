@@ -14,6 +14,7 @@
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/bucket_queue.h"
 #include "voxblox/utils/neighbor_tools.h"
+#include "voxblox/utils/neighbor_tools_ex.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {

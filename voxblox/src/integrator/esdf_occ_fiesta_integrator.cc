@@ -230,9 +230,12 @@ void EsdfOccFiestaIntegrator::updateESDF() {
         temp_vox->distance = config_.default_distance_m;
         // temp_vox->distance = INF;
 
-        // Get the global indices of neighbors.
-        Neighborhood<>::IndexMatrix nbr_voxs_idx;
-        Neighborhood<>::getFromGlobalIndex(temp_vox_idx, &nbr_voxs_idx);
+        // Get the global indices of neighbors. //26-nei: 0.0725 s
+        // Neighborhood<>::IndexMatrix nbr_voxs_idx;
+        // Neighborhood<>::getFromGlobalIndex(temp_vox_idx, &nbr_voxs_idx);
+
+        Neighborhood24::IndexMatrix nbr_voxs_idx; //24-nei: 0.0632 s
+        Neighborhood24::getFromGlobalIndex(temp_vox_idx, &nbr_voxs_idx);
 
         // Go through the neighbors and see if we can update any of them.
         for (unsigned int idx = 0u; idx < nbr_voxs_idx.cols(); ++idx) {
@@ -300,8 +303,11 @@ void EsdfOccFiestaIntegrator::updateESDF() {
     // Algorithm 3 Patch Code (why do we need it)
     bool change_flag = false;  // indicate if the patch works
     // Get the global indices of neighbors.
-    Neighborhood<>::IndexMatrix nbr_voxs_idx;
-    Neighborhood<>::getFromGlobalIndex(cur_vox_idx, &nbr_voxs_idx);
+    // Neighborhood<>::IndexMatrix nbr_voxs_idx;
+    // Neighborhood<>::getFromGlobalIndex(cur_vox_idx, &nbr_voxs_idx);
+
+    Neighborhood24::IndexMatrix nbr_voxs_idx;
+    Neighborhood24::getFromGlobalIndex(cur_vox_idx, &nbr_voxs_idx);
 
     // Go through the neighbors and see if we can update any of them.
     for (unsigned int idx = 0u; idx < nbr_voxs_idx.cols(); ++idx) {

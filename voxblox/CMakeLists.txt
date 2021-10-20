@@ -46,6 +46,7 @@ set("${PROJECT_NAME}_SRCS"
   src/utils/protobuf_utils.cc
   src/utils/timing.cc
   src/utils/voxel_utils.cc
+  src/utils/neighbor_tools_ex.cc
 )
 
 #############
