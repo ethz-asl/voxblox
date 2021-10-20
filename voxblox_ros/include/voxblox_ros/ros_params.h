@@ -6,8 +6,12 @@
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/tsdf_map.h>
+#include <voxblox/core/occupancy_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/integrator/occupancy_integrator.h>
+#include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
+#include <voxblox/integrator/occupancy_tsdf_integrator.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
 namespace voxblox {
@@ -176,6 +180,129 @@ inline MeshIntegratorConfig getMeshIntegratorConfigFromRosParam(
                    mesh_integrator_config.use_color);
 
   return mesh_integrator_config;
+}
+
+inline OccupancyMap::Config getOccupancyMapConfigFromRosParam(
+    const ros::NodeHandle& nh_private) {
+  OccupancyMap::Config occ_config;
+
+  /**
+   * Workaround for OS X on mac mini not having specializations for float
+   * for some reason.
+   */
+  double voxel_size = occ_config.occupancy_voxel_size;
+  int voxels_per_side = occ_config.occupancy_voxels_per_side;
+  nh_private.param("occ_voxel_size", voxel_size, voxel_size);
+  nh_private.param("occ_voxels_per_side", voxels_per_side, voxels_per_side); //block size (unit: voxel)
+  if (!isPowerOfTwo(voxels_per_side)) {
+    ROS_ERROR("voxels_per_side must be a power of 2, setting to default value");
+    voxels_per_side = occ_config.occupancy_voxels_per_side;
+  }
+
+  occ_config.occupancy_voxel_size = static_cast<FloatingPoint>(voxel_size);
+  occ_config.occupancy_voxels_per_side = voxels_per_side;
+
+  return occ_config;
+}
+
+inline OccTsdfIntegrator::Config getOccTsdfIntegratorConfigFromRosParam(
+    const ros::NodeHandle& nh_private) {
+  OccTsdfIntegrator::Config integrator_config;
+
+   nh_private.param("occ_min_weight", integrator_config.min_weight,
+                   integrator_config.min_weight);
+
+   nh_private.param("occ_voxel_size_ratio", integrator_config.occ_voxel_size_ratio,
+                   integrator_config.occ_voxel_size_ratio);
+
+  return integrator_config;
+}
+
+inline EsdfMap::Config getEsdfMapConfigFromOccMapRosParam(
+    const ros::NodeHandle& nh_private) {
+  EsdfMap::Config esdf_config;
+
+  const OccupancyMap::Config occ_config = 
+    getOccupancyMapConfigFromRosParam(nh_private);
+  esdf_config.esdf_voxel_size = occ_config.occupancy_voxel_size;
+  esdf_config.esdf_voxels_per_side = occ_config.occupancy_voxels_per_side;
+
+  return esdf_config;
+}
+
+inline TsdfMap::Config getTsdfMapConfigFromOccMapRosParam(
+    const ros::NodeHandle& nh_private) {
+  TsdfMap::Config tsdf_config;
+
+  const OccupancyMap::Config occ_config = getOccupancyMapConfigFromRosParam(nh_private);
+  tsdf_config.tsdf_voxel_size = occ_config.occupancy_voxel_size;
+  tsdf_config.tsdf_voxels_per_side = occ_config.occupancy_voxels_per_side;
+
+  return tsdf_config;
+}
+
+inline TsdfMap::Config getTsdfMapConfigFromEsdfMapRosParam(
+    const ros::NodeHandle& nh_private) {
+  TsdfMap::Config tsdf_config;
+
+  const EsdfMap::Config esdf_config = getEsdfMapConfigFromRosParam(nh_private);
+  tsdf_config.tsdf_voxel_size = esdf_config.esdf_voxel_size;
+  tsdf_config.tsdf_voxels_per_side = esdf_config.esdf_voxels_per_side;
+
+  return tsdf_config;
+}
+
+inline EsdfOccFiestaIntegrator::Config getEsdfFiestaIntegratorConfigFromRosParam(
+    const ros::NodeHandle& nh_private) {
+  EsdfOccFiestaIntegrator::Config esdf_integrator_config;
+
+  int range_boundary_offset_x = esdf_integrator_config.range_boundary_offset(0);
+  int range_boundary_offset_y = esdf_integrator_config.range_boundary_offset(1);
+  int range_boundary_offset_z = esdf_integrator_config.range_boundary_offset(2);
+
+  // OccupancyIntegrator::Config occupancy_integrator_config =
+  //     getOccupancyIntegratorConfigFromRosParam(nh_private);
+
+  // esdf_integrator_config.min_distance_m =
+  //     tsdf_integrator_config.default_truncation_distance / 2.0;
+
+  nh_private.param("local_range_offset_x",
+                   range_boundary_offset_x,
+                   range_boundary_offset_x);
+
+  nh_private.param("local_range_offset_y",
+                   range_boundary_offset_y,
+                   range_boundary_offset_y);
+  
+  nh_private.param("local_range_offset_z",
+                   range_boundary_offset_z,
+                   range_boundary_offset_z);
+
+  // nh_private.param("esdf_euclidean_distance",
+  //                  esdf_integrator_config.full_euclidean_distance,
+  //                  esdf_integrator_config.full_euclidean_distance);
+
+  nh_private.param("esdf_max_distance_m", esdf_integrator_config.max_distance_m,
+                    esdf_integrator_config.max_distance_m);
+  
+  nh_private.param("esdf_default_distance_m",
+                   esdf_integrator_config.default_distance_m,
+                   esdf_integrator_config.default_distance_m);
+
+  nh_private.param("behind_surface_m", esdf_integrator_config.behind_surface_m,
+                   esdf_integrator_config.behind_surface_m);
+
+  if (esdf_integrator_config.default_distance_m <
+      esdf_integrator_config.max_distance_m) {
+    esdf_integrator_config.default_distance_m =
+        esdf_integrator_config.max_distance_m;
+  }
+  
+  esdf_integrator_config.range_boundary_offset(0) = range_boundary_offset_x;
+  esdf_integrator_config.range_boundary_offset(1) = range_boundary_offset_y;
+  esdf_integrator_config.range_boundary_offset(2) = range_boundary_offset_z;
+  
+  return esdf_integrator_config;
 }
 
 }  // namespace voxblox

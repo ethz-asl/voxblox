@@ -54,7 +54,7 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
 
   void updateFromOccLayer(bool clear_updated_flag);
 
-  void updateFromOccBlocks(const BlockIndexList& occ_blocks, bool incremental);
+  void updateFromOccBlocks(const BlockIndexList& occ_blocks);
 
   void setLocalRange();
 
@@ -74,7 +74,7 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
 
   void loadDeleteList(const GlobalIndexList& delete_list);
 
-  inline void clearQueue() {
+  inline void clear() {
     GlobalIndexList().swap(insert_list_);
     GlobalIndexList().swap(delete_list_);
     GlobalIndexQueue().swap(update_queue_);

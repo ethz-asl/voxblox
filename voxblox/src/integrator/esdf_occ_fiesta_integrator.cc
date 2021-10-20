@@ -18,8 +18,7 @@ void EsdfOccFiestaIntegrator::updateFromOccLayer(bool clear_updated_flag) {
   BlockIndexList occ_blocks;
   occ_layer_->getAllUpdatedBlocks(Update::kEsdf, &occ_blocks);
 
-  const bool kIncremental = true;
-  updateFromOccBlocks(occ_blocks, kIncremental);
+  updateFromOccBlocks(occ_blocks);
 
   if (clear_updated_flag) {
     for (const BlockIndex& block_index : occ_blocks) {
@@ -32,7 +31,7 @@ void EsdfOccFiestaIntegrator::updateFromOccLayer(bool clear_updated_flag) {
 }
 
 void EsdfOccFiestaIntegrator::updateFromOccBlocks(
-    const BlockIndexList& occ_blocks, bool incremental) {
+    const BlockIndexList& occ_blocks) {
   CHECK_EQ(occ_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
   timing::Timer esdf_timer("esdf");
 
@@ -41,7 +40,7 @@ void EsdfOccFiestaIntegrator::updateFromOccBlocks(
   timing::Timer allocate_timer("esdf/allocate_vox");
   VLOG(3) << "[ESDF update]: Propagating " << occ_blocks.size()
           << " updated blocks from the Occupancy.";
-
+ 
   for (const BlockIndex& block_index : occ_blocks) {
     Block<OccupancyVoxel>::ConstPtr occ_block =
         occ_layer_->getBlockPtrByIndex(block_index);
@@ -228,8 +227,8 @@ void EsdfOccFiestaIntegrator::updateESDF() {
 
       temp_vox->coc_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
       if (voxInRange(temp_vox_idx)) {
-        // temp_vox->distance = config_.default_distance_m;
-        temp_vox->distance = INF;
+        temp_vox->distance = config_.default_distance_m;
+        // temp_vox->distance = INF;
 
         // Get the global indices of neighbors.
         Neighborhood<>::IndexMatrix nbr_voxs_idx;

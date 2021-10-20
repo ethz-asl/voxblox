@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(voxblox_ros)
 
+set(CMAKE_CXX_STANDARD 14)
+
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
@@ -16,6 +18,7 @@ cs_add_library(${PROJECT_NAME}
   src/intensity_server.cc
   src/transformer.cc
   src/tsdf_server.cc
+  src/voxfield_server.cc
 )
 
 ############
@@ -51,6 +54,11 @@ cs_add_executable(visualize_tsdf
   src/visualize_tsdf.cc
 )
 target_link_libraries(visualize_tsdf ${PROJECT_NAME})
+
+cs_add_executable(voxfield_server
+  src/voxfield_server_node.cc
+)
+target_link_libraries(voxfield_server ${PROJECT_NAME})
 
 ##########
 # EXPORT #

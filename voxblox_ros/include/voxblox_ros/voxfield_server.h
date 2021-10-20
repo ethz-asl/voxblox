@@ -7,8 +7,8 @@
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>
 #include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
-#include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/integrator/occupancy_tsdf_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox_msgs/Layer.h>
 
 #include "voxblox_ros/tsdf_server.h"
@@ -45,14 +45,15 @@ class VoxfieldServer : public TsdfServer {
   void updateMeshEvent(const ros::TimerEvent& event);
 
   /// Call this to update the ESDF based on latest state of the occupancy map,
-  /// considering only the newly updated parts of the occupancy map (checked with
-  /// the ESDF updated bit in Update::Status).
+  /// considering only the newly updated parts of the occupancy map (checked
+  /// with the ESDF updated bit in Update::Status).
   void updateEsdfFromOcc();
-  
+
   /// Update the ESDF all at once; clear the existing map.
   // void updateEsdfBatch(bool full_euclidean = false);
 
-  /// Call this to update the Occupancy map based on latest state of the TSDF map
+  /// Call this to update the Occupancy map based on latest state of the TSDF
+  /// map
   void updateOccFromTsdf();
 
   // Overwrites the layer with what's coming from the topic!
@@ -67,10 +68,10 @@ class VoxfieldServer : public TsdfServer {
   void setClearSphere(bool clear_sphere_for_planning) {
     clear_sphere_for_planning_ = clear_sphere_for_planning;
   }
-  
+
   float getEsdfMaxDistance() const;
   void setEsdfMaxDistance(float max_distance);
-  
+
   float getTraversabilityRadius() const;
   void setTraversabilityRadius(float traversability_radius);
 
@@ -118,7 +119,7 @@ class VoxfieldServer : public TsdfServer {
    * not empty.
    */
   std::string mesh_filename_;
-  
+
   /// How to color the mesh.
   ColorMode color_mode_;
 
@@ -145,7 +146,6 @@ class VoxfieldServer : public TsdfServer {
   std::unique_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
   /// Optionally cached mesh message.
   voxblox_msgs::Mesh cached_mesh_msg_;
-
 };
 
 }  // namespace voxblox
