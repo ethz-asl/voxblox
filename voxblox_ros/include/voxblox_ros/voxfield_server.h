@@ -8,7 +8,6 @@
 #include <voxblox/core/occupancy_map.h>
 #include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
 #include <voxblox/integrator/occupancy_tsdf_integrator.h>
-#include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox_msgs/Layer.h>
 
 #include "voxblox_ros/tsdf_server.h"
@@ -42,7 +41,6 @@ class VoxfieldServer : public TsdfServer {
 
   /// Timer events
   void updateEsdfEvent(const ros::TimerEvent& event);
-  void updateMeshEvent(const ros::TimerEvent& event);
 
   /// Call this to update the ESDF based on latest state of the occupancy map,
   /// considering only the newly updated parts of the occupancy map (checked
@@ -84,10 +82,6 @@ class VoxfieldServer : public TsdfServer {
 
   virtual void clear();
 
-  /// Mesh related
-  void updateMesh();
-  bool generateMesh();
-
  protected:
   /// Sets up publishing and subscribing. Should only be called from
   /// constructor.
@@ -97,7 +91,6 @@ class VoxfieldServer : public TsdfServer {
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher esdf_slice_pub_;
   ros::Publisher traversable_pub_;
-  ros::Publisher mesh_pub_;
 
   /// Publish the complete map for other nodes to consume.
   ros::Publisher esdf_map_pub_;
@@ -107,24 +100,9 @@ class VoxfieldServer : public TsdfServer {
 
   /// Services.
   ros::ServiceServer generate_esdf_srv_;
-  ros::ServiceServer generate_mesh_srv_;
 
   /// Timers.
   ros::Timer update_esdf_timer_;
-
-  bool verbose_;
-
-  /**
-   * Mesh output settings. Mesh is only written to file if mesh_filename_ is
-   * not empty.
-   */
-  std::string mesh_filename_;
-
-  /// How to color the mesh.
-  ColorMode color_mode_;
-
-  /// Whether to save the latest mesh message sent (for inheriting classes).
-  bool cache_mesh_;
 
   bool clear_sphere_for_planning_;
   bool publish_esdf_map_;
@@ -140,12 +118,6 @@ class VoxfieldServer : public TsdfServer {
   // Occupancy maps.
   std::shared_ptr<OccupancyMap> occupancy_map_;
   std::unique_ptr<OccTsdfIntegrator> occupancy_integrator_;
-
-  // Mesh accessories.
-  std::shared_ptr<MeshLayer> mesh_layer_;
-  std::unique_ptr<MeshIntegrator<TsdfVoxel>> mesh_integrator_;
-  /// Optionally cached mesh message.
-  voxblox_msgs::Mesh cached_mesh_msg_;
 };
 
 }  // namespace voxblox

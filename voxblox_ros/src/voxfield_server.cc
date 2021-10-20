@@ -46,12 +46,6 @@ VoxfieldServer::VoxfieldServer(
       esdf_integrator_config, occupancy_map_->getOccupancyLayerPtr(),
       esdf_map_->getEsdfLayerPtr()));
 
-  // Mesh related
-  mesh_layer_.reset(new MeshLayer(esdf_map_->block_size()));
-
-  mesh_integrator_.reset(new MeshIntegrator<TsdfVoxel>(
-      mesh_config, tsdf_map_->getTsdfLayerPtr(), mesh_layer_.get()));
-
   // main entrance
   setupRos();
 }
@@ -73,8 +67,6 @@ void VoxfieldServer::setupRos() {
   esdf_map_sub_ = nh_private_.subscribe("esdf_map_in", 1,
                                         &VoxfieldServer::esdfMapCallback, this);
 
-  mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
-
   // Whether to clear each new pose as it comes in, and then set a sphere
   // around it to occupied.
   nh_private_.param("clear_sphere_for_planning", clear_sphere_for_planning_,
@@ -95,9 +87,6 @@ void VoxfieldServer::setupRos() {
 
   nh_private_.param("verbose", verbose_, verbose_);
 
-  // Mesh output path
-  nh_private_.param("mesh_filename", mesh_filename_, mesh_filename_);
-
   double update_esdf_every_n_sec = 1.0;  // default
   nh_private_.param("update_esdf_every_n_sec", update_esdf_every_n_sec,
                     update_esdf_every_n_sec);
@@ -106,7 +95,7 @@ void VoxfieldServer::setupRos() {
   nh_private_.param("color_mode", color_mode, color_mode);
   color_mode_ = getColorModeFromString(color_mode);
 
-  //Color map for intensity pointclouds.
+  // Color map for intensity pointclouds.
   std::string intensity_colormap("rainbow");
   float intensity_max_value = kDefaultMaxIntensity;
   nh_private_.param("intensity_colormap", intensity_colormap,
@@ -114,7 +103,7 @@ void VoxfieldServer::setupRos() {
   nh_private_.param("intensity_max_value", intensity_max_value,
                     intensity_max_value);
 
-  //Default set in constructor.
+  // Default set in constructor.
   if (intensity_colormap == "rainbow") {
     color_map_.reset(new RainbowColorMap());
   } else if (intensity_colormap == "inverse_rainbow") {
@@ -136,18 +125,6 @@ void VoxfieldServer::setupRos() {
         nh_private_.createTimer(ros::Duration(update_esdf_every_n_sec),
                                 &VoxfieldServer::updateEsdfEvent, this);
   }
-
-  // If set, use a timer to progressively integrate the mesh.
-  double update_mesh_every_n_sec = 1.0;
-  nh_private_.param("update_mesh_every_n_sec", update_mesh_every_n_sec,
-                    update_mesh_every_n_sec);
-
-  // already done in Tsdf server
-  // if (update_mesh_every_n_sec > 0.0) {
-  //    update_mesh_timer_ =
-  //       nh_private_.createTimer(ros::Duration(update_mesh_every_n_sec),
-  //                               &VoxfieldServer::updateMeshEvent, this);
-  // }
 }
 
 void VoxfieldServer::publishAllUpdatedEsdfVoxels() {
@@ -173,10 +150,6 @@ void VoxfieldServer::publishSlices() {
   esdf_slice_pub_.publish(pointcloud);
 }
 
-void VoxfieldServer::updateMeshEvent(const ros::TimerEvent& /*event*/) {
-  updateMesh();
-}
-
 // bool VoxfieldServer::generateEsdfCallback(
 //     std_srvs::Empty::Request& /*request*/,      // NOLINT
 //     std_srvs::Empty::Response& /*response*/) {  // NOLINT
@@ -198,75 +171,6 @@ void VoxfieldServer::updateEsdfEvent(const ros::TimerEvent& /*event*/) {
   publishOccupancyOccupiedNodes();
   // publishPointclouds();
   if (publish_slices_) publishSlices();
-}
-
-void VoxfieldServer::updateMesh() {
-  if (verbose_) {
-    ROS_INFO("Updating mesh.");
-  }
-
-  timing::Timer generate_mesh_timer("mesh/update");
-  constexpr bool only_mesh_updated_blocks = true;
-  constexpr bool clear_updated_flag = true;
-  mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
-  generate_mesh_timer.Stop();
-
-  timing::Timer publish_mesh_timer("mesh/publish");
-
-  voxblox_msgs::Mesh mesh_msg;
-  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
-  mesh_msg.header.frame_id = world_frame_;
-  mesh_pub_.publish(mesh_msg);
-
-  if (cache_mesh_) {
-    cached_mesh_msg_ = mesh_msg;
-  }
-
-  publish_mesh_timer.Stop();
-
-  if (publish_pointclouds_ && !publish_pointclouds_on_update_) {
-    publishPointclouds();
-  }
-}
-
-bool VoxfieldServer::generateMesh() {
-  timing::Timer generate_mesh_timer("mesh/generate");
-  const bool clear_mesh = true;
-  if (clear_mesh) {
-    constexpr bool only_mesh_updated_blocks = false;
-    constexpr bool clear_updated_flag = true;
-    mesh_integrator_->generateMesh(only_mesh_updated_blocks,
-                                   clear_updated_flag);
-  } else {
-    constexpr bool only_mesh_updated_blocks = true;
-    constexpr bool clear_updated_flag = true;
-    mesh_integrator_->generateMesh(only_mesh_updated_blocks,
-                                   clear_updated_flag);
-  }
-  generate_mesh_timer.Stop();
-
-  timing::Timer publish_mesh_timer("mesh/publish");
-  voxblox_msgs::Mesh mesh_msg;
-
-  generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
-  mesh_msg.header.frame_id = world_frame_;
-  mesh_pub_.publish(mesh_msg);
-
-  publish_mesh_timer.Stop();
-
-  if (!mesh_filename_.empty()) {
-    timing::Timer output_mesh_timer("mesh/output");
-    const bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
-    output_mesh_timer.Stop();
-    if (success) {
-      ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
-    } else {
-      ROS_INFO("Failed to output mesh as PLY: %s", mesh_filename_.c_str());
-    }
-  }
-
-  ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
-  return true;
 }
 
 void VoxfieldServer::publishOccupancyOccupiedNodes() {
@@ -369,10 +273,13 @@ void VoxfieldServer::updateEsdfFromOcc() {
       ros::WallTime end = ros::WallTime::now();
 
       if (verbose_) {
-        ROS_INFO("Finished ESDF integrating in [%f] seconds, have [%lu] blocks(memory : %f MB).", 
-                (end - start).toSec(),
-                esdf_map_->getEsdfLayer().getNumberOfAllocatedBlocks(),
-                esdf_map_->getEsdfLayer().getMemorySize() / 1024.0 / 1024.0); //NOLINT
+        ROS_INFO(
+            "Finished ESDF integrating in [%f] seconds, have [%lu] "
+            "blocks(memory : %f MB).",
+            (end - start).toSec(),
+            esdf_map_->getEsdfLayer().getNumberOfAllocatedBlocks(),
+            esdf_map_->getEsdfLayer().getMemorySize() / 1024.0 /
+                1024.0);  // NOLINT
       }
     }
     esdf_integrator_->clear();
@@ -391,7 +298,7 @@ void VoxfieldServer::updateEsdfFromOcc() {
 void VoxfieldServer::updateOccFromTsdf() {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = true;
-  
+
     // set update state to 0 after the processing
     occupancy_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
   }

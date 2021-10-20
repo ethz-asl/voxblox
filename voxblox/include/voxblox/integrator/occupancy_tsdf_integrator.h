@@ -95,7 +95,7 @@ class OccTsdfIntegrator {
             occ_voxel.occupied = (std::abs(tsdf_voxel.distance) <=
                                   config_.occ_voxel_size_ratio * voxel_size_);
             if (occ_voxel.occupied)
-              occ_voxel.probability_log = 1.0; // only for visualization
+              occ_voxel.probability_log = 1.0;  // only for visualization
 
             VoxelIndex voxel_index =
                 occ_block->computeVoxelIndexFromLinearIndex(lin_index);

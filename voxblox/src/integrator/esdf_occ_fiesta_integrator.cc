@@ -40,7 +40,7 @@ void EsdfOccFiestaIntegrator::updateFromOccBlocks(
   timing::Timer allocate_timer("esdf/allocate_vox");
   VLOG(3) << "[ESDF update]: Propagating " << occ_blocks.size()
           << " updated blocks from the Occupancy.";
- 
+
   for (const BlockIndex& block_index : occ_blocks) {
     Block<OccupancyVoxel>::ConstPtr occ_block =
         occ_layer_->getBlockPtrByIndex(block_index);

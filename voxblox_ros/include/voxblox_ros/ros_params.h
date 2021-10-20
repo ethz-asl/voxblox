@@ -5,13 +5,13 @@
 
 #include <voxblox/alignment/icp.h>
 #include <voxblox/core/esdf_map.h>
-#include <voxblox/core/tsdf_map.h>
 #include <voxblox/core/occupancy_map.h>
+#include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
-#include <voxblox/integrator/tsdf_integrator.h>
-#include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
+#include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/occupancy_tsdf_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/mesh/mesh_integrator.h>
 
 namespace voxblox {
@@ -193,7 +193,8 @@ inline OccupancyMap::Config getOccupancyMapConfigFromRosParam(
   double voxel_size = occ_config.occupancy_voxel_size;
   int voxels_per_side = occ_config.occupancy_voxels_per_side;
   nh_private.param("occ_voxel_size", voxel_size, voxel_size);
-  nh_private.param("occ_voxels_per_side", voxels_per_side, voxels_per_side); //block size (unit: voxel)
+  nh_private.param("occ_voxels_per_side", voxels_per_side,
+                   voxels_per_side);  // block size (unit: voxel)
   if (!isPowerOfTwo(voxels_per_side)) {
     ROS_ERROR("voxels_per_side must be a power of 2, setting to default value");
     voxels_per_side = occ_config.occupancy_voxels_per_side;
@@ -209,10 +210,11 @@ inline OccTsdfIntegrator::Config getOccTsdfIntegratorConfigFromRosParam(
     const ros::NodeHandle& nh_private) {
   OccTsdfIntegrator::Config integrator_config;
 
-   nh_private.param("occ_min_weight", integrator_config.min_weight,
+  nh_private.param("occ_min_weight", integrator_config.min_weight,
                    integrator_config.min_weight);
 
-   nh_private.param("occ_voxel_size_ratio", integrator_config.occ_voxel_size_ratio,
+  nh_private.param("occ_voxel_size_ratio",
+                   integrator_config.occ_voxel_size_ratio,
                    integrator_config.occ_voxel_size_ratio);
 
   return integrator_config;
@@ -222,8 +224,8 @@ inline EsdfMap::Config getEsdfMapConfigFromOccMapRosParam(
     const ros::NodeHandle& nh_private) {
   EsdfMap::Config esdf_config;
 
-  const OccupancyMap::Config occ_config = 
-    getOccupancyMapConfigFromRosParam(nh_private);
+  const OccupancyMap::Config occ_config =
+      getOccupancyMapConfigFromRosParam(nh_private);
   esdf_config.esdf_voxel_size = occ_config.occupancy_voxel_size;
   esdf_config.esdf_voxels_per_side = occ_config.occupancy_voxels_per_side;
 
@@ -234,7 +236,8 @@ inline TsdfMap::Config getTsdfMapConfigFromOccMapRosParam(
     const ros::NodeHandle& nh_private) {
   TsdfMap::Config tsdf_config;
 
-  const OccupancyMap::Config occ_config = getOccupancyMapConfigFromRosParam(nh_private);
+  const OccupancyMap::Config occ_config =
+      getOccupancyMapConfigFromRosParam(nh_private);
   tsdf_config.tsdf_voxel_size = occ_config.occupancy_voxel_size;
   tsdf_config.tsdf_voxels_per_side = occ_config.occupancy_voxels_per_side;
 
@@ -252,8 +255,8 @@ inline TsdfMap::Config getTsdfMapConfigFromEsdfMapRosParam(
   return tsdf_config;
 }
 
-inline EsdfOccFiestaIntegrator::Config getEsdfFiestaIntegratorConfigFromRosParam(
-    const ros::NodeHandle& nh_private) {
+inline EsdfOccFiestaIntegrator::Config
+getEsdfFiestaIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
   EsdfOccFiestaIntegrator::Config esdf_integrator_config;
 
   int range_boundary_offset_x = esdf_integrator_config.range_boundary_offset(0);
@@ -266,16 +269,13 @@ inline EsdfOccFiestaIntegrator::Config getEsdfFiestaIntegratorConfigFromRosParam
   // esdf_integrator_config.min_distance_m =
   //     tsdf_integrator_config.default_truncation_distance / 2.0;
 
-  nh_private.param("local_range_offset_x",
-                   range_boundary_offset_x,
+  nh_private.param("local_range_offset_x", range_boundary_offset_x,
                    range_boundary_offset_x);
 
-  nh_private.param("local_range_offset_y",
-                   range_boundary_offset_y,
+  nh_private.param("local_range_offset_y", range_boundary_offset_y,
                    range_boundary_offset_y);
-  
-  nh_private.param("local_range_offset_z",
-                   range_boundary_offset_z,
+
+  nh_private.param("local_range_offset_z", range_boundary_offset_z,
                    range_boundary_offset_z);
 
   // nh_private.param("esdf_euclidean_distance",
@@ -283,8 +283,8 @@ inline EsdfOccFiestaIntegrator::Config getEsdfFiestaIntegratorConfigFromRosParam
   //                  esdf_integrator_config.full_euclidean_distance);
 
   nh_private.param("esdf_max_distance_m", esdf_integrator_config.max_distance_m,
-                    esdf_integrator_config.max_distance_m);
-  
+                   esdf_integrator_config.max_distance_m);
+
   nh_private.param("esdf_default_distance_m",
                    esdf_integrator_config.default_distance_m,
                    esdf_integrator_config.default_distance_m);
@@ -297,11 +297,11 @@ inline EsdfOccFiestaIntegrator::Config getEsdfFiestaIntegratorConfigFromRosParam
     esdf_integrator_config.default_distance_m =
         esdf_integrator_config.max_distance_m;
   }
-  
+
   esdf_integrator_config.range_boundary_offset(0) = range_boundary_offset_x;
   esdf_integrator_config.range_boundary_offset(1) = range_boundary_offset_y;
   esdf_integrator_config.range_boundary_offset(2) = range_boundary_offset_z;
-  
+
   return esdf_integrator_config;
 }
 
