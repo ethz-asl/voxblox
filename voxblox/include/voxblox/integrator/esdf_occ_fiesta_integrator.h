@@ -13,15 +13,15 @@
 #include "voxblox/core/voxel.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/bucket_queue.h"
-#include "voxblox/utils/timing.h"
 #include "voxblox/utils/neighbor_tools.h"
+#include "voxblox/utils/timing.h"
 
 namespace voxblox {
 
 /**
  * Builds an ESDF layer out of a given occupancy layer.
  */
-class EsdfOccFiestaIntegrator { //py: check, maybe not neccessary
+class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -33,25 +33,24 @@ class EsdfOccFiestaIntegrator { //py: check, maybe not neccessary
      * Any values above this will be set to default_distance_m.
      */
     FloatingPoint max_distance_m = 2.0;
-    
+
     // Default distance set for unknown values and values > max_distance_m.
     FloatingPoint default_distance_m = 2.0;
 
-    // Trunction distance behind surface, unit: m 
-    FloatingPoint behind_surface_m = 1.0f; 
+    // Trunction distance behind surface, unit: m
+    FloatingPoint behind_surface_m = 1.0f;
 
     // Number of the neighbor voxels (select from 6, 18, 24 and 26)
-    // TODO: double-check if 24 is the best choice 
+    // TODO: double-check if 24 is the best choice
     int num_neighbor = 24;
 
     // Local map boundary size (unit: voxel)
-    GlobalIndex range_boundary_offset = GlobalIndex(100,100,50); 
-
+    GlobalIndex range_boundary_offset = GlobalIndex(100, 100, 50);
   };
 
-  EsdfOccFiestaIntegrator(const Config& config, Layer<OccupancyVoxel>* occ_layer,
+  EsdfOccFiestaIntegrator(const Config& config,
+                          Layer<OccupancyVoxel>* occ_layer,
                           Layer<EsdfVoxel>* esdf_layer);
-
 
   void updateFromOccLayer(bool clear_updated_flag);
 
@@ -69,13 +68,13 @@ class EsdfOccFiestaIntegrator { //py: check, maybe not neccessary
 
   inline float dist(GlobalIndex vox_idx_a, GlobalIndex vox_idx_b);
 
-  inline bool voxInRange(GlobalIndex vox_idx); 
+  inline bool voxInRange(GlobalIndex vox_idx);
 
   void loadInsertList(const GlobalIndexList& insert_list);
 
   void loadDeleteList(const GlobalIndexList& delete_list);
 
-  inline void clearQueue(){
+  inline void clearQueue() {
     GlobalIndexList().swap(insert_list_);
     GlobalIndexList().swap(delete_list_);
     GlobalIndexQueue().swap(update_queue_);
@@ -105,16 +104,15 @@ class EsdfOccFiestaIntegrator { //py: check, maybe not neccessary
   FloatingPoint esdf_voxel_size_;
 
   // Update (inseted and deleted occupied voxels) range, unit: voxel
-  GlobalIndex update_range_min_; 
-  GlobalIndex update_range_max_; 
+  GlobalIndex update_range_min_;
+  GlobalIndex update_range_max_;
 
   // Local map range (update range + boundary size), unit: voxel
-  GlobalIndex range_min_; 
-  GlobalIndex range_max_; 
+  GlobalIndex range_min_;
+  GlobalIndex range_max_;
 
   // for recording and logging
   int total_expanding_times_ = 0;
- 
 };
 
 }  // namespace voxblox
