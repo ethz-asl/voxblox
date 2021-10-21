@@ -62,6 +62,9 @@ class VoxfieldServer : public TsdfServer {
     return esdf_map_;
   }
 
+  bool saveEsdfMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
+                           voxblox_msgs::FilePath::Response& response);  // NOLINT
+
   bool getClearSphere() const { return clear_sphere_for_planning_; }
   void setClearSphere(bool clear_sphere_for_planning) {
     clear_sphere_for_planning_ = clear_sphere_for_planning;
@@ -100,6 +103,7 @@ class VoxfieldServer : public TsdfServer {
 
   /// Services.
   ros::ServiceServer generate_esdf_srv_;
+  ros::ServiceServer save_esdf_map_srv_;
 
   /// Timers.
   ros::Timer update_esdf_timer_;

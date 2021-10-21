@@ -6,11 +6,10 @@
 
 namespace voxblox {
 
-//24 Neighborhood, mainly used for FIESTA ESDF mapping
+// 24 Neighborhood, mainly used for FIESTA ESDF mapping
 class Neighborhood24LookupTables {
  public:
-  typedef Eigen::Matrix<LongIndexElement, 3, 24>
-      LongIndexOffsets;
+  typedef Eigen::Matrix<LongIndexElement, 3, 24> LongIndexOffsets;
   typedef Eigen::Matrix<IndexElement, 3, 24> IndexOffsets;
   typedef Eigen::Matrix<float, 1, 24> Distances;
 

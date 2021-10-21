@@ -7,7 +7,7 @@
 
   <!-- /camera/depth_registered/points in camera_rgb_optical_frame -->
 
-  <node name="voxblox_node" pkg="voxblox_ros" type="voxfield_server" output="screen" args="-alsologtostderr" clear_params="true">
+  <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr" clear_params="true">
     <remap from="pointcloud" to="/camera/depth_registered/points"/>
     <remap from="transform" to="/kinect/vrpn_client/estimated_transform" />
     <rosparam file="$(find voxblox_ros)/cfg/cow_and_lady.yaml"/>

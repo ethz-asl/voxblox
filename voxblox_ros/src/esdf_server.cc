@@ -70,6 +70,9 @@ void EsdfServer::setupRos() {
   double update_esdf_every_n_sec = 1.0;
   nh_private_.param("update_esdf_every_n_sec", update_esdf_every_n_sec,
                     update_esdf_every_n_sec);
+  
+  save_esdf_map_srv_ = nh_private_.advertiseService(
+      "save_esdf_map", &EsdfServer::saveEsdfMapCallback, this);
 
   if (update_esdf_every_n_sec > 0.0) {
     update_esdf_timer_ =
@@ -118,6 +121,13 @@ bool EsdfServer::generateEsdfCallback(
 
 void EsdfServer::updateEsdfEvent(const ros::TimerEvent& /*event*/) {
   updateEsdf();
+  if (publish_slices_) publishSlices();
+}
+
+bool EsdfServer::saveEsdfMapCallback(voxblox_msgs::FilePath::Request& request,
+                                     voxblox_msgs::FilePath::Response&
+                                     /*response*/) {  // NOLINT
+  return saveMap(request.file_path);
 }
 
 void EsdfServer::publishPointclouds() {
@@ -171,8 +181,8 @@ void EsdfServer::publishMap(bool reset_remote_map) {
 
 bool EsdfServer::saveMap(const std::string& file_path) {
   // Output TSDF map first, then ESDF.
-  const bool success = TsdfServer::saveMap(file_path);
-
+  // const bool success = TsdfServer::saveMap(file_path);
+  bool success = true;
   constexpr bool kClearFile = false;
   return success &&
          io::SaveLayer(esdf_map_->getEsdfLayer(), file_path, kClearFile);

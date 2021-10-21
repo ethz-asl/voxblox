@@ -80,44 +80,12 @@ void VoxfieldServer::setupRos() {
   nh_private_.param("traversability_radius", traversability_radius_,
                     traversability_radius_);
 
-  nh_private_.param("publish_slices", publish_slices_, publish_slices_);
-
-  // TODO: also use it for TSDF
-  nh_private_.param("esdf_slice_level", slice_level_, slice_level_);
-
-  nh_private_.param("verbose", verbose_, verbose_);
-
   double update_esdf_every_n_sec = 1.0;  // default
   nh_private_.param("update_esdf_every_n_sec", update_esdf_every_n_sec,
                     update_esdf_every_n_sec);
 
-  std::string color_mode("");
-  nh_private_.param("color_mode", color_mode, color_mode);
-  color_mode_ = getColorModeFromString(color_mode);
-
-  // Color map for intensity pointclouds.
-  std::string intensity_colormap("rainbow");
-  float intensity_max_value = kDefaultMaxIntensity;
-  nh_private_.param("intensity_colormap", intensity_colormap,
-                    intensity_colormap);
-  nh_private_.param("intensity_max_value", intensity_max_value,
-                    intensity_max_value);
-
-  // Default set in constructor.
-  if (intensity_colormap == "rainbow") {
-    color_map_.reset(new RainbowColorMap());
-  } else if (intensity_colormap == "inverse_rainbow") {
-    color_map_.reset(new InverseRainbowColorMap());
-  } else if (intensity_colormap == "grayscale") {
-    color_map_.reset(new GrayscaleColorMap());
-  } else if (intensity_colormap == "inverse_grayscale") {
-    color_map_.reset(new InverseGrayscaleColorMap());
-  } else if (intensity_colormap == "ironbow") {
-    color_map_.reset(new IronbowColorMap());
-  } else {
-    ROS_ERROR_STREAM("Invalid color map: " << intensity_colormap);
-  }
-  color_map_->setMaxValue(intensity_max_value);
+  save_esdf_map_srv_ = nh_private_.advertiseService(
+      "save_esdf_map", &VoxfieldServer::saveEsdfMapCallback, this);
 
   // Update ESDF per xx second
   if (update_esdf_every_n_sec > 0.0) {
@@ -164,6 +132,12 @@ void VoxfieldServer::publishSlices() {
 //   publishSlices();
 //   return true;
 // }
+
+bool VoxfieldServer::saveEsdfMapCallback(voxblox_msgs::FilePath::Request& request,
+                                         voxblox_msgs::FilePath::Response&
+                                         /*response*/) {  // NOLINT
+  return saveMap(request.file_path);
+}
 
 void VoxfieldServer::updateEsdfEvent(const ros::TimerEvent& /*event*/) {
   updateOccFromTsdf();
@@ -232,8 +206,8 @@ void VoxfieldServer::publishMap(bool reset_remote_map) {
 
 bool VoxfieldServer::saveMap(const std::string& file_path) {
   // Output TSDF map first, then ESDF.
-  const bool success = TsdfServer::saveMap(file_path);
-
+  // const bool success = TsdfServer::saveMap(file_path);
+  bool success = true;
   constexpr bool kClearFile = false;
   return success &&
          io::SaveLayer(esdf_map_->getEsdfLayer(), file_path, kClearFile);

@@ -8,6 +8,7 @@
 #include <pcl/filters/filter.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
+#include <pcl/kdtree/kdtree_flann.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
@@ -40,6 +41,8 @@ class VoxbloxEvaluator {
                    const ros::NodeHandle& nh_private);
   void evaluate();
   void visualize();
+  void evaluateEsdf();
+  void visualizeEsdf();
   bool shouldExit() const { return !visualize_; }
 
  private:
@@ -52,6 +55,8 @@ class VoxbloxEvaluator {
   bool visualize_;
   // Whether to recolor the voxels by error to the GT before generating a mesh.
   bool recolor_by_error_;
+  // Whether to also evaluate the Esdf mapping accuracy
+  bool eval_esdf_;
   // How to color the mesh.
   ColorMode color_mode_;
   // If visualizing, what TF frame to visualize in.
@@ -63,10 +68,12 @@ class VoxbloxEvaluator {
 
   // Visualization publishers.
   ros::Publisher mesh_pub_;
+  // ros::Publisher mesh_esdf_pub_;
   ros::Publisher gt_ptcloud_pub_;
 
   // Core data to compare.
   std::shared_ptr<Layer<TsdfVoxel>> tsdf_layer_;
+  std::shared_ptr<Layer<EsdfVoxel>> esdf_layer_;
   pcl::PointCloud<pcl::PointXYZRGB> gt_ptcloud_;
 
   // Interpolator to get the distance at the exact point in the GT.
@@ -83,11 +90,13 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
       nh_private_(nh_private),
       visualize_(true),
       recolor_by_error_(false),
-      frame_id_("world") {
+      frame_id_("world"),
+      eval_esdf_(false) {
   // Load parameters.
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("recolor_by_error", recolor_by_error_, recolor_by_error_);
   nh_private_.param("frame_id", frame_id_, frame_id_);
+  nh_private_.param("eval_esdf", eval_esdf_, eval_esdf_);
 
   // Load transformations.
   XmlRpc::XmlRpcValue T_V_G_xml;
@@ -105,15 +114,25 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   // Just exit if there's any issues here (this is just an evaluation node,
   // after all).
   std::string voxblox_file_path, gt_file_path;
+  std::string voxblox_esdf_file_path; 
   CHECK(nh_private_.getParam("voxblox_file_path", voxblox_file_path))
       << "No file path provided for voxblox map! Set the \"voxblox_file_path\" "
          "param.";
   CHECK(nh_private_.getParam("gt_file_path", gt_file_path))
       << "No file path provided for ground truth pointcloud! Set the "
          "\"gt_file_path\" param.";
+  if(eval_esdf_){
+    CHECK(nh_private_.getParam("voxblox_esdf_file_path", voxblox_esdf_file_path))
+      << "No file path provided for voxblox esdf map! Set the "
+         "\"voxblox_esdf_file_path\" param.";
+  }
 
   CHECK(io::LoadLayer<TsdfVoxel>(voxblox_file_path, &tsdf_layer_))
       << "Could not load voxblox map.";
+  if(eval_esdf_){
+    CHECK(io::LoadLayer<EsdfVoxel>(voxblox_esdf_file_path, &esdf_layer_))
+      << "Could not load voxblox esdf map.";
+  }
   pcl::PLYReader ply_reader;
 
   CHECK_EQ(ply_reader.read(gt_file_path, gt_ptcloud_), 0)
@@ -219,10 +238,83 @@ void VoxbloxEvaluator::evaluate() {
                    static_cast<double>(total_evaluated_voxels)
             << ")\n";
 
+  if (eval_esdf_) {
+    evaluateEsdf();
+  }
+
   if (visualize_) {
     visualize();
+    if (eval_esdf_) {
+      visualizeEsdf();
+    }
   }
 }
+
+void VoxbloxEvaluator::evaluateEsdf() {
+  // This is done in evaluate()
+  // // First, transform the pointcloud into the correct coordinate frame.
+  // // First, rotate the pointcloud into the world frame.
+  // pcl::transformPointCloud(gt_ptcloud_, gt_ptcloud_,
+  //                          T_V_G_.getTransformationMatrix());
+
+  // build the kd tree of the ground truth point cloud
+  
+  std::cout << "Begin to evaluate ESDF mapping accuracy\n";
+  
+  pcl::KdTreeFLANN<pcl::PointXYZRGB> kdtree;
+  kdtree.setInputCloud(gt_ptcloud_.makeShared());
+  std::vector<int> pointIdxNKNSearch(1);
+  std::vector<float> pointNKNSquaredDistance(1);
+
+  BlockIndexList esdf_blocks;
+  esdf_layer_->getAllAllocatedBlocks(&esdf_blocks);
+
+  double mse = 0.0;
+  uint64_t total_evaluated_voxels = 0;
+  
+  for (const BlockIndex& block_index : esdf_blocks) {
+    Block<EsdfVoxel>::ConstPtr esdf_block =
+        esdf_layer_->getBlockPtrByIndex(block_index);
+    if (!esdf_block) {
+      continue;
+    }
+
+    const size_t num_voxels_per_block = esdf_block->num_voxels();
+    for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
+      const EsdfVoxel& esdf_voxel =
+          esdf_block->getVoxelByLinearIndex(lin_index);
+      if (!esdf_voxel.observed) 
+        continue;
+      
+      VoxelIndex voxel_index =
+            esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
+      GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+            block_index, voxel_index, esdf_layer_->voxels_per_side());
+
+      Point point = getCenterPointFromGridIndex(global_index, 
+                                         esdf_layer_->voxel_size());
+      
+      kdtree.nearestKSearch(pcl::PointXYZRGB(point(0), point(1), point(2)), 1,
+                            pointIdxNKNSearch, pointNKNSquaredDistance);
+      float cur_gt_dist = std::sqrt(pointNKNSquaredDistance[0]);
+      float cur_est_dist = std::abs(esdf_voxel.distance);
+      float cur_error_dist = cur_est_dist - cur_gt_dist;
+      mse += (cur_error_dist * cur_error_dist);
+
+      //esdf_voxel.color = grayColorMap(cur_error_dist);
+
+      total_evaluated_voxels++;
+    }
+  }
+
+  double rms = sqrt(mse / total_evaluated_voxels);
+
+  std::cout << "Finished evaluating ESDF map.\n"
+            << "\nRMS Error:           " << rms
+            << "\nTotal evaluated:     " << total_evaluated_voxels
+            << "\n";   
+}
+
 
 void VoxbloxEvaluator::visualize() {
   // Generate the mesh.
@@ -245,6 +337,28 @@ void VoxbloxEvaluator::visualize() {
   gt_ptcloud_.header.frame_id = frame_id_;
   gt_ptcloud_pub_.publish(gt_ptcloud_);
   std::cout << "Finished visualizing.\n";
+}
+
+// TODO: problem, no mesh to generate, better to generate a slice, colored with error
+void VoxbloxEvaluator::visualizeEsdf() {
+  // // Generate the mesh.
+  // MeshIntegratorConfig mesh_config;
+  // mesh_layer_.reset(new MeshLayer(esdf_layer_->block_size()));
+  // mesh_integrator_.reset(new MeshIntegrator<TsdfVoxel>(
+  //     mesh_config, esdf_layer_.get(), mesh_layer_.get()));
+
+  // constexpr bool only_mesh_updated_blocks = false;
+  // constexpr bool clear_updated_flag = true;
+  // mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
+
+  // // Publish mesh.
+  // visualization_msgs::MarkerArray marker_array;
+  // marker_array.markers.resize(1);
+  // marker_array.markers[0].header.frame_id = frame_id_;
+  // fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
+  // mesh_pub_.publish(marker_array);
+
+  // std::cout << "Finished visualizing.\n";
 }
 
 }  // namespace voxblox

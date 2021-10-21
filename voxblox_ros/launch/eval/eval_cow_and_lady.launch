@@ -1,6 +1,7 @@
 <launch>
-  <arg name="voxblox_file_path" default="/Users/helen/data/lady_cow_dataset/voxblox/cow_and_lady_antigraze_0_10.vxblx" />
-  <arg name="gt_file_path" default="/Users/helen/data/lady_cow_dataset/lady_and_cow2.ply"/>
+  <arg name="gt_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/cow_lady_gt/cow_and_lady_gt.ply"/>
+  <arg name="voxblox_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/tsdf/cow_5cm_voxblox_new_tsdf.vxblx" />
+  <arg name="voxblox_esdf_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/esdf/cow_5cm_voxblox_new_esdf.vxblx" />
 
   <node name="voxblox_eval" pkg="voxblox_ros" type="voxblox_eval" output="screen" args="-alsologtostderr" clear_params="true">
     <param name="color_mode" value="normals" />
@@ -8,8 +9,13 @@
     <param name="verbose" value="true" />
     <param name="visualize" value="true" />
     <param name="recolor_by_error" value="false" />
-    <param name="voxblox_file_path" value="$(arg voxblox_file_path)" />
+    <param name="eval_esdf" value="false" />
     <param name="gt_file_path" value="$(arg gt_file_path)" />
+    <param name="voxblox_file_path" value="$(arg voxblox_file_path)" />
+    <param name="voxblox_esdf_file_path" value="$(arg voxblox_esdf_file_path)" />
   </node>
+  
+  <!--comment-->
+  <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find voxblox_ros)/cfg/rviz/eval.rviz" />
 
 </launch>

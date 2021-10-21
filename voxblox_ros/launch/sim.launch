@@ -13,4 +13,6 @@
     <param name="world_frame" value="map" />
   </node>
 
+  <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find voxblox_ros)/cfg/rviz/sim.rviz" />
+
 </launch>

@@ -18,10 +18,10 @@ use_const_weight: false
 max_ray_length_m: 5.0
 
 # ESDF integration
-local_range_offset_x: 20
-local_range_offset_y: 20
-local_range_offset_z: 10
-esdf_default_distance_m: 2.0
+local_range_offset_x: 30
+local_range_offset_y: 30
+local_range_offset_z: 15
+esdf_default_distance_m: 1.5
 behind_surface_m: 0.2
 
 # Occupancy grid integration
@@ -52,7 +52,7 @@ intensity_colormap: rainbow
 # publishing settings
 publish_traversable: false
 publish_slices: true
-esdf_slice_level: 1.0
+slice_level: 1.0
 
 # Logging
 verbose: true
