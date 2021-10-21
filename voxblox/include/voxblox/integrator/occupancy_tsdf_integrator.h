@@ -29,7 +29,7 @@ class OccTsdfIntegrator {
     FloatingPoint min_weight = 1e-4;
 
     // The threshold of TSDF distance is occ_voxel_size_ratio * voxel size
-    FloatingPoint occ_voxel_size_ratio = 0.5;
+    FloatingPoint occ_voxel_size_ratio = 1.0;
   };
 
   OccTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
@@ -42,9 +42,12 @@ class OccTsdfIntegrator {
     voxel_size_ = tsdf_layer_->voxel_size();
   }
 
-  void updateFromTsdfLayer(bool clear_updated_flag) {
+  void updateFromTsdfLayer(bool clear_updated_flag, bool in_batch) {
     BlockIndexList updated_tsdf_blocks;
-    tsdf_layer_->getAllUpdatedBlocks(Update::kEsdf, &updated_tsdf_blocks);
+    if (in_batch)
+      tsdf_layer_->getAllAllocatedBlocks(&updated_tsdf_blocks);
+    else
+      tsdf_layer_->getAllUpdatedBlocks(Update::kEsdf, &updated_tsdf_blocks);
     const bool kIncremental = true;
     updateFromTsdfBlocks(updated_tsdf_blocks, kIncremental);
 

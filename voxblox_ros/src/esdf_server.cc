@@ -70,7 +70,7 @@ void EsdfServer::setupRos() {
   double update_esdf_every_n_sec = 1.0;
   nh_private_.param("update_esdf_every_n_sec", update_esdf_every_n_sec,
                     update_esdf_every_n_sec);
-  
+
   save_esdf_map_srv_ = nh_private_.advertiseService(
       "save_esdf_map", &EsdfServer::saveEsdfMapCallback, this);
 

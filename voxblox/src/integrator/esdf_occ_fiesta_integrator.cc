@@ -229,7 +229,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
       if (voxInRange(temp_vox_idx)) {
         temp_vox->distance = config_.default_distance_m;
         // temp_vox->distance = INF;
-        // TODO: clean 
+        // TODO: clean
         // Get the global indices of neighbors. //26-nei: 0.0725 s
         // Neighborhood<>::IndexMatrix nbr_voxs_idx;
         // Neighborhood<>::getFromGlobalIndex(temp_vox_idx, &nbr_voxs_idx);

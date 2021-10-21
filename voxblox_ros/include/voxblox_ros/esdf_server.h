@@ -50,8 +50,9 @@ class EsdfServer : public TsdfServer {
   // Overwrites the layer with what's coming from the topic!
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
-  bool saveEsdfMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
-                           voxblox_msgs::FilePath::Response& response);  // NOLINT
+  bool saveEsdfMapCallback(
+      voxblox_msgs::FilePath::Request& request,     // NOLINT
+      voxblox_msgs::FilePath::Response& response);  // NOLINT
 
   inline std::shared_ptr<EsdfMap> getEsdfMapPtr() { return esdf_map_; }
   inline std::shared_ptr<const EsdfMap> getEsdfMapPtr() const {

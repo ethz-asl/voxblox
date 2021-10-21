@@ -62,8 +62,9 @@ class VoxfieldServer : public TsdfServer {
     return esdf_map_;
   }
 
-  bool saveEsdfMapCallback(voxblox_msgs::FilePath::Request& request,     // NOLINT
-                           voxblox_msgs::FilePath::Response& response);  // NOLINT
+  bool saveEsdfMapCallback(
+      voxblox_msgs::FilePath::Request& request,     // NOLINT
+      voxblox_msgs::FilePath::Response& response);  // NOLINT
 
   bool getClearSphere() const { return clear_sphere_for_planning_; }
   void setClearSphere(bool clear_sphere_for_planning) {

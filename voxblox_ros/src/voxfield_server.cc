@@ -133,9 +133,9 @@ void VoxfieldServer::publishSlices() {
 //   return true;
 // }
 
-bool VoxfieldServer::saveEsdfMapCallback(voxblox_msgs::FilePath::Request& request,
-                                         voxblox_msgs::FilePath::Response&
-                                         /*response*/) {  // NOLINT
+bool VoxfieldServer::saveEsdfMapCallback(
+    voxblox_msgs::FilePath::Request& request, voxblox_msgs::FilePath::Response&
+    /*response*/) {  // NOLINT
   return saveMap(request.file_path);
 }
 
@@ -272,9 +272,10 @@ void VoxfieldServer::updateEsdfFromOcc() {
 void VoxfieldServer::updateOccFromTsdf() {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = true;
+    const bool in_batch = false;
 
     // set update state to 0 after the processing
-    occupancy_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
+    occupancy_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf, in_batch);
   }
 }
 

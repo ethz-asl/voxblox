@@ -7,8 +7,8 @@
 #include <pcl/conversions.h>
 #include <pcl/filters/filter.h>
 #include <pcl/io/ply_io.h>
-#include <pcl/point_types.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
@@ -24,6 +24,7 @@
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
+#include <voxblox/integrator/occupancy_tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
@@ -43,6 +44,7 @@ class VoxbloxEvaluator {
   void visualize();
   void evaluateEsdf();
   void visualizeEsdf();
+  void generatePointCloudFromOcc();
   bool shouldExit() const { return !visualize_; }
 
  private:
@@ -57,6 +59,8 @@ class VoxbloxEvaluator {
   bool recolor_by_error_;
   // Whether to also evaluate the Esdf mapping accuracy
   bool eval_esdf_;
+  // Whether to use the occupied grid centers as the reference for evaluating esdf.
+  bool use_occ_ref_esdf_;
   // How to color the mesh.
   ColorMode color_mode_;
   // If visualizing, what TF frame to visualize in.
@@ -74,10 +78,15 @@ class VoxbloxEvaluator {
   // Core data to compare.
   std::shared_ptr<Layer<TsdfVoxel>> tsdf_layer_;
   std::shared_ptr<Layer<EsdfVoxel>> esdf_layer_;
+  std::shared_ptr<Layer<OccupancyVoxel>> occ_layer_;
   pcl::PointCloud<pcl::PointXYZRGB> gt_ptcloud_;
+  pcl::PointCloud<pcl::PointXYZRGB> occ_ptcloud_;
 
   // Interpolator to get the distance at the exact point in the GT.
   Interpolator<TsdfVoxel>::Ptr interpolator_;
+
+  // Occupancy grid from Tsdf map
+  std::unique_ptr<OccTsdfIntegrator> occupancy_integrator_;
 
   // Mesh visualization.
   std::shared_ptr<MeshLayer> mesh_layer_;
@@ -91,12 +100,14 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
       visualize_(true),
       recolor_by_error_(false),
       frame_id_("world"),
-      eval_esdf_(false) {
+      eval_esdf_(false),
+      use_occ_ref_esdf_(true) {
   // Load parameters.
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("recolor_by_error", recolor_by_error_, recolor_by_error_);
   nh_private_.param("frame_id", frame_id_, frame_id_);
   nh_private_.param("eval_esdf", eval_esdf_, eval_esdf_);
+  nh_private_.param("use_occ_ref", use_occ_ref_esdf_, use_occ_ref_esdf_);
 
   // Load transformations.
   XmlRpc::XmlRpcValue T_V_G_xml;
@@ -114,24 +125,25 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   // Just exit if there's any issues here (this is just an evaluation node,
   // after all).
   std::string voxblox_file_path, gt_file_path;
-  std::string voxblox_esdf_file_path; 
+  std::string voxblox_esdf_file_path;
   CHECK(nh_private_.getParam("voxblox_file_path", voxblox_file_path))
       << "No file path provided for voxblox map! Set the \"voxblox_file_path\" "
          "param.";
   CHECK(nh_private_.getParam("gt_file_path", gt_file_path))
       << "No file path provided for ground truth pointcloud! Set the "
          "\"gt_file_path\" param.";
-  if(eval_esdf_){
-    CHECK(nh_private_.getParam("voxblox_esdf_file_path", voxblox_esdf_file_path))
-      << "No file path provided for voxblox esdf map! Set the "
-         "\"voxblox_esdf_file_path\" param.";
+  if (eval_esdf_) {
+    CHECK(
+        nh_private_.getParam("voxblox_esdf_file_path", voxblox_esdf_file_path))
+        << "No file path provided for voxblox esdf map! Set the "
+           "\"voxblox_esdf_file_path\" param.";
   }
 
   CHECK(io::LoadLayer<TsdfVoxel>(voxblox_file_path, &tsdf_layer_))
       << "Could not load voxblox map.";
-  if(eval_esdf_){
+  if (eval_esdf_) {
     CHECK(io::LoadLayer<EsdfVoxel>(voxblox_esdf_file_path, &esdf_layer_))
-      << "Could not load voxblox esdf map.";
+        << "Could not load voxblox esdf map.";
   }
   pcl::PLYReader ply_reader;
 
@@ -140,6 +152,13 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
 
   // Initialize the interpolator.
   interpolator_.reset(new Interpolator<TsdfVoxel>(tsdf_layer_.get()));
+
+  // Set up Occupancy map and integrator
+  occ_layer_.reset(new Layer<OccupancyVoxel>(tsdf_layer_->voxel_size(),
+                    tsdf_layer_->voxels_per_side()));
+  OccTsdfIntegrator::Config occ_tsdf_integrator_config;
+  occupancy_integrator_.reset(new OccTsdfIntegrator(
+      occ_tsdf_integrator_config, tsdf_layer_.get(), occ_layer_.get()));
 
   // If doing visualizations, initialize the publishers.
   if (visualize_) {
@@ -239,6 +258,9 @@ void VoxbloxEvaluator::evaluate() {
             << ")\n";
 
   if (eval_esdf_) {
+    if (use_occ_ref_esdf_){ 
+      generatePointCloudFromOcc();
+    }
     evaluateEsdf();
   }
 
@@ -251,18 +273,20 @@ void VoxbloxEvaluator::evaluate() {
 }
 
 void VoxbloxEvaluator::evaluateEsdf() {
-  // This is done in evaluate()
-  // // First, transform the pointcloud into the correct coordinate frame.
-  // // First, rotate the pointcloud into the world frame.
-  // pcl::transformPointCloud(gt_ptcloud_, gt_ptcloud_,
-  //                          T_V_G_.getTransformationMatrix());
 
-  // build the kd tree of the ground truth point cloud
-  
-  std::cout << "Begin to evaluate ESDF mapping accuracy\n";
-  
+  // build the kd tree of the ground truth or occupied grid point cloud
+
   pcl::KdTreeFLANN<pcl::PointXYZRGB> kdtree;
-  kdtree.setInputCloud(gt_ptcloud_.makeShared());
+  std::cout << "Begin to evaluate ESDF mapping accuracy ";
+  if (use_occ_ref_esdf_) {
+    kdtree.setInputCloud(occ_ptcloud_.makeShared());
+    std::cout << "based on the occupied grid centers.\n";
+  }
+  else {
+    kdtree.setInputCloud(gt_ptcloud_.makeShared());
+    std::cout << "based on the ground truth point cloud.\n";
+  }
+  
   std::vector<int> pointIdxNKNSearch(1);
   std::vector<float> pointNKNSquaredDistance(1);
 
@@ -271,7 +295,7 @@ void VoxbloxEvaluator::evaluateEsdf() {
 
   double mse = 0.0;
   uint64_t total_evaluated_voxels = 0;
-  
+
   for (const BlockIndex& block_index : esdf_blocks) {
     Block<EsdfVoxel>::ConstPtr esdf_block =
         esdf_layer_->getBlockPtrByIndex(block_index);
@@ -283,17 +307,16 @@ void VoxbloxEvaluator::evaluateEsdf() {
     for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
       const EsdfVoxel& esdf_voxel =
           esdf_block->getVoxelByLinearIndex(lin_index);
-      if (!esdf_voxel.observed) 
-        continue;
-      
-      VoxelIndex voxel_index =
-            esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
-      GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-            block_index, voxel_index, esdf_layer_->voxels_per_side());
+      if (!esdf_voxel.observed) continue;
 
-      Point point = getCenterPointFromGridIndex(global_index, 
-                                         esdf_layer_->voxel_size());
-      
+      VoxelIndex voxel_index =
+          esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
+      GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+          block_index, voxel_index, esdf_layer_->voxels_per_side());
+
+      Point point =
+          getCenterPointFromGridIndex(global_index, esdf_layer_->voxel_size());
+
       kdtree.nearestKSearch(pcl::PointXYZRGB(point(0), point(1), point(2)), 1,
                             pointIdxNKNSearch, pointNKNSquaredDistance);
       float cur_gt_dist = std::sqrt(pointNKNSquaredDistance[0]);
@@ -301,7 +324,7 @@ void VoxbloxEvaluator::evaluateEsdf() {
       float cur_error_dist = cur_est_dist - cur_gt_dist;
       mse += (cur_error_dist * cur_error_dist);
 
-      //esdf_voxel.color = grayColorMap(cur_error_dist);
+      // esdf_voxel.color = grayColorMap(cur_error_dist);
 
       total_evaluated_voxels++;
     }
@@ -311,10 +334,40 @@ void VoxbloxEvaluator::evaluateEsdf() {
 
   std::cout << "Finished evaluating ESDF map.\n"
             << "\nRMS Error:           " << rms
-            << "\nTotal evaluated:     " << total_evaluated_voxels
-            << "\n";   
+            << "\nTotal evaluated:     " << total_evaluated_voxels << "\n";
 }
 
+void VoxbloxEvaluator::generatePointCloudFromOcc() {
+
+  occupancy_integrator_->updateFromTsdfLayer(true, true);
+
+  BlockIndexList occ_blocks;
+  occ_layer_->getAllAllocatedBlocks(&occ_blocks);
+  for (const BlockIndex& block_index : occ_blocks) {
+    Block<OccupancyVoxel>::ConstPtr occ_block =
+        occ_layer_->getBlockPtrByIndex(block_index);
+    if (!occ_block) {
+      continue;
+    }
+    const size_t num_voxels_per_block = occ_block->num_voxels();
+    for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
+      const OccupancyVoxel& occ_voxel =
+          occ_block->getVoxelByLinearIndex(lin_index);
+      if (!occ_voxel.observed || !occ_voxel.occupied) continue;
+
+      VoxelIndex voxel_index =
+          occ_block->computeVoxelIndexFromLinearIndex(lin_index);
+      GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+          block_index, voxel_index, occ_layer_->voxels_per_side());
+
+      Point point =
+          getCenterPointFromGridIndex(global_index, occ_layer_->voxel_size());
+
+      pcl::PointXYZRGB pt(point(0), point(1), point(2));
+      occ_ptcloud_.points.push_back(pt);
+    }
+  }
+}
 
 void VoxbloxEvaluator::visualize() {
   // Generate the mesh.
@@ -339,7 +392,8 @@ void VoxbloxEvaluator::visualize() {
   std::cout << "Finished visualizing.\n";
 }
 
-// TODO: problem, no mesh to generate, better to generate a slice, colored with error
+// TODO: problem, no mesh to generate, better to generate a slice, colored with
+// error
 void VoxbloxEvaluator::visualizeEsdf() {
   // // Generate the mesh.
   // MeshIntegratorConfig mesh_config;
@@ -349,7 +403,8 @@ void VoxbloxEvaluator::visualizeEsdf() {
 
   // constexpr bool only_mesh_updated_blocks = false;
   // constexpr bool clear_updated_flag = true;
-  // mesh_integrator_->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
+  // mesh_integrator_->generateMesh(only_mesh_updated_blocks,
+  // clear_updated_flag);
 
   // // Publish mesh.
   // visualization_msgs::MarkerArray marker_array;
