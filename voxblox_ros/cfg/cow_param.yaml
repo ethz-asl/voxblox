@@ -18,15 +18,17 @@ use_const_weight: false
 max_ray_length_m: 5.0
 
 # ESDF integration
-local_range_offset_x: 50
-local_range_offset_y: 50
-local_range_offset_z: 20
+local_range_offset_x: 20
+local_range_offset_y: 20
+local_range_offset_z: 10
 esdf_default_distance_m: 2.0
 behind_surface_m: 0.2
+num_buckets: 500
+patch_on: false
 
 # Occupancy grid integration
-occ_voxel_size_ratio: 1.0
-occ_min_weight: 0.0001
+occ_voxel_size_ratio: 0.865
+occ_min_weight: 0.001
 probability_hit: 0.7
 probability_miss: 0.4
 threshold_min: 0.12
@@ -52,7 +54,7 @@ intensity_colormap: rainbow
 # publishing settings
 publish_traversable: false
 publish_slices: true
-slice_level: 1.0
+slice_level: 0.8
 
 # Logging
 verbose: true

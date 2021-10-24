@@ -275,7 +275,8 @@ void VoxfieldServer::updateOccFromTsdf() {
     const bool in_batch = false;
 
     // set update state to 0 after the processing
-    occupancy_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf, in_batch);
+    occupancy_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf,
+                                               in_batch);
   }
 }
 

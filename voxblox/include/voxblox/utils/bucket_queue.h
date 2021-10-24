@@ -81,6 +81,8 @@ class BucketQueue {
 
   bool empty() { return num_elements_ == 0; }
 
+  size_t size() {return num_elements_;}
+
   void clear() {
     buckets_.clear();
     buckets_.resize(num_buckets_);

@@ -1,7 +1,7 @@
 <launch>
   <arg name="gt_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/cow_lady_gt/cow_and_lady_gt.ply"/>
   <arg name="voxblox_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/tsdf/cow_5cm_fast_tsdf.vxblx" />
-  <arg name="voxblox_esdf_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/esdf/cow_5cm_voxfield_new_esdf.vxblx" />
+  <arg name="voxblox_esdf_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/esdf/cow_5cm_voxfield_newererererer_esdf.vxblx" />
 
   <node name="voxblox_eval" pkg="voxblox_ros" type="voxblox_eval" output="screen" args="-alsologtostderr" clear_params="true">
     <param name="color_mode" value="normals" />
@@ -11,6 +11,8 @@
     <param name="recolor_by_error" value="false" />
     <param name="eval_esdf" value="true" />
     <param name="use_occ_ref" value="true" />
+    <param name="slice_level" value="1.0" />
+    <param name="error_limit_m" value="0.2" />
     <param name="gt_file_path" value="$(arg gt_file_path)" />
     <param name="voxblox_file_path" value="$(arg voxblox_file_path)" />
     <param name="voxblox_esdf_file_path" value="$(arg voxblox_esdf_file_path)" />

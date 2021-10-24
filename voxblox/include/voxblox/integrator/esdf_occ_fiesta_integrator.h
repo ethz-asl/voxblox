@@ -41,9 +41,15 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
     // Trunction distance behind surface, unit: m
     FloatingPoint behind_surface_m = 1.0f;
 
+    // Number of buckets for the bucketed priority queue.
+    int num_buckets = 20;
+
     // Number of the neighbor voxels (select from 6, 18, 24 and 26)
     // TODO: double-check if 24 is the best choice
     int num_neighbor = 24;
+
+    // Turn on the patch code (Algorithm 3 in FIESTA) or not
+    bool patch_on = true;
 
     // Local map boundary size (unit: voxel)
     GlobalIndex range_boundary_offset = GlobalIndex(100, 100, 50);
@@ -78,7 +84,8 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
   inline void clear() {
     GlobalIndexList().swap(insert_list_);
     GlobalIndexList().swap(delete_list_);
-    GlobalIndexQueue().swap(update_queue_);
+    update_queue_.clear();
+    updated_voxel_.clear();
   }
 
   /// Update some specific settings.
@@ -99,7 +106,8 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
   // Data structure used for FIESTA
   GlobalIndexList insert_list_;
   GlobalIndexList delete_list_;
-  GlobalIndexQueue update_queue_;
+  BucketQueue<GlobalIndex> update_queue_;
+  LongIndexSet updated_voxel_; //TODO
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;

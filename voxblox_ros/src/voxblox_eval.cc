@@ -23,8 +23,8 @@
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
-#include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/integrator/occupancy_tsdf_integrator.h>
+#include <voxblox/integrator/tsdf_integrator.h>
 #include <voxblox/io/layer_io.h>
 #include <voxblox/io/mesh_ply.h>
 #include <voxblox/mesh/mesh_integrator.h>
@@ -59,12 +59,17 @@ class VoxbloxEvaluator {
   bool recolor_by_error_;
   // Whether to also evaluate the Esdf mapping accuracy
   bool eval_esdf_;
-  // Whether to use the occupied grid centers as the reference for evaluating esdf.
+  // Whether to use the occupied grid centers as the reference for evaluating
+  // esdf.
   bool use_occ_ref_esdf_;
   // How to color the mesh.
   ColorMode color_mode_;
   // If visualizing, what TF frame to visualize in.
   std::string frame_id_;
+  // esdf & tsdf slice level (unit: m)
+  float slice_level_;
+  // error limit for visualization (unit: m)
+  float error_limit_m_;
 
   // Transformation between the ground truth dataset and the voxblox map.
   // The GT is transformed INTO the voxblox coordinate frame.
@@ -74,6 +79,8 @@ class VoxbloxEvaluator {
   ros::Publisher mesh_pub_;
   // ros::Publisher mesh_esdf_pub_;
   ros::Publisher gt_ptcloud_pub_;
+  // slice publisher
+  ros::Publisher esdf_error_slice_pub_;
 
   // Core data to compare.
   std::shared_ptr<Layer<TsdfVoxel>> tsdf_layer_;
@@ -101,13 +108,17 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
       recolor_by_error_(false),
       frame_id_("world"),
       eval_esdf_(false),
-      use_occ_ref_esdf_(true) {
+      use_occ_ref_esdf_(true),
+      slice_level_(1.0),
+      error_limit_m_(0.2) {
   // Load parameters.
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("recolor_by_error", recolor_by_error_, recolor_by_error_);
   nh_private_.param("frame_id", frame_id_, frame_id_);
   nh_private_.param("eval_esdf", eval_esdf_, eval_esdf_);
   nh_private_.param("use_occ_ref", use_occ_ref_esdf_, use_occ_ref_esdf_);
+  nh_private_.param("slice_level", slice_level_, slice_level_);
+  nh_private_.param("error_limit_m", error_limit_m_, error_limit_m_);
 
   // Load transformations.
   XmlRpc::XmlRpcValue T_V_G_xml;
@@ -155,7 +166,7 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
 
   // Set up Occupancy map and integrator
   occ_layer_.reset(new Layer<OccupancyVoxel>(tsdf_layer_->voxel_size(),
-                    tsdf_layer_->voxels_per_side()));
+                                             tsdf_layer_->voxels_per_side()));
   OccTsdfIntegrator::Config occ_tsdf_integrator_config;
   occupancy_integrator_.reset(new OccTsdfIntegrator(
       occ_tsdf_integrator_config, tsdf_layer_.get(), occ_layer_.get()));
@@ -166,6 +177,9 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
         nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
     gt_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
         "gt_ptcloud", 1, true);
+    esdf_error_slice_pub_ = 
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "esdf_error_slice", 1, true);
 
     std::string color_mode("color");
     nh_private_.param("color_mode", color_mode, color_mode);
@@ -258,7 +272,7 @@ void VoxbloxEvaluator::evaluate() {
             << ")\n";
 
   if (eval_esdf_) {
-    if (use_occ_ref_esdf_){ 
+    if (use_occ_ref_esdf_) {
       generatePointCloudFromOcc();
     }
     evaluateEsdf();
@@ -273,7 +287,6 @@ void VoxbloxEvaluator::evaluate() {
 }
 
 void VoxbloxEvaluator::evaluateEsdf() {
-
   // build the kd tree of the ground truth or occupied grid point cloud
 
   pcl::KdTreeFLANN<pcl::PointXYZRGB> kdtree;
@@ -281,12 +294,11 @@ void VoxbloxEvaluator::evaluateEsdf() {
   if (use_occ_ref_esdf_) {
     kdtree.setInputCloud(occ_ptcloud_.makeShared());
     std::cout << "based on the occupied grid centers.\n";
-  }
-  else {
+  } else {
     kdtree.setInputCloud(gt_ptcloud_.makeShared());
     std::cout << "based on the ground truth point cloud.\n";
   }
-  
+
   std::vector<int> pointIdxNKNSearch(1);
   std::vector<float> pointNKNSquaredDistance(1);
 
@@ -324,7 +336,13 @@ void VoxbloxEvaluator::evaluateEsdf() {
       float cur_error_dist = cur_est_dist - cur_gt_dist;
       mse += (cur_error_dist * cur_error_dist);
 
-      // esdf_voxel.color = grayColorMap(cur_error_dist);
+      // it would not be used any more anyway, so we use it to plot the slice
+      // esdf_voxel is const, so try to get a new one
+      EsdfVoxel* cur_esdf_vox = esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+      
+      // Clamped with the error limit for visualization
+      cur_esdf_vox->distance = std::max(-error_limit_m_, 
+                               std::min(error_limit_m_, cur_error_dist)); 
 
       total_evaluated_voxels++;
     }
@@ -338,7 +356,6 @@ void VoxbloxEvaluator::evaluateEsdf() {
 }
 
 void VoxbloxEvaluator::generatePointCloudFromOcc() {
-
   occupancy_integrator_->updateFromTsdfLayer(true, true);
 
   BlockIndexList occ_blocks;
@@ -395,25 +412,14 @@ void VoxbloxEvaluator::visualize() {
 // TODO: problem, no mesh to generate, better to generate a slice, colored with
 // error
 void VoxbloxEvaluator::visualizeEsdf() {
-  // // Generate the mesh.
-  // MeshIntegratorConfig mesh_config;
-  // mesh_layer_.reset(new MeshLayer(esdf_layer_->block_size()));
-  // mesh_integrator_.reset(new MeshIntegrator<TsdfVoxel>(
-  //     mesh_config, esdf_layer_.get(), mesh_layer_.get()));
+  pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
-  // constexpr bool only_mesh_updated_blocks = false;
-  // constexpr bool clear_updated_flag = true;
-  // mesh_integrator_->generateMesh(only_mesh_updated_blocks,
-  // clear_updated_flag);
+  constexpr int kZAxisIndex = 2;
+  createDistancePointcloudFromEsdfLayerSlice(
+      *esdf_layer_, kZAxisIndex, slice_level_, &pointcloud);
 
-  // // Publish mesh.
-  // visualization_msgs::MarkerArray marker_array;
-  // marker_array.markers.resize(1);
-  // marker_array.markers[0].header.frame_id = frame_id_;
-  // fillMarkerWithMesh(mesh_layer_, color_mode_, &marker_array.markers[0]);
-  // mesh_pub_.publish(marker_array);
-
-  // std::cout << "Finished visualizing.\n";
+  pointcloud.header.frame_id = frame_id_;
+  esdf_error_slice_pub_.publish(pointcloud);
 }
 
 }  // namespace voxblox
