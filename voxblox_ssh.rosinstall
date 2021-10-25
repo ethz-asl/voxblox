@@ -22,7 +22,3 @@
 - git:
     local-name: protobuf_catkin
     uri: git@github.com:ethz-asl/protobuf_catkin.git
-- git:
-    local-name: voxblox
-    uri: git@github.com:ethz-asl/voxblox.git
-
