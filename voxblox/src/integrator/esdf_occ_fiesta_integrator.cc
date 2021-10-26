@@ -75,8 +75,9 @@ void EsdfOccFiestaIntegrator::updateFromOccBlocks(
           GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
               block_index, voxel_index, esdf_layer_->voxels_per_side());
           esdf_voxel.self_idx = global_index;
-          esdf_voxel.distance = esdf_voxel.behind ? -config_.max_behind_surface_m
-                                                  : config_.default_distance_m;
+          esdf_voxel.distance = esdf_voxel.behind
+                                    ? -config_.max_behind_surface_m
+                                    : config_.default_distance_m;
         }
       }
     }
@@ -89,9 +90,9 @@ void EsdfOccFiestaIntegrator::updateFromOccBlocks(
   updateESDF();
 
   esdf_timer.Stop();
-
 }
 
+// Get the range of the changed occupancy grid (inserted or deleted)
 void EsdfOccFiestaIntegrator::getUpdateRange() {
   // initialization
   update_range_min_ << UNDEF, UNDEF, UNDEF;
@@ -114,6 +115,7 @@ void EsdfOccFiestaIntegrator::getUpdateRange() {
   }
 }
 
+// Expand the updated range with a given margin and then allocate memory 
 void EsdfOccFiestaIntegrator::setLocalRange() {
   range_min_ = update_range_min_ - config_.range_boundary_offset;
   range_max_ = update_range_max_ + config_.range_boundary_offset;
@@ -122,7 +124,6 @@ void EsdfOccFiestaIntegrator::setLocalRange() {
   // LOG(INFO) << "range_max: " << range_max_;
 
   // Allocate memory for the local ESDF map
-  // TODO: may have some issues here
   BlockIndex block_range_min, block_range_max;
   for (int i = 0; i <= 2; i++) {
     block_range_min(i) = range_min_(i) / esdf_voxels_per_side_;
@@ -141,14 +142,15 @@ void EsdfOccFiestaIntegrator::setLocalRange() {
   }
 }
 
-void EsdfOccFiestaIntegrator::resetFixed()
-{
+// Set all the voxels in the range to be unfixed
+// Deprecated
+void EsdfOccFiestaIntegrator::resetFixed() {
   for (int x = range_min_(0); x <= range_max_(0); x++) {
     for (int y = range_min_(1); y <= range_max_(1); y++) {
       for (int z = range_min_(2); z <= range_max_(2); z++) {
         GlobalIndex cur_voxel_idx = GlobalIndex(x, y, z);
         EsdfVoxel* cur_vox =
-          esdf_layer_->getVoxelPtrByGlobalIndex(cur_voxel_idx);
+            esdf_layer_->getVoxelPtrByGlobalIndex(cur_voxel_idx);
         cur_vox->fixed = false;
       }
     }
@@ -206,6 +208,13 @@ void EsdfOccFiestaIntegrator::insertIntoList(EsdfVoxel* occ_vox,
 // maintenance, our algorithm updates as few as possible nodes using a BFS
 // framework. The ESDF mapping has high computational performance and produces
 // near-optimal results. Code: https://github.com/HKUST-Aerial-Robotics/FIESTA
+//
+// About the patch_on and early_break settings:
+// The common option is to set them to be both true (slower but more accurate)
+// or both false (faster but less accurate).
+// Fastest operation can be achieved by setting patch_on=false and early_break
+// =true. Highest accuracy can be achieved with patch_on=true and early_break=
+// false. Please set them in the config file wisely.
 
 void EsdfOccFiestaIntegrator::updateESDF() {
   timing::Timer init_timer("esdf/update_init(alg2)");
@@ -272,7 +281,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
                   temp_vox->distance = temp_dist;
                   temp_vox->coc_idx = nbr_coc_vox_idx;
                 }
-                if (config_.early_break)  // TODO: may be fixed by the patch
+                if (config_.early_break) 
                   break;
               }
             }
@@ -309,7 +318,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
     update_queue_.pop();
     EsdfVoxel* cur_vox = esdf_layer_->getVoxelPtrByGlobalIndex(cur_vox_idx);
     CHECK_NOTNULL(cur_vox);
-    // TODO: this is a dirty fix, figure out why there's the SEGFAULT later
+    // TODO(yuepan): this is a dirty fix, figure out why there's the SEGFAULT later
     // if (cur_vox->coc_idx(0) == UNDEF) continue;
     EsdfVoxel* coc_vox =
         esdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);
@@ -364,8 +373,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
       if (voxInRange(nbr_vox_idx)) {
         EsdfVoxel* nbr_vox = esdf_layer_->getVoxelPtrByGlobalIndex(nbr_vox_idx);
         CHECK_NOTNULL(nbr_vox);
-        if (nbr_vox->observed && 
-            std::abs(nbr_vox->distance) > 0.0) {
+        if (nbr_vox->observed && std::abs(nbr_vox->distance) > 0.0) {
           float temp_dist = dist(cur_vox->coc_idx, nbr_vox_idx);
           if (temp_dist < std::abs(nbr_vox->distance)) {
             nbr_vox->distance = nbr_vox->behind ? -temp_dist : temp_dist;
@@ -386,18 +394,16 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   update_timer.Stop();
   // LOG(INFO)<<"Alg 1 done";
   // End of Algorithm 1
-
   // LOG(INFO) << "FIESTA: expanding [" << times << "] nodes, with [" <<
-  // change_num
-  //           << "] changes by the patch, up-to-now [" <<
-  //           total_expanding_times_
-  //           << "] nodes";
+  // change_num  << "] changes by the patch, up-to-now [" <<         
+  // total_expanding_times_  << "] nodes";         
 }
 
 inline float EsdfOccFiestaIntegrator::dist(GlobalIndex vox_idx_a,
                                            GlobalIndex vox_idx_b) {
   return (vox_idx_b - vox_idx_a).cast<float>().norm() * esdf_voxel_size_;
-  // TODO: may use square root & * resolution_ at last together to speed up
+  // TODO(yuepan): may use square root & * resolution_ at last 
+  // together to speed up
 }
 
 inline bool EsdfOccFiestaIntegrator::voxInRange(GlobalIndex vox_idx) {

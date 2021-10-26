@@ -351,8 +351,8 @@ void VoxbloxEvaluator::evaluateEsdf() {
       mse += (cur_error_dist * cur_error_dist);
       mae += std::abs(cur_error_dist);
 
-      // it would not be used any more anyway, so we use it to plot the slice
-      // esdf_voxel is const, so try to get a new one
+      // NOTE(yuepan): It would not be used any more anyway, so we use it 
+      // to plot the slice esdf_voxel is const, so try to get a new one
       EsdfVoxel* cur_esdf_vox =
           esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
 
@@ -398,8 +398,7 @@ void VoxbloxEvaluator::generatePointCloudFromOcc() {
       GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
           block_index, voxel_index, voxels_per_side);
 
-      Point point =
-          getCenterPointFromGridIndex(global_index, voxel_size);
+      Point point = getCenterPointFromGridIndex(global_index, voxel_size);
 
       pcl::PointXYZRGB pt(point(0), point(1), point(2));
       occ_ptcloud_.points.push_back(pt);
@@ -430,12 +429,14 @@ void VoxbloxEvaluator::visualize() {
   std::cout << "Finished visualizing.\n";
 }
 
-// TODO: problem, no mesh to generate, better to generate a slice
-// colored with error
+// Generate a slice, colored with esdf mapping error
 void VoxbloxEvaluator::visualizeEsdf() {
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
   constexpr int kZAxisIndex = 2;
+  //TODO(yuepan): for visualization colormap, the value (here the error)
+  //should evenly lay around 0.0, make sure to set the range of the 
+  //value for expected visualization
   createDistancePointcloudFromEsdfLayerSlice(*esdf_layer_, kZAxisIndex,
                                              slice_level_, &pointcloud);
 

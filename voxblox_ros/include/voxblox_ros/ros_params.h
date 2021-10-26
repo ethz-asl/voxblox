@@ -67,12 +67,12 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   integrator_config.voxel_carving_enabled = true;
 
   const TsdfMap::Config tsdf_config = getTsdfMapConfigFromRosParam(nh_private);
-  
-  float trunc_voxel_ratio = 4.0; //default
+
+  float trunc_voxel_ratio = 4.0;  // default
 
   nh_private.param("truncation_voxel_size_ratio", trunc_voxel_ratio,
                    trunc_voxel_ratio);
-  
+
   integrator_config.default_truncation_distance =
       tsdf_config.tsdf_voxel_size * trunc_voxel_ratio;
 
@@ -83,7 +83,7 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
                    integrator_config.voxel_carving_enabled);
   nh_private.param("truncation_distance", truncation_distance,
                    truncation_distance);
-  
+
   nh_private.param("max_ray_length_m", integrator_config.max_ray_length_m,
                    integrator_config.max_ray_length_m);
   nh_private.param("min_ray_length_m", integrator_config.min_ray_length_m,
@@ -270,9 +270,6 @@ getEsdfFiestaIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
   int range_boundary_offset_y = esdf_integrator_config.range_boundary_offset(1);
   int range_boundary_offset_z = esdf_integrator_config.range_boundary_offset(2);
 
-  // OccupancyIntegrator::Config occupancy_integrator_config =
-  //     getOccupancyIntegratorConfigFromRosParam(nh_private);
-
   // esdf_integrator_config.min_distance_m =
   //     tsdf_integrator_config.default_truncation_distance / 2.0;
 
@@ -296,7 +293,8 @@ getEsdfFiestaIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
                    esdf_integrator_config.default_distance_m,
                    esdf_integrator_config.default_distance_m);
 
-  nh_private.param("max_behind_surface_m", esdf_integrator_config.max_behind_surface_m,
+  nh_private.param("max_behind_surface_m",
+                   esdf_integrator_config.max_behind_surface_m,
                    esdf_integrator_config.max_behind_surface_m);
   // max_behind_surface_m should be at least sqrt(3) * truncation_dist
 

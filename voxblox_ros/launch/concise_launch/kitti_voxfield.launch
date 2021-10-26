@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+<launch>
+  <arg name="play_bag" default="true" />
+  <arg name="bag_file" default="/media/yuepan/SeagateNew/1_data/kitti/2011_09_30_0027.bag"/>
+  <!-- These datasets can be created with the KITTI raw datasets: http://www.cvlibs.net/datasets/kitti/raw_data.php and kitti_to_rosbag: https://github.com/ethz-asl/kitti_to_rosbag -->
+  <arg name="process_every_nth_frame" default="1" />
+  <!-- whether to use laser (true) or stereo (false) for the map. -->
+  <arg name="use_laser" default="true" />
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
+
+  <!-- Run stereo_dense_reconstruction_node-->
+  <node ns="stereo_gray" name="stereo_image_proc" pkg="stereo_image_proc" type="stereo_image_proc" clear_params="true" output="screen">
+    <remap from="left/image_raw" to="/cam02/image_raw" />
+    <remap from="left/camera_info" to="/cam02/camera_info" />
+    <remap from="right/image_raw" to="/cam03/image_raw" />
+    <remap from="right/camera_info" to="/cam03/camera_info" />
+    <param name="approximate_sync" value="true" />
+    <rosparam file="$(find voxblox_ros)/cfg/stereo/kitti_stereo_jager.yaml"/>
+  </node>
+  
+  <!-- Run voxblox_node-->
+  <node name="voxblox_node" pkg="voxblox_ros" type="voxfield_server" output="screen" args="-alsologtostderr" clear_params="true">
+    <remap from="pointcloud" to="/velodyne_points" if="$(arg use_laser)" />
+    <remap from="pointcloud" to="/stereo_gray/points2" unless="$(arg use_laser)" />
+    <param name="color_mode" value="color" unless="$(arg use_laser)" />
+    <param name="color_mode" value="normals" if="$(arg use_laser)" />
+    <param name="mesh_filename" value="$(find voxblox_ros)/mesh_results/$(anon kitti).ply" />
+    <rosparam file="$(find voxblox_ros)/cfg/kitti_param.yaml"/>
+  </node>
+
+  <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find voxblox_ros)/cfg/rviz/kitti_50cm.rviz" />
+
+  <!-- Use the service: rosservice call /voxblox_node/generate_mesh to save the mesh-->
+  <!-- Use the service: rosservice call /voxblox_node/save_map xxx.vxblx to save the tsdf map-->
+  <!-- Use the service: rosservice call /voxblox_node/save_esdf_map xxx.vxblx to save the esdf map-->
+  <!-- Use the service: rosservice call /voxblox_node/save_occ_map xxx.vxblx to save the occ map-->
+  <!-- Use the service: rosservice call /voxblox_node/save_all_map xxx to save tsdf, esdf, occ maps together-->
+
+</launch>

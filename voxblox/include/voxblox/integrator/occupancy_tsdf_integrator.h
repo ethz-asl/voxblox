@@ -99,7 +99,7 @@ class OccTsdfIntegrator {
                                   config_.occ_voxel_size_ratio * voxel_size_);
             if (occ_voxel.occupied)
               occ_voxel.probability_log = 1.0;  // only for visualization
-            else 
+            else
               occ_voxel.probability_log = 0.0;
 
             VoxelIndex voxel_index =

@@ -92,10 +92,11 @@ void VoxfieldServer::setupRos() {
   bool eval_esdf_on = false;
   nh_private_.param("eval_esdf_on", eval_esdf_on, eval_esdf_on);
 
-  double eval_esdf_every_n_sec = 150.0;  // default
+  double eval_esdf_every_n_sec = 100.0;  // default
   nh_private_.param("eval_esdf_every_n_sec", eval_esdf_every_n_sec,
                     eval_esdf_every_n_sec);
 
+  // services for saving maps
   save_esdf_map_srv_ = nh_private_.advertiseService(
       "save_esdf_map", &VoxfieldServer::saveEsdfMapCallback, this);
 
@@ -222,7 +223,8 @@ void VoxfieldServer::publishPointclouds() {
     publishTraversable();
   }
 
-  // TsdfServer::publishPointclouds(); // TODO:
+  // TODO:
+  // TsdfServer::publishPointclouds(); 
 }
 
 void VoxfieldServer::publishTraversable() {
@@ -341,7 +343,7 @@ void VoxfieldServer::updateEsdfFromOcc() {
 //   }
 // }
 
-// incrementally
+// incrementally update occupancy map from the updated TSDF map
 void VoxfieldServer::updateOccFromTsdf() {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = true;
@@ -353,6 +355,7 @@ void VoxfieldServer::updateOccFromTsdf() {
   }
 }
 
+// Evaluate the accuracy of ESDF mapping, referenced to current occupancy map
 void VoxfieldServer::evalEsdfRefOcc() {
   timing::Timer eval_esdf_timer("eval/esdf");
 
