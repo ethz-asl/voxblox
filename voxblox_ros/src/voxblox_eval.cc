@@ -148,12 +148,11 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
         nh_private_.getParam("voxblox_esdf_file_path", voxblox_esdf_file_path))
         << "No file path provided for voxblox esdf map! Set the "
            "\"voxblox_esdf_file_path\" param.";
-    if(use_occ_ref_esdf_)
-    {
+    if (use_occ_ref_esdf_) {
       CHECK(
-        nh_private_.getParam("voxblox_occ_file_path", voxblox_occ_file_path))
-        << "No file path provided for voxblox occ map! Set the "
-           "\"voxblox_occ_file_path\" param.";
+          nh_private_.getParam("voxblox_occ_file_path", voxblox_occ_file_path))
+          << "No file path provided for voxblox occ map! Set the "
+             "\"voxblox_occ_file_path\" param.";
     }
   }
 
@@ -162,12 +161,10 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   if (eval_esdf_) {
     CHECK(io::LoadLayer<EsdfVoxel>(voxblox_esdf_file_path, &esdf_layer_))
         << "Could not load voxblox esdf map.";
-    if(use_occ_ref_esdf_)
-    {
+    if (use_occ_ref_esdf_) {
       CHECK(io::LoadLayer<OccupancyVoxel>(voxblox_occ_file_path, &occ_layer_))
-        << "Could not load voxblox occupancy map.";
+          << "Could not load voxblox occupancy map.";
     }
-
   }
   pcl::PLYReader ply_reader;
 
@@ -177,8 +174,8 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   // Initialize the interpolator.
   interpolator_.reset(new Interpolator<TsdfVoxel>(tsdf_layer_.get()));
 
-  // Set up Occupancy map and integrator (deprecated, since we directly load the map)
-  // occ_layer_.reset(new Layer<OccupancyVoxel>(tsdf_layer_->voxel_size(),
+  // Set up Occupancy map and integrator (deprecated, since we directly load the
+  // map) occ_layer_.reset(new Layer<OccupancyVoxel>(tsdf_layer_->voxel_size(),
   //                                            tsdf_layer_->voxels_per_side()));
   // OccTsdfIntegrator::Config occ_tsdf_integrator_config;
   // occupancy_integrator_.reset(new OccTsdfIntegrator(
@@ -371,18 +368,18 @@ void VoxbloxEvaluator::evaluateEsdf() {
   mae /= total_evaluated_voxels;
 
   std::cout << "Finished evaluating ESDF map.\n"
-            << "\nRMSE(m):           " << rms
-            << "\nMAE(m):            " << mae
+            << "\nRMSE(m):           " << rms << "\nMAE(m):            " << mae
             << "\nTotal evaluated:     " << total_evaluated_voxels << "\n";
 }
 
 void VoxbloxEvaluator::generatePointCloudFromOcc() {
-  //occupancy_integrator_->updateFromTsdfLayer(true, true);
+  // occupancy_integrator_->updateFromTsdfLayer(true, true);
 
   BlockIndexList occ_blocks;
   occ_layer_->getAllAllocatedBlocks(&occ_blocks);
 
-  //std::cout << occ_blocks.size() << " occ blocks\n";
+  int voxels_per_side = occ_layer_->voxels_per_side();
+  float voxel_size = occ_layer_->voxel_size();
 
   for (const BlockIndex& block_index : occ_blocks) {
     Block<OccupancyVoxel>::ConstPtr occ_block =
@@ -399,16 +396,15 @@ void VoxbloxEvaluator::generatePointCloudFromOcc() {
       VoxelIndex voxel_index =
           occ_block->computeVoxelIndexFromLinearIndex(lin_index);
       GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-          block_index, voxel_index, occ_layer_->voxels_per_side());
+          block_index, voxel_index, voxels_per_side);
 
       Point point =
-          getCenterPointFromGridIndex(global_index, occ_layer_->voxel_size());
+          getCenterPointFromGridIndex(global_index, voxel_size);
 
       pcl::PointXYZRGB pt(point(0), point(1), point(2));
       occ_ptcloud_.points.push_back(pt);
     }
   }
-  //std::cout << occ_ptcloud_.points.size() << " points\n";
 }
 
 void VoxbloxEvaluator::visualize() {
@@ -434,8 +430,8 @@ void VoxbloxEvaluator::visualize() {
   std::cout << "Finished visualizing.\n";
 }
 
-// TODO: problem, no mesh to generate, better to generate a slice, colored with
-// error
+// TODO: problem, no mesh to generate, better to generate a slice
+// colored with error
 void VoxbloxEvaluator::visualizeEsdf() {
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 

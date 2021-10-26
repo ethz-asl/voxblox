@@ -39,7 +39,7 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
     FloatingPoint default_distance_m = 2.0;
 
     // Trunction distance behind surface, unit: m
-    FloatingPoint behind_surface_m = 1.0f;
+    FloatingPoint max_behind_surface_m = 1.0f;
 
     // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
@@ -67,6 +67,8 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
   void setLocalRange();
 
   void getUpdateRange();
+
+  void resetFixed();
 
   void updateESDF();
 

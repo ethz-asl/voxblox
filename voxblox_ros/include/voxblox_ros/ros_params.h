@@ -67,8 +67,14 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
   integrator_config.voxel_carving_enabled = true;
 
   const TsdfMap::Config tsdf_config = getTsdfMapConfigFromRosParam(nh_private);
+  
+  float trunc_voxel_ratio = 4.0; //default
+
+  nh_private.param("truncation_voxel_size_ratio", trunc_voxel_ratio,
+                   trunc_voxel_ratio);
+  
   integrator_config.default_truncation_distance =
-      tsdf_config.tsdf_voxel_size * 4;
+      tsdf_config.tsdf_voxel_size * trunc_voxel_ratio;
 
   double truncation_distance = integrator_config.default_truncation_distance;
   double max_weight = integrator_config.max_weight;
@@ -77,6 +83,7 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
                    integrator_config.voxel_carving_enabled);
   nh_private.param("truncation_distance", truncation_distance,
                    truncation_distance);
+  
   nh_private.param("max_ray_length_m", integrator_config.max_ray_length_m,
                    integrator_config.max_ray_length_m);
   nh_private.param("min_ray_length_m", integrator_config.min_ray_length_m,
@@ -289,18 +296,19 @@ getEsdfFiestaIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
                    esdf_integrator_config.default_distance_m,
                    esdf_integrator_config.default_distance_m);
 
-  nh_private.param("behind_surface_m", esdf_integrator_config.behind_surface_m,
-                   esdf_integrator_config.behind_surface_m);
+  nh_private.param("max_behind_surface_m", esdf_integrator_config.max_behind_surface_m,
+                   esdf_integrator_config.max_behind_surface_m);
+  // max_behind_surface_m should be at least sqrt(3) * truncation_dist
 
   nh_private.param("num_buckets", esdf_integrator_config.num_buckets,
                    esdf_integrator_config.num_buckets);
 
   nh_private.param("patch_on", esdf_integrator_config.patch_on,
                    esdf_integrator_config.patch_on);
-  
+
   nh_private.param("early_break", esdf_integrator_config.early_break,
                    esdf_integrator_config.early_break);
-                  
+
   if (esdf_integrator_config.default_distance_m <
       esdf_integrator_config.max_distance_m) {
     esdf_integrator_config.default_distance_m =

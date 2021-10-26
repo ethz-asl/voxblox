@@ -73,7 +73,7 @@ class VoxfieldServer : public TsdfServer {
   bool saveEsdfMapCallback(
       voxblox_msgs::FilePath::Request& request,     // NOLINT
       voxblox_msgs::FilePath::Response& response);  // NOLINT
-  
+
   bool saveOccMapCallback(
       voxblox_msgs::FilePath::Request& request,     // NOLINT
       voxblox_msgs::FilePath::Response& response);  // NOLINT

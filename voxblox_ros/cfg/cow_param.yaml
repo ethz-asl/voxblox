@@ -15,6 +15,7 @@ esdf_voxels_per_side: *voxels_per_side_in_block
 # select from simple, fast and merged
 method: fast 
 use_const_weight: false
+truncation_distance: 0.15
 max_ray_length_m: 5.0
 
 # ESDF integration
@@ -22,7 +23,8 @@ local_range_offset_x: 30
 local_range_offset_y: 30
 local_range_offset_z: 10
 esdf_default_distance_m: 2.0
-behind_surface_m: 0.2
+# max_behind_surface_m should be larger than truncation_distance
+max_behind_surface_m: 0.3
 num_buckets: 20
 patch_on: false
 early_break: false
@@ -44,9 +46,9 @@ use_tf_transforms: false
 
 # Timer
 update_mesh_every_n_sec: 1.0
-update_esdf_every_n_sec: 1.0
+update_esdf_every_n_sec: 0.5
 publish_map_every_n_sec: 0.5
-eval_esdf_every_n_sec: 150.0
+eval_esdf_every_n_sec: 180.0
 min_time_between_msgs_sec: 0.0
 
 # Visualization
@@ -60,4 +62,4 @@ publish_slices: true
 slice_level: 0.8
 
 # Logging
-verbose: false
+verbose: true

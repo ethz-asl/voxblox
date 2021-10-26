@@ -75,7 +75,7 @@ void EsdfOccFiestaIntegrator::updateFromOccBlocks(
           GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
               block_index, voxel_index, esdf_layer_->voxels_per_side());
           esdf_voxel.self_idx = global_index;
-          esdf_voxel.distance = esdf_voxel.behind ? -config_.behind_surface_m
+          esdf_voxel.distance = esdf_voxel.behind ? -config_.max_behind_surface_m
                                                   : config_.default_distance_m;
         }
       }
@@ -87,7 +87,9 @@ void EsdfOccFiestaIntegrator::updateFromOccBlocks(
 
   allocate_timer.Stop();
   updateESDF();
+
   esdf_timer.Stop();
+
 }
 
 void EsdfOccFiestaIntegrator::getUpdateRange() {
@@ -134,6 +136,20 @@ void EsdfOccFiestaIntegrator::setLocalRange() {
         Block<EsdfVoxel>::Ptr esdf_block =
             esdf_layer_->allocateBlockPtrByIndex(cur_block_idx);
         esdf_block->setUpdatedAll();
+      }
+    }
+  }
+}
+
+void EsdfOccFiestaIntegrator::resetFixed()
+{
+  for (int x = range_min_(0); x <= range_max_(0); x++) {
+    for (int y = range_min_(1); y <= range_max_(1); y++) {
+      for (int z = range_min_(2); z <= range_max_(2); z++) {
+        GlobalIndex cur_voxel_idx = GlobalIndex(x, y, z);
+        EsdfVoxel* cur_vox =
+          esdf_layer_->getVoxelPtrByGlobalIndex(cur_voxel_idx);
+        cur_vox->fixed = false;
       }
     }
   }
@@ -228,10 +244,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
       EsdfVoxel* temp_vox = esdf_layer_->getVoxelPtrByGlobalIndex(temp_vox_idx);
       CHECK_NOTNULL(temp_vox);
 
-      next_vox_idx = temp_vox->prev_idx;
       // deleteFromList(cur_vox, temp_vox);
-      temp_vox->next_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
-      temp_vox->prev_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
       temp_vox->coc_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
 
       if (voxInRange(temp_vox_idx)) {
@@ -259,13 +272,17 @@ void EsdfOccFiestaIntegrator::updateESDF() {
                   temp_vox->distance = temp_dist;
                   temp_vox->coc_idx = nbr_coc_vox_idx;
                 }
-                if(config_.early_break) //TODO: may be fixed by the patch code
+                if (config_.early_break)  // TODO: may be fixed by the patch
                   break;
               }
             }
           }
         }
       }
+
+      next_vox_idx = temp_vox->prev_idx;
+      temp_vox->next_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
+      temp_vox->prev_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
 
       if (temp_vox->coc_idx(0) != UNDEF) {
         temp_vox->distance =
@@ -281,7 +298,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   }
   init_timer.Stop();
   // End of Algorithm 2
-  //LOG(INFO) << "Update queue's original size: [" 
+  // LOG(INFO) << "Update queue's original size: ["
   //<< update_queue_.size() << "]";
 
   timing::Timer update_timer("esdf/update(alg1)");
@@ -347,7 +364,8 @@ void EsdfOccFiestaIntegrator::updateESDF() {
       if (voxInRange(nbr_vox_idx)) {
         EsdfVoxel* nbr_vox = esdf_layer_->getVoxelPtrByGlobalIndex(nbr_vox_idx);
         CHECK_NOTNULL(nbr_vox);
-        if (nbr_vox->observed && std::abs(nbr_vox->distance) > 0.0) {
+        if (nbr_vox->observed && 
+            std::abs(nbr_vox->distance) > 0.0) {
           float temp_dist = dist(cur_vox->coc_idx, nbr_vox_idx);
           if (temp_dist < std::abs(nbr_vox->distance)) {
             nbr_vox->distance = nbr_vox->behind ? -temp_dist : temp_dist;
@@ -369,8 +387,10 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   // LOG(INFO)<<"Alg 1 done";
   // End of Algorithm 1
 
-  // LOG(INFO) << "FIESTA: expanding [" << times << "] nodes, with [" << change_num
-  //           << "] changes by the patch, up-to-now [" << total_expanding_times_
+  // LOG(INFO) << "FIESTA: expanding [" << times << "] nodes, with [" <<
+  // change_num
+  //           << "] changes by the patch, up-to-now [" <<
+  //           total_expanding_times_
   //           << "] nodes";
 }
 
@@ -397,9 +417,10 @@ void EsdfOccFiestaIntegrator::loadDeleteList(
 }
 
 // only for the visualization of Esdf error
-void EsdfOccFiestaIntegrator::assignError(GlobalIndex vox_idx, float esdf_error){
-   EsdfVoxel* vox = esdf_layer_->getVoxelPtrByGlobalIndex(vox_idx);
-   vox->error = esdf_error;
+void EsdfOccFiestaIntegrator::assignError(GlobalIndex vox_idx,
+                                          float esdf_error) {
+  EsdfVoxel* vox = esdf_layer_->getVoxelPtrByGlobalIndex(vox_idx);
+  vox->error = esdf_error;
 }
 
 }  // namespace voxblox

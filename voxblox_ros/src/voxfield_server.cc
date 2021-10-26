@@ -61,8 +61,9 @@ void VoxfieldServer::setupRos() {
       "esdf_slice", 1, true);
   traversable_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "traversable", 1, true);
-  esdf_error_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-      "esdf_error_slice", 1, true);
+  esdf_error_slice_pub_ =
+      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+          "esdf_error_slice", 1, true);
 
   esdf_map_pub_ =
       nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
@@ -87,21 +88,20 @@ void VoxfieldServer::setupRos() {
   double update_esdf_every_n_sec = 1.0;  // default
   nh_private_.param("update_esdf_every_n_sec", update_esdf_every_n_sec,
                     update_esdf_every_n_sec);
-  
+
   bool eval_esdf_on = false;
-  nh_private_.param("eval_esdf_on", eval_esdf_on,
-                    eval_esdf_on);
-  
-  double eval_esdf_every_n_sec = 150.0; // default
+  nh_private_.param("eval_esdf_on", eval_esdf_on, eval_esdf_on);
+
+  double eval_esdf_every_n_sec = 150.0;  // default
   nh_private_.param("eval_esdf_every_n_sec", eval_esdf_every_n_sec,
                     eval_esdf_every_n_sec);
 
   save_esdf_map_srv_ = nh_private_.advertiseService(
       "save_esdf_map", &VoxfieldServer::saveEsdfMapCallback, this);
-  
+
   save_occ_map_srv_ = nh_private_.advertiseService(
       "save_occ_map", &VoxfieldServer::saveOccMapCallback, this);
-  
+
   save_all_map_srv_ = nh_private_.advertiseService(
       "save_all_map", &VoxfieldServer::saveAllMapCallback, this);
 
@@ -150,8 +150,8 @@ void VoxfieldServer::visualizeEsdfError() {
 
   constexpr int kZAxisIndex = 2;
   createErrorPointcloudFromEsdfLayerSlice(
-    esdf_map_->getEsdfLayer(), kZAxisIndex, slice_level_, &pointcloud);
-                                         
+      esdf_map_->getEsdfLayer(), kZAxisIndex, slice_level_, &pointcloud);
+
   pointcloud.header.frame_id = world_frame_;
   esdf_error_slice_pub_.publish(pointcloud);
 }
@@ -198,8 +198,7 @@ void VoxfieldServer::updateEsdfEvent(const ros::TimerEvent& /*event*/) {
 }
 
 void VoxfieldServer::evalEsdfEvent(const ros::TimerEvent& /*event*/) {
-  if (esdf_ready_)
-  {
+  if (esdf_ready_) {
     evalEsdfRefOcc();
     visualizeEsdfError();
   }
@@ -266,9 +265,8 @@ bool VoxfieldServer::saveAllMap(const std::string& file_path) {
   std::string file_path_tsdf = file_path + ".tsdf";
   std::string file_path_esdf = file_path + ".esdf";
   std::string file_path_occ = file_path + ".occ";
-  
-  return saveTsdfMap(file_path_tsdf) && 
-         saveEsdfMap(file_path_esdf) &&
+
+  return saveTsdfMap(file_path_tsdf) && saveEsdfMap(file_path_esdf) &&
          saveOccMap(file_path_occ);
 }
 
@@ -283,7 +281,8 @@ bool VoxfieldServer::saveEsdfMap(const std::string& file_path) {
 
 bool VoxfieldServer::saveOccMap(const std::string& file_path) {
   constexpr bool kClearFile = false;
-  return io::SaveLayer(occupancy_map_->getOccupancyLayer(), file_path, kClearFile);
+  return io::SaveLayer(occupancy_map_->getOccupancyLayer(), file_path,
+                       kClearFile);
 }
 
 bool VoxfieldServer::loadMap(const std::string& file_path) {
@@ -355,10 +354,10 @@ void VoxfieldServer::updateOccFromTsdf() {
 }
 
 void VoxfieldServer::evalEsdfRefOcc() {
-  
   timing::Timer eval_esdf_timer("eval/esdf");
-  
-  pcl::PointCloud<pcl::PointXYZ>::Ptr occ_ptcloud(new pcl::PointCloud<pcl::PointXYZ>());
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr occ_ptcloud(
+      new pcl::PointCloud<pcl::PointXYZ>());
   BlockIndexList occ_blocks;
   occupancy_map_->getOccupancyLayer().getAllAllocatedBlocks(&occ_blocks);
   int voxels_per_side = occupancy_map_->getOccupancyLayer().voxels_per_side();
@@ -375,21 +374,20 @@ void VoxfieldServer::evalEsdfRefOcc() {
     for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
       const OccupancyVoxel& occ_voxel =
           occ_block->getVoxelByLinearIndex(lin_index);
-      if (!occ_voxel.observed || !occ_voxel.occupied) continue;
+      if (!occ_voxel.observed || occ_voxel.probability_log < 0.7) continue;
 
       VoxelIndex voxel_index =
           occ_block->computeVoxelIndexFromLinearIndex(lin_index);
       GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
           block_index, voxel_index, voxels_per_side);
 
-      Point point =
-          getCenterPointFromGridIndex(global_index, voxel_size);        
+      Point point = getCenterPointFromGridIndex(global_index, voxel_size);
 
       pcl::PointXYZ pt(point(0), point(1), point(2));
       occ_ptcloud->points.push_back(pt);
     }
   }
-  // build the kd tree of the ground truth or occupied grid point cloud
+  // build the kd tree of the occupied grid point cloud
   pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
   std::cout << "Begin to evaluate ESDF mapping accuracy ";
   kdtree.setInputCloud(occ_ptcloud);
@@ -421,8 +419,7 @@ void VoxfieldServer::evalEsdfRefOcc() {
       GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
           block_index, voxel_index, voxels_per_side);
 
-      Point point =
-          getCenterPointFromGridIndex(global_index, voxel_size);
+      Point point = getCenterPointFromGridIndex(global_index, voxel_size);
 
       kdtree.nearestKSearch(pcl::PointXYZ(point(0), point(1), point(2)), 1,
                             pointIdxNKNSearch, pointNKNSquaredDistance);
@@ -433,8 +430,9 @@ void VoxfieldServer::evalEsdfRefOcc() {
       mae += std::abs(cur_error_dist);
 
       // Clamped with the error limit for visualization
-      esdf_integrator_->assignError(global_index, 
-          std::max(-error_vis_limit, std::min(error_vis_limit, cur_error_dist)));
+      esdf_integrator_->assignError(
+          global_index, std::max(-error_vis_limit,
+                                 std::min(error_vis_limit, cur_error_dist)));
 
       total_evaluated_voxels++;
     }
@@ -444,14 +442,13 @@ void VoxfieldServer::evalEsdfRefOcc() {
   mae /= total_evaluated_voxels;
 
   std::cout << "Finished evaluating ESDF map.\n"
-            << "\nRMSE:           " << rms
-            << "\nMAE:            " << mae
+            << "\nRMSE:           " << rms << "\nMAE:            " << mae
             << "\nTotal evaluated:     " << total_evaluated_voxels << "\n";
-  
+
   eval_esdf_timer.Stop();
-  
+
   ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
-  
+
   occ_ptcloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
 }
 
