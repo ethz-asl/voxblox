@@ -16,6 +16,7 @@
     <!-- Use the service: rosservice call /voxblox_node/generate_mesh to save the mesh-->
     <!-- Use the service: rosservice call /voxblox_node/save_map xxx.vxblx to save the tsdf map-->
     <!-- Use the service: rosservice call /voxblox_node/save_esdf_map xxx.vxblx to save the esdf map-->
+    <!-- Use the service: rosservice call /voxblox_node/save_occ_map xxx.vxblx to save the occ map-->
   </node>
 
   <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find voxblox_ros)/cfg/rviz/cow_5cm.rviz" />

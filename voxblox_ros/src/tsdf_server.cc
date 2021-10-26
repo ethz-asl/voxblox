@@ -491,9 +491,9 @@ void TsdfServer::publishPointclouds() {
 }
 
 void TsdfServer::updateMesh() {
-  if (verbose_) {
-    ROS_INFO("Updating mesh.");
-  }
+  // if (verbose_) {
+  //   ROS_INFO("Updating mesh.");
+  // }
 
   timing::Timer generate_mesh_timer("mesh/update");
   constexpr bool only_mesh_updated_blocks = true;

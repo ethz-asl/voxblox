@@ -29,7 +29,7 @@ class OccTsdfIntegrator {
     FloatingPoint min_weight = 1e-3;
 
     // The threshold of TSDF distance is occ_voxel_size_ratio * voxel size
-    FloatingPoint occ_voxel_size_ratio = 0.865; //Sqrt(3)/2
+    FloatingPoint occ_voxel_size_ratio = 0.865;  // Sqrt(3)/2
   };
 
   OccTsdfIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,

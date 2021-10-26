@@ -279,6 +279,22 @@ inline bool visualizeDistanceIntensityEsdfVoxelsSlice(
   return false;
 }
 
+// added for ESDF accuracy evaluation
+inline bool visualizeErrorIntensityEsdfVoxelsSlice(
+    const EsdfVoxel& voxel, const Point& coord, unsigned int free_plane_index,
+    FloatingPoint free_plane_val, FloatingPoint voxel_size, double* intensity) {
+  CHECK_NOTNULL(intensity);
+
+  if (std::abs(coord(free_plane_index) - free_plane_val) <=
+      (voxel_size / 2.0 + kFloatEpsilon)) {
+    if (voxel.observed) {
+      *intensity = voxel.error;
+      return true;
+    }
+  }
+  return false;
+}
+
 inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
                                         const Point& /*coord*/,
                                         const float min_distance = 0.0) {
@@ -424,6 +440,26 @@ inline void createDistancePointcloudFromEsdfLayerSlice(
   createColorPointcloudFromLayer<EsdfVoxel>(
       layer,
       std::bind(&visualizeDistanceIntensityEsdfVoxelsSlice, ph::_1, ph::_2,
+                free_plane_index, free_plane_val, layer.voxel_size(), ph::_3),
+      pointcloud);
+}
+
+// added for ESDF accuracy visualization
+inline void createErrorPointcloudFromEsdfLayerSlice(
+    const Layer<EsdfVoxel>& layer, unsigned int free_plane_index,
+    FloatingPoint free_plane_val, pcl::PointCloud<pcl::PointXYZI>* pointcloud) {
+  CHECK_NOTNULL(pointcloud);
+  // Make sure that the free_plane_val doesn't fall evenly between 2 slices.
+  // Prefer to push it up.
+  // Using std::remainder rather than std::fmod as the latter has huge crippling
+  // issues with floating-point division.
+  if (std::remainder(free_plane_val, layer.voxel_size()) < kFloatEpsilon) {
+    free_plane_val += layer.voxel_size() / 2.0;
+  }
+
+  createColorPointcloudFromLayer<EsdfVoxel>(
+      layer,
+      std::bind(&visualizeErrorIntensityEsdfVoxelsSlice, ph::_1, ph::_2,
                 free_plane_index, free_plane_val, layer.voxel_size(), ph::_3),
       pointcloud);
 }

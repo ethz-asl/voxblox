@@ -50,6 +50,7 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
 
     // Turn on the patch code (Algorithm 3 in FIESTA) or not
     bool patch_on = true;
+    bool early_break = false;
 
     // Local map boundary size (unit: voxel)
     GlobalIndex range_boundary_offset = GlobalIndex(100, 100, 50);
@@ -81,6 +82,8 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
 
   void loadDeleteList(const GlobalIndexList& delete_list);
 
+  void assignError(GlobalIndex vox_idx, float esdf_error);
+
   inline void clear() {
     GlobalIndexList().swap(insert_list_);
     GlobalIndexList().swap(delete_list_);
@@ -107,7 +110,7 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
   GlobalIndexList insert_list_;
   GlobalIndexList delete_list_;
   BucketQueue<GlobalIndex> update_queue_;
-  LongIndexSet updated_voxel_; //TODO
+  LongIndexSet updated_voxel_;  // TODO
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;

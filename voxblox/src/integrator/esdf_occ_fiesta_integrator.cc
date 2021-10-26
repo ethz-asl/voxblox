@@ -20,7 +20,8 @@ void EsdfOccFiestaIntegrator::updateFromOccLayer(bool clear_updated_flag) {
   BlockIndexList occ_blocks;
   occ_layer_->getAllUpdatedBlocks(Update::kEsdf, &occ_blocks);
 
-  LOG(INFO) << "count of the updated occupancy block: ["<<occ_blocks.size()<< "]"; 
+  // LOG(INFO) << "count of the updated occupancy block: [" << occ_blocks.size()
+  //           << "]";
 
   updateFromOccBlocks(occ_blocks);
 
@@ -67,13 +68,12 @@ void EsdfOccFiestaIntegrator::updateFromOccBlocks(
       if (occupancy_voxel.observed) {
         EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
         esdf_voxel.behind = occupancy_voxel.behind;  // add signed
-        if (esdf_voxel.self_idx(0) == UNDEF)
-        {
+        if (esdf_voxel.self_idx(0) == UNDEF) {
           esdf_voxel.observed = true;
           VoxelIndex voxel_index =
-            esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
+              esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
           GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
-            block_index, voxel_index, esdf_layer_->voxels_per_side());
+              block_index, voxel_index, esdf_layer_->voxels_per_side());
           esdf_voxel.self_idx = global_index;
           esdf_voxel.distance = esdf_voxel.behind ? -config_.behind_surface_m
                                                   : config_.default_distance_m;
@@ -151,8 +151,7 @@ void EsdfOccFiestaIntegrator::deleteFromList(EsdfVoxel* occ_vox,
         esdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->prev_idx);
     prev_vox->next_idx =
         cur_vox->next_idx;  // a <-> b <-> c , delete b, a <-> c
-  } 
-  else
+  } else
     occ_vox->head_idx = cur_vox->next_idx;  // b <-> c, b is already the head
   if (cur_vox->next_idx(0) != UNDEF) {
     EsdfVoxel* next_vox =
@@ -178,7 +177,7 @@ void EsdfOccFiestaIntegrator::insertIntoList(EsdfVoxel* occ_vox,
         esdf_layer_->getVoxelPtrByGlobalIndex(occ_vox->head_idx);
     head_occ_vox->prev_idx = cur_vox->self_idx;  // b <-> c to a <-> b <-> c
     cur_vox->next_idx = occ_vox->head_idx;
-    occ_vox->head_idx = cur_vox->self_idx;  
+    occ_vox->head_idx = cur_vox->self_idx;
   }
 }
 
@@ -217,7 +216,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   while (!delete_list_.empty()) {
     GlobalIndex cur_vox_idx = *delete_list_.begin();
     delete_list_.erase(delete_list_.begin());
-    
+
     EsdfVoxel* cur_vox = esdf_layer_->getVoxelPtrByGlobalIndex(cur_vox_idx);
     CHECK_NOTNULL(cur_vox);
 
@@ -225,8 +224,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
 
     // for each voxel in current voxel's doubly linked list
     for (GlobalIndex temp_vox_idx = cur_vox_idx; temp_vox_idx(0) != UNDEF;
-          temp_vox_idx = next_vox_idx){ 
-      
+         temp_vox_idx = next_vox_idx) {
       EsdfVoxel* temp_vox = esdf_layer_->getVoxelPtrByGlobalIndex(temp_vox_idx);
       CHECK_NOTNULL(temp_vox);
 
@@ -239,7 +237,7 @@ void EsdfOccFiestaIntegrator::updateESDF() {
       if (voxInRange(temp_vox_idx)) {
         temp_vox->distance = config_.default_distance_m;
         // temp_vox->distance = INF;
-        Neighborhood24::IndexMatrix nbr_voxs_idx; 
+        Neighborhood24::IndexMatrix nbr_voxs_idx;
         Neighborhood24::getFromGlobalIndex(temp_vox_idx, &nbr_voxs_idx);
 
         // Go through the neighbors and see if we can update any of them.
@@ -261,8 +259,8 @@ void EsdfOccFiestaIntegrator::updateESDF() {
                   temp_vox->distance = temp_dist;
                   temp_vox->coc_idx = nbr_coc_vox_idx;
                 }
-                //if(config_.patch_on) //TODO: may be fixed by the patch code 
-                  break; 
+                if(config_.early_break) //TODO: may be fixed by the patch code
+                  break;
               }
             }
           }
@@ -270,7 +268,8 @@ void EsdfOccFiestaIntegrator::updateESDF() {
       }
 
       if (temp_vox->coc_idx(0) != UNDEF) {
-        temp_vox->distance = temp_vox->behind ? -temp_vox->distance : temp_vox->distance;
+        temp_vox->distance =
+            temp_vox->behind ? -temp_vox->distance : temp_vox->distance;
         update_queue_.push(temp_vox_idx, temp_vox->distance);
         EsdfVoxel* temp_coc_vox =
             esdf_layer_->getVoxelPtrByGlobalIndex(temp_vox->coc_idx);
@@ -282,7 +281,8 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   }
   init_timer.Stop();
   // End of Algorithm 2
-  LOG(INFO)<<"Update queue's original size: ["<<update_queue_.size()<< "]";
+  //LOG(INFO) << "Update queue's original size: [" 
+  //<< update_queue_.size() << "]";
 
   timing::Timer update_timer("esdf/update(alg1)");
   // Algorithm 1 ESDF updating (BFS based on priority queue)
@@ -300,20 +300,21 @@ void EsdfOccFiestaIntegrator::updateESDF() {
 
     times++;
     total_expanding_times_++;
-    
+
     // Get the global indices of neighbors.
     Neighborhood24::IndexMatrix nbr_voxs_idx;
     Neighborhood24::getFromGlobalIndex(cur_vox_idx, &nbr_voxs_idx);
 
-    // Algorithm 3 Patch Code 
-    if (config_.patch_on){
+    // Algorithm 3 Patch Code
+    if (config_.patch_on) {
       // timing::Timer patch_timer("esdf/patch(alg3)");
       bool change_flag = false;  // indicate if the patch works
-      //Go through the neighbors and see if we can update any of them.
+      // Go through the neighbors and see if we can update any of them.
       for (unsigned int idx = 0u; idx < nbr_voxs_idx.cols(); ++idx) {
         GlobalIndex nbr_vox_idx = nbr_voxs_idx.col(idx);
         if (voxInRange(nbr_vox_idx)) {
-          EsdfVoxel* nbr_vox = esdf_layer_->getVoxelPtrByGlobalIndex(nbr_vox_idx);
+          EsdfVoxel* nbr_vox =
+              esdf_layer_->getVoxelPtrByGlobalIndex(nbr_vox_idx);
           CHECK_NOTNULL(nbr_vox);
           if (nbr_vox->observed && nbr_vox->coc_idx(0) != UNDEF) {
             float temp_dist = dist(nbr_vox->coc_idx, cur_vox_idx);
@@ -326,12 +327,13 @@ void EsdfOccFiestaIntegrator::updateESDF() {
         }
       }
       if (change_flag) {
-        cur_vox->distance = cur_vox->behind ? -cur_vox->distance : cur_vox->distance;
+        cur_vox->distance =
+            cur_vox->behind ? -cur_vox->distance : cur_vox->distance;
         deleteFromList(coc_vox, cur_vox);
-        coc_vox = esdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);  
+        coc_vox = esdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);
         CHECK_NOTNULL(coc_vox);
         update_queue_.push(cur_vox_idx, cur_vox->distance);
-        insertIntoList(coc_vox, cur_vox);     
+        insertIntoList(coc_vox, cur_vox);
         change_num++;
         continue;
       }
@@ -367,9 +369,9 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   // LOG(INFO)<<"Alg 1 done";
   // End of Algorithm 1
 
-  LOG(INFO) << "FIESTA: expanding [" << times << "] nodes, with [" <<
-     change_num << "] changes by the patch, up-to-now [" 
-     << total_expanding_times_<< "] nodes";
+  // LOG(INFO) << "FIESTA: expanding [" << times << "] nodes, with [" << change_num
+  //           << "] changes by the patch, up-to-now [" << total_expanding_times_
+  //           << "] nodes";
 }
 
 inline float EsdfOccFiestaIntegrator::dist(GlobalIndex vox_idx_a,
@@ -392,6 +394,12 @@ void EsdfOccFiestaIntegrator::loadInsertList(
 void EsdfOccFiestaIntegrator::loadDeleteList(
     const GlobalIndexList& delete_list) {
   delete_list_ = delete_list;
+}
+
+// only for the visualization of Esdf error
+void EsdfOccFiestaIntegrator::assignError(GlobalIndex vox_idx, float esdf_error){
+   EsdfVoxel* vox = esdf_layer_->getVoxelPtrByGlobalIndex(vox_idx);
+   vox->error = esdf_error;
 }
 
 }  // namespace voxblox

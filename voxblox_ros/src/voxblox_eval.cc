@@ -136,7 +136,7 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   // Just exit if there's any issues here (this is just an evaluation node,
   // after all).
   std::string voxblox_file_path, gt_file_path;
-  std::string voxblox_esdf_file_path;
+  std::string voxblox_esdf_file_path, voxblox_occ_file_path;
   CHECK(nh_private_.getParam("voxblox_file_path", voxblox_file_path))
       << "No file path provided for voxblox map! Set the \"voxblox_file_path\" "
          "param.";
@@ -148,6 +148,13 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
         nh_private_.getParam("voxblox_esdf_file_path", voxblox_esdf_file_path))
         << "No file path provided for voxblox esdf map! Set the "
            "\"voxblox_esdf_file_path\" param.";
+    if(use_occ_ref_esdf_)
+    {
+      CHECK(
+        nh_private_.getParam("voxblox_occ_file_path", voxblox_occ_file_path))
+        << "No file path provided for voxblox occ map! Set the "
+           "\"voxblox_occ_file_path\" param.";
+    }
   }
 
   CHECK(io::LoadLayer<TsdfVoxel>(voxblox_file_path, &tsdf_layer_))
@@ -155,6 +162,12 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   if (eval_esdf_) {
     CHECK(io::LoadLayer<EsdfVoxel>(voxblox_esdf_file_path, &esdf_layer_))
         << "Could not load voxblox esdf map.";
+    if(use_occ_ref_esdf_)
+    {
+      CHECK(io::LoadLayer<OccupancyVoxel>(voxblox_occ_file_path, &occ_layer_))
+        << "Could not load voxblox occupancy map.";
+    }
+
   }
   pcl::PLYReader ply_reader;
 
@@ -164,12 +177,12 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   // Initialize the interpolator.
   interpolator_.reset(new Interpolator<TsdfVoxel>(tsdf_layer_.get()));
 
-  // Set up Occupancy map and integrator
-  occ_layer_.reset(new Layer<OccupancyVoxel>(tsdf_layer_->voxel_size(),
-                                             tsdf_layer_->voxels_per_side()));
-  OccTsdfIntegrator::Config occ_tsdf_integrator_config;
-  occupancy_integrator_.reset(new OccTsdfIntegrator(
-      occ_tsdf_integrator_config, tsdf_layer_.get(), occ_layer_.get()));
+  // Set up Occupancy map and integrator (deprecated, since we directly load the map)
+  // occ_layer_.reset(new Layer<OccupancyVoxel>(tsdf_layer_->voxel_size(),
+  //                                            tsdf_layer_->voxels_per_side()));
+  // OccTsdfIntegrator::Config occ_tsdf_integrator_config;
+  // occupancy_integrator_.reset(new OccTsdfIntegrator(
+  //     occ_tsdf_integrator_config, tsdf_layer_.get(), occ_layer_.get()));
 
   // If doing visualizations, initialize the publishers.
   if (visualize_) {
@@ -177,9 +190,9 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
         nh_private_.advertise<visualization_msgs::MarkerArray>("mesh", 1, true);
     gt_ptcloud_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
         "gt_ptcloud", 1, true);
-    esdf_error_slice_pub_ = 
-      nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-      "esdf_error_slice", 1, true);
+    esdf_error_slice_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI>>(
+            "esdf_error_slice", 1, true);
 
     std::string color_mode("color");
     nh_private_.param("color_mode", color_mode, color_mode);
@@ -216,7 +229,7 @@ void VoxbloxEvaluator::evaluate() {
   // TODO(helenol): make this dynamic.
   double truncation_distance = 2 * tsdf_layer_->voxel_size();
 
-  double mse = 0.0;
+  double mse = 0.0, mae = 0.0;
 
   for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it =
            gt_ptcloud_.begin();
@@ -239,11 +252,13 @@ void VoxbloxEvaluator::evaluate() {
     } else if (distance >= truncation_distance) {
       outside_truncation_voxels++;
       mse += truncation_distance * truncation_distance;
+      mae += truncation_distance;
       valid = true;
     } else {
       // In case this fails, distance is still the nearest neighbor distance.
       interpolator_->getDistance(point, &distance, interpolate);
       mse += distance * distance;
+      mae += std::abs(distance);
       valid = true;
     }
 
@@ -260,9 +275,11 @@ void VoxbloxEvaluator::evaluate() {
   }
 
   double rms = sqrt(mse / (total_evaluated_voxels - unknown_voxels));
+  mae /= (total_evaluated_voxels - unknown_voxels);
 
   std::cout << "Finished evaluating.\n"
-            << "\nRMS Error:           " << rms
+            << "\nRMSE(m):             " << rms
+            << "\nMAE(m):              " << mae
             << "\nTotal evaluated:     " << total_evaluated_voxels
             << "\nUnknown voxels:       " << unknown_voxels << " ("
             << static_cast<double>(unknown_voxels) / total_evaluated_voxels
@@ -305,7 +322,7 @@ void VoxbloxEvaluator::evaluateEsdf() {
   BlockIndexList esdf_blocks;
   esdf_layer_->getAllAllocatedBlocks(&esdf_blocks);
 
-  double mse = 0.0;
+  double mse = 0.0, mae = 0.0;
   uint64_t total_evaluated_voxels = 0;
 
   for (const BlockIndex& block_index : esdf_blocks) {
@@ -335,31 +352,38 @@ void VoxbloxEvaluator::evaluateEsdf() {
       float cur_est_dist = std::abs(esdf_voxel.distance);
       float cur_error_dist = cur_est_dist - cur_gt_dist;
       mse += (cur_error_dist * cur_error_dist);
+      mae += std::abs(cur_error_dist);
 
       // it would not be used any more anyway, so we use it to plot the slice
       // esdf_voxel is const, so try to get a new one
-      EsdfVoxel* cur_esdf_vox = esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
-      
+      EsdfVoxel* cur_esdf_vox =
+          esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
+
       // Clamped with the error limit for visualization
-      cur_esdf_vox->distance = std::max(-error_limit_m_, 
-                               std::min(error_limit_m_, cur_error_dist)); 
+      cur_esdf_vox->distance =
+          std::max(-error_limit_m_, std::min(error_limit_m_, cur_error_dist));
 
       total_evaluated_voxels++;
     }
   }
 
   double rms = sqrt(mse / total_evaluated_voxels);
+  mae /= total_evaluated_voxels;
 
   std::cout << "Finished evaluating ESDF map.\n"
-            << "\nRMS Error:           " << rms
+            << "\nRMSE(m):           " << rms
+            << "\nMAE(m):            " << mae
             << "\nTotal evaluated:     " << total_evaluated_voxels << "\n";
 }
 
 void VoxbloxEvaluator::generatePointCloudFromOcc() {
-  occupancy_integrator_->updateFromTsdfLayer(true, true);
+  //occupancy_integrator_->updateFromTsdfLayer(true, true);
 
   BlockIndexList occ_blocks;
   occ_layer_->getAllAllocatedBlocks(&occ_blocks);
+
+  //std::cout << occ_blocks.size() << " occ blocks\n";
+
   for (const BlockIndex& block_index : occ_blocks) {
     Block<OccupancyVoxel>::ConstPtr occ_block =
         occ_layer_->getBlockPtrByIndex(block_index);
@@ -370,7 +394,7 @@ void VoxbloxEvaluator::generatePointCloudFromOcc() {
     for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
       const OccupancyVoxel& occ_voxel =
           occ_block->getVoxelByLinearIndex(lin_index);
-      if (!occ_voxel.observed || !occ_voxel.occupied) continue;
+      if (!occ_voxel.observed || occ_voxel.probability_log < 0.7) continue;
 
       VoxelIndex voxel_index =
           occ_block->computeVoxelIndexFromLinearIndex(lin_index);
@@ -384,6 +408,7 @@ void VoxbloxEvaluator::generatePointCloudFromOcc() {
       occ_ptcloud_.points.push_back(pt);
     }
   }
+  //std::cout << occ_ptcloud_.points.size() << " points\n";
 }
 
 void VoxbloxEvaluator::visualize() {
@@ -415,8 +440,8 @@ void VoxbloxEvaluator::visualizeEsdf() {
   pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
   constexpr int kZAxisIndex = 2;
-  createDistancePointcloudFromEsdfLayerSlice(
-      *esdf_layer_, kZAxisIndex, slice_level_, &pointcloud);
+  createDistancePointcloudFromEsdfLayerSlice(*esdf_layer_, kZAxisIndex,
+                                             slice_level_, &pointcloud);
 
   pointcloud.header.frame_id = frame_id_;
   esdf_error_slice_pub_.publish(pointcloud);

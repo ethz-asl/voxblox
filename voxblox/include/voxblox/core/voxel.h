@@ -46,6 +46,9 @@ struct EsdfVoxel {
   // Fix FIESTA's problem of unsigned distance, use signed distance instead
   bool behind = false;
 
+  // only for evlauation visualization
+  float error = 0.0f;
+
   // Index of this voxel's closest occupied voxel
   GlobalIndex coc_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
 

@@ -18,13 +18,15 @@ use_const_weight: false
 max_ray_length_m: 5.0
 
 # ESDF integration
-local_range_offset_x: 20
-local_range_offset_y: 20
+local_range_offset_x: 30
+local_range_offset_y: 30
 local_range_offset_z: 10
 esdf_default_distance_m: 2.0
 behind_surface_m: 0.2
-num_buckets: 500
+num_buckets: 20
 patch_on: false
+early_break: false
+eval_esdf_on: true
 
 # Occupancy grid integration
 occ_voxel_size_ratio: 0.865
@@ -42,8 +44,9 @@ use_tf_transforms: false
 
 # Timer
 update_mesh_every_n_sec: 1.0
-update_esdf_every_n_sec: 0.5
+update_esdf_every_n_sec: 1.0
 publish_map_every_n_sec: 0.5
+eval_esdf_every_n_sec: 150.0
 min_time_between_msgs_sec: 0.0
 
 # Visualization
@@ -57,4 +60,4 @@ publish_slices: true
 slice_level: 0.8
 
 # Logging
-verbose: true
+verbose: false

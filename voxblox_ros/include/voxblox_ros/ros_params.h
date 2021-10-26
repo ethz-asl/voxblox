@@ -294,10 +294,13 @@ getEsdfFiestaIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
 
   nh_private.param("num_buckets", esdf_integrator_config.num_buckets,
                    esdf_integrator_config.num_buckets);
-  
+
   nh_private.param("patch_on", esdf_integrator_config.patch_on,
                    esdf_integrator_config.patch_on);
-
+  
+  nh_private.param("early_break", esdf_integrator_config.early_break,
+                   esdf_integrator_config.early_break);
+                  
   if (esdf_integrator_config.default_distance_m <
       esdf_integrator_config.max_distance_m) {
     esdf_integrator_config.default_distance_m =

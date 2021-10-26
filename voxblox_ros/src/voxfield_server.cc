@@ -3,6 +3,8 @@
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
 
+#include <pcl/kdtree/kdtree_flann.h>
+
 namespace voxblox {
 
 VoxfieldServer::VoxfieldServer(const ros::NodeHandle& nh,
@@ -59,6 +61,8 @@ void VoxfieldServer::setupRos() {
       "esdf_slice", 1, true);
   traversable_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "traversable", 1, true);
+  esdf_error_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+      "esdf_error_slice", 1, true);
 
   esdf_map_pub_ =
       nh_private_.advertise<voxblox_msgs::Layer>("esdf_map_out", 1, false);
@@ -83,15 +87,38 @@ void VoxfieldServer::setupRos() {
   double update_esdf_every_n_sec = 1.0;  // default
   nh_private_.param("update_esdf_every_n_sec", update_esdf_every_n_sec,
                     update_esdf_every_n_sec);
+  
+  bool eval_esdf_on = false;
+  nh_private_.param("eval_esdf_on", eval_esdf_on,
+                    eval_esdf_on);
+  
+  double eval_esdf_every_n_sec = 150.0; // default
+  nh_private_.param("eval_esdf_every_n_sec", eval_esdf_every_n_sec,
+                    eval_esdf_every_n_sec);
 
   save_esdf_map_srv_ = nh_private_.advertiseService(
       "save_esdf_map", &VoxfieldServer::saveEsdfMapCallback, this);
+  
+  save_occ_map_srv_ = nh_private_.advertiseService(
+      "save_occ_map", &VoxfieldServer::saveOccMapCallback, this);
+  
+  save_all_map_srv_ = nh_private_.advertiseService(
+      "save_all_map", &VoxfieldServer::saveAllMapCallback, this);
 
   // Update ESDF per xx second
   if (update_esdf_every_n_sec > 0.0) {
     update_esdf_timer_ =
         nh_private_.createTimer(ros::Duration(update_esdf_every_n_sec),
                                 &VoxfieldServer::updateEsdfEvent, this);
+  }
+
+  esdf_ready_ = false;
+
+  // Evaluate ESDF accuracy per xx second
+  if (eval_esdf_every_n_sec > 0.0 && eval_esdf_on) {
+    eval_esdf_timer_ =
+        nh_private_.createTimer(ros::Duration(eval_esdf_every_n_sec),
+                                &VoxfieldServer::evalEsdfEvent, this);
   }
 }
 
@@ -118,6 +145,17 @@ void VoxfieldServer::publishSlices() {
   esdf_slice_pub_.publish(pointcloud);
 }
 
+void VoxfieldServer::visualizeEsdfError() {
+  pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+  constexpr int kZAxisIndex = 2;
+  createErrorPointcloudFromEsdfLayerSlice(
+    esdf_map_->getEsdfLayer(), kZAxisIndex, slice_level_, &pointcloud);
+                                         
+  pointcloud.header.frame_id = world_frame_;
+  esdf_error_slice_pub_.publish(pointcloud);
+}
+
 // bool VoxfieldServer::generateEsdfCallback(
 //     std_srvs::Empty::Request& /*request*/,      // NOLINT
 //     std_srvs::Empty::Response& /*response*/) {  // NOLINT
@@ -133,10 +171,22 @@ void VoxfieldServer::publishSlices() {
 //   return true;
 // }
 
+bool VoxfieldServer::saveAllMapCallback(
+    voxblox_msgs::FilePath::Request& request, voxblox_msgs::FilePath::Response&
+    /*response*/) {  // NOLINT
+  return saveAllMap(request.file_path);
+}
+
 bool VoxfieldServer::saveEsdfMapCallback(
     voxblox_msgs::FilePath::Request& request, voxblox_msgs::FilePath::Response&
     /*response*/) {  // NOLINT
-  return saveMap(request.file_path);
+  return saveEsdfMap(request.file_path);
+}
+
+bool VoxfieldServer::saveOccMapCallback(
+    voxblox_msgs::FilePath::Request& request, voxblox_msgs::FilePath::Response&
+    /*response*/) {  // NOLINT
+  return saveOccMap(request.file_path);
 }
 
 void VoxfieldServer::updateEsdfEvent(const ros::TimerEvent& /*event*/) {
@@ -145,6 +195,14 @@ void VoxfieldServer::updateEsdfEvent(const ros::TimerEvent& /*event*/) {
   publishOccupancyOccupiedNodes();
   // publishPointclouds();
   if (publish_slices_) publishSlices();
+}
+
+void VoxfieldServer::evalEsdfEvent(const ros::TimerEvent& /*event*/) {
+  if (esdf_ready_)
+  {
+    evalEsdfRefOcc();
+    visualizeEsdfError();
+  }
 }
 
 void VoxfieldServer::publishOccupancyOccupiedNodes() {
@@ -204,13 +262,28 @@ void VoxfieldServer::publishMap(bool reset_remote_map) {
   TsdfServer::publishMap();
 }
 
-bool VoxfieldServer::saveMap(const std::string& file_path) {
-  // Output TSDF map first, then ESDF.
-  // const bool success = TsdfServer::saveMap(file_path);
-  bool success = true;
+bool VoxfieldServer::saveAllMap(const std::string& file_path) {
+  std::string file_path_tsdf = file_path + ".tsdf";
+  std::string file_path_esdf = file_path + ".esdf";
+  std::string file_path_occ = file_path + ".occ";
+  
+  return saveTsdfMap(file_path_tsdf) && 
+         saveEsdfMap(file_path_esdf) &&
+         saveOccMap(file_path_occ);
+}
+
+bool VoxfieldServer::saveTsdfMap(const std::string& file_path) {
+  return TsdfServer::saveMap(file_path);
+}
+
+bool VoxfieldServer::saveEsdfMap(const std::string& file_path) {
   constexpr bool kClearFile = false;
-  return success &&
-         io::SaveLayer(esdf_map_->getEsdfLayer(), file_path, kClearFile);
+  return io::SaveLayer(esdf_map_->getEsdfLayer(), file_path, kClearFile);
+}
+
+bool VoxfieldServer::saveOccMap(const std::string& file_path) {
+  constexpr bool kClearFile = false;
+  return io::SaveLayer(occupancy_map_->getOccupancyLayer(), file_path, kClearFile);
 }
 
 bool VoxfieldServer::loadMap(const std::string& file_path) {
@@ -255,6 +328,7 @@ void VoxfieldServer::updateEsdfFromOcc() {
             esdf_map_->getEsdfLayer().getMemorySize() / 1024.0 /
                 1024.0);  // NOLINT
       }
+      esdf_ready_ = true;
     }
     esdf_integrator_->clear();
   }
@@ -278,6 +352,107 @@ void VoxfieldServer::updateOccFromTsdf() {
     occupancy_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf,
                                                in_batch);
   }
+}
+
+void VoxfieldServer::evalEsdfRefOcc() {
+  
+  timing::Timer eval_esdf_timer("eval/esdf");
+  
+  pcl::PointCloud<pcl::PointXYZ>::Ptr occ_ptcloud(new pcl::PointCloud<pcl::PointXYZ>());
+  BlockIndexList occ_blocks;
+  occupancy_map_->getOccupancyLayer().getAllAllocatedBlocks(&occ_blocks);
+  int voxels_per_side = occupancy_map_->getOccupancyLayer().voxels_per_side();
+  float voxel_size = occupancy_map_->getOccupancyLayer().voxel_size();
+  float error_vis_limit = voxel_size * 1.0;
+
+  for (const BlockIndex& block_index : occ_blocks) {
+    Block<OccupancyVoxel>::ConstPtr occ_block =
+        occupancy_map_->getOccupancyLayer().getBlockPtrByIndex(block_index);
+    if (!occ_block) {
+      continue;
+    }
+    const size_t num_voxels_per_block = occ_block->num_voxels();
+    for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
+      const OccupancyVoxel& occ_voxel =
+          occ_block->getVoxelByLinearIndex(lin_index);
+      if (!occ_voxel.observed || !occ_voxel.occupied) continue;
+
+      VoxelIndex voxel_index =
+          occ_block->computeVoxelIndexFromLinearIndex(lin_index);
+      GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+          block_index, voxel_index, voxels_per_side);
+
+      Point point =
+          getCenterPointFromGridIndex(global_index, voxel_size);        
+
+      pcl::PointXYZ pt(point(0), point(1), point(2));
+      occ_ptcloud->points.push_back(pt);
+    }
+  }
+  // build the kd tree of the ground truth or occupied grid point cloud
+  pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+  std::cout << "Begin to evaluate ESDF mapping accuracy ";
+  kdtree.setInputCloud(occ_ptcloud);
+
+  std::vector<int> pointIdxNKNSearch(1);
+  std::vector<float> pointNKNSquaredDistance(1);
+
+  BlockIndexList esdf_blocks;
+  esdf_map_->getEsdfLayer().getAllAllocatedBlocks(&esdf_blocks);
+
+  double mse = 0.0, mae = 0.0;
+  uint64_t total_evaluated_voxels = 0;
+
+  for (const BlockIndex& block_index : esdf_blocks) {
+    Block<EsdfVoxel>::ConstPtr esdf_block =
+        esdf_map_->getEsdfLayer().getBlockPtrByIndex(block_index);
+    if (!esdf_block) {
+      continue;
+    }
+
+    const size_t num_voxels_per_block = esdf_block->num_voxels();
+    for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
+      const EsdfVoxel& esdf_voxel =
+          esdf_block->getVoxelByLinearIndex(lin_index);
+      if (!esdf_voxel.observed) continue;
+
+      VoxelIndex voxel_index =
+          esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
+      GlobalIndex global_index = getGlobalVoxelIndexFromBlockAndVoxelIndex(
+          block_index, voxel_index, voxels_per_side);
+
+      Point point =
+          getCenterPointFromGridIndex(global_index, voxel_size);
+
+      kdtree.nearestKSearch(pcl::PointXYZ(point(0), point(1), point(2)), 1,
+                            pointIdxNKNSearch, pointNKNSquaredDistance);
+      float cur_gt_dist = std::sqrt(pointNKNSquaredDistance[0]);
+      float cur_est_dist = std::abs(esdf_voxel.distance);
+      float cur_error_dist = cur_est_dist - cur_gt_dist;
+      mse += (cur_error_dist * cur_error_dist);
+      mae += std::abs(cur_error_dist);
+
+      // Clamped with the error limit for visualization
+      esdf_integrator_->assignError(global_index, 
+          std::max(-error_vis_limit, std::min(error_vis_limit, cur_error_dist)));
+
+      total_evaluated_voxels++;
+    }
+  }
+
+  double rms = sqrt(mse / total_evaluated_voxels);
+  mae /= total_evaluated_voxels;
+
+  std::cout << "Finished evaluating ESDF map.\n"
+            << "\nRMSE:           " << rms
+            << "\nMAE:            " << mae
+            << "\nTotal evaluated:     " << total_evaluated_voxels << "\n";
+  
+  eval_esdf_timer.Stop();
+  
+  ROS_INFO_STREAM("Timings: " << std::endl << timing::Timing::Print());
+  
+  occ_ptcloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
 }
 
 float VoxfieldServer::getEsdfMaxDistance() const {

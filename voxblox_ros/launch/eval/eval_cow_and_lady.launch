@@ -1,7 +1,8 @@
 <launch>
   <arg name="gt_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/cow_lady_gt/cow_and_lady_gt.ply"/>
   <arg name="voxblox_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/tsdf/cow_5cm_fast_tsdf.vxblx" />
-  <arg name="voxblox_esdf_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/esdf/cow_5cm_voxfield_newererererer_esdf.vxblx" />
+  <arg name="voxblox_esdf_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/esdf/cow_5cm_voxblox_esdf.vxblx" />
+  <arg name="voxblox_occ_file_path" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/Voxblox_out/occ/cow_5cm_occ.vxblx" />
 
   <node name="voxblox_eval" pkg="voxblox_ros" type="voxblox_eval" output="screen" args="-alsologtostderr" clear_params="true">
     <param name="color_mode" value="normals" />
@@ -16,6 +17,7 @@
     <param name="gt_file_path" value="$(arg gt_file_path)" />
     <param name="voxblox_file_path" value="$(arg voxblox_file_path)" />
     <param name="voxblox_esdf_file_path" value="$(arg voxblox_esdf_file_path)" />
+    <param name="voxblox_occ_file_path" value="$(arg voxblox_occ_file_path)" />
   </node>
   
   <!--comment-->

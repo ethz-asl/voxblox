@@ -31,16 +31,22 @@ class VoxfieldServer : public TsdfServer {
 
   void publishAllUpdatedEsdfVoxels();
   virtual void publishSlices();
+  void visualizeEsdfError();
   void publishTraversable();
   void publishOccupancyOccupiedNodes();
 
   virtual void publishPointclouds();
   virtual void publishMap(bool reset_remote_map = false);
-  virtual bool saveMap(const std::string& file_path);
+  virtual bool saveTsdfMap(const std::string& file_path);
+  virtual bool saveEsdfMap(const std::string& file_path);
+  virtual bool saveOccMap(const std::string& file_path);
+  virtual bool saveAllMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
 
   /// Timer events
   void updateEsdfEvent(const ros::TimerEvent& event);
+
+  void evalEsdfEvent(const ros::TimerEvent& event);
 
   /// Call this to update the ESDF based on latest state of the occupancy map,
   /// considering only the newly updated parts of the occupancy map (checked
@@ -54,6 +60,8 @@ class VoxfieldServer : public TsdfServer {
   /// map
   void updateOccFromTsdf();
 
+  void evalEsdfRefOcc();
+
   // Overwrites the layer with what's coming from the topic!
   void esdfMapCallback(const voxblox_msgs::Layer& layer_msg);
 
@@ -63,6 +71,14 @@ class VoxfieldServer : public TsdfServer {
   }
 
   bool saveEsdfMapCallback(
+      voxblox_msgs::FilePath::Request& request,     // NOLINT
+      voxblox_msgs::FilePath::Response& response);  // NOLINT
+  
+  bool saveOccMapCallback(
+      voxblox_msgs::FilePath::Request& request,     // NOLINT
+      voxblox_msgs::FilePath::Response& response);  // NOLINT
+
+  bool saveAllMapCallback(
       voxblox_msgs::FilePath::Request& request,     // NOLINT
       voxblox_msgs::FilePath::Response& response);  // NOLINT
 
@@ -94,6 +110,7 @@ class VoxfieldServer : public TsdfServer {
   /// Publish markers for visualization.
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher esdf_slice_pub_;
+  ros::Publisher esdf_error_slice_pub_;
   ros::Publisher traversable_pub_;
 
   /// Publish the complete map for other nodes to consume.
@@ -105,9 +122,12 @@ class VoxfieldServer : public TsdfServer {
   /// Services.
   ros::ServiceServer generate_esdf_srv_;
   ros::ServiceServer save_esdf_map_srv_;
+  ros::ServiceServer save_occ_map_srv_;
+  ros::ServiceServer save_all_map_srv_;
 
   /// Timers.
   ros::Timer update_esdf_timer_;
+  ros::Timer eval_esdf_timer_;
 
   bool clear_sphere_for_planning_;
   bool publish_esdf_map_;
@@ -115,6 +135,7 @@ class VoxfieldServer : public TsdfServer {
   float traversability_radius_;
   bool incremental_update_;
   int num_subscribers_esdf_map_;
+  bool esdf_ready_;
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
