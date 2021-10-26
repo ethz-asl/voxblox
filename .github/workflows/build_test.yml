@@ -37,6 +37,8 @@ jobs:
         apt update && apt install -y python3-wstool python3-catkin-tools
     - name: release_build_test
       working-directory: 
+      env:
+        DEBIAN_FRONTEND: noninteractive
       run: |
         apt update
         apt install -y python3-wstool autoconf libtool git
