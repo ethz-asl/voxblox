@@ -224,7 +224,7 @@ void VoxfieldServer::publishPointclouds() {
   }
 
   // TODO:
-  // TsdfServer::publishPointclouds(); 
+  // TsdfServer::publishPointclouds();
 }
 
 void VoxfieldServer::publishTraversable() {
