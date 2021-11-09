@@ -16,7 +16,7 @@ jobs:
       matrix:
         config:
           - {rosdistro: 'melodic', container: 'ros:melodic-ros-base-bionic'}
-          - {rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
+          # - {rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
     container: ${{ matrix.config.container }}
     steps:
     - uses: actions/checkout@v1
