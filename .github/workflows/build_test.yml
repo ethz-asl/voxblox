@@ -16,7 +16,7 @@ jobs:
       matrix:
         config:
           - {rosdistro: 'melodic', container: 'ros:melodic-ros-base-bionic'}
-          # - {rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
+          - {rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
     container: ${{ matrix.config.container }}
     steps:
     - uses: actions/checkout@v1
@@ -56,3 +56,4 @@ jobs:
         rosdep install --from-paths src --ignore-src -y --rosdistro ${{matrix.config.rosdistro}}
         catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
         catkin build -j$(nproc) -l$(nproc) voxblox_ros
+      shell: bash
