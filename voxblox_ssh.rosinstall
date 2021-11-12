@@ -31,3 +31,4 @@
 - git:
     local-name: catkin_grpc
     uri: git@github.com:CogRob/catkin_grpc.git
+    version: ea5247b21ac885ca483b1f12052e37bfa1494220
