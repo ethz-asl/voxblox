@@ -5,4 +5,11 @@
     <description>Displays incremental voxblox mesh messages.</description>
     <message_type>voxblox_msgs/Mesh</message_type>
   </class>
+
+  <class name="voxblox_rviz_plugin/VoxbloxMultiMesh"
+         type="voxblox_rviz_plugin::VoxbloxMultiMeshDisplay"
+         base_class_type="rviz::Display">
+    <description>Displays incremental voxblox mesh messages for multiple meshes.</description>
+    <message_type>voxblox_msgs/MultiMesh</message_type>
+  </class>
 </library>
