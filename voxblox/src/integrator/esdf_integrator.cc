@@ -114,8 +114,7 @@ void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
     for (const BlockIndex& block_index : tsdf_blocks) {
       if (tsdf_layer_->hasBlock(block_index)) {
         tsdf_layer_->getBlockByIndex(block_index)
-            .updated()
-            .reset(Update::kEsdf);
+            .setUpdated(Update::kEsdf, false);
       }
     }
   }
@@ -144,7 +143,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
     // Block indices are the same across all layers.
     Block<EsdfVoxel>::Ptr esdf_block =
         esdf_layer_->allocateBlockPtrByIndex(block_index);
-    esdf_block->set_updated(true);
+    esdf_block->setUpdated(Update::kEsdf, true);
 
     const size_t num_voxels_per_block = tsdf_block->num_voxels();
     for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {

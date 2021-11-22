@@ -224,7 +224,7 @@ bool Layer<VoxelType>::addBlockFromProto(const BlockProto& block_proto,
         return false;
     }
     // Mark that this block has been updated.
-    block_map_[block_index]->updated().set();
+    block_map_[block_index]->setUpdatedAll();
   } else {
     LOG(ERROR)
         << "The blocks from this protobuf are not compatible with this layer!";
