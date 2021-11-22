@@ -2,6 +2,7 @@
 
 #include <minkindr_conversions/kindr_msg.h>
 #include <minkindr_conversions/kindr_tf.h>
+#include <voxblox/integrator/projective_tsdf_integrator.h>
 
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
@@ -91,19 +92,8 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
 
   std::string method("merged");
   nh_private_.param("method", method, method);
-  if (method.compare("simple") == 0) {
-    tsdf_integrator_.reset(new SimpleTsdfIntegrator(
-        integrator_config, tsdf_map_->getTsdfLayerPtr()));
-  } else if (method.compare("merged") == 0) {
-    tsdf_integrator_.reset(new MergedTsdfIntegrator(
-        integrator_config, tsdf_map_->getTsdfLayerPtr()));
-  } else if (method.compare("fast") == 0) {
-    tsdf_integrator_.reset(new FastTsdfIntegrator(
-        integrator_config, tsdf_map_->getTsdfLayerPtr()));
-  } else {
-    tsdf_integrator_.reset(new SimpleTsdfIntegrator(
-        integrator_config, tsdf_map_->getTsdfLayerPtr()));
-  }
+  tsdf_integrator_ = TsdfIntegratorFactory::create(
+      method, integrator_config, tsdf_map_->getTsdfLayerPtr());
 
   mesh_layer_.reset(new MeshLayer(tsdf_map_->block_size()));
 
