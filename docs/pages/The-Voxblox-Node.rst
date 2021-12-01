@@ -126,7 +126,7 @@ TSDF Integrator Parameters
 ``tsdf_voxels_per_side`` `16`
   TSDF voxels per side of an allocated block. Must be a power of 2
 ``voxel_carving_enabled`` `true`
-  If true, the entire length of a ray is integrated, if false only the region inside the trunaction distance is used.
+  If true, the entire length of a ray is integrated, if false only the region inside the truncaction distance is used.
 ``truncation_distance`` `2*tsdf_voxel_size`
   The truncation distance for the TSDF
 ``max_ray_length_m`` `5.0`
