@@ -195,6 +195,10 @@ inline void generateVoxbloxMeshMsg(MeshLayer* mesh_layer, ColorMode color_mode,
                   block_index.cast<FloatingPoint>());
 
       // check all points are in range [0, 1.0]
+      // TODO: (py) added, a dirty fix
+      if (normalized_verticies.squaredNorm() > 1.0f)
+        continue;
+        
       CHECK_LE(normalized_verticies.squaredNorm(), 1.0f);
       CHECK((normalized_verticies.array() >= 0.0).all());
 

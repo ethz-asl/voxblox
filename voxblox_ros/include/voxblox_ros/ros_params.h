@@ -9,6 +9,8 @@
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
+#include <voxblox/integrator/esdf_fiesta_integrator.h>
+#include <voxblox/integrator/esdf_occ_edt_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/occupancy_tsdf_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>
@@ -68,21 +70,20 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
 
   const TsdfMap::Config tsdf_config = getTsdfMapConfigFromRosParam(nh_private);
 
-  float trunc_voxel_ratio = 4.0;  // default
-
-  nh_private.param("truncation_voxel_size_ratio", trunc_voxel_ratio,
-                   trunc_voxel_ratio);
-
-  integrator_config.default_truncation_distance =
-      tsdf_config.tsdf_voxel_size * trunc_voxel_ratio;
-
-  double truncation_distance = integrator_config.default_truncation_distance;
   double max_weight = integrator_config.max_weight;
+  
+  float truncation_distance = -2.0; // if negative, it means the multiplier of the voxel size
+
+  nh_private.param("truncation_distance", truncation_distance,
+                   truncation_distance);
+  
+  integrator_config.default_truncation_distance = truncation_distance > 0 ? 
+                truncation_distance : 
+               -truncation_distance * tsdf_config.tsdf_voxel_size;  
+
   nh_private.param("voxel_carving_enabled",
                    integrator_config.voxel_carving_enabled,
                    integrator_config.voxel_carving_enabled);
-  nh_private.param("truncation_distance", truncation_distance,
-                   truncation_distance);
 
   nh_private.param("max_ray_length_m", integrator_config.max_ray_length_m,
                    integrator_config.max_ray_length_m);
@@ -119,8 +120,8 @@ inline TsdfIntegratorBase::Config getTsdfIntegratorConfigFromRosParam(
                    integrator_config.integration_order_mode,
                    integrator_config.integration_order_mode);
 
-  integrator_config.default_truncation_distance =
-      static_cast<float>(truncation_distance);
+  // integrator_config.default_truncation_distance =
+  //     static_cast<float>(truncation_distance);
   integrator_config.max_weight = static_cast<float>(max_weight);
 
   return integrator_config;
@@ -168,6 +169,7 @@ inline EsdfIntegrator::Config getEsdfIntegratorConfigFromRosParam(
   nh_private.param("esdf_add_occupied_crust",
                    esdf_integrator_config.add_occupied_crust,
                    esdf_integrator_config.add_occupied_crust);
+  
   if (esdf_integrator_config.default_distance_m <
       esdf_integrator_config.max_distance_m) {
     esdf_integrator_config.default_distance_m =
@@ -262,9 +264,116 @@ inline TsdfMap::Config getTsdfMapConfigFromEsdfMapRosParam(
   return tsdf_config;
 }
 
-inline EsdfOccFiestaIntegrator::Config
+inline EsdfFiestaIntegrator::Config
 getEsdfFiestaIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
+  EsdfFiestaIntegrator::Config esdf_integrator_config;
+
+  int range_boundary_offset_x = esdf_integrator_config.range_boundary_offset(0);
+  int range_boundary_offset_y = esdf_integrator_config.range_boundary_offset(1);
+  int range_boundary_offset_z = esdf_integrator_config.range_boundary_offset(2);
+
+  nh_private.param("local_range_offset_x", range_boundary_offset_x,
+                   range_boundary_offset_x);
+
+  nh_private.param("local_range_offset_y", range_boundary_offset_y,
+                   range_boundary_offset_y);
+
+  nh_private.param("local_range_offset_z", range_boundary_offset_z,
+                   range_boundary_offset_z);
+
+  nh_private.param("esdf_max_distance_m", esdf_integrator_config.max_distance_m,
+                   esdf_integrator_config.max_distance_m);
+
+  nh_private.param("esdf_default_distance_m",
+                   esdf_integrator_config.default_distance_m,
+                   esdf_integrator_config.default_distance_m);
+  
+  nh_private.param("fix_band_distance_m", esdf_integrator_config.band_distance_m,
+                   esdf_integrator_config.band_distance_m);
+
+  nh_private.param("max_behind_surface_m",
+                   esdf_integrator_config.max_behind_surface_m,
+                   esdf_integrator_config.max_behind_surface_m);
+  // max_behind_surface_m should be at least sqrt(3) * truncation_dist
+
+  nh_private.param("occ_min_weight",
+                   esdf_integrator_config.min_weight,
+                   esdf_integrator_config.min_weight);
+
+  nh_private.param("occ_voxel_size_ratio",
+                   esdf_integrator_config.occ_voxel_size_ratio,
+                   esdf_integrator_config.occ_voxel_size_ratio);
+
+  nh_private.param("num_buckets", esdf_integrator_config.num_buckets,
+                   esdf_integrator_config.num_buckets);
+
+  nh_private.param("patch_on", esdf_integrator_config.patch_on,
+                   esdf_integrator_config.patch_on);
+
+  nh_private.param("early_break", esdf_integrator_config.early_break,
+                   esdf_integrator_config.early_break);
+
+  nh_private.param("finer_esdf_on", esdf_integrator_config.finer_esdf_on,
+                   esdf_integrator_config.finer_esdf_on);
+
+  esdf_integrator_config.range_boundary_offset(0) = range_boundary_offset_x;
+  esdf_integrator_config.range_boundary_offset(1) = range_boundary_offset_y;
+  esdf_integrator_config.range_boundary_offset(2) = range_boundary_offset_z;
+
+  return esdf_integrator_config;
+}
+
+inline EsdfOccFiestaIntegrator::Config
+getEsdfOccFiestaIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
   EsdfOccFiestaIntegrator::Config esdf_integrator_config;
+
+  int range_boundary_offset_x = esdf_integrator_config.range_boundary_offset(0);
+  int range_boundary_offset_y = esdf_integrator_config.range_boundary_offset(1);
+  int range_boundary_offset_z = esdf_integrator_config.range_boundary_offset(2);
+
+  // esdf_integrator_config.min_distance_m =
+  //     tsdf_integrator_config.default_truncation_distance / 2.0;
+
+  nh_private.param("local_range_offset_x", range_boundary_offset_x,
+                   range_boundary_offset_x);
+
+  nh_private.param("local_range_offset_y", range_boundary_offset_y,
+                   range_boundary_offset_y);
+
+  nh_private.param("local_range_offset_z", range_boundary_offset_z,
+                   range_boundary_offset_z);
+
+  nh_private.param("esdf_max_distance_m", esdf_integrator_config.max_distance_m,
+                   esdf_integrator_config.max_distance_m);
+
+  nh_private.param("esdf_default_distance_m",
+                   esdf_integrator_config.default_distance_m,
+                   esdf_integrator_config.default_distance_m);
+
+  nh_private.param("max_behind_surface_m",
+                   esdf_integrator_config.max_behind_surface_m,
+                   esdf_integrator_config.max_behind_surface_m);
+  // max_behind_surface_m should be at least sqrt(3) * truncation_dist
+
+  nh_private.param("num_buckets", esdf_integrator_config.num_buckets,
+                   esdf_integrator_config.num_buckets);
+
+  nh_private.param("patch_on", esdf_integrator_config.patch_on,
+                   esdf_integrator_config.patch_on);
+
+  nh_private.param("early_break", esdf_integrator_config.early_break,
+                   esdf_integrator_config.early_break);
+
+  esdf_integrator_config.range_boundary_offset(0) = range_boundary_offset_x;
+  esdf_integrator_config.range_boundary_offset(1) = range_boundary_offset_y;
+  esdf_integrator_config.range_boundary_offset(2) = range_boundary_offset_z;
+
+  return esdf_integrator_config;
+}
+
+inline EsdfOccEdtIntegrator::Config
+getEsdfEdtIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
+  EsdfOccEdtIntegrator::Config esdf_integrator_config;
 
   int range_boundary_offset_x = esdf_integrator_config.range_boundary_offset(0);
   int range_boundary_offset_y = esdf_integrator_config.range_boundary_offset(1);

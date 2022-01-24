@@ -15,8 +15,8 @@ esdf_voxels_per_side: *voxels_per_side_in_block
 # select from simple, fast and merged
 method: merged 
 use_const_weight: false
-truncation_voxel_size_ratio: 3
-max_ray_length_m: 30.0
+truncation_voxel_size_ratio: 4
+max_ray_length_m: 50.0
 
 # ESDF integration
 local_range_offset_x: 10
@@ -24,7 +24,7 @@ local_range_offset_y: 10
 local_range_offset_z: 2
 esdf_default_distance_m: 10.0
 # max_behind_surface_m should be larger than truncation_distance
-max_behind_surface_m: 2.0
+max_behind_surface_m: 3.0
 num_buckets: 20
 patch_on: true
 early_break: true
@@ -39,25 +39,30 @@ threshold_min: 0.12
 threshold_max: 0.97
 threshold_occupancy: 0.7
 
-# State estimation
+# State estimation 
 enable_icp: false
 icp_iterations: 10
+# for semantic kitti
 use_tf_transforms: true
+world_frame: world
+sensor_frame: velodyne
 
 # Timer
-update_mesh_every_n_sec: 1.0
-update_esdf_every_n_sec: 0.5
-publish_map_every_n_sec: 0.5
-eval_esdf_every_n_sec: 200.0
+update_mesh_every_n_sec: 0.2 # 1.0
+update_esdf_every_n_sec: 9999.0
+publish_map_every_n_sec: 0.2
+eval_esdf_every_n_sec: 9999.0 # 200.0
 min_time_between_msgs_sec: 0.1
 
 # Visualization
+# select from color, normals, height, lambert, lambert_color
+color_mode: lambert_color
 # select from rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow
 intensity_colormap: rainbow
 # publishing settings
 publish_traversable: false
 publish_slices: true
-slice_level: 0.5
+slice_level: 0.0
 
 # Logging
 verbose: true

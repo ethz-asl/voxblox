@@ -321,14 +321,17 @@ void MergedTsdfIntegrator::integratePointCloud(const Transformation& T_G_C,
   std::unique_ptr<ThreadSafeIndex> index_getter(
       ThreadSafeIndexFactory::get(config_.integration_order_mode, points_C));
 
+  // bundle rays in each voxel with point inside
   bundleRays(T_G_C, points_C, freespace_points, index_getter.get(), &voxel_map,
              &clear_map);
 
+  // integrate rays for non-clearing voxel (close to the surface)
   integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, false,
                 voxel_map, clear_map);
 
   timing::Timer clear_timer("integrate/clear");
 
+  // integrate rays for clearing voxels (away from the surface)
   integrateRays(T_G_C, points_C, colors, config_.enable_anti_grazing, true,
                 voxel_map, clear_map);
 
@@ -412,8 +415,8 @@ void MergedTsdfIntegrator::integrateVoxel(
 
   GlobalIndex global_voxel_idx;
   while (ray_caster.nextRayIndex(&global_voxel_idx)) {
-    if (enable_anti_grazing) {
-      // Check if this one is already the the block hash map for this
+    if (enable_anti_grazing) { // TODO(py): what does grazing mean
+      // Check if this one is already the block hash map for this
       // insertion. Skip this to avoid grazing.
       if ((clearing_ray || global_voxel_idx != kv.first) &&
           voxel_map.find(global_voxel_idx) != voxel_map.end()) {

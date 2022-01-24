@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /PointCloud21
+        - /PointCloud22
       Splitter Ratio: 0.5
     Tree Height: 728
   - Class: rviz/Selection
@@ -101,7 +102,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -111,12 +112,12 @@ Visualization Manager:
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.03999999910593033
-      Style: Flat Squares
+      Style: Boxes
       Topic: /voxblox_eval/esdf_error_slice
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -145,7 +146,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 12.94402027130127
+      Distance: 14.341072082519531
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -160,10 +161,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5647963285446167
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.5354573726654053
+      Yaw: 1.5504595041275024
     Saved: ~
 Window Geometry:
   Displays:

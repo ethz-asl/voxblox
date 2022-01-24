@@ -23,11 +23,11 @@ EsdfIntegrator::EsdfIntegrator(const Config& config,
 // Used for planning - allocates sphere around as observed but occupied,
 // and clears space in a sphere around current position.
 void EsdfIntegrator::addNewRobotPosition(const Point& position) {
-  timing::Timer clear_timer("esdf/clear_radius");
+  timing::Timer clear_timer("upate_esdf_voxblox/clear_radius");
 
   // First set all in inner sphere to free.
   HierarchicalIndexMap block_voxel_list;
-  timing::Timer sphere_timer("esdf/clear_radius/get_sphere");
+  timing::Timer sphere_timer("upate_esdf_voxblox/clear_radius/get_sphere");
   utils::getAndAllocateSphereAroundPoint(position, config_.clear_sphere_radius,
                                          esdf_layer_, &block_voxel_list);
   sphere_timer.Stop();
@@ -58,7 +58,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
 
   // Second set all remaining unknown to occupied.
   HierarchicalIndexMap block_voxel_list_occ;
-  timing::Timer outer_sphere_timer("esdf/clear_radius/get_outer_sphere");
+  timing::Timer outer_sphere_timer("upate_esdf_voxblox/clear_radius/get_outer_sphere");
   utils::getAndAllocateSphereAroundPoint(position,
                                          config_.occupied_sphere_radius,
                                          esdf_layer_, &block_voxel_list_occ);
@@ -104,17 +104,20 @@ void EsdfIntegrator::updateFromTsdfLayerBatch() {
 void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   BlockIndexList tsdf_blocks;
   tsdf_layer_->getAllUpdatedBlocks(Update::kEsdf, &tsdf_blocks);
-  tsdf_blocks.insert(tsdf_blocks.end(), updated_blocks_.begin(),
-                     updated_blocks_.end());
-  updated_blocks_.clear();
-  const bool kIncremental = true;
-  updateFromTsdfBlocks(tsdf_blocks, kIncremental);
 
-  if (clear_updated_flag) {
-    for (const BlockIndex& block_index : tsdf_blocks) {
-      if (tsdf_layer_->hasBlock(block_index)) {
-        tsdf_layer_->getBlockByIndex(block_index)
-            .setUpdated(Update::kEsdf, false);
+  if (tsdf_blocks.size() > 0) { // NOTE(py): added
+    tsdf_blocks.insert(tsdf_blocks.end(), updated_blocks_.begin(),
+                      updated_blocks_.end());
+    updated_blocks_.clear();
+    const bool kIncremental = true;
+    updateFromTsdfBlocks(tsdf_blocks, kIncremental);
+
+    if (clear_updated_flag) {
+      for (const BlockIndex& block_index : tsdf_blocks) {
+        if (tsdf_layer_->hasBlock(block_index)) {
+          tsdf_layer_->getBlockByIndex(block_index)
+              .setUpdated(Update::kEsdf, false);
+        }
       }
     }
   }
@@ -123,13 +126,13 @@ void EsdfIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
 void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
                                           bool incremental) {
   CHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
-  timing::Timer esdf_timer("esdf");
+  timing::Timer esdf_timer("upate_esdf_voxblox");
 
   // Go through all blocks in TSDF and copy their values for relevant voxels.
   size_t num_lower = 0u;
   size_t num_raise = 0u;
   size_t num_new = 0u;
-  timing::Timer propagate_timer("esdf/propagate_tsdf");
+  timing::Timer propagate_timer("upate_esdf_voxblox/propagate_tsdf");
   VLOG(3) << "[ESDF update]: Propagating " << tsdf_blocks.size()
           << " updated blocks from the TSDF.";
   for (const BlockIndex& block_index : tsdf_blocks) {
@@ -145,13 +148,14 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
         esdf_layer_->allocateBlockPtrByIndex(block_index);
     esdf_block->setUpdated(Update::kEsdf, true);
 
+    // For each voxel in the block
     const size_t num_voxels_per_block = tsdf_block->num_voxels();
     for (size_t lin_index = 0u; lin_index < num_voxels_per_block; ++lin_index) {
       const TsdfVoxel& tsdf_voxel =
           tsdf_block->getVoxelByLinearIndex(lin_index);
       // If this voxel is unobserved in the original map, skip it.
       if (tsdf_voxel.weight < config_.min_weight) {
-        if (!incremental && config_.add_occupied_crust) {
+        if (!incremental && config_.add_occupied_crust) { // batch
           // Create a little crust of occupied voxels around.
           EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
           esdf_voxel.distance = -config_.default_distance_m;
@@ -178,7 +182,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
           // In fixed band, just add and lock it.
           esdf_voxel.distance = tsdf_voxel.distance;
           esdf_voxel.fixed = true;
-          // Also add it to open so it can update the neighbors.
+          // Also add it to open (update_priority_queue) so it can update the neighbors.
           esdf_voxel.in_queue = true;
           open_.push(global_index, esdf_voxel.distance);
         } else {
@@ -289,11 +293,11 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
   VLOG(3) << "[ESDF update]: Lower: " << num_lower << " Raise: " << num_raise
           << " New: " << num_new;
 
-  timing::Timer raise_timer("esdf/raise_esdf");
+  timing::Timer raise_timer("upate_esdf_voxblox/raise");
   processRaiseSet();
   raise_timer.Stop();
 
-  timing::Timer update_timer("esdf/update_esdf");
+  timing::Timer update_timer("upate_esdf_voxblox/update");
   processOpenSet();
   update_timer.Stop();
 
@@ -301,6 +305,7 @@ void EsdfIntegrator::updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks,
 }
 
 // The raise set is always empty in batch operations.
+// deal with the deleted occupied voxels
 void EsdfIntegrator::processRaiseSet() {
   size_t num_updates = 0u;
   // For the raise set, get all the neighbors, then:
@@ -520,12 +525,20 @@ bool EsdfIntegrator::updateVoxelFromNeighbors(const GlobalIndex& global_index) {
       if (std::abs(neighbor_voxel->distance) < std::abs(voxel->distance)) {
         voxel->distance =
             neighbor_voxel->distance + signum(voxel->distance) * distance;
-        voxel->parent = -(neighbor_index - global_index).cast<int>();
+        voxel->parent = -(neighbor_index - global_index).cast<int>(); // expansion direction
         return true;
       }
     }
   }
   return false;
+}
+
+// py: added
+// only for the visualization of Esdf error
+void EsdfIntegrator::assignError(GlobalIndex vox_idx,
+                                 float esdf_error) {
+  EsdfVoxel* vox = esdf_layer_->getVoxelPtrByGlobalIndex(vox_idx);
+  vox->error = esdf_error;
 }
 
 }  // namespace voxblox

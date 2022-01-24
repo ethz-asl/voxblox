@@ -15,20 +15,21 @@
 
 namespace voxblox {
 
-class VoxfieldServer : public TsdfServer {
+class VoxedtServer : public TsdfServer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  VoxfieldServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-  VoxfieldServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+  VoxedtServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  VoxedtServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
                  const EsdfMap::Config& esdf_config,
-                 const EsdfOccFiestaIntegrator::Config& esdf_integrator_config,
+                 //const EsdfOccFiestaIntegrator::Config& esdf_integrator_config,
+                 const EsdfOccEdtIntegrator::Config& esdf_integrator_config,
                  const TsdfMap::Config& tsdf_config,
                  const TsdfIntegratorBase::Config& tsdf_integrator_config,
                  const OccupancyMap::Config& occ_config,
                  const OccTsdfIntegrator::Config& occ_tsdf_integrator_config,
                  const MeshIntegratorConfig& mesh_config);
-  virtual ~VoxfieldServer() {}
+  virtual ~VoxedtServer() {}
 
   void publishAllUpdatedEsdfVoxels();
   virtual void publishSlices();
@@ -140,7 +141,8 @@ class VoxfieldServer : public TsdfServer {
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
-  std::unique_ptr<EsdfOccFiestaIntegrator> esdf_integrator_;
+  //std::unique_ptr<EsdfOccFiestaIntegrator> esdf_integrator_;
+  std::unique_ptr<EsdfOccEdtIntegrator> esdf_integrator_;
 
   // Occupancy maps.
   std::shared_ptr<OccupancyMap> occupancy_map_;

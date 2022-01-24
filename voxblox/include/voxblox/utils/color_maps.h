@@ -119,7 +119,7 @@ class IrrationalIdColorMap : IdColorMap {
   float irrational_base_;
 };
 /**
- * Map unique IDs from [0, Inf[ to unique colors
+ * Map unique IDs from [0, Inf] to unique colors
  * with piecewise constant spacing and higher spread on the color wheel.
  * An important advantage of this color map is that the colors are independent
  * of the max ID value, e.g. previous colors don't change when adding new IDs.

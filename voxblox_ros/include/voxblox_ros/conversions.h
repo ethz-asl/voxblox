@@ -106,6 +106,12 @@ Color convertColor(const PCLPoint& point,
                    const std::shared_ptr<ColorMap>& color_map);
 
 template <>
+inline Color convertColor(const pcl::PointXYZRGBL& point,
+                          const std::shared_ptr<ColorMap>& /*color_map*/) {
+  return Color(point.r, point.g, point.b);
+}
+
+template <>
 inline Color convertColor(const pcl::PointXYZRGB& point,
                           const std::shared_ptr<ColorMap>& /*color_map*/) {
   return Color(point.r, point.g, point.b, point.a);
@@ -140,6 +146,45 @@ inline void convertPointcloud(
                               pointcloud_pcl.points[i].z));
     colors->emplace_back(
         convertColor<PCLPoint>(pointcloud_pcl.points[i], color_map));
+  }
+}
+
+
+// Convert pointclouds of different PCL types to a voxblox pointcloud.
+// With color, with label
+// Here we use the label convention of semantic kitti
+// TODO(py): add more possibility for the label
+inline void convertPointcloud(
+    const typename pcl::PointCloud<pcl::PointXYZRGBL>& pointcloud_pcl,
+    const std::shared_ptr<ColorMap>& color_map, Pointcloud* points_C,
+    Colors* colors, Labels* labels, bool filter_moving_object) {
+  points_C->reserve(pointcloud_pcl.size());
+  colors->reserve(pointcloud_pcl.size());
+  labels->reserve(pointcloud_pcl.size());
+  for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+    if (!isPointFinite(pointcloud_pcl.points[i])) {
+      continue;
+    }
+
+    Label cur_label(pointcloud_pcl.points[i].label);
+    
+    // only for semantic kitti dataset
+    // Filter those outlier and dynamic objects
+    // sem_label <=1 means unlabeled or outlier
+    // sem_label > 250 means moving (dynamic) objects
+    // TODO(py): in practice, these moving objects should also be considered
+    if (cur_label.sem_label <= 1)  // outliers
+      continue;
+    if (filter_moving_object && cur_label.sem_label > 250)
+      continue;
+      
+    points_C->push_back(Point(pointcloud_pcl.points[i].x,
+                              pointcloud_pcl.points[i].y,
+                              pointcloud_pcl.points[i].z));
+    colors->emplace_back(
+        convertColor<pcl::PointXYZRGBL>(pointcloud_pcl.points[i], color_map));
+
+    labels->emplace_back(cur_label); // add definition of Label
   }
 }
 

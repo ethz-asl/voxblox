@@ -26,7 +26,7 @@ class OccTsdfIntegrator {
 
     bool allow_clear = true;
 
-    FloatingPoint min_weight = 1e-3;
+    FloatingPoint min_weight = 1e-4;
 
     // The threshold of TSDF distance is occ_voxel_size_ratio * voxel size
     FloatingPoint occ_voxel_size_ratio = 0.865;  // Sqrt(3)/2
@@ -66,7 +66,7 @@ class OccTsdfIntegrator {
     CHECK_EQ(tsdf_layer_->voxels_per_side(), occ_layer_->voxels_per_side());
     CHECK_EQ(tsdf_layer_->voxel_size(), occ_layer_->voxel_size());
 
-    timing::Timer allocate_timer("occ/allocate_vox");
+    timing::Timer allocate_timer("update_occ/allocate_vox");
 
     clearList();
 

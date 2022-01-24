@@ -130,7 +130,7 @@ class EsdfIntegrator {
    */
   bool updateVoxelFromNeighbors(const GlobalIndex& global_index);
 
-  // Convenience functions.
+  // Convenience functions. Determine if the voxel is in the fixed band
   inline bool isFixed(FloatingPoint dist_m) const {
     return std::abs(dist_m) < config_.min_distance_m;
   }
@@ -152,6 +152,9 @@ class EsdfIntegrator {
   void setFullEuclidean(bool full_euclidean) {
     config_.full_euclidean_distance = full_euclidean;
   }
+
+  void assignError(GlobalIndex vox_idx, float esdf_error); //py: added
+                                 
 
  protected:
   Config config_;

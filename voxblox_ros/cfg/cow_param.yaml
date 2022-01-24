@@ -1,5 +1,5 @@
 # Map 
-voxel_size: &voxel_size 0.05
+voxel_size: &voxel_size 0.1
 voxels_per_side_in_block: &voxels_per_side_in_block 8
 
 occ_voxel_size: *voxel_size
@@ -13,7 +13,7 @@ esdf_voxels_per_side: *voxels_per_side_in_block
 
 # TSDF integration
 # select from simple, fast and merged
-method: fast 
+method: merged 
 use_const_weight: false
 truncation_distance: 0.2
 max_ray_length_m: 5.0
@@ -22,17 +22,18 @@ max_ray_length_m: 5.0
 local_range_offset_x: 30
 local_range_offset_y: 30
 local_range_offset_z: 10
-esdf_default_distance_m: 2.5
+esdf_default_distance_m: 2.0
 # max_behind_surface_m should be larger than truncation_distance
 max_behind_surface_m: 0.4
-num_buckets: 20
-patch_on: false
-early_break: false
+num_buckets: 50
+patch_on: true
+early_break: true
+finer_esdf_on: false
 eval_esdf_on: true
 
 # Occupancy grid integration
 occ_voxel_size_ratio: 0.865
-occ_min_weight: 0.001
+occ_min_weight: 0.0001
 probability_hit: 0.7
 probability_miss: 0.4
 threshold_min: 0.12
@@ -43,12 +44,13 @@ threshold_occupancy: 0.7
 enable_icp: false
 icp_iterations: 10
 use_tf_transforms: false
+world_frame: world
 
 # Timer
 update_mesh_every_n_sec: 1.0
 update_esdf_every_n_sec: 0.5
 publish_map_every_n_sec: 0.5
-eval_esdf_every_n_sec: 180.0
+eval_esdf_every_n_sec: 200.0
 min_time_between_msgs_sec: 0.0
 
 # Visualization
@@ -59,7 +61,7 @@ intensity_colormap: rainbow
 # publishing settings
 publish_traversable: false
 publish_slices: true
-slice_level: 0.8
+slice_level: 1.0
 
 # Logging
 verbose: true

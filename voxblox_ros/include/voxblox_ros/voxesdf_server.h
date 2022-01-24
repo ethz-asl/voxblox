@@ -1,31 +1,31 @@
-#ifndef VOXBLOX_ROS_ESDF_SERVER_H_
-#define VOXBLOX_ROS_ESDF_SERVER_H_
+#ifndef VOXBLOX_ROS_VOX_ESDF_SERVER_H_
+#define VOXBLOX_ROS_VOX_ESDF_SERVER_H_
 
 #include <memory>
 #include <string>
 
 #include <voxblox/core/esdf_map.h>
-#include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/esdf_fiesta_integrator.h>
 #include <voxblox_msgs/Layer.h>
-#include <voxblox/integrator/occupancy_tsdf_integrator.h> //py: added
-#include <voxblox/core/occupancy_map.h> //py: added
+#include <voxblox/integrator/occupancy_tsdf_integrator.h> 
+#include <voxblox/core/occupancy_map.h> 
 
 #include "voxblox_ros/tsdf_server.h"
 
 namespace voxblox {
 
-class EsdfServer : public TsdfServer {
+class VoxEsdfServer : public TsdfServer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-  EsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+  VoxEsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  VoxEsdfServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
              const EsdfMap::Config& esdf_config,
-             const EsdfIntegrator::Config& esdf_integrator_config,
+             const EsdfFiestaIntegrator::Config& esdf_integrator_config,
              const TsdfMap::Config& tsdf_config,
              const TsdfIntegratorBase::Config& tsdf_integrator_config,
              const MeshIntegratorConfig& mesh_config);
-  virtual ~EsdfServer() {}
+  virtual ~VoxEsdfServer() {}
 
   bool generateEsdfCallback(std_srvs::Empty::Request& request,     // NOLINT
                             std_srvs::Empty::Response& response);  // NOLINT
@@ -33,9 +33,10 @@ class EsdfServer : public TsdfServer {
   void publishAllUpdatedEsdfVoxels();
   virtual void publishSlices();
   void publishTraversable();
+  void publishOccupancyOccupiedNodes();
 
   virtual void publishPointclouds();
-  virtual void newPoseCallback(const Transformation& T_G_C);
+  // virtual void newPoseCallback(const Transformation& T_G_C);
   virtual void publishMap(bool reset_remote_map = false);
   virtual bool saveMap(const std::string& file_path);
   virtual bool loadMap(const std::string& file_path);
@@ -121,15 +122,14 @@ class EsdfServer : public TsdfServer {
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
-  std::unique_ptr<EsdfIntegrator> esdf_integrator_;
+  std::unique_ptr<EsdfFiestaIntegrator> esdf_integrator_;
 
   // py: added
   // Occupancy maps. 
   std::shared_ptr<OccupancyMap> occupancy_map_;
   std::unique_ptr<OccTsdfIntegrator> occupancy_integrator_;
-
 };
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_ROS_ESDF_SERVER_H_
+#endif  // VOXBLOX_ROS_VOX_ESDF_SERVER_H_

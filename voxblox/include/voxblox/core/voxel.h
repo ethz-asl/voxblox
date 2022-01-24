@@ -15,13 +15,17 @@ namespace voxblox {
 #define UNDEF INT_MAX  // Undefined voxel index
 
 struct TsdfVoxel {
-  float distance = 0.0f;
+  float distance = 0.0f; // +: in front, -: behind the surface
   float weight = 0.0f;
   Color color;
+  Ray gradient = Ray::Zero(); // ADD(py): for the implementation of Gradient TSDF, its direction is from the surface toward the sensor
+  bool occupied = false;
 };
 
 struct EsdfVoxel {
-  float distance = 0.0f;
+  float distance = 0.0f; // when finer esdf is on, this distance also includes the inner-voxel part
+
+  float raw_distance = 0.0f; // without the inner-voxel part
 
   bool observed = false;
   /**
@@ -45,9 +49,17 @@ struct EsdfVoxel {
 
   // Fix FIESTA's problem of unsigned distance, use signed distance instead
   bool behind = false;
+  
+  // The newly observed voxel
+  bool newly = false; 
 
   // only for evlauation visualization
   float error = 0.0f;
+
+  // distance square with the unit of the voxel size (deprecated)
+  // int dist_square = 0;
+
+  float raise = -1.0f; //not raised
 
   // Index of this voxel's closest occupied voxel
   GlobalIndex coc_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
@@ -71,6 +83,8 @@ struct OccupancyVoxel {
   bool occupied = false;
   // Fix FIESTA's problem of unsigned distance, use signed distance instead
   bool behind = false;
+
+  bool fixed = false;
 };
 
 struct IntensityVoxel {

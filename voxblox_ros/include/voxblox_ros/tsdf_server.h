@@ -171,6 +171,9 @@ class TsdfServer {
    * frame.
    */
   std::string world_frame_;
+
+  std::string sensor_frame_; //py: added
+
   /**
    * Name of the ICP corrected frame. Publishes TF and transform topic to this
    * if ICP on.

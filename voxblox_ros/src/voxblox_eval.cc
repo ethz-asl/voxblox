@@ -70,6 +70,8 @@ class VoxbloxEvaluator {
   float slice_level_;
   // error limit for visualization (unit: m)
   float error_limit_m_;
+  // evaluate only the voxels with positive ESDF
+  bool eval_only_positive_;
 
   // Transformation between the ground truth dataset and the voxblox map.
   // The GT is transformed INTO the voxblox coordinate frame.
@@ -110,7 +112,8 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
       eval_esdf_(false),
       use_occ_ref_esdf_(true),
       slice_level_(1.0),
-      error_limit_m_(0.2) {
+      error_limit_m_(0.2),
+      eval_only_positive_(false) {
   // Load parameters.
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("recolor_by_error", recolor_by_error_, recolor_by_error_);
@@ -119,6 +122,7 @@ VoxbloxEvaluator::VoxbloxEvaluator(const ros::NodeHandle& nh,
   nh_private_.param("use_occ_ref", use_occ_ref_esdf_, use_occ_ref_esdf_);
   nh_private_.param("slice_level", slice_level_, slice_level_);
   nh_private_.param("error_limit_m", error_limit_m_, error_limit_m_);
+  nh_private_.param("eval_only_positive", eval_only_positive_, eval_only_positive_);
 
   // Load transformations.
   XmlRpc::XmlRpcValue T_V_G_xml;
@@ -334,6 +338,7 @@ void VoxbloxEvaluator::evaluateEsdf() {
       const EsdfVoxel& esdf_voxel =
           esdf_block->getVoxelByLinearIndex(lin_index);
       if (!esdf_voxel.observed) continue;
+      if (eval_only_positive_ && esdf_voxel.distance < 0) continue;
 
       VoxelIndex voxel_index =
           esdf_block->computeVoxelIndexFromLinearIndex(lin_index);
@@ -352,7 +357,7 @@ void VoxbloxEvaluator::evaluateEsdf() {
       mae += std::abs(cur_error_dist);
 
       // NOTE(yuepan): It would not be used any more anyway, so we use it
-      // to plot the slice esdf_voxel is const, so try to get a new one
+      // to plot the slice. esdf_voxel is const, so try to get a new one.
       EsdfVoxel* cur_esdf_vox =
           esdf_layer_->getVoxelPtrByGlobalIndex(global_index);
 

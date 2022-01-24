@@ -69,6 +69,7 @@ class Layer {
     return *(it->second);
   }
 
+  // determine from whether the function is const
   inline typename BlockType::ConstPtr getBlockPtrByIndex(
       const BlockIndex& index) const {
     typename BlockHashMap::const_iterator it = block_map_.find(index);

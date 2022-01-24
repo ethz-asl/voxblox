@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INTEGRATOR_ESDF_OCC_FIESTA_INTEGRATOR_H_
-#define VOXBLOX_INTEGRATOR_ESDF_OCC_FIESTA_INTEGRATOR_H_
+#ifndef VOXBLOX_INTEGRATOR_ESDF_OCC_EDT_INTEGRATOR_H_
+#define VOXBLOX_INTEGRATOR_ESDF_OCC_EDT_INTEGRATOR_H_
 
 #include <algorithm>
 #include <queue>
@@ -14,7 +14,6 @@
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/bucket_queue.h"
 #include "voxblox/utils/neighbor_tools.h"
-#include "voxblox/utils/neighbor_tools_ex.h"
 #include "voxblox/utils/timing.h"
 
 namespace voxblox {
@@ -22,7 +21,7 @@ namespace voxblox {
 /**
  * Builds an ESDF layer out of a given occupancy layer.
  */
-class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
+class EsdfOccEdtIntegrator {  
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -33,16 +32,13 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
      * Maximum distance to calculate the actual distance to.
      * Any values above this will be set to default_distance_m.
      */
-    FloatingPoint max_distance_m = 10.0;
+    FloatingPoint max_distance_m = 2.0;
 
     // Default distance set for unknown values and values > max_distance_m.
-    FloatingPoint default_distance_m = 10.0;
+    FloatingPoint default_distance_m = 2.0;
 
     // Trunction distance behind surface, unit: m
     FloatingPoint max_behind_surface_m = 1.0f;
-
-    // Default voxel unit distance square (deprecated)
-    // int default_dist_square = 50 * 50; 
 
     // Number of buckets for the bucketed priority queue.
     int num_buckets = 20;
@@ -53,13 +49,13 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
 
     // Turn on the patch code (Algorithm 3 in FIESTA) or not
     bool patch_on = true;
-    bool early_break = true;
+    bool early_break = false;
 
     // Local map boundary size (unit: voxel)
-    GlobalIndex range_boundary_offset = GlobalIndex(10, 10, 5);
+    GlobalIndex range_boundary_offset = GlobalIndex(100, 100, 50);
   };
 
-  EsdfOccFiestaIntegrator(const Config& config,
+  EsdfOccEdtIntegrator(const Config& config,
                           Layer<OccupancyVoxel>* occ_layer,
                           Layer<EsdfVoxel>* esdf_layer);
 
@@ -75,6 +71,10 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
 
   void updateESDF();
 
+  void processRaise(EsdfVoxel* cur_vox);
+
+  void processLower(EsdfVoxel* cur_vox);
+
   void deleteFromList(EsdfVoxel* occ_vox, EsdfVoxel* cur_vox);
 
   void insertIntoList(EsdfVoxel* occ_vox, EsdfVoxel* cur_vox);
@@ -82,7 +82,7 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
   inline float dist(GlobalIndex vox_idx_a, GlobalIndex vox_idx_b);
 
   inline int distSquare(GlobalIndex vox_idx_a, GlobalIndex vox_idx_b);
-
+                                            
   inline bool voxInRange(GlobalIndex vox_idx);
 
   void loadInsertList(const GlobalIndexList& insert_list);
@@ -132,8 +132,12 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
 
   // for recording and logging
   int total_updated_count_ = 0;
+
+  int sum_occ_changed_ = 0;
+  int sum_raise_ = 0;
+  int sum_lower_ = 0;
 };
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_ESDF_OCC_FIESTA_INTEGRATOR_H_
+#endif  // VOXBLOX_INTEGRATOR_ESDF_OCC_EDT_INTEGRATOR_H_

@@ -67,10 +67,12 @@ typedef AlignedList<GlobalIndex> GlobalIndexList;
 typedef std::unordered_set<GlobalIndex> GlobalIndexSet;
 
 struct Color;
+struct Label;
 
 // Pointcloud types for external interface.
 typedef AlignedVector<Point> Pointcloud;
 typedef AlignedVector<Color> Colors;
+typedef AlignedVector<Label> Labels;
 
 // For triangle meshing/vertex access.
 typedef size_t VertexIndex;
@@ -143,9 +145,32 @@ struct Color {
   static const Color Pink() { return Color(255, 0, 127); }
 };
 
+
 // Constants used across the library.
 constexpr FloatingPoint kEpsilon = 1e-6; /**< Used for coordinates. */
 constexpr float kFloatEpsilon = 1e-6;    /**< Used for weights. */
+constexpr int kKITTIMaxIntstance = 1000;    /**< Used for assign an unqiue panoptic label. */
+
+struct Label {
+  Label() : sem_label(0), ins_label(0) {}
+  Label(short int _sem_label, short int _ins_label) 
+      : sem_label(_sem_label), ins_label(_ins_label) {}
+  Label(uint32_t label) {
+    full_label = label;
+    sem_label = label & 0xFFFF; 
+    ins_label = label >> 16; 
+    // TODO(py): to do a better hashing or increase the number of 1000 here
+    id_label = sem_label * kKITTIMaxIntstance + ins_label; 
+    // name = semanticKittiLabelNameLUT(sem_label);
+  }
+
+  int id_label; 
+  uint32_t full_label;
+  short int sem_label; //int16_t
+  short int ins_label; //int16_t
+  //std::string name;
+};
+
 
 // Grid <-> point conversion functions.
 

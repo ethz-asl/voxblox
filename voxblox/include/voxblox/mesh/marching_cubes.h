@@ -81,7 +81,7 @@ class MarchingCubes {
       return;
     }
 
-    Eigen::Matrix<FloatingPoint, 3, 12> edge_vertex_coordinates;
+    Eigen::Matrix<FloatingPoint, 3, 12> edge_vertex_coordinates; // for each cube, 12 edges, 12 vertex
     interpolateEdgeVertices(vertex_coords, vertex_sdf,
                             &edge_vertex_coordinates);
 
@@ -149,7 +149,7 @@ class MarchingCubes {
   static inline Point interpolateVertex(const Point& vertex1,
                                         const Point& vertex2, float sdf1,
                                         float sdf2) {
-    static constexpr FloatingPoint kMinSdfDifference = 1e-6;
+    static constexpr FloatingPoint kMinSdfDifference = 1e-6; 
     const FloatingPoint sdf_diff = sdf1 - sdf2;
     // Only compute the actual interpolation value if the sdf_difference is not
     // too small, this is to counteract issues with floating point precision.

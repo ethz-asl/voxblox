@@ -1,5 +1,5 @@
-#ifndef VOXBLOX_INTEGRATOR_ESDF_OCC_FIESTA_INTEGRATOR_H_
-#define VOXBLOX_INTEGRATOR_ESDF_OCC_FIESTA_INTEGRATOR_H_
+#ifndef VOXBLOX_INTEGRATOR_ESDF_FIESTA_INTEGRATOR_H_
+#define VOXBLOX_INTEGRATOR_ESDF_FIESTA_INTEGRATOR_H_
 
 #include <algorithm>
 #include <queue>
@@ -20,9 +20,9 @@
 namespace voxblox {
 
 /**
- * Builds an ESDF layer out of a given occupancy layer.
+ * Builds an ESDF layer out of a given TSDF layer efficiently.
  */
-class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
+class EsdfFiestaIntegrator {  
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -41,6 +41,15 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
     // Trunction distance behind surface, unit: m
     FloatingPoint max_behind_surface_m = 1.0f;
 
+    // Fixed band distance threshold, unit: m
+    FloatingPoint band_distance_m = 1.0f; 
+
+    // The threshold of TSDF distance is occ_voxel_size_ratio * voxel size
+    FloatingPoint occ_voxel_size_ratio = 0.865;  // Sqrt(3) / 2
+
+    // Minimum weight to consider a TSDF value seen at.
+    float min_weight = 1e-6;
+
     // Default voxel unit distance square (deprecated)
     // int default_dist_square = 50 * 50; 
 
@@ -54,18 +63,22 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
     // Turn on the patch code (Algorithm 3 in FIESTA) or not
     bool patch_on = true;
     bool early_break = true;
+    
+    // Finer ESDF with the consideration of the inner voxel distance from the voxel center to the actual surface
+    // Gradient TSDF is needed for the calculation
+    bool finer_esdf_on = false;
 
     // Local map boundary size (unit: voxel)
     GlobalIndex range_boundary_offset = GlobalIndex(10, 10, 5);
   };
 
-  EsdfOccFiestaIntegrator(const Config& config,
-                          Layer<OccupancyVoxel>* occ_layer,
-                          Layer<EsdfVoxel>* esdf_layer);
+  EsdfFiestaIntegrator(const Config& config,
+                       Layer<TsdfVoxel>* tsdf_layer,
+                       Layer<EsdfVoxel>* esdf_layer);
 
-  void updateFromOccLayer(bool clear_updated_flag);
+  void updateFromTsdfLayer(bool clear_updated_flag);
 
-  void updateFromOccBlocks(const BlockIndexList& occ_blocks);
+  void updateFromTsdfBlocks(const BlockIndexList& tsdf_blocks);
 
   void setLocalRange();
 
@@ -107,17 +120,30 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
     }
   }
 
+  // Convenience functions. Determine if the voxel is in the fixed band
+  inline bool isFixed(FloatingPoint dist_m) const {
+    return std::abs(dist_m) < config_.band_distance_m;
+  }
+
+  inline bool isOccupied(FloatingPoint dist_m) const {
+    return std::abs(dist_m) <= config_.occ_voxel_size_ratio * esdf_voxel_size_;                             
+  }
+
+  inline bool isObserved(FloatingPoint weight) const {
+    return weight >= config_.min_weight;
+  }
+
  protected:
   Config config_;
 
-  Layer<OccupancyVoxel>* occ_layer_;
+  Layer<TsdfVoxel>* tsdf_layer_;
   Layer<EsdfVoxel>* esdf_layer_;
 
   // Data structure used for FIESTA
   GlobalIndexList insert_list_;
   GlobalIndexList delete_list_;
   BucketQueue<GlobalIndex> update_queue_;
-  LongIndexSet updated_voxel_;  // TODO
+  LongIndexSet updated_voxel_;  
 
   size_t esdf_voxels_per_side_;
   FloatingPoint esdf_voxel_size_;
@@ -136,4 +162,4 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
 
 }  // namespace voxblox
 
-#endif  // VOXBLOX_INTEGRATOR_ESDF_OCC_FIESTA_INTEGRATOR_H_
+#endif  // VOXBLOX_INTEGRATOR_ESDF_FIESTA_INTEGRATOR_H_

@@ -29,8 +29,8 @@ Transformer::Transformer(const ros::NodeHandle& nh,
   nh_private_.param("use_tf_transforms", use_tf_transforms_,
                     use_tf_transforms_);
   // If we use topic transforms, we have 2 parts: a dynamic transform from a
-  // topic and a static transform from parameters.
-  // Static transform should be T_G_D (where D is whatever sensor the
+  // topic and a static transform from parameters (calibration).
+  // Dynamic transform should be T_G_D (where D is whatever sensor the
   // dynamic coordinate frame is in) and the static should be T_D_C (where
   // C is the sensor frame that produces the depth data). It is possible to
   // specify T_C_D and set invert_static_tranform to true.
@@ -64,6 +64,8 @@ Transformer::Transformer(const ros::NodeHandle& nh,
       }
     }
   }
+  //Or we will use tf_transform, we do not need the calibration parameters
+  //lookupTransformTf
 }
 
 void Transformer::transformCallback(

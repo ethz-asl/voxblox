@@ -51,6 +51,82 @@ class Neighborhood : public NeighborhoodLookupTables {
     }
   }
 
+  static void getFromGlobalIndexAndObstacle(const GlobalIndex& global_index, 
+                                            const GlobalIndex& coc_index,
+                                            std::vector<int> &neighbors_idx) {
+    
+    // -1,  1,  0,  0,  0,  0, -1, -1,  1,  1,  0,  0,  0,  0, -1,  1, -1,  1, -1, -1, -1, -1,  1,  1,  1,  1,
+    //  0,  0, -1,  1,  0,  0, -1,  1, -1,  1, -1, -1,  1,  1,  0,  0,  0,  0, -1, -1,  1,  1, -1, -1,  1,  1,
+    //  0,  0,  0,  0, -1,  1,  0,  0,  0,  0, -1,  1, -1,  1, -1, -1,  1,  1, -1,  1, -1,  1, -1,  1, -1,  1;
+    //  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25;
+
+    if (coc_index(2) <= global_index(2))
+      neighbors_idx.push_back(5);
+    if (coc_index(2) >= global_index(2))
+      neighbors_idx.push_back(4);
+    
+    if(coc_index(1) <= global_index(1)){ //y > obsty
+      neighbors_idx.push_back(3);
+      if (coc_index(2) <= global_index(2))
+        neighbors_idx.push_back(13);
+      if (coc_index(2) >= global_index(2))
+        neighbors_idx.push_back(12);
+    }
+
+    if(coc_index(1) >= global_index(1)){ //y < obsty
+      neighbors_idx.push_back(2);
+      if (coc_index(2) <= global_index(2))
+        neighbors_idx.push_back(11);
+      if (coc_index(2) >= global_index(2))
+        neighbors_idx.push_back(10);
+    }
+
+    if(coc_index(0) <= global_index(0)){ //x > obstx
+      neighbors_idx.push_back(1);
+      if (coc_index(2) <= global_index(2))
+        neighbors_idx.push_back(17);
+      if (coc_index(2) >= global_index(2))
+        neighbors_idx.push_back(15);
+      if(coc_index(1) >= global_index(1)){
+        neighbors_idx.push_back(9);
+        if (coc_index(2) <= global_index(2))
+          neighbors_idx.push_back(25);
+        if (coc_index(2) >= global_index(2))
+          neighbors_idx.push_back(24);
+      }
+      if(coc_index(1) >= global_index(1)){
+        neighbors_idx.push_back(8);
+        if (coc_index(2) <= global_index(2))
+          neighbors_idx.push_back(23);
+        if (coc_index(2) >= global_index(2))
+          neighbors_idx.push_back(22);
+      }
+    }
+
+    if(coc_index(0) >= global_index(0)){ //x < obstx
+      neighbors_idx.push_back(0);
+      if (coc_index(2) <= global_index(2))
+        neighbors_idx.push_back(16);
+      if (coc_index(2) >= global_index(2))
+        neighbors_idx.push_back(14);
+      if(coc_index(1) >= global_index(1)){
+        neighbors_idx.push_back(7);
+        if (coc_index(2) <= global_index(2))
+          neighbors_idx.push_back(21);
+        if (coc_index(2) >= global_index(2))
+          neighbors_idx.push_back(20);
+      }
+      if(coc_index(1) >= global_index(1)){
+        neighbors_idx.push_back(6);
+        if (coc_index(2) <= global_index(2))
+          neighbors_idx.push_back(19);
+        if (coc_index(2) >= global_index(2))
+          neighbors_idx.push_back(18);
+      }
+    }
+
+  }
+
   /**
    * Get the block idx and local voxel index of a neighbor voxel. The neighbor
    * voxel is defined by providing a direction. The main purpose of this

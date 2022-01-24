@@ -162,6 +162,7 @@ void TsdfServer::getServerConfigFromRosParam(
                    max_block_distance_from_body_);
   nh_private.param("slice_level", slice_level_, slice_level_);
   nh_private.param("world_frame", world_frame_, world_frame_);
+  nh_private.param("sensor_frame", sensor_frame_, sensor_frame_); //py: added
   nh_private.param("publish_pointclouds_on_update",
                    publish_pointclouds_on_update_,
                    publish_pointclouds_on_update_);
@@ -218,21 +219,34 @@ void TsdfServer::processPointCloudMessageAndInsert(
   // Horrible hack fix to fix color parsing colors in PCL.
   bool color_pointcloud = false;
   bool has_intensity = false;
+  bool has_label = false; // py: added
   for (size_t d = 0; d < pointcloud_msg->fields.size(); ++d) {
     if (pointcloud_msg->fields[d].name == std::string("rgb")) {
       pointcloud_msg->fields[d].datatype = sensor_msgs::PointField::FLOAT32;
       color_pointcloud = true;
     } else if (pointcloud_msg->fields[d].name == std::string("intensity")) {
       has_intensity = true;
+    } else if (pointcloud_msg->fields[d].name == std::string("label")) { // py: added
+      has_label = true;
+      ROS_INFO("Found semantic/instance label in the point cloud");
     }
   }
 
   Pointcloud points_C;
   Colors colors;
+  Labels labels;
   timing::Timer ptcloud_timer("ptcloud_preprocess");
 
   // Convert differently depending on RGB or I type.
-  if (color_pointcloud) {
+  if (has_label) { // py: added (test)
+    pcl::PointCloud<pcl::PointXYZRGBL>::Ptr 
+        pointcloud_pcl(new pcl::PointCloud<pcl::PointXYZRGBL>());
+    // pointcloud_pcl is modified below:
+    pcl::fromROSMsg(*pointcloud_msg, *pointcloud_pcl);
+    convertPointcloud(*pointcloud_pcl, color_map_, &points_C, &colors, &labels, 
+                      true);
+    pointcloud_pcl.reset(new pcl::PointCloud<pcl::PointXYZRGBL>());
+  } else if (color_pointcloud) {
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
@@ -311,12 +325,12 @@ void TsdfServer::processPointCloudMessageAndInsert(
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
   }
 
-  timing::Timer block_remove_timer("remove_distant_blocks");
+  // timing::Timer block_remove_timer("remove_distant_blocks");
   tsdf_map_->getTsdfLayerPtr()->removeDistantBlocks(
       T_G_C.getPosition(), max_block_distance_from_body_);
   mesh_layer_->clearDistantMesh(T_G_C.getPosition(),
                                 max_block_distance_from_body_);
-  block_remove_timer.Stop();
+  // block_remove_timer.Stop();
 
   // Callback for inheriting classes.
   newPoseCallback(T_G_C);
@@ -331,8 +345,11 @@ bool TsdfServer::getNextPointcloudFromQueue(
     return false;
   }
   *pointcloud_msg = queue->front();
-  if (transformer_.lookupTransform((*pointcloud_msg)->header.frame_id,
-                                   world_frame_,
+  // LOG(INFO) << "from frame " << (*pointcloud_msg)->header.frame_id; //py: just for check
+  //std::string sensor_frame_ = "vehicle";
+  
+  if (transformer_.lookupTransform(sensor_frame_ /*(*pointcloud_msg)->header.frame_id*/, //velodyne in kitti
+                                   world_frame_, 
                                    (*pointcloud_msg)->header.stamp, T_G_C)) {
     queue->pop();
     return true;

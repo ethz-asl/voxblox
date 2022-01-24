@@ -19,6 +19,8 @@ cs_add_library(${PROJECT_NAME}
   src/transformer.cc
   src/tsdf_server.cc
   src/voxfield_server.cc
+  src/voxedt_server.cc
+  src/voxesdf_server.cc
 )
 
 ############
@@ -59,6 +61,16 @@ cs_add_executable(voxfield_server
   src/voxfield_server_node.cc
 )
 target_link_libraries(voxfield_server ${PROJECT_NAME})
+
+cs_add_executable(voxedt_server
+  src/voxedt_server_node.cc
+)
+target_link_libraries(voxedt_server ${PROJECT_NAME})
+
+cs_add_executable(voxesdf_server
+  src/voxesdf_server_node.cc
+)
+target_link_libraries(voxesdf_server ${PROJECT_NAME})
 
 ##########
 # EXPORT #

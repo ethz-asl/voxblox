@@ -1,6 +1,6 @@
 <launch>
   <arg name="play_bag" default="true" />
-  <arg name="bag_file" default="xxxxx/cow_lady_dataset.bag"/>
+  <arg name="bag_file" default="/media/yuepan/SeagateNew/1_data/thesis_dataset/cow_lady_dataset.bag"/>
 
   <!-- Download the dataset here: https://projects.asl.ethz.ch/datasets/doku.php?id=iros2017 -->
   <node name="player" pkg="rosbag" type="play" output="screen" args="-r 1.0 --clock $(arg bag_file)" if="$(arg play_bag)"/>
@@ -15,7 +15,7 @@
     <param name="mesh_filename" value="xxxxx/$(anon cow).ply" />
     <!-- Use the service: rosservice call /voxblox_node/generate_mesh to save the mesh-->
     <!-- Use the service: rosservice call /voxblox_node/save_map xxx.vxblx to save the tsdf map-->
-    <!-- Use the service: rosservice call /voxblox_node/save_esdf_map xxx.vxblx to save the esdf map-->
+    <!-- Use the service: rosservice call /voxblox_node/save_esdf_map xxx.esdf to save the esdf map-->
   </node>
 
   <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find voxblox_ros)/cfg/rviz/cow_5cm.rviz" />
