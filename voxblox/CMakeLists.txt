@@ -33,7 +33,7 @@ set("${PROJECT_NAME}_SRCS"
   src/integrator/integrator_utils.cc
   src/integrator/intensity_integrator.cc
   src/integrator/tsdf_integrator.cc
-  src/integrator/esdf_fiesta_integrator.cc
+  src/integrator/esdf_voxfield_integrator.cc
   src/integrator/esdf_occ_fiesta_integrator.cc
   src/integrator/esdf_occ_edt_integrator.cc
   src/io/mesh_ply.cc

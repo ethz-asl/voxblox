@@ -1,4 +1,4 @@
-#include "voxblox_ros/voxesdf_server.h"
+#include "voxblox_ros/fiesta_server.h"
 
 #include <gflags/gflags.h>
 
@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
 
-  voxblox::VoxEsdfServer node(nh, nh_private);
+  voxblox::FiestaServer node(nh, nh_private);
 
   ros::spin();
   return 0;

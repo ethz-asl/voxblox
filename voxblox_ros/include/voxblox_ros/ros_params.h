@@ -9,7 +9,7 @@
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
 #include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
-#include <voxblox/integrator/esdf_fiesta_integrator.h>
+#include <voxblox/integrator/esdf_voxfield_integrator.h>
 #include <voxblox/integrator/esdf_occ_edt_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/occupancy_tsdf_integrator.h>
@@ -264,9 +264,9 @@ inline TsdfMap::Config getTsdfMapConfigFromEsdfMapRosParam(
   return tsdf_config;
 }
 
-inline EsdfFiestaIntegrator::Config
-getEsdfFiestaIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
-  EsdfFiestaIntegrator::Config esdf_integrator_config;
+inline EsdfVoxfieldIntegrator::Config
+getEsdfVoxfieldIntegratorConfigFromRosParam(const ros::NodeHandle& nh_private) {
+  EsdfVoxfieldIntegrator::Config esdf_integrator_config;
 
   int range_boundary_offset_x = esdf_integrator_config.range_boundary_offset(0);
   int range_boundary_offset_y = esdf_integrator_config.range_boundary_offset(1);

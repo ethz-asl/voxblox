@@ -20,7 +20,7 @@ cs_add_library(${PROJECT_NAME}
   src/tsdf_server.cc
   src/voxfield_server.cc
   src/voxedt_server.cc
-  src/voxesdf_server.cc
+  src/fiesta_server.cc
 )
 
 ############
@@ -67,10 +67,10 @@ cs_add_executable(voxedt_server
 )
 target_link_libraries(voxedt_server ${PROJECT_NAME})
 
-cs_add_executable(voxesdf_server
-  src/voxesdf_server_node.cc
+cs_add_executable(fiesta_server
+  src/fiesta_server_node.cc
 )
-target_link_libraries(voxesdf_server ${PROJECT_NAME})
+target_link_libraries(fiesta_server ${PROJECT_NAME})
 
 ##########
 # EXPORT #

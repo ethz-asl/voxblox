@@ -1,4 +1,4 @@
-#include "voxblox/integrator/esdf_fiesta_integrator.h"
+#include "voxblox/integrator/esdf_voxfield_integrator.h"
 
 // marco settings, it's better to avoid them 
 #define USE_24_NEIGHBOR
@@ -8,7 +8,7 @@
 
 namespace voxblox {
 
-EsdfFiestaIntegrator::EsdfFiestaIntegrator(
+EsdfVoxfieldIntegrator::EsdfVoxfieldIntegrator(
     const Config& config, Layer<TsdfVoxel>* tsdf_layer,
     Layer<EsdfVoxel>* esdf_layer)
     : config_(config), tsdf_layer_(tsdf_layer), esdf_layer_(esdf_layer) {
@@ -22,7 +22,7 @@ EsdfFiestaIntegrator::EsdfFiestaIntegrator(
 }
 
 // Main entrance
-void EsdfFiestaIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
+void EsdfVoxfieldIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   BlockIndexList tsdf_blocks;
   tsdf_layer_->getAllUpdatedBlocks(Update::kEsdf, &tsdf_blocks);
 
@@ -44,7 +44,7 @@ void EsdfFiestaIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
 
 // TODO(py): add the fixed band for estimated TSDF values
 // Directly use these TSDF values as ESDF
-void EsdfFiestaIntegrator::updateFromTsdfBlocks(
+void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
     const BlockIndexList& tsdf_blocks) {
   CHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
   timing::Timer esdf_timer("upate_esdf_voxfield");
@@ -135,8 +135,10 @@ void EsdfFiestaIntegrator::updateFromTsdfBlocks(
 
   // TODO: add the Tsdf afterwards (two parts: 1. between voxel centers, 2. between voxel center and the actual surface)
   if (insert_list_.size() + delete_list_.size() > 0) {   
-    LOG(INFO) << "Insert [" << insert_list_.size() << "] and delete [" 
-              << delete_list_.size() << "]";
+    if (config_.verbose) {
+      LOG(INFO) << "Insert [" << insert_list_.size() << "] and delete [" 
+                << delete_list_.size() << "]";
+    }
     getUpdateRange();
     setLocalRange();
     allocate_timer.Stop();
@@ -150,7 +152,7 @@ void EsdfFiestaIntegrator::updateFromTsdfBlocks(
 }
 
 // Get the range of the changed tsdf grid (inserted or deleted)
-void EsdfFiestaIntegrator::getUpdateRange() {
+void EsdfVoxfieldIntegrator::getUpdateRange() {
   // initialization
   update_range_min_ << UNDEF, UNDEF, UNDEF;
   update_range_max_ << -UNDEF, -UNDEF, -UNDEF;
@@ -173,7 +175,7 @@ void EsdfFiestaIntegrator::getUpdateRange() {
 }
 
 // Expand the updated range with a given margin and then allocate memory
-void EsdfFiestaIntegrator::setLocalRange() {
+void EsdfVoxfieldIntegrator::setLocalRange() {
   range_min_ = update_range_min_ - config_.range_boundary_offset;
   range_max_ = update_range_max_ + config_.range_boundary_offset;
 
@@ -201,7 +203,7 @@ void EsdfFiestaIntegrator::setLocalRange() {
 
 // Set all the voxels in the range to be unfixed
 // Deprecated
-void EsdfFiestaIntegrator::resetFixed() {
+void EsdfVoxfieldIntegrator::resetFixed() {
   for (int x = range_min_(0); x <= range_max_(0); x++) {
     for (int y = range_min_(1); y <= range_max_(1); y++) {
       for (int z = range_min_(2); z <= range_max_(2); z++) {
@@ -219,7 +221,7 @@ void EsdfFiestaIntegrator::resetFixed() {
  * occ_vox: head voxel of the list
  * cur_vox: the voxel need to be deleted
  */
-void EsdfFiestaIntegrator::deleteFromList(EsdfVoxel* occ_vox,
+void EsdfVoxfieldIntegrator::deleteFromList(EsdfVoxel* occ_vox,
                                           EsdfVoxel* cur_vox) {
   if (cur_vox->prev_idx(0) != UNDEF) {
     EsdfVoxel* prev_vox =
@@ -242,7 +244,7 @@ void EsdfFiestaIntegrator::deleteFromList(EsdfVoxel* occ_vox,
  * occ_vox: head voxel of the list
  * cur_vox: the voxel need to be insert
  */
-void EsdfFiestaIntegrator::insertIntoList(EsdfVoxel* occ_vox,
+void EsdfVoxfieldIntegrator::insertIntoList(EsdfVoxel* occ_vox,
                                           EsdfVoxel* cur_vox) {
   // why insert at the head?
   if (occ_vox->head_idx(0) == UNDEF)
@@ -277,7 +279,7 @@ void EsdfFiestaIntegrator::insertIntoList(EsdfVoxel* occ_vox,
 // 8% faster per update) Therefore, we stick to the actual dist.
 
 // TODO: maybe try to use squared distance
-void EsdfFiestaIntegrator::updateESDF() {
+void EsdfVoxfieldIntegrator::updateESDF() {
   timing::Timer init_timer("upate_esdf_voxfield/update_init");
   
   //update_queue_ is a priority queue, voxels with the smaller absolute distance
@@ -511,19 +513,21 @@ void EsdfFiestaIntegrator::updateESDF() {
   update_timer.Stop();
   // LOG(INFO)<<"Alg 1 done";
   // End of Algorithm 1
-  LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with [" <<
-  patch_count  << "] changes by the patch, up-to-now [" <<
-  total_updated_count_  << "] nodes";
+  if (config_.verbose) {
+    LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with [" <<
+    patch_count  << "] changes by the patch, up-to-now [" <<
+    total_updated_count_  << "] nodes";
+  }
 }
 
-inline float EsdfFiestaIntegrator::dist(GlobalIndex vox_idx_a,
+inline float EsdfVoxfieldIntegrator::dist(GlobalIndex vox_idx_a,
                                         GlobalIndex vox_idx_b) {
   return (vox_idx_b - vox_idx_a).cast<float>().norm() * esdf_voxel_size_;
   // TODO(yuepan): may use square root & * resolution_ at last
   // together to speed up
 }
 
-inline int EsdfFiestaIntegrator::distSquare(GlobalIndex vox_idx_a,
+inline int EsdfVoxfieldIntegrator::distSquare(GlobalIndex vox_idx_a,
                                                GlobalIndex vox_idx_b) {
   int dx = vox_idx_a(0) - vox_idx_b(0);
   int dy = vox_idx_a(1) - vox_idx_b(1);
@@ -532,24 +536,24 @@ inline int EsdfFiestaIntegrator::distSquare(GlobalIndex vox_idx_a,
   return (dx * dx + dy * dy + dz * dz);
 }
 
-inline bool EsdfFiestaIntegrator::voxInRange(GlobalIndex vox_idx) {
+inline bool EsdfVoxfieldIntegrator::voxInRange(GlobalIndex vox_idx) {
   return (vox_idx(0) >= range_min_(0) && vox_idx(0) <= range_max_(0) &&
           vox_idx(1) >= range_min_(1) && vox_idx(1) <= range_max_(1) &&
           vox_idx(2) >= range_min_(2) && vox_idx(2) <= range_max_(2));
 }
 
-void EsdfFiestaIntegrator::loadInsertList(
+void EsdfVoxfieldIntegrator::loadInsertList(
     const GlobalIndexList& insert_list) {
   insert_list_ = insert_list;
 }
 
-void EsdfFiestaIntegrator::loadDeleteList(
+void EsdfVoxfieldIntegrator::loadDeleteList(
     const GlobalIndexList& delete_list) {
   delete_list_ = delete_list;
 }
 
 // only for the visualization of Esdf error
-void EsdfFiestaIntegrator::assignError(GlobalIndex vox_idx,
+void EsdfVoxfieldIntegrator::assignError(GlobalIndex vox_idx,
                                           float esdf_error) {
   EsdfVoxel* vox = esdf_layer_->getVoxelPtrByGlobalIndex(vox_idx);
   vox->error = esdf_error;

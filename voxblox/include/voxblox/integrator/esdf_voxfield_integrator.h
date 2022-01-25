@@ -22,12 +22,15 @@ namespace voxblox {
 /**
  * Builds an ESDF layer out of a given TSDF layer efficiently.
  */
-class EsdfFiestaIntegrator {  
+class EsdfVoxfieldIntegrator {  
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   struct Config {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    // output log or not
+    bool verbose = false; 
 
     /**
      * Maximum distance to calculate the actual distance to.
@@ -72,7 +75,7 @@ class EsdfFiestaIntegrator {
     GlobalIndex range_boundary_offset = GlobalIndex(10, 10, 5);
   };
 
-  EsdfFiestaIntegrator(const Config& config,
+  EsdfVoxfieldIntegrator(const Config& config,
                        Layer<TsdfVoxel>* tsdf_layer,
                        Layer<EsdfVoxel>* esdf_layer);
 
