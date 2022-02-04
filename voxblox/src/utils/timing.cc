@@ -87,11 +87,17 @@ Timer::Timer(std::string const& tag, bool constructStopped)
 }
 
 Timer::~Timer() {
-  if (IsTiming()) Stop();
+  if (IsTiming()) {
+    Stop();
+  } else if (paused_) {
+    Timing::Instance().AddTime(handle_, accumulated_time_);
+  }
 }
 
 void Timer::Start() {
   timing_ = true;
+  paused_ = false;
+  accumulated_time_ = 0.0;
   time_ = std::chrono::system_clock::now();
 }
 
@@ -103,9 +109,31 @@ void Timer::Stop() {
           std::chrono::duration_cast<std::chrono::nanoseconds>(now - time_)
               .count()) *
       kNumSecondsPerNanosecond;
+  accumulated_time_ += dt;
 
-  Timing::Instance().AddTime(handle_, dt);
+  Timing::Instance().AddTime(handle_, accumulated_time_);
   timing_ = false;
+  paused_ = false;
+}
+
+void Timer::Pause() {
+  std::chrono::time_point<std::chrono::system_clock> now =
+      std::chrono::system_clock::now();
+  double dt =
+      static_cast<double>(
+          std::chrono::duration_cast<std::chrono::nanoseconds>(now - time_)
+              .count()) *
+      kNumSecondsPerNanosecond;
+
+  accumulated_time_ += dt;
+  paused_ = true;
+  timing_ = false;
+}
+
+void Timer::Unpause() {
+  timing_ = true;
+  paused_ = false;
+  time_ = std::chrono::system_clock::now();
 }
 
 bool Timer::IsTiming() const { return timing_; }
