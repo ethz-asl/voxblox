@@ -5,10 +5,10 @@
 #include <string>
 
 #include <voxblox/core/esdf_map.h>
+#include <voxblox/core/occupancy_map.h>  // py: added
 #include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/occupancy_tsdf_integrator.h>  // py: added
 #include <voxblox_msgs/Layer.h>
-#include <voxblox/integrator/occupancy_tsdf_integrator.h> // py: added
-#include <voxblox/core/occupancy_map.h> // py: added
 
 #include "voxblox_ros/tsdf_server.h"
 

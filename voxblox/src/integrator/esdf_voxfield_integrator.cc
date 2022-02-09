@@ -75,10 +75,14 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
       // If this voxel is unobserved in the original map, skip it.
       if (isObserved(tsdf_voxel.weight)) {
         EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
-        esdf_voxel.behind = tsdf_voxel.distance < 0.0 ? true : false; 
+        esdf_voxel.behind = tsdf_voxel.distance < 0.0 ? true : false;
         // if (esdf_voxel.behind) // behind the surface, directly use tsdf
         //   esdf_voxel.distance = tsdf_voxel.distance;
-        // esdf_voxel.distance = tsdf_voxel.distance; // initailize as the truncated distance
+        // esdf_voxel.distance = tsdf_voxel.distance; // initailize as the
+        // truncated distance
+
+        bool current_occupied = isOccupied(tsdf_voxel.distance);
+
         if (esdf_voxel.self_idx(0) == UNDEF) {  // not yet initialized
           esdf_voxel.observed = true;
           esdf_voxel.newly = true;
@@ -99,24 +103,25 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
           esdf_voxel.newly = false;
 
           // Originally occupied but not occupied now --> delete_list
-          if (tsdf_voxel.occupied && !isOccupied(tsdf_voxel.distance))
+          if (tsdf_voxel.occupied && !current_occupied)
             delete_list_.push_back(esdf_voxel.self_idx);
         
           // Originally not occupied but occupied now --> insert_list
-          if (!tsdf_voxel.occupied && isOccupied(tsdf_voxel.distance))
+          if (!tsdf_voxel.occupied && current_occupied)
             insert_list_.push_back(esdf_voxel.self_idx);
         }
-
-        // esdf_voxel.distance = 0.0; // for updating status checking
-        tsdf_voxel.occupied = isOccupied(tsdf_voxel.distance);
+        
+        tsdf_voxel.occupied = current_occupied; 
 
         const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
-        if (config_.fixed_band_esdf_on && tsdf_fixed /*|| tsdf_voxel.distance < 0*/) { // TODO(py): behind situation
+        if (config_.fixed_band_esdf_on &&
+            tsdf_fixed /*|| tsdf_voxel.distance < 0*/) {  // TODO(py): behind
+                                                          // situation
           // In fixed band, initialize with the current tsdf.
           esdf_voxel.distance = tsdf_voxel.distance;
           esdf_voxel.fixed = true;
         } else {
-          esdf_voxel.fixed = false; // default
+          esdf_voxel.fixed = false;  // default
         }
       }
     }
@@ -393,22 +398,31 @@ void EsdfVoxfieldIntegrator::updateESDF() {
     // if out, apply this finer esdf
     // add the sub-voxel part of the esdf
     if (config_.finer_esdf_on) {
-      if (!cur_vox->fixed) { // out of the fixed band
-        TsdfVoxel* coc_tsdf_vox = 
+      if (!cur_vox->fixed) {  // out of the fixed band
+        TsdfVoxel* coc_tsdf_vox =
             tsdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);
         CHECK_NOTNULL(coc_tsdf_vox);
-        if (coc_tsdf_vox->gradient.norm() > kFloatEpsilon) { // gradient available
+        if (coc_tsdf_vox->gradient.norm() >
+            kFloatEpsilon && coc_tsdf_vox->occupied) {  // gradient available
+          coc_tsdf_vox->gradient.normalize(); // gurantee the gradient here is a unit vector
           Point cur_vox_center = cur_vox_idx.cast<float>() * esdf_voxel_size_;
-          Point coc_vox_center = cur_vox->coc_idx.cast<float>() * esdf_voxel_size_;
+          Point coc_vox_center =
+              cur_vox->coc_idx.cast<float>() * esdf_voxel_size_;
           Point coc_vox_surface;
-          coc_vox_surface = coc_vox_center + config_.gradient_sign * coc_tsdf_vox->gradient * coc_tsdf_vox->distance; // gradient is pointing outward, should be positive
+          coc_vox_surface =
+              coc_vox_center +
+              config_.gradient_sign * coc_tsdf_vox->gradient *
+                  coc_tsdf_vox->distance;  // gradient is pointing outward,
+                                           // should be positive
           cur_vox->distance = (coc_vox_surface - cur_vox_center).norm();
-          cur_vox->distance =
-              cur_vox->behind ? -cur_vox->distance : cur_vox->distance; // consider the sign
-        } else { // if the gradient is not available, we would directly use the voxel center (distance would be equal to raw_distance)
+          cur_vox->distance = cur_vox->behind
+                                  ? -cur_vox->distance
+                                  : cur_vox->distance;  // consider the sign
+        } else {  // if the gradient is not available, we would directly use the
+                  // voxel center (distance would be equal to raw_distance)
           cur_vox->distance = cur_vox->raw_distance;
         }
-      } // else, fixed, then directly use the tsdf
+      }      // else, fixed, then directly use the tsdf
     } else { // use the original voxel center to center distance
       cur_vox->distance = cur_vox->raw_distance;
     }
@@ -429,7 +443,7 @@ void EsdfVoxfieldIntegrator::updateESDF() {
 
     // Algorithm 3 Patch Code
     if (config_.patch_on && cur_vox->newly) { // only newly added voxels are required for checking
-    // if (config_.patch_on) { 
+                                              // if (config_.patch_on) {
       // timing::Timer patch_timer("upate_esdf/patch(alg3)");
       cur_vox->newly = false;
       bool change_flag = false;  // indicate if the patch works
