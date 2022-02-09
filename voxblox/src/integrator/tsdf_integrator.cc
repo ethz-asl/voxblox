@@ -632,6 +632,7 @@ std::string TsdfIntegratorBase::Config::print() const {
   ss << " ProjectiveTsdfIntegrator: \n";
   ss << " - sensor_horizontal_resolution:              " << sensor_horizontal_resolution << "\n";
   ss << " - sensor_vertical_resolution:                " << sensor_vertical_resolution << "\n";
+  ss << " - sensor_horizontal_field_of_view_degrees:   " << sensor_horizontal_field_of_view_degrees << "\n";
   ss << " - sensor_vertical_field_of_view_degrees:     " << sensor_vertical_field_of_view_degrees << "\n";
   ss << " - use_missing_points_for_clearing:           " << use_missing_points_for_clearing << "\n";
   ss << "==============================================================\n";

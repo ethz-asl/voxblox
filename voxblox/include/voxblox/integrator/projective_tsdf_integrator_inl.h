@@ -17,6 +17,8 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
     : TsdfIntegratorBase(config, layer),
       horizontal_resolution_(config.sensor_horizontal_resolution),
       vertical_resolution_(config.sensor_vertical_resolution),
+      horizontal_fov_rad_(config.sensor_horizontal_field_of_view_degrees *
+                          M_PI / 180.0),
       vertical_fov_rad_(config.sensor_vertical_field_of_view_degrees * M_PI /
                         180.0),
       range_image_(config.sensor_vertical_resolution,
@@ -33,10 +35,20 @@ ProjectiveTsdfIntegrator<interpolation_scheme>::ProjectiveTsdfIntegrator(
       << "The horizontal sensor resolution must be a positive integer";
   CHECK_GT(vertical_resolution_, 0)
       << "The vertical sensor resolution must be a positive integer";
+  CHECK_GT(horizontal_fov_rad_, 0)
+      << "The horizontal field of view of the sensor must be a positive float";
   CHECK_GT(vertical_fov_rad_, 0)
       << "The vertical field of view of the sensor must be a positive float";
   CHECK(config_.use_const_weight) << "Scaling the weight by the inverse square "
                                      "depth is (not yet) supported.";
+
+  // TODO(victorr): Make this configurable through ROS params
+  kindr::minimal::AngleAxisTemplate<float> rotation_x(-1.5708f,
+                                                      Eigen::Vector3f::UnitX());
+  kindr::minimal::AngleAxisTemplate<float> rotation_z(-1.5708f,
+                                                      Eigen::Vector3f::UnitZ());
+  T_Cl_C_ = Transformation::Rotation(rotation_z * rotation_x);
+  T_C_Cl_ = T_Cl_C_.inverse();
 }
 
 template <InterpolationScheme interpolation_scheme>
@@ -52,6 +64,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
   voxblox::IndexSet touched_block_indices;
   timing::Timer range_image_and_block_selector_timer(
       "range_image_and_block_selector_timer");
+  // TODO(victorr): Parallelize this as well (would benefit RGB-D cameras)
   parsePointcloud(T_G_C, points_C, &range_image_, &touched_block_indices);
   range_image_and_block_selector_timer.Stop();
 
@@ -319,12 +332,14 @@ Point ProjectiveTsdfIntegrator<interpolation_scheme>::imageToBearing(
   double altitude_angle =
       vertical_fov_rad_ * (1.0 / 2.0 - h / (vertical_resolution_ - 1.0));
   double azimuth_angle =
-      (2.0 * M_PI) * (1.0 / 2.0 - w / horizontal_resolution_);
+      horizontal_fov_rad_ * (1.0 / 2.0 - w / (horizontal_resolution_ - 1.0));
 
   Point bearing;
   bearing.x() = std::cos(altitude_angle) * std::cos(azimuth_angle);
   bearing.y() = -std::cos(altitude_angle) * std::sin(azimuth_angle);
   bearing.z() = std::sin(altitude_angle);
+
+  bearing = T_C_Cl_.rotate(bearing);
 
   return bearing;
 }
@@ -336,7 +351,9 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
   CHECK_NOTNULL(h);
   CHECK_NOTNULL(w);
 
-  double altitude_angle = std::asin(b_C_normalized.z());
+  const Point b_Cl_normalized = T_Cl_C_.rotate(b_C_normalized);
+
+  double altitude_angle = std::asin(b_Cl_normalized.z());
   // Make sure to round to nearest (not to 0) when using integers
   if (std::numeric_limits<T>::is_integer) {
     *h = std::round((vertical_resolution_ - 1.0) *
@@ -350,33 +367,18 @@ bool ProjectiveTsdfIntegrator<interpolation_scheme>::bearingToImage(
   }
 
   const double azimuth_angle =
-      std::atan2(-b_C_normalized.y(), b_C_normalized.x());
+      std::atan2(-b_Cl_normalized.y(), b_Cl_normalized.x());
 
   // Handle integer and floating point types appropriately
   if (std::numeric_limits<T>::is_integer) {
     *w = std::round(horizontal_resolution_ *
-                    (1.0 / 2.0 - azimuth_angle / (2.0 * M_PI)));
-    *w = std::fmod(*w, static_cast<T>(horizontal_resolution_));
-    if (*w < 0) {
-      *w += horizontal_resolution_;
-    }
+                    (1.0 / 2.0 - azimuth_angle / horizontal_fov_rad_));
   } else {
-    *w = horizontal_resolution_ * (1.0 / 2.0 - azimuth_angle / (2.0 * M_PI));
-    *w = std::fmod(*w, static_cast<T>(horizontal_resolution_));
-    if (*w < 0.0) {
-      // NOTE: The comparison below is a workaround to avoid the change in
-      //       floating point precision around zero and horizontal_resolution_
-      //       (e.g. A < 0.0 = true && A + B < B = false for A = -1e-6; B = 1e2)
-      if (*w + horizontal_resolution_ < horizontal_resolution_) {
-        *w += horizontal_resolution_;
-      } else {
-        // Negligibly small values will be truncated
-        *w = 0.0;
-      }
-    }
+    *w = horizontal_resolution_ *
+         (1.0 / 2.0 - azimuth_angle / horizontal_fov_rad_);
   }
 
-  return true;
+  return (0 <= *w && *w <= horizontal_resolution_ - 1);
 }
 
 template <>

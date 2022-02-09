@@ -33,7 +33,10 @@ class ProjectiveTsdfIntegrator : public voxblox::TsdfIntegratorBase {
   //       points since they are primarily used in floating point operations
   const float horizontal_resolution_;
   const float vertical_resolution_;
+  const double horizontal_fov_rad_;
   const double vertical_fov_rad_;
+  Transformation::Rotation T_Cl_C_;
+  Transformation::Rotation T_C_Cl_;
 
   Eigen::MatrixXf range_image_;
 
