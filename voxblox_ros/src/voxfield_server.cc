@@ -3,25 +3,25 @@
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/ros_params.h"
 
-#include <pcl/kdtree/kdtree_flann.h> //py: added
+#include <pcl/kdtree/kdtree_flann.h>  //py: added
 
 namespace voxblox {
 
 VoxfieldServer::VoxfieldServer(const ros::NodeHandle& nh,
-                             const ros::NodeHandle& nh_private)
+                               const ros::NodeHandle& nh_private)
     : VoxfieldServer(nh, nh_private, getEsdfMapConfigFromRosParam(nh_private),
-                 getEsdfVoxfieldIntegratorConfigFromRosParam(nh_private),
-                 getTsdfMapConfigFromRosParam(nh_private),
-                 getTsdfIntegratorConfigFromRosParam(nh_private),
-                 getMeshIntegratorConfigFromRosParam(nh_private)) {}
+                     getEsdfVoxfieldIntegratorConfigFromRosParam(nh_private),
+                     getTsdfMapConfigFromRosParam(nh_private),
+                     getTsdfIntegratorConfigFromRosParam(nh_private),
+                     getMeshIntegratorConfigFromRosParam(nh_private)) {}
 
-VoxfieldServer::VoxfieldServer(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private,
-                       const EsdfMap::Config& esdf_config,
-                       const EsdfVoxfieldIntegrator::Config& esdf_integrator_config,
-                       const TsdfMap::Config& tsdf_config,
-                       const TsdfIntegratorBase::Config& tsdf_integrator_config,
-                       const MeshIntegratorConfig& mesh_config)
+VoxfieldServer::VoxfieldServer(
+    const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
+    const EsdfMap::Config& esdf_config,
+    const EsdfVoxfieldIntegrator::Config& esdf_integrator_config,
+    const TsdfMap::Config& tsdf_config,
+    const TsdfIntegratorBase::Config& tsdf_integrator_config,
+    const MeshIntegratorConfig& mesh_config)
     : TsdfServer(nh, nh_private, tsdf_config, tsdf_integrator_config,
                  mesh_config),
       clear_sphere_for_planning_(false),
@@ -30,7 +30,6 @@ VoxfieldServer::VoxfieldServer(const ros::NodeHandle& nh,
       traversability_radius_(1.0),
       incremental_update_(true),
       num_subscribers_esdf_map_(0) {
-  
   // py: add
   // Set up Occupancy map and integrator
   OccupancyMap::Config occ_config;
@@ -41,13 +40,12 @@ VoxfieldServer::VoxfieldServer(const ros::NodeHandle& nh,
   occupancy_integrator_.reset(new OccTsdfIntegrator(
       occ_tsdf_integrator_config, tsdf_map_->getTsdfLayerPtr(),
       occupancy_map_->getOccupancyLayerPtr()));
-  
-  
+
   // Set up map and integrator.
   esdf_map_.reset(new EsdfMap(esdf_config));
-  esdf_integrator_.reset(new EsdfVoxfieldIntegrator(esdf_integrator_config,
-                                                  tsdf_map_->getTsdfLayerPtr(),
-                                                  esdf_map_->getEsdfLayerPtr()));
+  esdf_integrator_.reset(new EsdfVoxfieldIntegrator(
+      esdf_integrator_config, tsdf_map_->getTsdfLayerPtr(),
+      esdf_map_->getEsdfLayerPtr()));
 
   setupRos();
 }
@@ -61,7 +59,7 @@ void VoxfieldServer::setupRos() {
       "esdf_slice", 1, true);
   traversable_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
       "traversable", 1, true);
-  //py: added
+  // py: added
   esdf_error_slice_pub_ =
       nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
           "esdf_error_slice", 1, true);
@@ -107,7 +105,7 @@ void VoxfieldServer::setupRos() {
   nh_private_.param("eval_esdf_every_n_sec", eval_esdf_every_n_sec,
                     eval_esdf_every_n_sec);
 
-  esdf_ready_ = false; 
+  esdf_ready_ = false;
 
   // Evaluate ESDF accuracy per xx second
   if (eval_esdf_every_n_sec > 0.0 && eval_esdf_on) {
@@ -160,9 +158,9 @@ void VoxfieldServer::updateEsdfEvent(const ros::TimerEvent& /*event*/) {
   if (publish_slices_) publishSlices();
 }
 
-bool VoxfieldServer::saveEsdfMapCallback(voxblox_msgs::FilePath::Request& request,
-                                     voxblox_msgs::FilePath::Response&
-                                     /*response*/) {  // NOLINT
+bool VoxfieldServer::saveEsdfMapCallback(
+    voxblox_msgs::FilePath::Request& request, voxblox_msgs::FilePath::Response&
+    /*response*/) {  // NOLINT
   return saveMap(request.file_path);
 }
 
@@ -239,7 +237,7 @@ void VoxfieldServer::updateEsdf() {
   if (tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks() > 0) {
     const bool clear_updated_flag_esdf = true;
     esdf_integrator_->updateFromTsdfLayer(clear_updated_flag_esdf);
-    esdf_ready_ = true; // py: added
+    esdf_ready_ = true;  // py: added
   }
 }
 
@@ -321,7 +319,7 @@ void VoxfieldServer::updateOccFromTsdf() {
 // py: added
 void VoxfieldServer::evalEsdfEvent(const ros::TimerEvent& /*event*/) {
   if (esdf_ready_) {
-    updateOccFromTsdf(); 
+    updateOccFromTsdf();
     evalEsdfRefOcc();
     visualizeEsdfError();
     publishOccupancyOccupiedNodes();

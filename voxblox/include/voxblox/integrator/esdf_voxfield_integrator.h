@@ -22,7 +22,7 @@ namespace voxblox {
 /**
  * Builds an ESDF layer out of a given TSDF layer efficiently.
  */
-class EsdfVoxfieldIntegrator {  
+class EsdfVoxfieldIntegrator {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -30,7 +30,7 @@ class EsdfVoxfieldIntegrator {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     // output log or not
-    bool verbose = false; 
+    bool verbose = false;
 
     /**
      * Maximum distance to calculate the actual distance to.
@@ -71,13 +71,17 @@ class EsdfVoxfieldIntegrator {
     // Gradient TSDF is needed for the calculation
     bool finer_esdf_on = false;
 
+    // use a fixed band for esdf to directly copy the tsdf value
+    bool fixed_band_esdf_on = false;
+
+    float gradient_sign = 1.0f;
+
     // Local map boundary size (unit: voxel)
     GlobalIndex range_boundary_offset = GlobalIndex(10, 10, 5);
   };
 
-  EsdfVoxfieldIntegrator(const Config& config,
-                       Layer<TsdfVoxel>* tsdf_layer,
-                       Layer<EsdfVoxel>* esdf_layer);
+  EsdfVoxfieldIntegrator(const Config& config, Layer<TsdfVoxel>* tsdf_layer,
+                         Layer<EsdfVoxel>* esdf_layer);
 
   void updateFromTsdfLayer(bool clear_updated_flag);
 

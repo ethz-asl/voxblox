@@ -6,8 +6,8 @@
 
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>
-#include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
 #include <voxblox/integrator/esdf_occ_edt_integrator.h>
+#include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
 #include <voxblox/integrator/occupancy_tsdf_integrator.h>
 #include <voxblox_msgs/Layer.h>
 
@@ -21,13 +21,13 @@ class FiestaServer : public TsdfServer {
 
   FiestaServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   FiestaServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
-                 const EsdfMap::Config& esdf_config,
-                 const EsdfOccFiestaIntegrator::Config& esdf_integrator_config,
-                 const TsdfMap::Config& tsdf_config,
-                 const TsdfIntegratorBase::Config& tsdf_integrator_config,
-                 const OccupancyMap::Config& occ_config,
-                 const OccTsdfIntegrator::Config& occ_tsdf_integrator_config,
-                 const MeshIntegratorConfig& mesh_config);
+               const EsdfMap::Config& esdf_config,
+               const EsdfOccFiestaIntegrator::Config& esdf_integrator_config,
+               const TsdfMap::Config& tsdf_config,
+               const TsdfIntegratorBase::Config& tsdf_integrator_config,
+               const OccupancyMap::Config& occ_config,
+               const OccTsdfIntegrator::Config& occ_tsdf_integrator_config,
+               const MeshIntegratorConfig& mesh_config);
   virtual ~FiestaServer() {}
 
   void publishAllUpdatedEsdfVoxels();

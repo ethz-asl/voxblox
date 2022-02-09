@@ -8,15 +8,15 @@
 namespace voxblox {
 
 FiestaServer::FiestaServer(const ros::NodeHandle& nh,
-                               const ros::NodeHandle& nh_private)
+                           const ros::NodeHandle& nh_private)
     : FiestaServer(nh, nh_private,
-                     getEsdfMapConfigFromOccMapRosParam(nh_private),
-                     getEsdfOccFiestaIntegratorConfigFromRosParam(nh_private),
-                     getTsdfMapConfigFromOccMapRosParam(nh_private),
-                     getTsdfIntegratorConfigFromRosParam(nh_private),
-                     getOccupancyMapConfigFromRosParam(nh_private),
-                     getOccTsdfIntegratorConfigFromRosParam(nh_private),
-                     getMeshIntegratorConfigFromRosParam(nh_private)) {}
+                   getEsdfMapConfigFromOccMapRosParam(nh_private),
+                   getEsdfOccFiestaIntegratorConfigFromRosParam(nh_private),
+                   getTsdfMapConfigFromOccMapRosParam(nh_private),
+                   getTsdfIntegratorConfigFromRosParam(nh_private),
+                   getOccupancyMapConfigFromRosParam(nh_private),
+                   getOccTsdfIntegratorConfigFromRosParam(nh_private),
+                   getMeshIntegratorConfigFromRosParam(nh_private)) {}
 
 FiestaServer::FiestaServer(
     const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
@@ -35,7 +35,6 @@ FiestaServer::FiestaServer(
       traversability_radius_(1.0),
       incremental_update_(true),
       num_subscribers_esdf_map_(0) {
-  
   // Set up Occupancy map and integrator
   occupancy_map_.reset(new OccupancyMap(occ_config));
   occupancy_integrator_.reset(new OccTsdfIntegrator(
@@ -173,21 +172,21 @@ void FiestaServer::visualizeEsdfError() {
 //   return true;
 // }
 
-bool FiestaServer::saveAllMapCallback(
-    voxblox_msgs::FilePath::Request& request, voxblox_msgs::FilePath::Response&
-    /*response*/) {  // NOLINT
+bool FiestaServer::saveAllMapCallback(voxblox_msgs::FilePath::Request& request,
+                                      voxblox_msgs::FilePath::Response&
+                                      /*response*/) {  // NOLINT
   return saveAllMap(request.file_path);
 }
 
-bool FiestaServer::saveEsdfMapCallback(
-    voxblox_msgs::FilePath::Request& request, voxblox_msgs::FilePath::Response&
-    /*response*/) {  // NOLINT
+bool FiestaServer::saveEsdfMapCallback(voxblox_msgs::FilePath::Request& request,
+                                       voxblox_msgs::FilePath::Response&
+                                       /*response*/) {  // NOLINT
   return saveEsdfMap(request.file_path);
 }
 
-bool FiestaServer::saveOccMapCallback(
-    voxblox_msgs::FilePath::Request& request, voxblox_msgs::FilePath::Response&
-    /*response*/) {  // NOLINT
+bool FiestaServer::saveOccMapCallback(voxblox_msgs::FilePath::Request& request,
+                                      voxblox_msgs::FilePath::Response&
+                                      /*response*/) {  // NOLINT
   return saveOccMap(request.file_path);
 }
 

@@ -367,7 +367,7 @@ inline bool visualizeErrorColorEsdfVoxelsSlice(
 inline bool visualizeOccupiedTsdfVoxels(const TsdfVoxel& voxel,
                                         const Point& /*coord*/,
                                         const float min_distance = 0.0) {
-  constexpr float kMinWeight = 1e-3;
+  constexpr float kMinWeight = 1e-6;
   if (voxel.weight > kMinWeight && voxel.distance <= min_distance) {
     return true;
   }

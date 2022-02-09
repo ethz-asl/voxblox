@@ -8,9 +8,9 @@
 
 namespace voxblox {
 
-EsdfVoxfieldIntegrator::EsdfVoxfieldIntegrator(
-    const Config& config, Layer<TsdfVoxel>* tsdf_layer,
-    Layer<EsdfVoxel>* esdf_layer)
+EsdfVoxfieldIntegrator::EsdfVoxfieldIntegrator(const Config& config,
+                                               Layer<TsdfVoxel>* tsdf_layer,
+                                               Layer<EsdfVoxel>* esdf_layer)
     : config_(config), tsdf_layer_(tsdf_layer), esdf_layer_(esdf_layer) {
   CHECK_NOTNULL(tsdf_layer);
   CHECK_NOTNULL(esdf_layer_);
@@ -76,6 +76,9 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
       if (isObserved(tsdf_voxel.weight)) {
         EsdfVoxel& esdf_voxel = esdf_block->getVoxelByLinearIndex(lin_index);
         esdf_voxel.behind = tsdf_voxel.distance < 0.0 ? true : false; 
+        // if (esdf_voxel.behind) // behind the surface, directly use tsdf
+        //   esdf_voxel.distance = tsdf_voxel.distance;
+        // esdf_voxel.distance = tsdf_voxel.distance; // initailize as the truncated distance
         if (esdf_voxel.self_idx(0) == UNDEF) {  // not yet initialized
           esdf_voxel.observed = true;
           esdf_voxel.newly = true;
@@ -104,39 +107,25 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
             insert_list_.push_back(esdf_voxel.self_idx);
         }
 
+        // esdf_voxel.distance = 0.0; // for updating status checking
         tsdf_voxel.occupied = isOccupied(tsdf_voxel.distance);
 
-        // const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
-        // if (tsdf_fixed) {
-        //   // In fixed band, just add and lock it.
-        //   // esdf_voxel.distance = tsdf_voxel.distance;
-        //   // esdf_voxel.fixed = true;
-        //   // TODO (py): some problem here, actually not much faster than directly expanding from occupancy voxels
-        //   // 1. the fixed band is not quite large, there are not so many voxels involved
-        //   // 2. still need the computation for each voxel
-        //   GlobalIndex projected_vox_idx = esdf_voxel.self_idx + tsdf_voxel.gradient * tsdf_voxel.distance;
-        //   // Judge if it's really occupied
-        //   TsdfVoxel* projected_tsdf_vox = tsdf_layer_->getVoxelPtrByGlobalIndex(projected_vox_idx);
-        //   EsdfVoxel* projected_esdf_vox = esdf_layer_->getVoxelPtrByGlobalIndex(projected_vox_idx);
-        //   if (isOccupied(projected_tsdf_vox.distance)) {
-        //     esdf_voxel.fixed = true;
-        //     esdf_voxel.distance = tsdf_voxel.distance;
-        //     esdf_voxel.coc_idx = projected_vox_idx;
-        //     insertIntoList(projected_esdf_vox, esdf_voxel);
-        //   }
-        //   // TODO(py, ergent): add the post-processing of ESDF, add the inner voxel part
-            
-        // } else {
-        //   esdf_voxel.fixed = false;
-        // }
+        const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
+        if (config_.fixed_band_esdf_on && tsdf_fixed /*|| tsdf_voxel.distance < 0*/) { // TODO(py): behind situation
+          // In fixed band, initialize with the current tsdf.
+          esdf_voxel.distance = tsdf_voxel.distance;
+          esdf_voxel.fixed = true;
+        } else {
+          esdf_voxel.fixed = false; // default
+        }
       }
     }
   }
 
   // TODO: add the Tsdf afterwards (two parts: 1. between voxel centers, 2. between voxel center and the actual surface)
-  if (insert_list_.size() + delete_list_.size() > 0) {   
+  if (insert_list_.size() + delete_list_.size() > 0) {
     if (config_.verbose) {
-      LOG(INFO) << "Insert [" << insert_list_.size() << "] and delete [" 
+      LOG(INFO) << "Insert [" << insert_list_.size() << "] and delete ["
                 << delete_list_.size() << "]";
     }
     getUpdateRange();
@@ -222,7 +211,7 @@ void EsdfVoxfieldIntegrator::resetFixed() {
  * cur_vox: the voxel need to be deleted
  */
 void EsdfVoxfieldIntegrator::deleteFromList(EsdfVoxel* occ_vox,
-                                          EsdfVoxel* cur_vox) {
+                                            EsdfVoxel* cur_vox) {
   if (cur_vox->prev_idx(0) != UNDEF) {
     EsdfVoxel* prev_vox =
         esdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->prev_idx);
@@ -245,7 +234,7 @@ void EsdfVoxfieldIntegrator::deleteFromList(EsdfVoxel* occ_vox,
  * cur_vox: the voxel need to be insert
  */
 void EsdfVoxfieldIntegrator::insertIntoList(EsdfVoxel* occ_vox,
-                                          EsdfVoxel* cur_vox) {
+                                            EsdfVoxel* cur_vox) {
   // why insert at the head?
   if (occ_vox->head_idx(0) == UNDEF)
     occ_vox->head_idx = cur_vox->self_idx;
@@ -399,20 +388,27 @@ void EsdfVoxfieldIntegrator::updateESDF() {
         esdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);
     CHECK_NOTNULL(coc_vox);
 
+    // cur_vox->distance = 100.0; // for updating status check
+    // if in the fixed band, then default value is it's tsdf
+    // if out, apply this finer esdf
     // add the sub-voxel part of the esdf
     if (config_.finer_esdf_on) {
-      TsdfVoxel* coc_tsdf_vox = 
-          tsdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);
-      CHECK_NOTNULL(coc_tsdf_vox);
-      if (coc_tsdf_vox->gradient.norm() > kFloatEpsilon) { // gradient available
-        Point cur_vox_center = cur_vox_idx.cast<float>() * esdf_voxel_size_;
-        Point coc_vox_center = cur_vox->coc_idx.cast<float>() * esdf_voxel_size_;
-        Point coc_vox_surface;
-        coc_vox_surface = coc_vox_center - coc_tsdf_vox->gradient * coc_tsdf_vox->distance;
-        cur_vox->distance = (coc_vox_surface - cur_vox_center).norm();
-      } else { // if the gradient is not available, we would directly use the voxel center (distance would be equal to raw_distance)
-        cur_vox->distance = cur_vox->raw_distance;
-      }
+      if (!cur_vox->fixed) { // out of the fixed band
+        TsdfVoxel* coc_tsdf_vox = 
+            tsdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);
+        CHECK_NOTNULL(coc_tsdf_vox);
+        if (coc_tsdf_vox->gradient.norm() > kFloatEpsilon) { // gradient available
+          Point cur_vox_center = cur_vox_idx.cast<float>() * esdf_voxel_size_;
+          Point coc_vox_center = cur_vox->coc_idx.cast<float>() * esdf_voxel_size_;
+          Point coc_vox_surface;
+          coc_vox_surface = coc_vox_center + config_.gradient_sign * coc_tsdf_vox->gradient * coc_tsdf_vox->distance; // gradient is pointing outward, should be positive
+          cur_vox->distance = (coc_vox_surface - cur_vox_center).norm();
+          cur_vox->distance =
+              cur_vox->behind ? -cur_vox->distance : cur_vox->distance; // consider the sign
+        } else { // if the gradient is not available, we would directly use the voxel center (distance would be equal to raw_distance)
+          cur_vox->distance = cur_vox->raw_distance;
+        }
+      } // else, fixed, then directly use the tsdf
     } else { // use the original voxel center to center distance
       cur_vox->distance = cur_vox->raw_distance;
     }
@@ -433,6 +429,7 @@ void EsdfVoxfieldIntegrator::updateESDF() {
 
     // Algorithm 3 Patch Code
     if (config_.patch_on && cur_vox->newly) { // only newly added voxels are required for checking
+    // if (config_.patch_on) { 
       // timing::Timer patch_timer("upate_esdf/patch(alg3)");
       cur_vox->newly = false;
       bool change_flag = false;  // indicate if the patch works
@@ -514,21 +511,21 @@ void EsdfVoxfieldIntegrator::updateESDF() {
   // LOG(INFO)<<"Alg 1 done";
   // End of Algorithm 1
   if (config_.verbose) {
-    LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with [" <<
-    patch_count  << "] changes by the patch, up-to-now [" <<
-    total_updated_count_  << "] nodes";
+    LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with ["
+              << patch_count << "] changes by the patch, up-to-now ["
+              << total_updated_count_ << "] nodes";
   }
 }
 
 inline float EsdfVoxfieldIntegrator::dist(GlobalIndex vox_idx_a,
-                                        GlobalIndex vox_idx_b) {
+                                          GlobalIndex vox_idx_b) {
   return (vox_idx_b - vox_idx_a).cast<float>().norm() * esdf_voxel_size_;
   // TODO(yuepan): may use square root & * resolution_ at last
   // together to speed up
 }
 
 inline int EsdfVoxfieldIntegrator::distSquare(GlobalIndex vox_idx_a,
-                                               GlobalIndex vox_idx_b) {
+                                              GlobalIndex vox_idx_b) {
   int dx = vox_idx_a(0) - vox_idx_b(0);
   int dy = vox_idx_a(1) - vox_idx_b(1);
   int dz = vox_idx_a(2) - vox_idx_b(2);
@@ -554,7 +551,7 @@ void EsdfVoxfieldIntegrator::loadDeleteList(
 
 // only for the visualization of Esdf error
 void EsdfVoxfieldIntegrator::assignError(GlobalIndex vox_idx,
-                                          float esdf_error) {
+                                         float esdf_error) {
   EsdfVoxel* vox = esdf_layer_->getVoxelPtrByGlobalIndex(vox_idx);
   vox->error = esdf_error;
 }

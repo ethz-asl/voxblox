@@ -8,9 +8,9 @@
 #include <voxblox/core/occupancy_map.h>
 #include <voxblox/core/tsdf_map.h>
 #include <voxblox/integrator/esdf_integrator.h>
+#include <voxblox/integrator/esdf_occ_edt_integrator.h>
 #include <voxblox/integrator/esdf_occ_fiesta_integrator.h>
 #include <voxblox/integrator/esdf_voxfield_integrator.h>
-#include <voxblox/integrator/esdf_occ_edt_integrator.h>
 #include <voxblox/integrator/occupancy_integrator.h>
 #include <voxblox/integrator/occupancy_tsdf_integrator.h>
 #include <voxblox/integrator/tsdf_integrator.h>

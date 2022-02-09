@@ -5,10 +5,10 @@
 #include <string>
 
 #include <voxblox/core/esdf_map.h>
+#include <voxblox/core/occupancy_map.h>
 #include <voxblox/integrator/esdf_voxfield_integrator.h>
+#include <voxblox/integrator/occupancy_tsdf_integrator.h>
 #include <voxblox_msgs/Layer.h>
-#include <voxblox/integrator/occupancy_tsdf_integrator.h> 
-#include <voxblox/core/occupancy_map.h> 
 
 #include "voxblox_ros/tsdf_server.h"
 
@@ -20,11 +20,11 @@ class VoxfieldServer : public TsdfServer {
 
   VoxfieldServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   VoxfieldServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private,
-             const EsdfMap::Config& esdf_config,
-             const EsdfVoxfieldIntegrator::Config& esdf_integrator_config,
-             const TsdfMap::Config& tsdf_config,
-             const TsdfIntegratorBase::Config& tsdf_integrator_config,
-             const MeshIntegratorConfig& mesh_config);
+                 const EsdfMap::Config& esdf_config,
+                 const EsdfVoxfieldIntegrator::Config& esdf_integrator_config,
+                 const TsdfMap::Config& tsdf_config,
+                 const TsdfIntegratorBase::Config& tsdf_integrator_config,
+                 const MeshIntegratorConfig& mesh_config);
   virtual ~VoxfieldServer() {}
 
   bool generateEsdfCallback(std_srvs::Empty::Request& request,     // NOLINT
@@ -82,7 +82,7 @@ class VoxfieldServer : public TsdfServer {
 
   // py: added
   void updateOccFromTsdf();
-  void evalEsdfEvent(const ros::TimerEvent& event); 
+  void evalEsdfEvent(const ros::TimerEvent& event);
   void evalEsdfRefOcc();
   void visualizeEsdfError();
 
@@ -95,7 +95,7 @@ class VoxfieldServer : public TsdfServer {
   ros::Publisher esdf_pointcloud_pub_;
   ros::Publisher esdf_slice_pub_;
   ros::Publisher traversable_pub_;
-  ros::Publisher esdf_error_slice_pub_; //py: added
+  ros::Publisher esdf_error_slice_pub_;  // py: added
 
   /// Publish the complete map for other nodes to consume.
   ros::Publisher esdf_map_pub_;
@@ -109,7 +109,7 @@ class VoxfieldServer : public TsdfServer {
 
   /// Timers.
   ros::Timer update_esdf_timer_;
-  ros::Timer eval_esdf_timer_; //py: added
+  ros::Timer eval_esdf_timer_;  // py: added
 
   bool clear_sphere_for_planning_;
   bool publish_esdf_map_;
@@ -118,14 +118,14 @@ class VoxfieldServer : public TsdfServer {
   bool incremental_update_;
   int num_subscribers_esdf_map_;
 
-  bool esdf_ready_; // py: added
+  bool esdf_ready_;  // py: added
 
   // ESDF maps.
   std::shared_ptr<EsdfMap> esdf_map_;
   std::unique_ptr<EsdfVoxfieldIntegrator> esdf_integrator_;
 
   // py: added
-  // Occupancy maps. 
+  // Occupancy maps.
   std::shared_ptr<OccupancyMap> occupancy_map_;
   std::unique_ptr<OccTsdfIntegrator> occupancy_integrator_;
 };
