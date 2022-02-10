@@ -110,8 +110,8 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
           if (!tsdf_voxel.occupied && current_occupied)
             insert_list_.push_back(esdf_voxel.self_idx);
         }
-        
-        tsdf_voxel.occupied = current_occupied; 
+
+        tsdf_voxel.occupied = current_occupied;
 
         const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
         if (config_.fixed_band_esdf_on &&
@@ -127,7 +127,7 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
     }
   }
 
-  // TODO: add the Tsdf afterwards (two parts: 1. between voxel centers, 2. between voxel center and the actual surface)
+  // NOTE(py): add the Tsdf afterwards (two parts: 1. between voxel centers, 2. between voxel center and the actual surface)
   if (insert_list_.size() + delete_list_.size() > 0) {
     if (config_.verbose) {
       LOG(INFO) << "Insert [" << insert_list_.size() << "] and delete ["
@@ -170,6 +170,7 @@ void EsdfVoxfieldIntegrator::getUpdateRange() {
 
 // Expand the updated range with a given margin and then allocate memory
 void EsdfVoxfieldIntegrator::setLocalRange() {
+  // Keep updating
   range_min_ = update_range_min_ - config_.range_boundary_offset;
   range_max_ = update_range_max_ + config_.range_boundary_offset;
 
@@ -183,13 +184,25 @@ void EsdfVoxfieldIntegrator::setLocalRange() {
     block_range_max(i) = range_max_(i) / esdf_voxels_per_side_;
   }
 
+  // LOG(INFO) << "block_range_min: " << block_range_min;
+  // LOG(INFO) << "block_range_max: " << block_range_max;
+
   for (int x = block_range_min(0); x <= block_range_max(0); x++) {
     for (int y = block_range_min(1); y <= block_range_max(1); y++) {
       for (int z = block_range_min(2); z <= block_range_max(2); z++) {
         BlockIndex cur_block_idx = BlockIndex(x, y, z);
+        // Allocate Esdf Block if it hasn't been allocated
         Block<EsdfVoxel>::Ptr esdf_block =
             esdf_layer_->allocateBlockPtrByIndex(cur_block_idx);
         esdf_block->setUpdatedAll();
+
+        // Allocate Tsdf Block (TO CHECK !!!)
+        // NOTE(py): might be not neccessary, added to deal with the possible case when the nbr_coc_vox is NULL
+        if (config_.allocate_tsdf_in_range) {
+          Block<TsdfVoxel>::Ptr tsdf_block =
+              tsdf_layer_->allocateBlockPtrByIndex(cur_block_idx);
+          // tsdf_block->setUpdatedAll();
+        }
       }
     }
   }
@@ -272,7 +285,6 @@ void EsdfVoxfieldIntegrator::insertIntoList(EsdfVoxel* occ_vox,
 // It seems that using vox_unit_dist_square does not boost the speed a lot (only
 // 8% faster per update) Therefore, we stick to the actual dist.
 
-// TODO: maybe try to use squared distance
 void EsdfVoxfieldIntegrator::updateESDF() {
   timing::Timer init_timer("upate_esdf_voxfield/update_init");
   
@@ -402,9 +414,10 @@ void EsdfVoxfieldIntegrator::updateESDF() {
         TsdfVoxel* coc_tsdf_vox =
             tsdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);
         CHECK_NOTNULL(coc_tsdf_vox);
-        if (coc_tsdf_vox->gradient.norm() >
-            kFloatEpsilon && coc_tsdf_vox->occupied) {  // gradient available
-          coc_tsdf_vox->gradient.normalize(); // gurantee the gradient here is a unit vector
+        if (coc_tsdf_vox->gradient.norm() > kFloatEpsilon &&
+            coc_tsdf_vox->occupied) {  // gradient available
+          coc_tsdf_vox->gradient
+              .normalize();  // gurantee the gradient here is a unit vector
           Point cur_vox_center = cur_vox_idx.cast<float>() * esdf_voxel_size_;
           Point coc_vox_center =
               cur_vox->coc_idx.cast<float>() * esdf_voxel_size_;
@@ -442,8 +455,9 @@ void EsdfVoxfieldIntegrator::updateESDF() {
 // TODO(py): when direction guide is used, you should take special care of those with UNDEF closest occupied voxel
 
     // Algorithm 3 Patch Code
-    if (config_.patch_on && cur_vox->newly) { // only newly added voxels are required for checking
-                                              // if (config_.patch_on) {
+    if (config_.patch_on &&
+        cur_vox->newly) {  // only newly added voxels are required for checking
+                           // if (config_.patch_on) {
       // timing::Timer patch_timer("upate_esdf/patch(alg3)");
       cur_vox->newly = false;
       bool change_flag = false;  // indicate if the patch works

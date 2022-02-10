@@ -27,11 +27,11 @@ esdf_default_distance_m: 2.0
 max_behind_surface_m: 0.4
 num_buckets: 50
 patch_on: true
-early_break: true
+early_break: false
 finer_esdf_on: false
-eval_esdf_on: true
+eval_esdf_on: false
 
-# Occupancy grid integration
+# Occupancy grid integration 
 occ_voxel_size_ratio: 0.865
 occ_min_weight: 0.0001
 probability_hit: 0.7
@@ -55,7 +55,7 @@ min_time_between_msgs_sec: 0.0
 
 # Visualization
 # select from color, normals, height, lambert, lambert_color
-color_mode: color
+color_mode: lambert_color
 # select from rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow
 intensity_colormap: rainbow
 # publishing settings

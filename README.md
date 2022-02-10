@@ -1,3 +1,8 @@
+# Voxfield
+This repository is uded for my master thesis "Mapping for online path planning and 3D reconstruction".
+It is built on top of **[Voxblox](https://github.com/ethz-asl/voxblox)** with the features borrowed from **[FIESTA](https://github.com/HKUST-Aerial-Robotics/FIESTA)**. The improvement is made mainly in the ESDF mapping part (used for path planning).
+
+
 # Voxblox
 
 ![voxblox_small](https://cloud.githubusercontent.com/assets/5616392/15180357/536a8776-1781-11e6-8c1d-f2dfa34b1408.gif)
