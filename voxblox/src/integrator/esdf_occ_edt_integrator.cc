@@ -126,8 +126,10 @@ void EsdfOccEdtIntegrator::setLocalRange() {
   range_min_ = update_range_min_ - config_.range_boundary_offset;
   range_max_ = update_range_max_ + config_.range_boundary_offset;
 
-  // LOG(INFO) << "range_min: " << range_min_;
-  // LOG(INFO) << "range_max: " << range_max_;
+  if (config_.verbose) {
+    LOG(INFO) << "range_min: " << range_min_;
+    LOG(INFO) << "range_max: " << range_max_;
+  }
 
   // Allocate memory for the local ESDF map
   BlockIndex block_range_min, block_range_max;
@@ -223,9 +225,11 @@ void EsdfOccEdtIntegrator::updateESDF() {
   }
   update_timer.Stop();
 
-  LOG(INFO) <<  "changed: ["  << sum_occ_changed_ <<
-                "] raised: ["  << sum_raise_ <<
-                "] lowered: [" << sum_lower_ << "]";
+  if (config_.verbose) {
+    LOG(INFO) <<  "changed: ["  << sum_occ_changed_ <<
+                  "] raised: ["  << sum_raise_ <<
+                  "] lowered: [" << sum_lower_ << "]";
+  }
 
 }
 

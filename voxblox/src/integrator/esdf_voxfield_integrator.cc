@@ -80,8 +80,13 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
         //   esdf_voxel.distance = tsdf_voxel.distance;
         // esdf_voxel.distance = tsdf_voxel.distance; // initailize as the
         // truncated distance
-
-        bool current_occupied = isOccupied(tsdf_voxel.distance);
+        
+        bool current_occupied;
+        if (config_.finer_esdf_on) { // with the assist of gradient
+          current_occupied = isOccupied(tsdf_voxel.distance, tsdf_voxel.gradient);
+        } else {
+          current_occupied = isOccupied(tsdf_voxel.distance);
+        }
 
         if (esdf_voxel.self_idx(0) == UNDEF) {  // not yet initialized
           esdf_voxel.observed = true;
@@ -97,7 +102,7 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
                                   : config_.default_distance_m;
 
           // Newly found occupied --> insert_list
-          if (isOccupied(tsdf_voxel.distance))
+          if (current_occupied)
             insert_list_.push_back(global_index);
         } else { // already initialized
           esdf_voxel.newly = false;
@@ -127,7 +132,8 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
     }
   }
 
-  // NOTE(py): add the Tsdf afterwards (two parts: 1. between voxel centers, 2. between voxel center and the actual surface)
+  // NOTE(py): add the Tsdf afterwards (two parts: 1. between voxel centers, 2.
+  // between voxel center and the actual surface)
   if (insert_list_.size() + delete_list_.size() > 0) {
     if (config_.verbose) {
       LOG(INFO) << "Insert [" << insert_list_.size() << "] and delete ["
@@ -197,7 +203,8 @@ void EsdfVoxfieldIntegrator::setLocalRange() {
         esdf_block->setUpdatedAll();
 
         // Allocate Tsdf Block (TO CHECK !!!)
-        // NOTE(py): might be not neccessary, added to deal with the possible case when the nbr_coc_vox is NULL
+        // NOTE(py): might be not neccessary, added to deal with the possible
+        // case when the nbr_coc_vox is NULL
         if (config_.allocate_tsdf_in_range) {
           Block<TsdfVoxel>::Ptr tsdf_block =
               tsdf_layer_->allocateBlockPtrByIndex(cur_block_idx);
@@ -265,6 +272,15 @@ void EsdfVoxfieldIntegrator::insertIntoList(EsdfVoxel* occ_vox,
   }
 }
 
+
+// Voxfield is a combination of Voxblox and FIESTA
+// On one hand, it use the efficient incremental updating idea from FIESTA 
+// (book keeping with doubly linked list)
+// On the other hand, it use the underlying data structure of Voxblox and 
+// also update ESDF from TSDF instead of occupancy grids so that the distance 
+// from the occupied voxel's center to the object surface is also take into 
+// account
+
 // Main processing function of FIESTA
 // Reference: Han. L, et al., Fast Incremental Euclidean Distance Fields for
 // Online Motion Planning of Aerial Robots, IROS 2019 A mapping system called
@@ -282,15 +298,13 @@ void EsdfVoxfieldIntegrator::insertIntoList(EsdfVoxel* occ_vox,
 // =true. Highest accuracy can be achieved with patch_on=true and early_break=
 // false. Please set them in the config file wisely.
 
-// It seems that using vox_unit_dist_square does not boost the speed a lot (only
-// 8% faster per update) Therefore, we stick to the actual dist.
-
 void EsdfVoxfieldIntegrator::updateESDF() {
   timing::Timer init_timer("upate_esdf_voxfield/update_init");
   
   //update_queue_ is a priority queue, voxels with the smaller absolute distance
   //would be updated first 
-  //once a voxel is added to update_queue_, its distance would be fixed and it would act as a seed for further updating
+  //once a voxel is added to update_queue_, 
+  //its distance would be fixed and it would act as a seed for further updating
 
   // Algorithm 2: ESDF Updating Initialization
   while (!insert_list_.empty()) { // these inserted list must all in the TSDF fixed band

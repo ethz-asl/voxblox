@@ -60,7 +60,8 @@ class EsdfVoxfieldIntegrator {
     int num_buckets = 20;
 
     // Number of the neighbor voxels (select from 6, 18, 24 and 26)
-    // TODO: double-check if 24 is the best choice (according to FIESTA paper, it's the best)
+    // TODO: double-check if 24 is the best choice (according to FIESTA paper,
+    // it's the best)
     int num_neighbor = 24;
 
     // Turn on the patch code (Algorithm 3 in FIESTA) or not
@@ -74,7 +75,9 @@ class EsdfVoxfieldIntegrator {
     // use a fixed band for esdf to directly copy the tsdf value
     bool fixed_band_esdf_on = false;
 
-    float gradient_sign = 1.0f; // sign (direction) of the gradient, towards or opposite to the surface, select from 1.0 or -1.0
+    float gradient_sign =
+        1.0f;  // sign (direction) of the gradient, towards or opposite to the
+               // surface, select from 1.0 or -1.0
 
     bool allocate_tsdf_in_range = false;
 
@@ -136,6 +139,20 @@ class EsdfVoxfieldIntegrator {
 
   inline bool isOccupied(FloatingPoint dist_m) const {
     return std::abs(dist_m) <= config_.occ_voxel_size_ratio * esdf_voxel_size_;                             
+  }
+
+  inline bool isOccupied(FloatingPoint dist_m, Ray gradient) const {
+    if (gradient.norm() > kFloatEpsilon) {
+      Ray dist_on_axis = dist_m * gradient;
+      bool is_occupied = true;
+      for (int i=0; i<3; i++) {
+        if (std::abs(dist_on_axis(i)) > 0.5 * esdf_voxel_size_)
+          is_occupied = false; 
+      }
+      return is_occupied;
+    } else {
+      return isOccupied(dist_m);        
+    }
   }
 
   inline bool isObserved(FloatingPoint weight) const {

@@ -131,8 +131,10 @@ void EsdfOccFiestaIntegrator::setLocalRange() {
   range_min_ = update_range_min_ - config_.range_boundary_offset;
   range_max_ = update_range_max_ + config_.range_boundary_offset;
 
-  // LOG(INFO) << "range_min: " << range_min_;
-  // LOG(INFO) << "range_max: " << range_max_;
+  if (config_.verbose) {
+    LOG(INFO) << "range_min: " << range_min_;
+    LOG(INFO) << "range_max: " << range_max_;
+  }
 
   // Allocate memory for the local ESDF map
   BlockIndex block_range_min, block_range_max;
@@ -335,8 +337,10 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   }
   init_timer.Stop();
   // End of Algorithm 2
-  // LOG(INFO) << "Update queue's original size: ["
-  // << update_queue_.size() << "]";
+  if (config_.verbose) {
+    LOG(INFO) << "Update queue's original size: ["
+    << update_queue_.size() << "]";
+  }
 
   timing::Timer update_timer("upate_esdf_fiesta/update");
   // Algorithm 1 ESDF updating (BFS based on priority queue)
@@ -448,9 +452,12 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   update_timer.Stop();
   // LOG(INFO)<<"Alg 1 done";
   // End of Algorithm 1
-  LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with [" <<
-  patch_count  << "] changes by the patch, up-to-now [" <<
-  total_updated_count_  << "] nodes";
+  
+  if (config_.verbose) {
+    LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with [" <<
+    patch_count  << "] changes by the patch, up-to-now [" <<
+    total_updated_count_  << "] nodes";
+  }
 }
 
 
