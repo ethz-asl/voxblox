@@ -30,7 +30,7 @@ class EsdfOccFiestaIntegrator {  // py: check, maybe not neccessary
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     bool verbose = false;
-    
+
     /**
      * Maximum distance to calculate the actual distance to.
      * Any values above this will be set to default_distance_m.

@@ -226,11 +226,9 @@ void EsdfOccEdtIntegrator::updateESDF() {
   update_timer.Stop();
 
   if (config_.verbose) {
-    LOG(INFO) <<  "changed: ["  << sum_occ_changed_ <<
-                  "] raised: ["  << sum_raise_ <<
-                  "] lowered: [" << sum_lower_ << "]";
+    LOG(INFO) << "changed: [" << sum_occ_changed_ << "] raised: [" << sum_raise_
+              << "] lowered: [" << sum_lower_ << "]";
   }
-
 }
 
 void EsdfOccEdtIntegrator::processRaise(EsdfVoxel* cur_vox)

@@ -246,6 +246,7 @@ inline bool visualizeGradientIntensityTsdfVoxelsSlice(
   if (std::abs(coord(free_plane_index) - free_plane_val) <=
       (voxel_size / 2.0 + kFloatEpsilon)) {
     if (voxel.weight > kMinWeight && voxel.gradient.norm() > kMinWeight) {
+      // atan2: Principal arc tangent of y/x, in the interval [-pi,+pi] radians.
       *intensity = std::atan2(voxel.gradient(0), voxel.gradient(1)); // [-pi, pi] on x-y plane
       return true;
     }
@@ -330,7 +331,7 @@ inline bool visualizeErrorColorEsdfVoxelsSlice(
     FloatingPoint free_plane_val, FloatingPoint voxel_size, Color* color) {
   CHECK_NOTNULL(color);
 
-  float max_error_m = 2.0f * voxel_size; // NOTE(py): the ratio is set to be 2.0 here, might be smaller
+  float max_error_m = 2.0f * voxel_size; // NOTE(py): the ratio is fixed to be 2.0 here, might be smaller
 
   if (std::abs(coord(free_plane_index) - free_plane_val) <=
       (voxel_size / 2.0 + kFloatEpsilon)) {

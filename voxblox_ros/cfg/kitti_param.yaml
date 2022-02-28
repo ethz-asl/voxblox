@@ -1,5 +1,5 @@
 # Map 
-voxel_size: &voxel_size 0.5
+voxel_size: &voxel_size 0.08
 voxels_per_side_in_block: &voxels_per_side_in_block 8
 
 occ_voxel_size: *voxel_size
@@ -13,7 +13,7 @@ esdf_voxels_per_side: *voxels_per_side_in_block
 
 # TSDF integration
 # select from simple, fast and merged
-method: merged 
+method: fast 
 use_const_weight: false
 truncation_voxel_size_ratio: 4
 max_ray_length_m: 50.0
@@ -48,7 +48,7 @@ world_frame: world
 sensor_frame: velodyne
 
 # Timer
-update_mesh_every_n_sec: 0.2 # 1.0
+update_mesh_every_n_sec: 0.5 # 1.0
 update_esdf_every_n_sec: 9999.0
 publish_map_every_n_sec: 0.2
 eval_esdf_every_n_sec: 9999.0 # 200.0

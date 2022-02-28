@@ -4,8 +4,6 @@
 #define USE_24_NEIGHBOR
 #define DIRECTION_GUIDE
 
-// TODO(py): change the name of this integrator to voxfield
-
 namespace voxblox {
 
 EsdfVoxfieldIntegrator::EsdfVoxfieldIntegrator(const Config& config,
@@ -42,8 +40,6 @@ void EsdfVoxfieldIntegrator::updateFromTsdfLayer(bool clear_updated_flag) {
   }
 }
 
-// TODO(py): add the fixed band for estimated TSDF values
-// Directly use these TSDF values as ESDF
 void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
     const BlockIndexList& tsdf_blocks) {
   CHECK_EQ(tsdf_layer_->voxels_per_side(), esdf_layer_->voxels_per_side());
@@ -80,10 +76,11 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
         //   esdf_voxel.distance = tsdf_voxel.distance;
         // esdf_voxel.distance = tsdf_voxel.distance; // initailize as the
         // truncated distance
-        
+
         bool current_occupied;
-        if (config_.finer_esdf_on) { // with the assist of gradient
-          current_occupied = isOccupied(tsdf_voxel.distance, tsdf_voxel.gradient);
+        if (config_.finer_esdf_on) {  // with the assist of gradient
+          current_occupied =
+              isOccupied(tsdf_voxel.distance, tsdf_voxel.gradient);
         } else {
           current_occupied = isOccupied(tsdf_voxel.distance);
         }
@@ -102,8 +99,7 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
                                   : config_.default_distance_m;
 
           // Newly found occupied --> insert_list
-          if (current_occupied)
-            insert_list_.push_back(global_index);
+          if (current_occupied) insert_list_.push_back(global_index);
         } else { // already initialized
           esdf_voxel.newly = false;
 
@@ -120,8 +116,7 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
 
         const bool tsdf_fixed = isFixed(tsdf_voxel.distance);
         if (config_.fixed_band_esdf_on &&
-            tsdf_fixed /*|| tsdf_voxel.distance < 0*/) {  // TODO(py): behind
-                                                          // situation
+            tsdf_fixed /*|| tsdf_voxel.distance < 0*/) { 
           // In fixed band, initialize with the current tsdf.
           esdf_voxel.distance = tsdf_voxel.distance;
           esdf_voxel.fixed = true;
@@ -132,8 +127,6 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
     }
   }
 
-  // NOTE(py): add the Tsdf afterwards (two parts: 1. between voxel centers, 2.
-  // between voxel center and the actual surface)
   if (insert_list_.size() + delete_list_.size() > 0) {
     if (config_.verbose) {
       LOG(INFO) << "Insert [" << insert_list_.size() << "] and delete ["
@@ -143,8 +136,7 @@ void EsdfVoxfieldIntegrator::updateFromTsdfBlocks(
     setLocalRange();
     allocate_timer.Stop();
 
-    updateESDF();
-    clear();
+    updateESDF(); // main func
   } else {
     return;
   }
@@ -272,13 +264,12 @@ void EsdfVoxfieldIntegrator::insertIntoList(EsdfVoxel* occ_vox,
   }
 }
 
-
 // Voxfield is a combination of Voxblox and FIESTA
-// On one hand, it use the efficient incremental updating idea from FIESTA 
+// On one hand, it use the efficient incremental updating idea from FIESTA
 // (book keeping with doubly linked list)
-// On the other hand, it use the underlying data structure of Voxblox and 
-// also update ESDF from TSDF instead of occupancy grids so that the distance 
-// from the occupied voxel's center to the object surface is also take into 
+// On the other hand, it use the underlying data structure of Voxblox and
+// also update ESDF from TSDF instead of occupancy grids so that the distance
+// from the occupied voxel's center to the object surface is also take into
 // account
 
 // Main processing function of FIESTA
@@ -300,13 +291,12 @@ void EsdfVoxfieldIntegrator::insertIntoList(EsdfVoxel* occ_vox,
 
 void EsdfVoxfieldIntegrator::updateESDF() {
   timing::Timer init_timer("upate_esdf_voxfield/update_init");
-  
-  //update_queue_ is a priority queue, voxels with the smaller absolute distance
-  //would be updated first 
-  //once a voxel is added to update_queue_, 
-  //its distance would be fixed and it would act as a seed for further updating
 
-  // Algorithm 2: ESDF Updating Initialization
+  // update_queue_ is a priority queue, voxels with the smaller absolute
+  // distance would be updated first once a voxel is added to update_queue_, its
+  // distance would be fixed and it would act as a seed for further updating
+
+  // ESDF Updating Initialization
   while (!insert_list_.empty()) { // these inserted list must all in the TSDF fixed band
     GlobalIndex cur_vox_idx = *insert_list_.begin();
     insert_list_.erase(insert_list_.begin());
@@ -325,7 +315,7 @@ void EsdfVoxfieldIntegrator::updateESDF() {
     update_queue_.push(cur_vox_idx, 0.0f);
   }
 
-  while (!delete_list_.empty()) { // these are originally in the TSDF fixed band and now not so sure 
+  while (!delete_list_.empty()) { // these are originally occupied but now not occupied any more
     GlobalIndex cur_vox_idx = *delete_list_.begin();
     delete_list_.erase(delete_list_.begin());
 
@@ -402,12 +392,10 @@ void EsdfVoxfieldIntegrator::updateESDF() {
     cur_vox->head_idx = GlobalIndex(UNDEF, UNDEF, UNDEF);
   }
   init_timer.Stop();
-  // End of Algorithm 2
-  // LOG(INFO) << "Update queue's original size: ["
-  // << update_queue_.size() << "]";
+
 
   timing::Timer update_timer("upate_esdf_voxfield/update");
-  // Algorithm 1 ESDF updating (BFS based on priority queue)
+  // ESDF updating (BFS based on priority queue)
   int updated_count = 0, patch_count = 0;
   while (!update_queue_.empty()) {
     GlobalIndex cur_vox_idx = update_queue_.front();
@@ -424,7 +412,7 @@ void EsdfVoxfieldIntegrator::updateESDF() {
     // if out, apply this finer esdf
     // add the sub-voxel part of the esdf
     if (config_.finer_esdf_on) {
-      if (!cur_vox->fixed) {  // out of the fixed band
+      if (!cur_vox->fixed) {  // out of the fixed band // TODO!!!
         TsdfVoxel* coc_tsdf_vox =
             tsdf_layer_->getVoxelPtrByGlobalIndex(cur_vox->coc_idx);
         CHECK_NOTNULL(coc_tsdf_vox);
@@ -435,12 +423,10 @@ void EsdfVoxfieldIntegrator::updateESDF() {
           Point cur_vox_center = cur_vox_idx.cast<float>() * esdf_voxel_size_;
           Point coc_vox_center =
               cur_vox->coc_idx.cast<float>() * esdf_voxel_size_;
-          Point coc_vox_surface;
-          coc_vox_surface =
-              coc_vox_center +
+          Point coc_vox_surface = coc_vox_center +
               config_.gradient_sign * coc_tsdf_vox->gradient *
-                  coc_tsdf_vox->distance;  // gradient is pointing outward,
-                                           // should be positive
+                  coc_tsdf_vox->distance;  // gradient is pointing toward the sensor,
+                                           // sign should be negative
           cur_vox->distance = (coc_vox_surface - cur_vox_center).norm();
           cur_vox->distance = cur_vox->behind
                                   ? -cur_vox->distance
@@ -451,7 +437,9 @@ void EsdfVoxfieldIntegrator::updateESDF() {
         }
       }      // else, fixed, then directly use the tsdf
     } else { // use the original voxel center to center distance
-      cur_vox->distance = cur_vox->raw_distance;
+      if (!cur_vox->fixed || !config_.fixed_band_esdf_on) 
+        cur_vox->distance = cur_vox->raw_distance;
+        // else, fixed, then directly use the tsdf
     }
   
     updated_count++;
@@ -553,7 +541,7 @@ void EsdfVoxfieldIntegrator::updateESDF() {
   // LOG(INFO)<<"Alg 1 done";
   // End of Algorithm 1
   if (config_.verbose) {
-    LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with ["
+    LOG(INFO) << "Voxfield: expanding [" << updated_count << "] nodes, with ["
               << patch_count << "] changes by the patch, up-to-now ["
               << total_updated_count_ << "] nodes";
   }

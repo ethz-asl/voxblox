@@ -10,7 +10,7 @@
 
   <!-- These datasets can be created with the KITTI raw datasets: http://www.cvlibs.net/datasets/kitti/raw_data.php and kitti_to_rosbag: https://github.com/ethz-asl/kitti_to_rosbag -->
 
-  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 0.2 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
+  <node name="player" pkg="rosbag" type="play" output="screen" args=" -r 1.0 --clock $(arg bag_file)"  if="$(arg play_bag)"/>
 
    <!-- Run stereo_dense_reconstruction_node-->
   <node ns="stereo_gray" name="stereo_image_proc" pkg="stereo_image_proc" type="stereo_image_proc" clear_params="true" output="screen">

@@ -145,13 +145,13 @@ class EsdfVoxfieldIntegrator {
     if (gradient.norm() > kFloatEpsilon) {
       Ray dist_on_axis = dist_m * gradient;
       bool is_occupied = true;
-      for (int i=0; i<3; i++) {
+      for (int i = 0; i < 3; i++) {
         if (std::abs(dist_on_axis(i)) > 0.5 * esdf_voxel_size_)
-          is_occupied = false; 
+          is_occupied = false;
       }
       return is_occupied;
     } else {
-      return isOccupied(dist_m);        
+      return isOccupied(dist_m);
     }
   }
 

@@ -338,8 +338,8 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   init_timer.Stop();
   // End of Algorithm 2
   if (config_.verbose) {
-    LOG(INFO) << "Update queue's original size: ["
-    << update_queue_.size() << "]";
+    LOG(INFO) << "Update queue's original size: [" << update_queue_.size()
+              << "]";
   }
 
   timing::Timer update_timer("upate_esdf_fiesta/update");
@@ -452,11 +452,11 @@ void EsdfOccFiestaIntegrator::updateESDF() {
   update_timer.Stop();
   // LOG(INFO)<<"Alg 1 done";
   // End of Algorithm 1
-  
+
   if (config_.verbose) {
-    LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with [" <<
-    patch_count  << "] changes by the patch, up-to-now [" <<
-    total_updated_count_  << "] nodes";
+    LOG(INFO) << "FIESTA: expanding [" << updated_count << "] nodes, with ["
+              << patch_count << "] changes by the patch, up-to-now ["
+              << total_updated_count_ << "] nodes";
   }
 }
 
