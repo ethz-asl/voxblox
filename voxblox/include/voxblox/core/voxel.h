@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <map>
 
 #include "voxblox/core/color.h"
 #include "voxblox/core/common.h"
@@ -12,6 +13,8 @@ namespace voxblox {
 struct TsdfVoxel {
   float distance = 0.0f;
   float weight = 0.0f;
+  int sparse_features_count = 0;
+  std::map<std::string, float> track_length_map;
   Color color;
 };
 
