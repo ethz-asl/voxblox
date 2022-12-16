@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "voxblox/core/color.h"
 #include "voxblox/core/common.h"
@@ -13,6 +14,21 @@ struct TsdfVoxel {
   float distance = 0.0f;
   float weight = 0.0f;
   Color color;
+  
+  /**
+   * Whether the voxel was copied from the TSDF (false) or created from a pose
+   * or some other source (true). This member is not serialized!!!
+   */
+
+  bool ever_free = false;
+  int curr_occupied = -1;
+  int last_static = 0;
+
+  int occ_counter = 0;
+  
+  
+  bool clustering_processed = false;
+  bool moving = false;
 };
 
 struct EsdfVoxel {
@@ -31,6 +47,9 @@ struct EsdfVoxel {
   bool currently_occupied = false;
 
   int occ_counter = 0;
+  
+  bool processed = false;
+  
 
   /**
    * Relative direction toward parent. If itself, then either uninitialized

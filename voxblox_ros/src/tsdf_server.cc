@@ -219,7 +219,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
 
   Pointcloud points_C;
   Colors colors;
-  timing::Timer ptcloud_timer("ptcloud_preprocess");
+  //timing::Timer ptcloud_timer("ptcloud_preprocess");
 
   // Convert differently depending on RGB or I type.
   if (color_pointcloud) {
@@ -238,7 +238,7 @@ void TsdfServer::processPointCloudMessageAndInsert(
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
     convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
   }
-  ptcloud_timer.Stop();
+  //ptcloud_timer.Stop();
 
   Transformation T_G_C_refined = T_G_C;
   if (enable_icp_) {
@@ -301,12 +301,12 @@ void TsdfServer::processPointCloudMessageAndInsert(
              tsdf_map_->getTsdfLayer().getNumberOfAllocatedBlocks());
   }
 
-  timing::Timer block_remove_timer("remove_distant_blocks");
+  //timing::Timer block_remove_timer("remove_distant_blocks");
   tsdf_map_->getTsdfLayerPtr()->removeDistantBlocks(
       T_G_C.getPosition(), max_block_distance_from_body_);
   mesh_layer_->clearDistantMesh(T_G_C.getPosition(),
                                 max_block_distance_from_body_);
-  block_remove_timer.Stop();
+  //block_remove_timer.Stop();
 
   // Callback for inheriting classes.
   newPoseCallback(T_G_C);

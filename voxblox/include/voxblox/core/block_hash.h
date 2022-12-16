@@ -48,6 +48,8 @@ typedef typename AnyIndexHashMapType<IndexVector>::type HierarchicalIndexMap;
 
 typedef typename AnyIndexHashMapType<IndexSet>::type HierarchicalIndexSet;
 
+typedef typename AnyIndexHashMapType<voxblox::AlignedVector<size_t>>::type HierarchicalIndexIntMap;
+
 typedef typename HierarchicalIndexMap::value_type HierarchicalIndex;
 
 /// Hash for large index values, see AnyIndexHash.

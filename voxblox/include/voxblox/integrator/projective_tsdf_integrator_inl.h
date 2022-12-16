@@ -52,13 +52,12 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
     const Colors &colors, const bool freespace_points, const bool deintegrate) {
   // Construct the range image and select the blocks it affects
   voxblox::IndexSet touched_block_indices;
-  timing::Timer range_image_and_block_selector_timer(
-      "range_image_and_block_selector_timer");
+  //timing::Timer range_image_and_block_selector_timer("range_image_and_block_selector_timer");
   parsePointcloud(T_G_C, points_C, &range_image_, &touched_block_indices);
-  range_image_and_block_selector_timer.Stop();
+  //range_image_and_block_selector_timer.Stop();
 
   // Process all blocks
-  timing::Timer integration_timer("integration_timer");
+  //timing::Timer integration_timer("integration_timer");
   if (config_.integrator_threads == 1) {
     updateTsdfBlocks(T_G_C, range_image_, touched_block_indices, deintegrate);
   } else {
@@ -80,7 +79,7 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::integratePointCloud(
       integration_thread.join();
     }
   }
-  integration_timer.Stop();
+  //integration_timer.Stop();
 }
 
 template <InterpolationScheme interpolation_scheme>
@@ -199,13 +198,15 @@ void ProjectiveTsdfIntegrator<interpolation_scheme>::updateTsdfVoxel(
       (distance_to_voxel * distance_to_voxel);
 
   // Skip voxels that fall outside the TSDF truncation distance
-  if (sdf < -config_.default_truncation_distance) {
+  if (sdf < -config_.default_truncation_distance) {//-config_.default_truncation_distance) { //Change by Aurelio!!!!!!!
     return;
   }
   if (!config_.voxel_carving_enabled &&
       sdf > config_.default_truncation_distance) {
     return;
   }
+
+  //tsdf_voxel->number_observation +=1;
 
   // Compute the weight of the measurement
   float observation_weight;
