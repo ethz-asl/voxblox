@@ -52,3 +52,6 @@ autolintc
 docs/_build
 docs/doxyoutput
 docs/api
+
+# VSCode
+.vscode/
