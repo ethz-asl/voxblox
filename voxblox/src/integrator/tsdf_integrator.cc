@@ -165,7 +165,7 @@ void TsdfIntegratorBase::updateTsdfVoxel(const Point& origin,
 
   const float sdf = computeDistance(origin, point_G, voxel_center);
   
-  if (tsdf_voxel->moving == true){
+  if (tsdf_voxel->dynamic == true){
   	tsdf_voxel->distance = sdf;
   	tsdf_voxel->weight = 1;
   }else{
