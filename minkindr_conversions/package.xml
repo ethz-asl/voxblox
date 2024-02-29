@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>minkindr_conversions</name>
+  <version>0.0.0</version>
+  <description>Conversions between minkindr and ROS messages and TF.</description>
+  <maintainer email="helenoleynikova@gmail.com">Helen Oleynikova</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  
+  <depend>geometry_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_eigen</depend>
+
+  <depend>minkindr</depend>
+  
+  <depend>libgflags-dev</depend>
+  <depend>libgoogle-glog-dev</depend>
+  
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>

@@ -8,36 +8,36 @@
             "name": "ROS basement_dataset",
             "type": "ros",
             "request": "launch",
-            "target": "/home/ws/src/voxblox/voxblox_ros/launch/basement_dataset.launch.py",
+            "target": "${workspaceFolder}/voxblox_ros/launch/basement_dataset.launch.py",
             "launch": [
-                "rviz"
+                "rviz2"
             ],
         },
         {
             "name": "ROS local basement_dataset",
             "type": "ros",
             "request": "launch",
-            "target": "/home/mlouw2/repos/voxblox_ws/src/voxblox/voxblox_ros/launch/basement_dataset.launch.py",
+            "target": "${workspaceFolder}/voxblox_ros/launch/basement_dataset.launch.py",
             "launch": [
-                "rviz"
+                "rviz2"
             ],
         },
         {
             "name": "ROS local voyager",
             "type": "ros",
             "request": "launch",
-            "target": "/home/mlouw2/repos/voxblox_ws/src/voxblox/voxblox_ros/launch/voyager.launch.py",
+            "target": "${workspaceFolder}/voxblox_ros/launch/voyager.launch.py",
             "launch": [
-                "rviz"
+                "rviz2"
             ],
         },
         {
             "name": "ROS local cow_and_lady_dataset",
             "type": "ros",
             "request": "launch",
-            "target": "/home/mlouw2/repos/voxblox_ws/src/voxblox/voxblox_ros/launch/cow_and_lady_dataset.launch.py",
+            "target": "${workspaceFolder}/voxblox_ros/launch/cow_and_lady_dataset.launch.py",
             "launch": [
-                "rviz"
+                "rviz2"
             ],
         },
     ]
