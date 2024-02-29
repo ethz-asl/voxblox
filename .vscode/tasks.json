@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "colcon build debug voxblox_ros",
+            "type": "shell",
+            "command": "colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Debug --packages-select voxblox_ros",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "colcon build debug",
+            "type": "shell",
+            "command": "colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Debug",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        }
+    ]
+}

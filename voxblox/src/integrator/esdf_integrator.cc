@@ -31,7 +31,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
   utils::getAndAllocateSphereAroundPoint(position, config_.clear_sphere_radius,
                                          esdf_layer_, &block_voxel_list);
   sphere_timer.Stop();
-  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list) {
+  for (const std::pair<BlockIndex, VoxelIndexList> kv : block_voxel_list) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr = esdf_layer_->getBlockPtrByIndex(kv.first);
 
@@ -63,7 +63,7 @@ void EsdfIntegrator::addNewRobotPosition(const Point& position) {
                                          config_.occupied_sphere_radius,
                                          esdf_layer_, &block_voxel_list_occ);
   outer_sphere_timer.Stop();
-  for (const std::pair<BlockIndex, VoxelIndexList>& kv : block_voxel_list_occ) {
+  for (const std::pair<BlockIndex, VoxelIndexList> kv : block_voxel_list_occ) {
     // Get block.
     Block<EsdfVoxel>::Ptr block_ptr = esdf_layer_->getBlockPtrByIndex(kv.first);
 

@@ -3,10 +3,13 @@
 
 #include <string>
 
-#include <geometry_msgs/TransformStamped.h>
-#include <tf/transform_listener.h>
-
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <voxblox/core/common.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+
+#include <tf2/convert.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace voxblox {
 
@@ -18,24 +21,30 @@ class Transformer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Transformer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  Transformer(rclcpp::Node::SharedPtr node);
+
+  void get_transformation_parameter(std::string transformation_parameter_name,
+                                    std::string invert_parameter_name,
+                                    Transformation& transformation);
 
   bool lookupTransform(const std::string& from_frame,
-                       const std::string& to_frame, const ros::Time& timestamp,
+                       const std::string& to_frame,
+                       const rclcpp::Time& timestamp,
                        Transformation* transform);
 
-  void transformCallback(const geometry_msgs::TransformStamped& transform_msg);
+  void transformCallback(
+      const geometry_msgs::msg::TransformStamped::SharedPtr transform_msg);
 
  private:
   bool lookupTransformTf(const std::string& from_frame,
                          const std::string& to_frame,
-                         const ros::Time& timestamp, Transformation* transform);
+                         const rclcpp::Time& timestamp,
+                         Transformation* transform);
 
-  bool lookupTransformQueue(const ros::Time& timestamp,
+  bool lookupTransformQueue(const rclcpp::Time& timestamp,
                             Transformation* transform);
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle nh_private_;
+  rclcpp::Node::SharedPtr node_;
 
   /**
    * Global/map coordinate frame. Will always look up TF transforms to this
@@ -70,13 +79,15 @@ class Transformer {
    * To be replaced (at least optionally) with odometry + static transform
    * from IMU to visual frame.
    */
-  tf::TransformListener tf_listener_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
   // l Only used if use_tf_transforms_ set to false.
-  ros::Subscriber transform_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr
+      transform_sub_;
 
   // l Transform queue, used only when use_tf_transforms is false.
-  AlignedDeque<geometry_msgs::TransformStamped> transform_queue_;
+  AlignedDeque<geometry_msgs::msg::TransformStamped> transform_queue_;
 };
 
 }  // namespace voxblox

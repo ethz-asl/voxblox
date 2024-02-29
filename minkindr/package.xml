@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>minkindr</name>
+  <version>1.0.0</version>
+  <description>minkindr</description>
+
+  <author email="paul.furgale@gmail.com">Paul Furgale</author>
+  <maintainer email="paul.furgale@gmail.com">Paul Furgale</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <depend>eigen3_cmake_module</depend>
+  <depend>eigen</depend>
+
+  <depend>libgflags-dev</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>
+

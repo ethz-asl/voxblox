@@ -13,11 +13,11 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/message_lite.h>
 
-#include "voxblox/Block.pb.h"
-#include "voxblox/Layer.pb.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/voxel.h"
 #include "voxblox/utils/protobuf_utils.h"
+#include "voxblox_proto/Block.pb.h"
+#include "voxblox_proto/Layer.pb.h"
 
 namespace voxblox {
 
@@ -115,7 +115,7 @@ bool Layer<VoxelType>::saveSubsetToFile(const std::string& file_path,
   size_t num_blocks_to_write = 0u;
   if ((include_all_blocks && !block_map_.empty()) ||
       !blocks_to_include.empty()) {
-    for (const BlockMapPair& pair : block_map_) {
+    for (const BlockMapPair pair : block_map_) {
       bool write_block_to_file = include_all_blocks;
 
       if (!write_block_to_file) {
@@ -166,7 +166,7 @@ bool Layer<VoxelType>::saveBlocksToStream(bool include_all_blocks,
                                           BlockIndexList blocks_to_include,
                                           std::fstream* outfile_ptr) const {
   CHECK_NOTNULL(outfile_ptr);
-  for (const BlockMapPair& pair : block_map_) {
+  for (const BlockMapPair pair : block_map_) {
     bool write_block_to_file = include_all_blocks;
     if (!write_block_to_file) {
       BlockIndexList::const_iterator it = std::find(

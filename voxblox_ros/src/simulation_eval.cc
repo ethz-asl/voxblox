@@ -1,15 +1,13 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include "voxblox_ros/simulation_server.h"
 
 namespace voxblox {
 class SimulationServerImpl : public voxblox::SimulationServer {
  public:
-  SimulationServerImpl(const ros::NodeHandle& nh,
-                       const ros::NodeHandle& nh_private)
-      : SimulationServer(nh, nh_private) {}
+  SimulationServerImpl() : SimulationServer() {}
 
   void prepareWorld() {
     CHECK_NOTNULL(world_);
@@ -35,18 +33,16 @@ class SimulationServerImpl : public voxblox::SimulationServer {
 }  // namespace voxblox
 
 int main(int argc, char** argv) {
-  ros::init(argc, argv, "voxblox_sim");
+  rclcpp::init(argc, argv);
   google::InitGoogleLogging(argv[0]);
-  google::ParseCommandLineFlags(&argc, &argv, false);
+  // google::ParseCommandLineFlags(&argc, &argv, false);
   google::InstallFailureSignalHandler();
-  ros::NodeHandle nh;
-  ros::NodeHandle nh_private("~");
 
-  voxblox::SimulationServerImpl sim_eval(nh, nh_private);
-
+  auto sim_eval = std::make_shared<voxblox::SimulationServerImpl>();
   sim_eval.run();
 
-  ROS_INFO("Done.");
-  ros::spin();
+  RCLCPP_INFO(sim_eval->get_logger(), "Done.");
+
+  rclcpp::spin(sim_eval);
   return 0;
 }

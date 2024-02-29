@@ -7,7 +7,7 @@ namespace voxblox {
 
 template <typename VoxelType>
 void serializeLayerAsMsg(const Layer<VoxelType>& layer, const bool only_updated,
-                         voxblox_msgs::Layer* msg,
+                         voxblox_msgs::msg::Layer* msg,
                          const MapDerializationAction& action) {
   CHECK_NOTNULL(msg);
   msg->voxels_per_side = layer.voxels_per_side();
@@ -24,7 +24,7 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, const bool only_updated,
 
   msg->action = static_cast<uint8_t>(action);
 
-  voxblox_msgs::Block block_msg;
+  voxblox_msgs::msg::Block block_msg;
   msg->blocks.reserve(block_list.size());
   for (const BlockIndex& index : block_list) {
     block_msg.x_index = index.x();
@@ -40,27 +40,27 @@ void serializeLayerAsMsg(const Layer<VoxelType>& layer, const bool only_updated,
 }  // namespace voxblox
 
 template <typename VoxelType>
-bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
+bool deserializeMsgToLayer(const voxblox_msgs::msg::Layer::SharedPtr msg,
                            Layer<VoxelType>* layer) {
   CHECK_NOTNULL(layer);
   return deserializeMsgToLayer<VoxelType>(
-      msg, static_cast<MapDerializationAction>(msg.action), layer);
+      msg, static_cast<MapDerializationAction>(msg->action), layer);
 }
 
 template <typename VoxelType>
-bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
+bool deserializeMsgToLayer(const voxblox_msgs::msg::Layer::SharedPtr msg,
                            const MapDerializationAction& action,
                            Layer<VoxelType>* layer) {
   CHECK_NOTNULL(layer);
-  if (getVoxelType<VoxelType>().compare(msg.layer_type) != 0) {
+  if (getVoxelType<VoxelType>().compare(msg->layer_type) != 0) {
     return false;
   }
 
   // So we also need to check if the sizes match. If they don't, we can't
   // parse this at all.
   constexpr double kVoxelSizeEpsilon = 1e-5;
-  if (msg.voxels_per_side != layer->voxels_per_side() ||
-      std::abs(msg.voxel_size - layer->voxel_size()) > kVoxelSizeEpsilon) {
+  if (msg->voxels_per_side != layer->voxels_per_side() ||
+      std::abs(msg->voxel_size - layer->voxel_size()) > kVoxelSizeEpsilon) {
     LOG(ERROR) << "Sizes don't match!";
     return false;
   }
@@ -70,7 +70,7 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
     layer->removeAllBlocks();
   }
 
-  for (const voxblox_msgs::Block& block_msg : msg.blocks) {
+  for (const voxblox_msgs::msg::Block& block_msg : msg->blocks) {
     BlockIndex index(block_msg.x_index, block_msg.y_index, block_msg.z_index);
 
     // Either we want to update an existing block or there was no block there
@@ -102,12 +102,12 @@ bool deserializeMsgToLayer(const voxblox_msgs::Layer& msg,
 
   switch (action) {
     case MapDerializationAction::kReset:
-      CHECK_EQ(layer->getNumberOfAllocatedBlocks(), msg.blocks.size());
+      CHECK_EQ(layer->getNumberOfAllocatedBlocks(), msg->blocks.size());
       break;
     case MapDerializationAction::kUpdate:
     // Fall through intended.
     case MapDerializationAction::kMerge:
-      CHECK_GE(layer->getNumberOfAllocatedBlocks(), msg.blocks.size());
+      CHECK_GE(layer->getNumberOfAllocatedBlocks(), msg->blocks.size());
       break;
   }
 

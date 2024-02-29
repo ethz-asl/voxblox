@@ -4,30 +4,35 @@
 #include <minkindr_conversions/kindr_tf.h>
 #include <minkindr_conversions/kindr_xml.h>
 
+#include "voxblox_ros/node_helper.h"
+#include "voxblox_ros/ros_parameters.hpp"
+
 namespace voxblox {
 
-Transformer::Transformer(const ros::NodeHandle& nh,
-                         const ros::NodeHandle& nh_private)
-    : nh_(nh),
-      nh_private_(nh_private),
+Transformer::Transformer(rclcpp::Node::SharedPtr node)
+    : node_(node),
       world_frame_("world"),
       sensor_frame_(""),
       use_tf_transforms_(true),
       timestamp_tolerance_ns_(1000000) {
-  nh_private_.param("world_frame", world_frame_, world_frame_);
-  nh_private_.param("sensor_frame", sensor_frame_, sensor_frame_);
+  world_frame_ =
+      node_helper::declare_or_get_parameter(node_, "world_frame", world_frame_);
+  sensor_frame_ = node_->declare_parameter("sensor_frame", sensor_frame_);
+
+  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   const double kNanoSecondsInSecond = 1.0e9;
   double timestamp_tolerance_sec =
       timestamp_tolerance_ns_ / kNanoSecondsInSecond;
-  nh_private_.param("timestamp_tolerance_sec", timestamp_tolerance_sec,
-                    timestamp_tolerance_sec);
+  timestamp_tolerance_sec = node_->declare_parameter("timestamp_tolerance_sec",
+                                                     timestamp_tolerance_sec);
   timestamp_tolerance_ns_ =
       static_cast<int64_t>(timestamp_tolerance_sec * kNanoSecondsInSecond);
 
   // Transform settings.
-  nh_private_.param("use_tf_transforms", use_tf_transforms_,
-                    use_tf_transforms_);
+  use_tf_transforms_ =
+      node_->declare_parameter("use_tf_transforms", use_tf_transforms_);
   // If we use topic transforms, we have 2 parts: a dynamic transform from a
   // topic and a static transform from parameters.
   // Static transform should be T_G_D (where D is whatever sensor the
@@ -36,44 +41,36 @@ Transformer::Transformer(const ros::NodeHandle& nh,
   // specify T_C_D and set invert_static_tranform to true.
   if (!use_tf_transforms_) {
     transform_sub_ =
-        nh_.subscribe("transform", 40, &Transformer::transformCallback, this);
-    // Retrieve T_D_C from params.
-    XmlRpc::XmlRpcValue T_B_D_xml;
-    // TODO(helenol): split out into a function to avoid duplication.
-    if (nh_private_.getParam("T_B_D", T_B_D_xml)) {
-      kindr::minimal::xmlRpcToKindr(T_B_D_xml, &T_B_D_);
+        node_->create_subscription<geometry_msgs::msg::TransformStamped>(
+            "transform", 40,
+            std::bind(&Transformer::transformCallback, this,
+                      std::placeholders::_1));
 
-      // See if we need to invert it.
-      bool invert_static_tranform = false;
-      nh_private_.param("invert_T_B_D", invert_static_tranform,
-                        invert_static_tranform);
-      if (invert_static_tranform) {
-        T_B_D_ = T_B_D_.inverse();
-      }
-    }
-    XmlRpc::XmlRpcValue T_B_C_xml;
-    if (nh_private_.getParam("T_B_C", T_B_C_xml)) {
-      kindr::minimal::xmlRpcToKindr(T_B_C_xml, &T_B_C_);
+    // TODO: fix the transform parameter read
+    get_transformation_parameter("T_B_D", "invert_T_B_D", T_B_D_);
+    get_transformation_parameter("T_B_C", "invert_T_B_C", T_B_C_);
+  }
+}
 
-      // See if we need to invert it.
-      bool invert_static_tranform = false;
-      nh_private_.param("invert_T_B_C", invert_static_tranform,
-                        invert_static_tranform);
-      if (invert_static_tranform) {
-        T_B_C_ = T_B_C_.inverse();
-      }
-    }
+void Transformer::get_transformation_parameter(
+    std::string transformation_parameter_name,
+    std::string invert_parameter_name, Transformation& transformation) {
+  transformation = ros_parameters::get_parameter_as_transformation(
+      node_, transformation_parameter_name);
+  bool invert_T_B_D = node_->declare_parameter(invert_parameter_name, false);
+  if (invert_T_B_D) {
+    transformation = transformation.inverse();
   }
 }
 
 void Transformer::transformCallback(
-    const geometry_msgs::TransformStamped& transform_msg) {
-  transform_queue_.push_back(transform_msg);
+    const geometry_msgs::msg::TransformStamped::SharedPtr transform_msg) {
+  transform_queue_.push_back(*transform_msg);
 }
 
 bool Transformer::lookupTransform(const std::string& from_frame,
                                   const std::string& to_frame,
-                                  const ros::Time& timestamp,
+                                  const rclcpp::Time& timestamp,
                                   Transformation* transform) {
   CHECK_NOTNULL(transform);
   if (use_tf_transforms_) {
@@ -86,11 +83,11 @@ bool Transformer::lookupTransform(const std::string& from_frame,
 // Stolen from octomap_manager
 bool Transformer::lookupTransformTf(const std::string& from_frame,
                                     const std::string& to_frame,
-                                    const ros::Time& timestamp,
+                                    const rclcpp::Time& timestamp,
                                     Transformation* transform) {
   CHECK_NOTNULL(transform);
-  tf::StampedTransform tf_transform;
-  ros::Time time_to_lookup = timestamp;
+  geometry_msgs::msg::TransformStamped transform_msg;
+  rclcpp::Time time_to_lookup = timestamp;
 
   // Allow overwriting the TF frame for the sensor.
   std::string from_frame_modified = from_frame;
@@ -100,48 +97,56 @@ bool Transformer::lookupTransformTf(const std::string& from_frame,
 
   // Previous behavior was just to use the latest transform if the time is in
   // the future. Now we will just wait.
-  if (!tf_listener_.canTransform(to_frame, from_frame_modified,
-                                 time_to_lookup)) {
+  if (!tf_buffer_->canTransform(to_frame, from_frame_modified,
+                                time_to_lookup)) {
     return false;
   }
 
   try {
-    tf_listener_.lookupTransform(to_frame, from_frame_modified, time_to_lookup,
-                                 tf_transform);
-  } catch (tf::TransformException& ex) {  // NOLINT
-    ROS_ERROR_STREAM(
+    transform_msg = tf_buffer_->lookupTransform(to_frame, from_frame_modified,
+                                                time_to_lookup);
+  } catch (tf2::TransformException& ex) {  // NOLINT
+    RCLCPP_ERROR_STREAM(
+        node_->get_logger(),
         "Error getting TF transform from sensor data: " << ex.what());
     return false;
   }
 
-  tf::transformTFToKindr(tf_transform, transform);
+  tf2::Transform tf_transform;
+  tf2::fromMsg(transform_msg.transform, tf_transform);
+  tf2::transformTFToKindr(tf_transform, transform);
   return true;
 }
 
-bool Transformer::lookupTransformQueue(const ros::Time& timestamp,
+bool Transformer::lookupTransformQueue(const rclcpp::Time& timestamp,
                                        Transformation* transform) {
   CHECK_NOTNULL(transform);
   if (transform_queue_.empty()) {
-    ROS_WARN_STREAM_THROTTLE(30, "No match found for transform timestamp: "
-                                     << timestamp
-                                     << " as transform queue is empty.");
+    RCLCPP_WARN_STREAM_THROTTLE(node_->get_logger(), *node_->get_clock(), 30,
+                                "No match found for transform timestamp: "
+                                    << timestamp.nanoseconds()
+                                    << " as transform queue is empty.");
     return false;
   }
   // Try to match the transforms in the queue.
   bool match_found = false;
-  std::deque<geometry_msgs::TransformStamped>::iterator it =
+  std::deque<geometry_msgs::msg::TransformStamped>::iterator it =
       transform_queue_.begin();
+  rclcpp::Time transform_time;
+
   for (; it != transform_queue_.end(); ++it) {
     // If the current transform is newer than the requested timestamp, we need
     // to break.
-    if (it->header.stamp > timestamp) {
-      if ((it->header.stamp - timestamp).toNSec() < timestamp_tolerance_ns_) {
+    transform_time = it->header.stamp;
+    if (transform_time > timestamp) {
+      if ((transform_time - timestamp).nanoseconds() <
+          timestamp_tolerance_ns_) {
         match_found = true;
       }
       break;
     }
 
-    if ((timestamp - it->header.stamp).toNSec() < timestamp_tolerance_ns_) {
+    if ((timestamp - transform_time).nanoseconds() < timestamp_tolerance_ns_) {
       match_found = true;
       break;
     }
@@ -150,28 +155,37 @@ bool Transformer::lookupTransformQueue(const ros::Time& timestamp,
   // Match found basically means an exact match.
   Transformation T_G_D;
   if (match_found) {
-    tf::transformMsgToKindr(it->transform, &T_G_D);
+    tf2::transformMsgToKindr(it->transform, &T_G_D);
   } else {
     // If we think we have an inexact match, have to check that we're still
     // within bounds and interpolate.
     if (it == transform_queue_.begin() || it == transform_queue_.end()) {
-      ROS_WARN_STREAM_THROTTLE(
-          30, "No match found for transform timestamp: "
-                  << timestamp
-                  << " Queue front: " << transform_queue_.front().header.stamp
-                  << " back: " << transform_queue_.back().header.stamp);
+      RCLCPP_WARN_STREAM_THROTTLE(
+          node_->get_logger(), *(node_->get_clock()), 30,
+          "No match found for transform timestamp: "
+              << timestamp.nanoseconds() << " Queue front: s: "
+              << transform_queue_.front().header.stamp.sec
+              << " Queue front: ns: "
+              << transform_queue_.front().header.stamp.nanosec
+              << " back: s: " << transform_queue_.back().header.stamp.sec
+              << " back: ns: " << transform_queue_.back().header.stamp.nanosec);
       return false;
     }
+
     // Newest should be 1 past the requested timestamp, oldest should be one
     // before the requested timestamp.
     Transformation T_G_D_newest;
-    tf::transformMsgToKindr(it->transform, &T_G_D_newest);
-    int64_t offset_newest_ns = (it->header.stamp - timestamp).toNSec();
-    // We already checked that this is not the beginning.
+    tf2::transformMsgToKindr(it->transform, &T_G_D_newest);
+    transform_time = it->header.stamp;
+    int64_t offset_newest_ns = (transform_time - timestamp).nanoseconds();
+
+    // We already checked that node_ is not the beginning.
     it--;
+    transform_time = it->header.stamp;
+
     Transformation T_G_D_oldest;
-    tf::transformMsgToKindr(it->transform, &T_G_D_oldest);
-    int64_t offset_oldest_ns = (timestamp - it->header.stamp).toNSec();
+    tf2::transformMsgToKindr(it->transform, &T_G_D_oldest);
+    int64_t offset_oldest_ns = (timestamp - transform_time).nanoseconds();
 
     // Interpolate between the two transformations using the exponential map.
     FloatingPoint t_diff_ratio =
@@ -188,7 +202,7 @@ bool Transformer::lookupTransformQueue(const ros::Time& timestamp,
   // chain.
   *transform = T_G_D * T_B_D_.inverse() * T_B_C_;
 
-  // And also clear the queue up to this point. This leaves the current
+  // And also clear the queue up to node_ point. Node_ leaves the current
   // message in place.
   transform_queue_.erase(transform_queue_.begin(), it);
   return true;

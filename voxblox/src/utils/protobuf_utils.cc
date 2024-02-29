@@ -82,7 +82,7 @@ bool writeProtoMsgToStream(const google::protobuf::Message& message,
   CHECK(stream_out->is_open());
   google::protobuf::io::OstreamOutputStream raw_out(stream_out);
   google::protobuf::io::CodedOutputStream coded_out(&raw_out);
-  const uint32_t size_bytes = message.ByteSize();
+  const uint32_t size_bytes = message.ByteSizeLong();
   coded_out.WriteVarint32(size_bytes);
   uint8_t* buffer = coded_out.GetDirectBufferForNBytesAndAdvance(size_bytes);
   if (buffer != nullptr) {

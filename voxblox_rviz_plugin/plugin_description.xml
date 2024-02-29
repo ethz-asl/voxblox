@@ -1,8 +1,8 @@
-<library path="lib/libvoxblox_rviz_plugin">
+<library path="voxblox_rviz_plugin">
   <class name="voxblox_rviz_plugin/VoxbloxMesh"
          type="voxblox_rviz_plugin::VoxbloxMeshDisplay"
-         base_class_type="rviz::Display">
+         base_class_type="rviz_common::Display">
     <description>Displays incremental voxblox mesh messages.</description>
-    <message_type>voxblox_msgs/Mesh</message_type>
+    <message_type>voxblox_msgs/msg/Mesh</message_type>
   </class>
 </library>
