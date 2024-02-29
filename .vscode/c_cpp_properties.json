@@ -1,0 +1,25 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/opt/ros/humble/include/**",
+        "/home/ws/src/minkindr/minkindr/include/**",
+        "/home/ws/src/minkindr_ros/minkindr_conversions/include/**",
+        "/home/ws/src/voxblox/voxblox/include/**",
+        "/home/ws/src/voxblox/voxblox_ros/include/**",
+        "/home/ws/src/voxblox/voxblox_rviz_plugin/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
