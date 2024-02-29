@@ -4,9 +4,9 @@
 #include <fstream>
 #include <string>
 
-#include "voxblox/Block.pb.h"
-#include "voxblox/Layer.pb.h"
 #include "voxblox/utils/protobuf_utils.h"
+#include "voxblox_proto/Block.pb.h"
+#include "voxblox_proto/Layer.pb.h"
 
 namespace voxblox {
 namespace io {

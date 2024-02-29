@@ -34,5 +34,5 @@
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached", // For using GUI apps like Rviz2
         "source=/dev/dri,target=/dev/dri,type=bind,consistency=cached" // hardware-accelerated graphics rendering
     ],
-    "postCreateCommand": "rosdep update && rosdep install --from-paths src -y --ignore-src" // Install other dependencies with rosdep
+    "postCreateCommand": "rosdep update && rosdep install --from-paths . -y --ignore-src" // Install other dependencies with rosdep
 }

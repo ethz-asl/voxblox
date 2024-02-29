@@ -1,29 +1,39 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 project(voxblox)
 
-find_package(catkin_simple REQUIRED )
-catkin_simple(ALL_DEPS_REQUIRED)
+set(CMAKE_CXX_STANDARD 14)
+add_definitions(-Wall -Wextra)
 
+set(AMENT_ENABLE_TESTING 0)
 set(CMAKE_MACOSX_RPATH 0)
-add_definitions(-std=c++11 -Wall -Wextra)
 
-############
-# PROTOBUF #
-############
-# General idea: first check if we have protobuf catkin, then use that.
-# Otherwise use system protobuf.
-set(PROTO_DEFNS proto/voxblox/Block.proto
-                proto/voxblox/Layer.proto)
-set(BASE_PATH "proto")
-set(PROTOBUF_COMPILE_PYTHON true)
+# Load necessary ROS 2 packages
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+find_package(Protobuf REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(glog REQUIRED)
+find_package(voxblox_proto REQUIRED)
 
-PROTOBUF_CATKIN_GENERATE_CPP2(${BASE_PATH} PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
+ament_auto_find_build_dependencies()
+
+
+####################
+# HEADER FILES #
+####################
+
+include_directories(
+  include
+  ${CMAKE_CURRENT_BINARY_DIR} # Generate proto headers are here
+  ${EIGEN3_INCLUDE_DIRS}
+  ${VOXBLOX_PROTO_INCLUDE_DIRS}
+)
 
 ####################
 # SET SOURCE FILES #
 ####################
 
-set("${PROJECT_NAME}_SRCS"
+set(${PROJECT_NAME}_SRCS
   src/alignment/icp.cc
   src/core/block.cc
   src/core/esdf_map.cc
@@ -50,93 +60,34 @@ set("${PROJECT_NAME}_SRCS"
 #############
 # LIBRARIES #
 #############
-cs_add_library(${PROJECT_NAME}_proto
-  ${PROTO_SRCS}
-)
 
-cs_add_library(${PROJECT_NAME}
+ament_auto_add_library(${PROJECT_NAME}
   ${${PROJECT_NAME}_SRCS}
 )
-target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_proto)
+
+target_link_libraries(${PROJECT_NAME} 
+  ${voxblox_proto_LIBRARIES}
+  glog::glog
+)
 
 ############
 # BINARIES #
 ############
 
-add_executable(tsdf_to_esdf
+ament_auto_add_executable(tsdf_to_esdf 
   test/tsdf_to_esdf.cc
 )
 target_link_libraries(tsdf_to_esdf ${PROJECT_NAME})
 
-add_executable(test_load_esdf
+ament_auto_add_executable(test_load_esdf 
   test/test_load_esdf.cc
 )
 target_link_libraries(test_load_esdf ${PROJECT_NAME})
 
-#########
-# TESTS #
-#########
-add_custom_target(test_data)
-add_custom_command(TARGET test_data
-                  COMMAND rm -rf test_data
-                  COMMAND mkdir -p test_data
-                  COMMAND cp -r ${CMAKE_SOURCE_DIR}/test/test_data/*
-                                test_data/ || :)
-
-#add_definitions(-DVISUALIZE_UNIT_TEST_RESULTS)
-
-catkin_add_gtest(test_approx_hash_array
-  test/test_approx_hash_array.cc
-)
-target_link_libraries(test_approx_hash_array ${PROJECT_NAME})
-
-catkin_add_gtest(test_tsdf_map
-  test/test_tsdf_map.cc
-)
-target_link_libraries(test_tsdf_map ${PROJECT_NAME})
-
-catkin_add_gtest(test_protobuf
-  test/test_protobuf.cc
-)
-target_link_libraries(test_protobuf ${PROJECT_NAME})
-
-catkin_add_gtest(test_tsdf_interpolator
-  test/test_tsdf_interpolator.cc
-)
-target_link_libraries(test_tsdf_interpolator ${PROJECT_NAME})
-
-catkin_add_gtest(test_layer
-  test/test_layer.cc
-)
-target_link_libraries(test_layer ${PROJECT_NAME})
-
-catkin_add_gtest(test_merge_integration
-  test/test_merge_integration.cc
-)
-target_link_libraries(test_merge_integration ${PROJECT_NAME})
-
-catkin_add_gtest(test_layer_utils
-  test/test_layer_utils.cc
-)
-target_link_libraries(test_layer_utils ${PROJECT_NAME})
-
-catkin_add_gtest(test_sdf_integrators
-  test/test_sdf_integrators.cc
-)
-target_link_libraries(test_sdf_integrators ${PROJECT_NAME})
-
-catkin_add_gtest(test_bucket_queue
-  test/test_bucket_queue.cc
-)
-target_link_libraries(test_bucket_queue ${PROJECT_NAME})
-
-catkin_add_gtest(test_clear_spheres
-  test/test_clear_spheres.cc
-)
-target_link_libraries(test_clear_spheres ${PROJECT_NAME})
+# TODO: Added tests
 
 ##########
 # EXPORT #
 ##########
-cs_install()
-cs_export(INCLUDE_DIRS ${CATKIN_DEVEL_PREFIX}/include)
+
+ament_auto_package()

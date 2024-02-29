@@ -7,12 +7,12 @@
 
 #include <glog/logging.h>
 
-#include "voxblox/Block.pb.h"
-#include "voxblox/Layer.pb.h"
 #include "voxblox/core/block.h"
 #include "voxblox/core/block_hash.h"
 #include "voxblox/core/common.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox_proto/Block.pb.h"
+#include "voxblox_proto/Layer.pb.h"
 
 namespace voxblox {
 

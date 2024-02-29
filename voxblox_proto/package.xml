@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>voxblox</name>
+  <name>voxblox_proto</name>
   <version>0.0.0</version>
   <description>Voxblox</description>
 
@@ -14,20 +14,18 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
-  
+
+  <depend>rosidl_default_generators</depend>
   <depend>minkindr</depend>
-  <depend>voxblox_proto</depend>
 
   <depend>eigen3_cmake_module</depend>
   <depend>eigen</depend>
   <depend>protobuf</depend>
   <depend>libgflags-dev</depend>
   <depend>libgoogle-glog-dev</depend>
-  
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
-
-  <depend>rosidl_default_generators</depend>
 
 </package>

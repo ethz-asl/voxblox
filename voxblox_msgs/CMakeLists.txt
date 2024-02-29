@@ -1,12 +1,26 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(voxblox_msgs)
 
-find_package(catkin_simple REQUIRED)
-catkin_simple(ALL_DEPS_REQUIRED)
+set(CMAKE_CXX_STANDARD 14)
 
-##########
-# EXPORT #
-##########
+# find dependencies
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-cs_install()
-cs_export()
+# message generation
+rosidl_generate_interfaces(
+    ${PROJECT_NAME}
+        "msg/Block.msg"
+        "msg/Layer.msg"
+        "msg/Mesh.msg"
+        "msg/MeshBlock.msg"
+        "msg/VoxelEvaluationDetails.msg"
+        "srv/FilePath.srv"
+    DEPENDENCIES 
+        std_msgs 
+)
+
+ament_export_dependencies(rosidl_default_runtime)
+
+ament_package()
+

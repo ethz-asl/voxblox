@@ -1,12 +1,12 @@
 #include "voxblox_rviz_plugin/voxblox_mesh_display.h"
 
-#include <OGRE/OgreSceneManager.h>
-#include <OGRE/OgreSceneNode.h>
+#include <OgreSceneManager.h>
+#include <OgreSceneNode.h>
 
-#include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
 
-#include <rviz/frame_manager.h>
-#include <rviz/visualization_manager.h>
+#include <rviz_common/ros_integration/ros_node_abstraction.hpp>
+#include <rviz_common/visualization_manager.hpp>
 
 namespace voxblox_rviz_plugin {
 
@@ -22,7 +22,7 @@ void VoxbloxMeshDisplay::reset() {
 }
 
 void VoxbloxMeshDisplay::processMessage(
-    const voxblox_msgs::Mesh::ConstPtr& msg) {
+    voxblox_msgs::msg::Mesh::ConstSharedPtr msg) {
   // Here we call the rviz::FrameManager to get the transform from the
   // fixed frame to the frame in the header of this Imu message.  If
   // it fails, we can't do anything else so we return.
@@ -30,8 +30,10 @@ void VoxbloxMeshDisplay::processMessage(
   Ogre::Vector3 position;
   if (!context_->getFrameManager()->getTransform(
           msg->header.frame_id, msg->header.stamp, position, orientation)) {
-    ROS_DEBUG("Error transforming from frame '%s' to frame '%s'",
-              msg->header.frame_id.c_str(), qPrintable(fixed_frame_));
+    std::string errorMessage = "Error transforming from frame '" +
+                               msg->header.frame_id + "' to frame '" +
+                               fixed_frame_.toStdString() + "'";
+    RVIZ_COMMON_LOG_ERROR(errorMessage);
     return;
   }
 
@@ -48,5 +50,6 @@ void VoxbloxMeshDisplay::processMessage(
 
 }  // namespace voxblox_rviz_plugin
 
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(voxblox_rviz_plugin::VoxbloxMeshDisplay, rviz::Display)
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(voxblox_rviz_plugin::VoxbloxMeshDisplay,
+                       rviz_common::Display)
