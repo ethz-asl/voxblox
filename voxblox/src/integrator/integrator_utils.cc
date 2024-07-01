@@ -157,24 +157,24 @@ void RayCaster::setupRayCaster(const Point& start_scaled,
   Ray distance_to_boundaries(corrected_step.cast<FloatingPoint>() -
                              start_scaled_shifted);
 
-  t_to_next_boundary_ = Ray((std::abs(ray_scaled.x()) < 0.0)
+  t_to_next_boundary_ = Ray((std::abs(ray_scaled.x()) <= 0.0)
                                 ? 2.0
                                 : distance_to_boundaries.x() / ray_scaled.x(),
-                            (std::abs(ray_scaled.y()) < 0.0)
+                            (std::abs(ray_scaled.y()) <= 0.0)
                                 ? 2.0
                                 : distance_to_boundaries.y() / ray_scaled.y(),
-                            (std::abs(ray_scaled.z()) < 0.0)
+                            (std::abs(ray_scaled.z()) <= 0.0)
                                 ? 2.0
                                 : distance_to_boundaries.z() / ray_scaled.z());
 
   // Distance to cross one grid cell along the ray in t.
   // Same as absolute inverse value of delta_coord.
   t_step_size_ = Ray(
-      (std::abs(ray_scaled.x()) < 0.0) ? 2.0
+      (std::abs(ray_scaled.x()) <= 0.0) ? 2.0
                                        : ray_step_signs_.x() / ray_scaled.x(),
-      (std::abs(ray_scaled.y()) < 0.0) ? 2.0
+      (std::abs(ray_scaled.y()) <= 0.0) ? 2.0
                                        : ray_step_signs_.y() / ray_scaled.y(),
-      (std::abs(ray_scaled.z()) < 0.0) ? 2.0
+      (std::abs(ray_scaled.z()) <= 0.0) ? 2.0
                                        : ray_step_signs_.z() / ray_scaled.z());
 }
 
