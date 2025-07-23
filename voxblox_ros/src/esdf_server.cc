@@ -156,14 +156,21 @@ void EsdfServer::publishMap(bool reset_remote_map) {
     }
     const bool only_updated = !reset_remote_map;
     timing::Timer publish_map_timer("map/publish_esdf");
+    auto layer = this->esdf_map_->getEsdfLayerPtr();
     voxblox_msgs::Layer layer_msg;
-    serializeLayerAsMsg<EsdfVoxel>(this->esdf_map_->getEsdfLayer(),
-                                   only_updated, &layer_msg);
+    serializeLayerAsMsg<EsdfVoxel>(*layer, only_updated, &layer_msg);
     if (reset_remote_map) {
       layer_msg.action = static_cast<uint8_t>(MapDerializationAction::kReset);
     }
     this->esdf_map_pub_.publish(layer_msg);
     publish_map_timer.Stop();
+
+    // Clear the updated flag if we have published the map
+    BlockIndexList block_list;
+    layer->getAllUpdatedBlocks(Update::kMap, &block_list);
+    for (const BlockIndex& index : block_list) {
+      layer->getBlockPtrByIndex(index)->updated().reset(Update::kMap);
+    }
   }
   num_subscribers_esdf_map_ = subscribers;
   TsdfServer::publishMap();
